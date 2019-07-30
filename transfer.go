@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
+	"github.com/coyove/ch/driver"
 	"github.com/coyove/common/sched"
 )
 
@@ -71,7 +72,7 @@ func transferKey(fromNode, toNode *Node, k string, addToDBIfFailed bool) bool {
 	}
 
 	v, err := fromNode.Get(k)
-	if err == ErrKeyNotFound {
+	if err == driver.ErrKeyNotFound {
 		return true
 	}
 	if err != nil {

@@ -1,6 +1,7 @@
 package node
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"math/rand"
@@ -8,6 +9,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/coyove/ch/driver/memory"
 )
 
 func TestNodesFuzzy(t *testing.T) {
@@ -15,10 +18,10 @@ func TestNodesFuzzy(t *testing.T) {
 	testNode = true
 
 	nodes := []*Node{
-		&Node{Name: "aa", Weight: 10},
-		&Node{Name: "bb", Weight: 25},
-		&Node{Name: "cc", Weight: 10},
-		&Node{Name: "dd", Weight: 5},
+		&Node{kv: &memory.Storage{}, Name: "aa", Weight: 10},
+		&Node{kv: &memory.Storage{}, Name: "bb", Weight: 25},
+		&Node{kv: &memory.Storage{}, Name: "cc", Weight: 10},
+		&Node{kv: &memory.Storage{}, Name: "dd", Weight: 5},
 	}
 
 	mgr := &Nodes{}
@@ -41,8 +44,8 @@ func TestNodesFuzzy(t *testing.T) {
 
 			go func() {
 				k, v := fmt.Sprintf("%x", rand.Uint64()), fmt.Sprintf("%x", rand.Uint64())
-				mgr.Put(k, v)
-				m.Store(k, v)
+				mgr.Put(k, []byte(v))
+				m.Store(k, []byte(v))
 				wg.Done()
 			}()
 		}
@@ -57,7 +60,7 @@ func TestNodesFuzzy(t *testing.T) {
 			if err != nil {
 				panic(err)
 			}
-			if v.(string) != v2 {
+			if !bytes.Equal(v.([]byte), v2) {
 				t.Fatal(v, v2)
 			}
 			count++

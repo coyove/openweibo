@@ -2,7 +2,8 @@ package node
 
 import (
 	"fmt"
-	"sync"
+
+	"github.com/coyove/ch/driver"
 )
 
 var testNode = false
@@ -10,25 +11,19 @@ var testNode = false
 type Node struct {
 	Name   string
 	Weight int64
-	kv     sync.Map
+	kv     driver.KV
 }
 
-func (n *Node) Put(k string, v string) error {
-
-	return nil
+func (n *Node) Put(k string, v []byte) error {
+	return n.kv.Put(k, v)
 }
 
-func (n *Node) Get(k string) (string, error) {
-	v, ok := n.kv.Load(k)
-	if ok {
-		return v.(string), nil
-	}
-	return "", ErrKeyNotFound
+func (n *Node) Get(k string) ([]byte, error) {
+	return n.kv.Get(k)
 }
 
 func (n *Node) Del(k string) error {
-	n.kv.Delete(k)
-	return nil
+	return n.kv.Delete(k)
 }
 
 func (n *Node) String() string {

@@ -4,6 +4,8 @@ import (
 	"log"
 	"sync"
 	"time"
+
+	"github.com/coyove/ch/driver"
 )
 
 type Nodes struct {
@@ -32,14 +34,14 @@ func (ns *Nodes) LoadNodes(nodes []*Node) {
 	ns.mu.Unlock()
 }
 
-func (ns *Nodes) Put(k string, v string) error {
+func (ns *Nodes) Put(k string, v []byte) error {
 	ns.mu.RLock()
 	node := SelectNode(k, ns.nodes)
 	ns.mu.RUnlock()
 	return node.Put(k, v)
 }
 
-func (ns *Nodes) Get(k string) (string, error) {
+func (ns *Nodes) Get(k string) ([]byte, error) {
 	v, err := ns.get(k, false)
 	return v, err
 }
@@ -49,7 +51,7 @@ func (ns *Nodes) Del(k string) error {
 	return err
 }
 
-func (ns *Nodes) get(k string, del bool) (string, error) {
+func (ns *Nodes) get(k string, del bool) ([]byte, error) {
 	ns.mu.RLock()
 	nodes := dupNodes(ns.nodes)
 	ns.mu.RUnlock()
@@ -59,7 +61,7 @@ func (ns *Nodes) get(k string, del bool) (string, error) {
 	for i := 0; i < 10; i++ { // Retry 10 times at max
 		node := SelectNode(k, nodes)
 		v, err := node.Get(k)
-		if err == ErrKeyNotFound {
+		if err == driver.ErrKeyNotFound {
 			if removeFromNodes(&nodes, node); len(nodes) == 0 {
 				break
 			}
@@ -73,7 +75,7 @@ func (ns *Nodes) get(k string, del bool) (string, error) {
 		}
 
 		if del && err == nil {
-			return "", node.Del(k)
+			return nil, node.Del(k)
 		}
 
 		if node != startNode {
@@ -83,5 +85,5 @@ func (ns *Nodes) get(k string, del bool) (string, error) {
 		return v, err
 	}
 
-	return "", ErrKeyNotFound
+	return nil, driver.ErrKeyNotFound
 }
