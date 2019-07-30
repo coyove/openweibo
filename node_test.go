@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/coyove/ch/driver/memory"
+	"github.com/coyove/ch/driver/chmemory"
 )
 
 func TestNodesFuzzy(t *testing.T) {
@@ -18,10 +18,10 @@ func TestNodesFuzzy(t *testing.T) {
 	testNode = true
 
 	nodes := []*Node{
-		&Node{kv: &memory.Storage{}, Name: "aa", Weight: 10},
-		&Node{kv: &memory.Storage{}, Name: "bb", Weight: 25},
-		&Node{kv: &memory.Storage{}, Name: "cc", Weight: 10},
-		&Node{kv: &memory.Storage{}, Name: "dd", Weight: 5},
+		&Node{kv: &chmemory.Storage{}, Name: "aa", Weight: 10},
+		&Node{kv: &chmemory.Storage{}, Name: "bb", Weight: 25},
+		&Node{kv: &chmemory.Storage{}, Name: "cc", Weight: 10},
+		&Node{kv: &chmemory.Storage{}, Name: "dd", Weight: 5},
 	}
 
 	mgr := &Nodes{}
