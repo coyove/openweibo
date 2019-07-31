@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/coyove/ch/driver"
 	"github.com/coyove/ch/driver/chmemory"
 )
 
@@ -17,11 +18,11 @@ func TestNodesFuzzy(t *testing.T) {
 	rand.Seed(time.Now().Unix())
 	testNode = true
 
-	nodes := []*Node{
-		&Node{kv: &chmemory.Storage{}, Name: "aa", Weight: 10},
-		&Node{kv: &chmemory.Storage{}, Name: "bb", Weight: 25},
-		&Node{kv: &chmemory.Storage{}, Name: "cc", Weight: 10},
-		&Node{kv: &chmemory.Storage{}, Name: "dd", Weight: 5},
+	nodes := []*driver.Node{
+		chmemory.NewNode("aa", 10),
+		chmemory.NewNode("bb", 25),
+		chmemory.NewNode("cc", 10),
+		chmemory.NewNode("dd", 5),
 	}
 
 	mgr := &Nodes{}
@@ -34,11 +35,9 @@ func TestNodesFuzzy(t *testing.T) {
 		for j := 0; j < 100; j++ {
 			wg.Add(1)
 
-			if rand.Intn(1000000) == 0 {
-				nodes = append(nodes, &Node{
-					Name:   strconv.Itoa(i*200000 + j),
-					Weight: int64(rand.Intn(10) + 10),
-				})
+			//if rand.Intn(1000000) == 0 {
+			if i == 1 && j == 1 {
+				nodes = append(nodes, chmemory.NewNode(strconv.Itoa(i*200000+j), int64(rand.Intn(10)+10)))
 				mgr.LoadNodes(nodes)
 			}
 
@@ -64,8 +63,10 @@ func TestNodesFuzzy(t *testing.T) {
 				t.Fatal(v, v2)
 			}
 			count++
-			log.Println(count)
+			//log.Println(count)
 			return true
 		})
 	}
+
+	log.Println(nodes)
 }

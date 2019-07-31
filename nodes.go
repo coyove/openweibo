@@ -8,18 +8,20 @@ import (
 	"github.com/coyove/ch/driver"
 )
 
+var testNode = false
+
 type Nodes struct {
 	mu    sync.RWMutex
-	nodes []*Node
+	nodes []*driver.Node
 }
 
-func dupNodes(nodes []*Node) []*Node {
-	n := make([]*Node, len(nodes))
+func dupNodes(nodes []*driver.Node) []*driver.Node {
+	n := make([]*driver.Node, len(nodes))
 	copy(n, nodes)
 	return n
 }
 
-func removeFromNodes(nodes *[]*Node, node *Node) {
+func removeFromNodes(nodes *[]*driver.Node, node *driver.Node) {
 	for i := len(*nodes) - 1; i >= 0; i-- {
 		if (*nodes)[i] == node {
 			*nodes = append((*nodes)[:i], (*nodes)[i+1:]...)
@@ -28,7 +30,7 @@ func removeFromNodes(nodes *[]*Node, node *Node) {
 	}
 }
 
-func (ns *Nodes) LoadNodes(nodes []*Node) {
+func (ns *Nodes) LoadNodes(nodes []*driver.Node) {
 	ns.mu.Lock()
 	ns.nodes = dupNodes(nodes)
 	ns.mu.Unlock()
@@ -75,7 +77,7 @@ func (ns *Nodes) get(k string, del bool) ([]byte, error) {
 		}
 
 		if del && err == nil {
-			return nil, node.Del(k)
+			return nil, node.Delete(k)
 		}
 
 		if node != startNode {

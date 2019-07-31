@@ -3,11 +3,13 @@ package node
 import (
 	"hash/fnv"
 	"math"
+
+	"github.com/coyove/ch/driver"
 )
 
 // Straw2
-func SelectNode(k string, nodes []*Node) *Node {
-	var maxNode *Node = nodes[0]
+func SelectNode(k string, nodes []*driver.Node) *driver.Node {
+	var maxNode = nodes[0]
 	var maxStraw float64 = -math.MaxFloat64
 
 	for _, n := range nodes {

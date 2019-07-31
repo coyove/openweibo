@@ -43,7 +43,7 @@ func transferDaemon() {
 	sched.Schedule(transferDaemon, time.Minute)
 }
 
-func transferKey(fromNode, toNode *Node, k string, addToDBIfFailed bool) bool {
+func transferKey(fromNode, toNode *driver.Node, k string, addToDBIfFailed bool) bool {
 	delFailed := false
 	errx := func(err error) bool {
 		log.Println("[transfer]", err)
@@ -81,7 +81,7 @@ func transferKey(fromNode, toNode *Node, k string, addToDBIfFailed bool) bool {
 	if err := toNode.Put(k, v); err != nil {
 		return errx(err)
 	}
-	if err := fromNode.Del(k); err != nil {
+	if err := fromNode.Delete(k); err != nil {
 		delFailed = true
 		return errx(err)
 	}
