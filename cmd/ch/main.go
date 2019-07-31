@@ -43,7 +43,7 @@ func main() {
 	fmt.Println(mgr.Put("zzz", []byte("hellow")))
 	fmt.Println(mgr.Get("zzz"))
 	fmt.Println(mgr.Get("zzz2"))
-	fmt.Println(mgr.Del("zzz"))
+	fmt.Println(mgr.Delete("zzz"))
 	fmt.Println(mgr.Get("zzz"))
 	fmt.Println(nodes[0].Stat())
 }

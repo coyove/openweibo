@@ -69,7 +69,7 @@ func (ns *Nodes) Get(k string) ([]byte, error) {
 	return v, err
 }
 
-func (ns *Nodes) Del(k string) error {
+func (ns *Nodes) Delete(k string) error {
 	_, err := ns.get(k, true)
 	return err
 }

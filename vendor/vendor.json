@@ -1,0 +1,31 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "20Pind5XCrfZL/F0oibWfd9gotA=",
+			"path": "github.com/boltdb/bolt",
+			"revision": "fd01fc79c553a8e99d512a07e8e0c63d4a3ccfc5",
+			"revisionTime": "2018-03-02T18:00:52Z"
+		},
+		{
+			"checksumSHA1": "c7g5/Wz2Ee6KzUAX148IYH4V3z4=",
+			"path": "github.com/coyove/common/sched",
+			"revision": "3b064b385f252d869851ba0572770462a85a32ad",
+			"revisionTime": "2019-07-25T04:47:12Z"
+		},
+		{
+			"checksumSHA1": "ym3agXn+ZCVbIFTX6qUhJL/m28A=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "791d8a0f4d093bd8fe272dea2cd28991154796fb",
+			"revisionTime": "2019-05-25T13:13:12Z"
+		},
+		{
+			"checksumSHA1": "QqDq2x8XOU7IoOR98Cx1eiV5QY8=",
+			"path": "gopkg.in/yaml.v2",
+			"revision": "51d6538a90f86fe93ac480b35f37b2be17fef232",
+			"revisionTime": "2018-11-15T11:05:04Z"
+		}
+	],
+	"rootPath": "github.com/coyove/ch"
+}
