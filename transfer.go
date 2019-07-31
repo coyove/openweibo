@@ -1,4 +1,4 @@
-package node
+package ch
 
 import (
 	"log"
@@ -16,6 +16,7 @@ var (
 
 func init() {
 	log.SetFlags(log.Lshortfile | log.Lmicroseconds | log.Ltime)
+	sched.Verbose = false
 
 	var err error
 	transferDB, err = bolt.Open("transfer.db", 0644, nil)

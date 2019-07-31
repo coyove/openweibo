@@ -1,4 +1,4 @@
-package node
+package ch
 
 import (
 	"hash/fnv"

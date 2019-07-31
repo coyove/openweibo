@@ -1,14 +1,17 @@
-package node
+package ch
 
 import (
 	"log"
 	"sync"
-	"time"
 
 	"github.com/coyove/ch/driver"
 )
 
-var testNode = false
+var (
+	testNode    = false
+	testRetries = 0
+	Retries     = 4
+)
 
 type Nodes struct {
 	mu    sync.RWMutex
@@ -40,7 +43,25 @@ func (ns *Nodes) Put(k string, v []byte) error {
 	ns.mu.RLock()
 	node := SelectNode(k, ns.nodes)
 	ns.mu.RUnlock()
+
 	return node.Put(k, v)
+	// oldk := k
+
+	// for i := 0; i < Retries; i++ {
+	// 	node := SelectNode(k, nodes)
+	// 	err := node.Put(k, v)
+	// 	if err != driver.ErrSealed {
+	// 		return err
+	// 	}
+
+	// 	k += "x"
+	// 	if testNode {
+	// 		log.Println("retry", node, nodes)
+	// 		time.Sleep(time.Millisecond * 300)
+	// 	}
+	// }
+
+	// return fmt.Errorf("can't put %s, all retries failed", oldk)
 }
 
 func (ns *Nodes) Get(k string) ([]byte, error) {
@@ -59,8 +80,15 @@ func (ns *Nodes) get(k string, del bool) ([]byte, error) {
 	ns.mu.RUnlock()
 
 	startNode := SelectNode(k, nodes)
+	retriedNodes := []*driver.Node{}
 
-	for i := 0; i < 10; i++ { // Retry 10 times at max
+	if testNode {
+		defer func() {
+			testRetries = len(retriedNodes) + 1
+		}()
+	}
+
+	for i := 0; i < Retries; i++ {
 		node := SelectNode(k, nodes)
 		v, err := node.Get(k)
 		if err == driver.ErrKeyNotFound {
@@ -69,8 +97,9 @@ func (ns *Nodes) get(k string, del bool) ([]byte, error) {
 			}
 
 			if testNode {
-				log.Println("retry", node, nodes)
-				time.Sleep(time.Millisecond * 300)
+				retriedNodes = append(retriedNodes, node)
+				log.Println("retry", retriedNodes)
+				//time.Sleep(time.Millisecond * 300)
 			}
 
 			continue

@@ -11,5 +11,5 @@ type Node struct {
 }
 
 func (n *Node) String() string {
-	return fmt.Sprintf("%s(w:%d,objs:%d)", n.Name, n.Weight, n.Stat().ObjectCount)
+	return fmt.Sprintf("%s(w:%d,o:%d)", n.Name, n.Weight, n.Stat().ObjectCount)
 }
