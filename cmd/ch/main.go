@@ -5,12 +5,11 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"image"
-	_ "image/jpeg"
+	"image/jpeg"
 	_ "image/png"
 	"io"
 	"io/ioutil"
 	"log"
-	"mime"
 	"net/http"
 	"net/url"
 	"path/filepath"
@@ -34,7 +33,7 @@ func extURL(u string) string {
 	if err != nil {
 		return ""
 	}
-	return filepath.Ext(u2.Path)
+	return strings.ToLower(filepath.Ext(u2.Path))
 }
 
 func main() {
@@ -73,6 +72,10 @@ func main() {
 		})
 
 	r := gin.Default()
+	r.LoadHTMLGlob("template/*")
+	r.Handle("GET", "/", func(g *gin.Context) {
+		g.HTML(200, "index.html", nil)
+	})
 	r.Handle("GET", "/i/:url", func(g *gin.Context) {
 		url, k := g.Param("url"), ""
 		if url == "raw" {
@@ -86,11 +89,16 @@ func main() {
 			g.String(500, "can't get: %s, error: %v", url, err)
 			return
 		}
-		g.Writer.Header().Add("Content-Type", mime.TypeByExtension(filepath.Ext(url)))
+		g.Writer.Header().Add("Content-Type", "image/jpeg") // mime.TypeByExtension(filepath.Ext(url)))
 		g.Writer.Write(buf)
 	})
 	r.Handle("POST", "/crawl", func(g *gin.Context) {
 		url := g.PostForm("u")
+		ext := extURL(url)
+		if ext != ".jpg" && ext != ".png" {
+			g.String(500, "[ERR] invalid URL")
+			return
+		}
 		client := &http.Client{Timeout: time.Second}
 		resp, err := client.Get(url)
 		if err != nil {
@@ -108,15 +116,23 @@ func main() {
 			g.String(500, "[ERR] can't decode: %s, parsing error: %v", url, err)
 			return
 		}
+		if ext == ".png" {
+			x := bytes.Buffer{}
+			if err := jpeg.Encode(&x, img, &jpeg.Options{Quality: 80}); err != nil {
+				g.String(500, "[ERR] can't encode: %s, error: %v", url, err)
+				return
+			}
+			buf, ext = x.Bytes(), ".jpg"
+		}
 		k := fmt.Sprintf("%x", sha1.Sum([]byte(url)))
 		if err := mgr.Put(k, buf); err != nil {
 			g.String(500, "[ERR] can't put: %s, error: %v", url, err)
 			return
 		}
 		if g.PostForm("web") == "1" {
-			g.Redirect(302, fmt.Sprintf("/i/%s%s", k, extURL(url)))
+			g.Redirect(302, fmt.Sprintf("/i/%s%s", k, ext))
 		} else {
-			g.String(200, "[OK:%s%s] size: %.3fK, dim: %v", k, extURL(url), float64(len(buf))/1024, img.Bounds().Max)
+			g.String(200, "[OK:%s%s] size: %.3fK, dim: %v", k, ext, float64(len(buf))/1024, img.Bounds().Max)
 		}
 	})
 	r.Run(":5010")

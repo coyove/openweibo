@@ -8,7 +8,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -41,10 +40,6 @@ type Storage struct {
 }
 
 func sanitize(k string) string {
-	u, err := url.Parse(k)
-	if err == nil && u.Scheme != "" {
-		k = u.Host + "_" + u.Path
-	}
 	k = rxFn.ReplaceAllString(k, "_")
 	return k
 }
