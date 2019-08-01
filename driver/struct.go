@@ -22,6 +22,7 @@ type Stat struct {
 	UploadBytes    int64
 	Ping           int64
 	ObjectCount    int64
+	UpdateTime     time.Time
 	Sealed         bool
 	Error          error
 }

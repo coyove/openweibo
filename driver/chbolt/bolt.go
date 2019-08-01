@@ -67,5 +67,16 @@ func (s *Storage) Delete(k string) error {
 }
 
 func (s *Storage) Stat() driver.Stat {
-	return driver.Stat{}
+	var count int
+	s.db.View(func(tx *bolt.Tx) error {
+		bk := tx.Bucket([]byte(s.name))
+		if bk == nil {
+			return nil
+		}
+		count = bk.Stats().KeyN
+		return nil
+	})
+	return driver.Stat{
+		ObjectCount: int64(count),
+	}
 }

@@ -110,3 +110,7 @@ func (ns *Nodes) get(k string, del bool) ([]byte, error) {
 
 	return nil, driver.ErrKeyNotFound
 }
+
+func (ns *Nodes) Nodes() []*driver.Node {
+	return ns.nodes
+}

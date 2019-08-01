@@ -1,0 +1,15 @@
+<title>Storage Status</title>
+<h2>Total {{len .Nodes}} Nodes</h2>
+<a href="/">&larr; Home</a>
+
+{{range .Nodes}}
+<div>
+    <h3>{{.Name}}</h3>
+    <ul>
+        <li>Capacity: {{.Capacity}}</li>
+        <li>Free: {{.Free}}</li>
+        <li>Ping: {{.Ping}}ms</li>
+        <li>Last Update: {{.LastUpdate}}</li>
+    </ul>
+</div>
+{{end}}

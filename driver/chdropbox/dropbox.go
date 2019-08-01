@@ -157,6 +157,7 @@ func (s *Storage) Stat() driver.Stat {
 
 	json.Unmarshal(buf, &stat)
 	return driver.Stat{
+		UpdateTime:     time.Now(),
 		AvailableBytes: stat.Allocation.Allocated - stat.Used,
 		Ping:           time.Since(start).Nanoseconds() / 1e6,
 	}
