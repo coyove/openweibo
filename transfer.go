@@ -1,74 +1,69 @@
 package ch
 
 import (
+	"errors"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/boltdb/bolt"
 	"github.com/coyove/ch/driver"
+	"github.com/coyove/ch/driver/chbolt"
 	"github.com/coyove/common/sched"
-)
-
-var (
-	transferDB *bolt.DB
-	tbkName    = []byte("transfer")
 )
 
 func init() {
 	log.SetFlags(log.Lshortfile | log.Lmicroseconds | log.Ltime | log.Ldate)
 	sched.Verbose = false
+}
 
-	var err error
-	transferDB, err = bolt.Open("transfer.db", 0644, nil)
-	if err != nil {
-		panic(err)
+func (ns *Nodes) StartTransferAgent(path string) {
+	ns.transferDB = chbolt.NewNode("transfer", path, 1)
+	ns.transferDaemon()
+}
+
+func (ns *Nodes) transferDaemon() {
+	type item struct {
+		k        string
+		from, to *driver.Node
 	}
 
-	transferDaemon()
-}
-
-func transferDaemon() {
-	//	err := transferDB.Update(func(tx *bolt.Tx) error {
-	//		bk, err := tx.CreateBucketIfNotExists(tbkName)
-	//		if err != nil {
-	//			return err
-	//		}
-	//		return bk.ForEach(func(k, v []byte) error {
-	//
-	//		})
-	//	})
-	//	if err != nil {
-	//		log.Println("[transferDaemon.DB]", err)
-	//	}
-	//
-	sched.Schedule(transferDaemon, time.Minute)
-}
-
-func transferKey(fromNode, toNode *driver.Node, k string, addToDBIfFailed bool) bool {
-	delFailed := false
-	errx := func(err error) bool {
-		log.Println("[transfer]", err)
-
-		if addToDBIfFailed {
-			err = transferDB.Update(func(tx *bolt.Tx) error {
-				bk, err := tx.CreateBucketIfNotExists(tbkName)
-				if err != nil {
-					return err
-				}
-
-				if delFailed {
-					// No need to transfer, just delete the key in fromNode
-					return bk.Put([]byte(k), []byte("delonly|"+fromNode.Name))
-				}
-
-				return bk.Put([]byte(k), []byte(fromNode.Name+"|"+toNode.Name))
-
-			})
-			if err != nil {
-				log.Println("[transfer.DB]", err)
-			}
+	items := []*item{}
+	ns.transferDB.KV.(*chbolt.Storage).DB().Update(func(tx *bolt.Tx) error {
+		bk, err := tx.CreateBucketIfNotExists([]byte("transfer"))
+		if err != nil {
+			return err
 		}
+		return bk.ForEach(func(k, v []byte) error {
+			names := strings.Split(string(v), "|")
+			items = append(items, &item{
+				k:    string(k),
+				from: ns.NodeByName(names[0]),
+				to:   ns.NodeByName(names[1]),
+			})
+			if len(items) > 100 {
+				return errors.New("abort")
+			}
+			return nil
+		})
+	})
 
+	log.Println("[transfer.daemon] transfer:", len(items))
+	for _, item := range items {
+		ns.transferKey(item.from, item.to, item.k)
+	}
+
+	sched.Schedule(func() {
+		go ns.transferDaemon()
+	}, time.Minute)
+}
+
+func (ns *Nodes) transferKey(fromNode, toNode *driver.Node, k string) bool {
+	errx := func(err error) bool {
+		log.Println("[transfer]", fromNode.Name, toNode.Name, "key:", k, "err:", err)
+		if err := ns.transferDB.Put(k, []byte(fromNode.Name+"|"+toNode.Name)); err != nil {
+			log.Println("[transfer.DB]", err)
+		}
 		return false
 	}
 
@@ -83,8 +78,8 @@ func transferKey(fromNode, toNode *driver.Node, k string, addToDBIfFailed bool) 
 		return errx(err)
 	}
 	if err := fromNode.Delete(k); err != nil {
-		delFailed = true
 		return errx(err)
 	}
+	ns.transferDB.Delete(k)
 	return true
 }

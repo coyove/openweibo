@@ -42,6 +42,7 @@ func main() {
 
 	mgr := ch.Nodes{}
 	mgr.LoadNodes(nodes)
+	mgr.StartTransferAgent("transfer.db")
 	fmt.Println(mgr.Put("zzz", []byte("hellow")))
 	fmt.Println(mgr.Get("zzz"))
 	fmt.Println(mgr.Get("zzz2"))

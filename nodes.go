@@ -14,8 +14,9 @@ var (
 )
 
 type Nodes struct {
-	mu    sync.RWMutex
-	nodes []*driver.Node
+	mu         sync.RWMutex
+	nodes      []*driver.Node
+	transferDB *driver.Node
 }
 
 func dupNodes(nodes []*driver.Node) []*driver.Node {
@@ -37,6 +38,15 @@ func (ns *Nodes) LoadNodes(nodes []*driver.Node) {
 	ns.mu.Lock()
 	ns.nodes = dupNodes(nodes)
 	ns.mu.Unlock()
+}
+
+func (ns *Nodes) NodeByName(name string) *driver.Node {
+	for _, n := range ns.nodes {
+		if n.Name == name {
+			return n
+		}
+	}
+	return nil
 }
 
 func (ns *Nodes) Put(k string, v []byte) error {
@@ -110,7 +120,7 @@ func (ns *Nodes) get(k string, del bool) ([]byte, error) {
 				return nil, node.Delete(k)
 			}
 			if node != startNode {
-				go transferKey(node, startNode, k, true)
+				go ns.transferKey(node, startNode, k)
 			}
 		}
 		return v, err
