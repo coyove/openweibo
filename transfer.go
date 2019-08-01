@@ -29,10 +29,10 @@ func (ns *Nodes) transferDaemon() {
 	}
 
 	items := []*item{}
-	ns.transferDB.KV.(*chbolt.Storage).DB().Update(func(tx *bolt.Tx) error {
-		bk, err := tx.CreateBucketIfNotExists([]byte("transfer"))
-		if err != nil {
-			return err
+	ns.transferDB.KV.(*chbolt.Storage).DB().View(func(tx *bolt.Tx) error {
+		bk := tx.Bucket([]byte("transfer"))
+		if bk == nil {
+			return nil
 		}
 		return bk.ForEach(func(k, v []byte) error {
 			names := strings.Split(string(v), "|")
@@ -48,9 +48,11 @@ func (ns *Nodes) transferDaemon() {
 		})
 	})
 
-	log.Println("[transfer.daemon] transfer:", len(items))
-	for _, item := range items {
-		ns.transferKey(item.from, item.to, item.k)
+	if len(items) > 0 {
+		log.Println("[transfer.daemon] transfer:", len(items))
+		for _, item := range items {
+			ns.transferKey(item.from, item.to, item.k)
+		}
 	}
 
 	sched.Schedule(func() {
@@ -60,7 +62,7 @@ func (ns *Nodes) transferDaemon() {
 
 func (ns *Nodes) transferKey(fromNode, toNode *driver.Node, k string) bool {
 	errx := func(err error) bool {
-		log.Println("[transfer]", fromNode.Name, toNode.Name, "key:", k, "err:", err)
+		log.Println("[transfer]", fromNode.Name, "->", toNode.Name, "key:", k, "err:", err)
 		if err := ns.transferDB.Put(k, []byte(fromNode.Name+"|"+toNode.Name)); err != nil {
 			log.Println("[transfer.DB]", err)
 		}
@@ -69,7 +71,7 @@ func (ns *Nodes) transferKey(fromNode, toNode *driver.Node, k string) bool {
 
 	v, err := fromNode.Get(k)
 	if err == driver.ErrKeyNotFound {
-		return true
+		goto OK
 	}
 	if err != nil {
 		return errx(err)
@@ -80,6 +82,8 @@ func (ns *Nodes) transferKey(fromNode, toNode *driver.Node, k string) bool {
 	if err := fromNode.Delete(k); err != nil {
 		return errx(err)
 	}
+
+OK:
 	ns.transferDB.Delete(k)
 	return true
 }

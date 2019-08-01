@@ -3,12 +3,13 @@ package cache
 import (
 	"crypto/sha1"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"github.com/coyove/common/sched"
@@ -21,10 +22,14 @@ type Cache struct {
 	path    string
 	maxSize int64
 	factor  float64
-	getter  func(k string) (io.ReadCloser, error)
+	getter  func(k string) ([]byte, error)
+
+	survey struct {
+		hits, misses int64
+	}
 }
 
-func New(path string, maxSize int64, getter func(k string) (io.ReadCloser, error)) *Cache {
+func New(path string, maxSize int64, getter func(k string) ([]byte, error)) *Cache {
 	for i := 0; i < 1024; i++ {
 		dir := filepath.Join(path, strconv.Itoa(i))
 		if err := os.MkdirAll(dir, 0777); err != nil {
@@ -118,12 +123,13 @@ func (c *Cache) purge(amount int64) {
 	log.Println("[cache.purge.ok]", time.Since(start).Nanoseconds()/1e6, "ms,", totalNames, "names")
 }
 
-func (c *Cache) Fetch(w io.Writer, key string) (int64, error) {
+func (c *Cache) Fetch(key string) ([]byte, error) {
 	k := c.makePath(key)
 
-	if f, err := os.Open(k); err == nil {
-		defer f.Close()
-		return io.Copy(w, f)
+	buf, err := ioutil.ReadFile(k)
+	if err == nil {
+		atomic.AddInt64(&c.survey.hits, 1)
+		return buf, nil
 	}
 
 	lockkey := c.mu.Lock(k, time.Second*2)
@@ -131,25 +137,26 @@ func (c *Cache) Fetch(w io.Writer, key string) (int64, error) {
 	if lockkey != 0 {
 		defer c.mu.Unlock(k, lockkey)
 	} else {
-		time.Sleep(time.Millisecond * 500)
-		if f, err := os.Open(k); err == nil {
-			defer f.Close()
-			return io.Copy(w, f)
+		time.Sleep(time.Second * 2)
+		buf, err := ioutil.ReadFile(k)
+		if err == nil {
+			atomic.AddInt64(&c.survey.hits, 1)
+			return buf, nil
 		}
 	}
 
-	rd, err := c.getter(key)
+	atomic.AddInt64(&c.survey.misses, 1)
+	buf, err = c.getter(key)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	defer rd.Close()
 
-	f, err := os.Create(k)
-	if err != nil {
+	if err := ioutil.WriteFile(k, buf, 0777); err != nil {
 		log.Println("[cache.get]", err)
-	} else {
-		defer f.Close()
-		w = io.MultiWriter(w, f)
 	}
-	return io.Copy(w, rd)
+	return buf, nil
+}
+
+func (c *Cache) HitRate() float64 {
+	return float64(c.survey.hits) / float64(c.survey.hits+c.survey.misses+1)
 }

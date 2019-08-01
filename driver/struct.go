@@ -3,6 +3,7 @@ package driver
 import (
 	"errors"
 	"fmt"
+	"log"
 	"strconv"
 	"sync"
 	"time"
@@ -67,35 +68,38 @@ func Itos(a interface{}, defaultValue string) string {
 }
 
 type TokenBucket struct {
-	Speed int64 // bytes per second
-
+	speed       int64 // bytes per second
 	capacity    int64 // bytes
 	maxCapacity int64
+	timeout     time.Duration
 	lastConsume time.Time
 	mu          sync.Mutex
 }
 
-func NewTokenBucket(speed, max int64) *TokenBucket {
+func NewTokenBucket(config string) *TokenBucket {
+	var speed, max, wait int64
+	if _, err := fmt.Sscanf(config, "%dx%d/%d", &speed, &wait, &max); err != nil {
+		panic(err)
+	}
+
+	log.Println("[tokenbucket] speed:", speed, "b, max:", max, "b, timeout:", wait, "s")
 	return &TokenBucket{
-		Speed:       speed,
-		lastConsume: time.Now(),
+		speed:       speed,
 		maxCapacity: max,
+		timeout:     time.Duration(wait) * time.Second,
+		lastConsume: time.Now(),
 	}
 }
 
-func (tb *TokenBucket) Consume(n int64, timeout time.Duration) bool {
-	tb.mu.Lock()
-	defer tb.mu.Unlock()
-
-	now := time.Now()
-
-	if tb.Speed == 0 {
-		tb.lastConsume = now
+func (tb *TokenBucket) Consume(n int64) bool {
+	if tb.speed == 0 {
 		return true
 	}
 
+	tb.mu.Lock()
+	now := time.Now()
 	ms := now.Sub(tb.lastConsume).Nanoseconds() / 1e6
-	tb.capacity += ms * tb.Speed / 1000
+	tb.capacity += ms * tb.speed / 1000 // since 'ms' may be negative, the capacity may be decreased as well
 
 	if tb.capacity > tb.maxCapacity {
 		tb.capacity = tb.maxCapacity
@@ -104,17 +108,22 @@ func (tb *TokenBucket) Consume(n int64, timeout time.Duration) bool {
 	if n <= tb.capacity {
 		tb.lastConsume = now
 		tb.capacity -= n
+		tb.mu.Unlock()
 		return true
 	}
 
-	sec := float64(n-tb.capacity) / float64(tb.Speed)
+	sec := float64(n-tb.capacity) / float64(tb.speed)
 	sleepTime := time.Duration(sec*1000) * time.Millisecond
-	if sleepTime > timeout {
+
+	if sleepTime > tb.timeout {
+		tb.mu.Unlock()
 		return false
 	}
-	time.Sleep(sleepTime)
 
 	tb.capacity = 0
-	tb.lastConsume = time.Now()
+	tb.lastConsume = now.Add(sleepTime)
+	tb.mu.Unlock()
+
+	time.Sleep(sleepTime)
 	return true
 }

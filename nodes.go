@@ -53,25 +53,7 @@ func (ns *Nodes) Put(k string, v []byte) error {
 	ns.mu.RLock()
 	node := SelectNode(k, ns.nodes)
 	ns.mu.RUnlock()
-
 	return node.Put(k, v)
-	// oldk := k
-
-	// for i := 0; i < Retries; i++ {
-	// 	node := SelectNode(k, nodes)
-	// 	err := node.Put(k, v)
-	// 	if err != driver.ErrSealed {
-	// 		return err
-	// 	}
-
-	// 	k += "x"
-	// 	if testNode {
-	// 		log.Println("retry", node, nodes)
-	// 		time.Sleep(time.Millisecond * 300)
-	// 	}
-	// }
-
-	// return fmt.Errorf("can't put %s, all retries failed", oldk)
 }
 
 func (ns *Nodes) Get(k string) ([]byte, error) {

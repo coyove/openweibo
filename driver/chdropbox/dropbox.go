@@ -19,12 +19,11 @@ import (
 var rxFn = regexp.MustCompile(`[^a-zA-Z0-9\.]`)
 
 func NewNode(name string, config map[interface{}]interface{}) *driver.Node {
-	throt := driver.Itoi(config["Throt"], 0)
 	n := &driver.Node{
 		KV: &Storage{
 			accessToken: driver.Itos(config["AccessToken"], ""),
 			client:      &http.Client{},
-			throt:       driver.NewTokenBucket(throt, throt*5),
+			throt:       driver.NewTokenBucket(driver.Itos(config["Throt"], "0x0/0")),
 		},
 		Name:   name,
 		Weight: driver.Itoi(config["Weight"], 0),
@@ -118,7 +117,7 @@ func (s *Storage) Get(k string) ([]byte, error) {
 	m := map[string]interface{}{}
 	if err := json.Unmarshal([]byte(resp.Header.Get("Dropbox-API-Result")), &m); err == nil {
 		if driver.Itos(m["id"], "") != "" {
-			if !s.throt.Consume(driver.Itoi(m["size"], 0), time.Second) {
+			if !s.throt.Consume(driver.Itoi(m["size"], 0)) {
 				return nil, driver.ErrThrottled
 			}
 
