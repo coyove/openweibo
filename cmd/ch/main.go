@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"strings"
 
 	"github.com/coyove/ch"
@@ -32,6 +33,7 @@ func main() {
 		}
 		switch strings.ToLower(ty) {
 		case "dropbox":
+			log.Println("[config] load storage:", name)
 			nodes = append(nodes, chdropbox.NewNode(name, s))
 		default:
 			panic("unknown storage type: " + ty)

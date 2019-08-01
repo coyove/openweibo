@@ -15,7 +15,7 @@ var (
 )
 
 func init() {
-	log.SetFlags(log.Lshortfile | log.Lmicroseconds | log.Ltime)
+	log.SetFlags(log.Lshortfile | log.Lmicroseconds | log.Ltime | log.Ldate)
 	sched.Verbose = false
 
 	var err error

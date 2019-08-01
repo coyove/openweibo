@@ -105,14 +105,14 @@ func (ns *Nodes) get(k string, del bool) ([]byte, error) {
 			continue
 		}
 
-		if del && err == nil {
-			return nil, node.Delete(k)
+		if err == nil {
+			if del {
+				return nil, node.Delete(k)
+			}
+			if node != startNode {
+				go transferKey(node, startNode, k, true)
+			}
 		}
-
-		if node != startNode {
-			go transferKey(node, startNode, k, true)
-		}
-
 		return v, err
 	}
 
