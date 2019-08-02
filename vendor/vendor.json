@@ -3,12 +3,6 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "20Pind5XCrfZL/F0oibWfd9gotA=",
-			"path": "github.com/boltdb/bolt",
-			"revision": "fd01fc79c553a8e99d512a07e8e0c63d4a3ccfc5",
-			"revisionTime": "2018-03-02T18:00:52Z"
-		},
-		{
 			"checksumSHA1": "UwR/g7IGkJnBDuJu0cKAY5yvxUs=",
 			"path": "github.com/cespare/xxhash",
 			"revision": "3767db7a7e183c0ad3395680d460d0b61534ae7b",
