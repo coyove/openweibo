@@ -2,7 +2,7 @@ package mq
 
 import (
 	"encoding/binary"
-	"fmt"
+	"errors"
 	"log"
 	"sync"
 	"sync/atomic"
@@ -13,6 +13,8 @@ import (
 
 var (
 	counter uint32
+
+	ErrEmptyQueue = errors.New("empty queue")
 )
 
 type SimpleMessageQueue struct {
@@ -39,12 +41,11 @@ func New(path string) (*SimpleMessageQueue, error) {
 		for range mq.gc.C {
 			for {
 				if err := db.RunValueLogGC(0.7); err != nil {
-					log.Println("[sms.gc]", err)
 					break
 				}
 			}
 		}
-		log.Println("[sms.gc] closed")
+		log.Println("[smq.gc] closed")
 	}()
 	return mq, nil
 }
@@ -59,7 +60,11 @@ func (mq *SimpleMessageQueue) PushBack(value []byte) error {
 		key := [8]byte{}
 		binary.BigEndian.PutUint32(key[:4], uint32(time.Now().Unix()))
 		binary.BigEndian.PutUint32(key[4:], atomic.AddUint32(&counter, 1))
-		return tx.Set(key[:], value)
+		if err := tx.Set(key[:], value); err != nil {
+			log.Println("[smq.push] push:", string(value), err)
+			return err
+		}
+		return nil
 	})
 }
 
@@ -82,28 +87,29 @@ func (mq *SimpleMessageQueue) PopFront() ([]byte, error) {
 			return err
 		}
 
-		if err := item.Value(func(v []byte) error {
-			value = v
-			return nil
-		}); err != nil {
+		value, err = item.ValueCopy(nil)
+		if err != nil {
 			return err
 		}
+
+		log.Println(string(value))
 		return tx.Delete([]byte(k))
 	})
 
 	if err != nil {
-		log.Println("[sms.pop]", err)
+		log.Println("[smq.pop]", err)
 		mq.mu.Lock()
 		// Misorder, but okay
 		mq.keys = append(mq.keys, k)
 		mq.mu.Unlock()
 	}
 
+	log.Println(string(value))
 	return value, err
 }
 
 func (mq *SimpleMessageQueue) refill() error {
-	err := mq.db.View(func(tx *badger.Txn) error {
+	return mq.db.View(func(tx *badger.Txn) error {
 		opts := badger.DefaultIteratorOptions
 		opts.PrefetchValues = false
 		it := tx.NewIterator(opts)
@@ -117,12 +123,10 @@ func (mq *SimpleMessageQueue) refill() error {
 			}
 		}
 
-		log.Println("[sms.refill]", len(mq.keys), "keys")
+		if len(mq.keys) == 0 {
+			return ErrEmptyQueue
+		}
+		log.Println("[smq.refill]", len(mq.keys), "keys")
 		return nil
 	})
-
-	if len(mq.keys) == 0 {
-		return fmt.Errorf("empty queue")
-	}
-	return err
 }

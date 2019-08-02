@@ -1,10 +1,10 @@
 package ch
 
 import (
-	"log"
 	"sync"
 
 	"github.com/coyove/ch/driver"
+	"github.com/coyove/ch/mq"
 )
 
 var (
@@ -16,7 +16,7 @@ var (
 type Nodes struct {
 	mu         sync.RWMutex
 	nodes      []*driver.Node
-	transferDB *driver.Node
+	transferDB *mq.SimpleMessageQueue
 }
 
 func dupNodes(nodes []*driver.Node) []*driver.Node {
@@ -90,7 +90,7 @@ func (ns *Nodes) get(k string, del bool) ([]byte, error) {
 
 			if testNode {
 				retriedNodes = append(retriedNodes, node)
-				log.Println("retry", retriedNodes)
+				//log.Println("retry", retriedNodes)
 				//time.Sleep(time.Millisecond * 300)
 			}
 
@@ -102,7 +102,9 @@ func (ns *Nodes) get(k string, del bool) ([]byte, error) {
 				return nil, node.Delete(k)
 			}
 			if node != startNode {
-				go ns.transferKey(node, startNode, k)
+				go func() {
+					ns.transferDB.PushBack([]byte(k + "@" + node.Name))
+				}()
 			}
 		}
 		return v, err

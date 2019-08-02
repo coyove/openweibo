@@ -13,7 +13,7 @@ func TestMQ(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 10000; i++ {
 		if err := db.PushBack([]byte(strconv.Itoa(i))); err != nil {
 			panic(err)
 		}

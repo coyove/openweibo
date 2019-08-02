@@ -45,8 +45,8 @@ func main() {
 	}
 
 	mgr.LoadNodes(nodes)
-	mgr.StartTransferAgent("transfer.db")
-	cachemgr = cache.New("cache2", driver.Itoi(config["CacheSize"], 1)*1024*1024*1024,
+	mgr.StartTransferAgent("tmp")
+	cachemgr = cache.New("tmp/cache", driver.Itoi(config["CacheSize"], 1)*1024*1024*1024,
 		func(k string) ([]byte, error) {
 			return mgr.Get(k)
 		})

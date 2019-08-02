@@ -27,6 +27,7 @@ func TestNodesFuzzy(t *testing.T) {
 
 	mgr := &Nodes{}
 	mgr.LoadNodes(nodes)
+	mgr.StartTransferAgent("tmp")
 
 	m := sync.Map{}
 
