@@ -159,6 +159,7 @@ func (s *Storage) Stat() driver.Stat {
 	resp.Body.Close()
 
 	json.Unmarshal(buf, &stat)
+
 	return driver.Stat{
 		UpdateTime:     time.Now(),
 		AvailableBytes: stat.Allocation.Allocated - stat.Used,

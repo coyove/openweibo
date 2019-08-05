@@ -4,6 +4,7 @@ import (
 	"crypto/sha1"
 	"fmt"
 	_ "image/png"
+	"io"
 	"io/ioutil"
 	"log"
 	"path/filepath"
@@ -26,7 +27,8 @@ func main() {
 		panic(err)
 	}
 
-	log.Println("==== config:", config)
+	buf, _ = yaml.Marshal(config)
+	log.Println("==== config:", string(buf))
 
 	nodes := []*driver.Node{}
 	for _, s := range config.Storages {
@@ -45,6 +47,7 @@ func main() {
 	mgr.LoadNodes(nodes)
 	mgr.StartTransferAgent("tmp/transfer.db")
 	cachemgr = cache.New("tmp/cache", config.CacheSize*1024*1024*1024, mgr.Get)
+	updateStat()
 
 	r := gin.Default()
 	r.LoadHTMLGlob("template/*")
@@ -70,21 +73,22 @@ func main() {
 		g.Writer.Header().Add("Content-Type", "image/jpeg") // mime.TypeByExtension(filepath.Ext(url)))
 		g.Writer.Write(buf)
 	})
-	r.Handle("POST", "/crawl", func(g *gin.Context) {
-		url := g.PostForm("u")
-
-		if ext := extURL(url); ext != ".jpg" && ext != ".png" {
-			g.String(500, "[ERR] invalid url")
-			return
-		}
-
-		buf, size, err := fetchImageAsJPEG(url)
+	r.Handle("POST", "/upload", func(g *gin.Context) {
+		g.Request.Body = ioutil.NopCloser(io.LimitReader(g.Request.Body, 1024*1024))
+		img, err := g.FormFile("image")
 		if err != nil {
-			g.String(500, "[ERR] fetch error: %v", err)
+			g.String(400, "[ERR] bad request: %v", err)
 			return
 		}
+		f, err := img.Open()
+		if err != nil {
+			g.String(500, "[ERR] upload: %v", err)
+			return
+		}
+		buf, _ := ioutil.ReadAll(f)
+		f.Close()
 
-		k := fmt.Sprintf("%x", sha1.Sum([]byte(url)))
+		k := fmt.Sprintf("%x", sha1.Sum([]byte(img.Filename)))
 		if err := mgr.Put(k, buf); err != nil {
 			g.String(500, "[ERR] put error: %v", err)
 			return
@@ -93,7 +97,7 @@ func main() {
 		if g.PostForm("web") == "1" {
 			g.Redirect(302, fmt.Sprintf("/i/%s.jpg", k))
 		} else {
-			g.String(200, "[OK:%s.jpg] size: %.3fK, dim: %v", k, float64(len(buf))/1024, size)
+			g.String(200, "[OK:%s.jpg] size: %.3fK, dim", k, float64(len(buf))/1024)
 		}
 	})
 	log.Fatal(r.Run(":5010"))

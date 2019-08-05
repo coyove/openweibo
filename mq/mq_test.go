@@ -16,7 +16,7 @@ func TestMQ(t *testing.T) {
 		panic(err)
 	}
 
-	count := 1000
+	count := 100
 	for i := 0; i < count; i++ {
 		if err := db.PushBack([]byte(strconv.Itoa(i))); err != nil {
 			panic(err)
@@ -34,6 +34,12 @@ func TestMQ(t *testing.T) {
 		}
 	}
 	m.PutBack()
+
+	for m, next, err := db.ViewBack(0, 7, false); err == nil; m, next, err = db.ViewBack(next, 7, false) {
+		for _, m := range m {
+			log.Println(m)
+		}
+	}
 
 	for i := 1; i < count; i++ {
 		if !mcheck[strconv.Itoa(i)] {

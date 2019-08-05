@@ -6,9 +6,9 @@
     font-size: 16px;
 }
 </style>
-    <form method="POST" action="/crawl">
+    <form method="POST" action="/upload" enctype='multipart/form-data'>
         <input type=hidden name="web" value="1">
-        <input name="u" size="50">
+        <input type=file name="image">
         <input type=submit>
     </form>
 </html>

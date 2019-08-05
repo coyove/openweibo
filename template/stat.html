@@ -6,10 +6,15 @@
 <div>
     <h3>{{.Name}}</h3>
     <ul>
+        {{if .Error}}
+        <li>{{.Error}}</li>
+        {{else}}
         <li>Capacity: {{.Capacity}}</li>
         <li>Free: {{.Free}}</li>
         <li>Ping: {{.Ping}}ms</li>
         <li>Last Update: {{.LastUpdate}}</li>
+        <li>Throttling Policy: {{.Throt}}</li>
+        {{end}}
     </ul>
 </div>
 {{end}}

@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -29,14 +30,19 @@ var (
 	client   = &http.Client{
 		Timeout: time.Second,
 	}
+	config = struct {
+		Storages []driver.StorageConfig `yaml:"Storages"`
+		DynamoDB struct {
+			AccessToken string `yaml:"AccessToken"`
+			SecretToken string `yaml:"SecretToken"`
+			Region      string `yaml:"Region"`
+		} `yaml:"DynamoDB"`
+		CacheSize int64 `yaml:"CacheSize"`
+		ProdMode  bool  `yaml:"Production"`
+	}{
+		CacheSize: 1,
+	}
 )
-
-var config = struct {
-	Storages  []driver.StorageConfig `yaml:"Storages"`
-	CacheSize int64                  `yaml:"CacheSize"`
-}{
-	CacheSize: 1,
-}
 
 func updateStat() {
 	for _, n := range mgr.Nodes() {
@@ -46,18 +52,25 @@ func updateStat() {
 	sched.Schedule(func() { go updateStat() }, time.Minute)
 }
 
-func formatWebURL(u string) string {
-	u2, err := url.Parse(u)
-	if err != nil {
-		return ""
+func splitImageURLs(u string) []string {
+	urls := []string{}
+	for _, u := range regexp.MustCompile(`[\r\n\s\t]`).Split(u, -1) {
+		if u = strings.TrimSpace(u); u == "" {
+			continue
+		}
+		u2, err := url.Parse(u)
+		if err != nil {
+			continue
+		} else if u2.Scheme != "https" && u2.Scheme != "http" {
+			continue
+		} else if u2.Host == "" {
+			continue
+		} else if len(u2.Path) > 1024 || len(u2.RawPath) > 1024 {
+			continue
+		}
+		urls = append(urls, u2.Host+"/"+u2.EscapedPath())
 	}
-	if u2.Scheme != "https" && u2.Scheme != "http" {
-		return ""
-	}
-	if u2.Host == "" {
-		return ""
-	}
-	return u2.Host + "/" + u2.EscapedPath()
+	return urls
 }
 
 func currentStat() interface{} {
@@ -66,6 +79,7 @@ func currentStat() interface{} {
 		Capacity   string
 		Throt      string
 		Free       string
+		Error      string
 		Ping       int64
 		LastUpdate string
 	}
