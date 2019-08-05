@@ -35,9 +35,9 @@ func main() {
 		if name == "" {
 			panic("empty storage node name")
 		}
+		log.Println("[config] load storage:", name)
 		switch strings.ToLower(ty) {
 		case "dropbox":
-			log.Println("[config] load storage:", name)
 			nodes = append(nodes, chdropbox.NewNode(name, s))
 		default:
 			panic("unknown storage type: " + ty)

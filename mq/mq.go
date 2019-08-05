@@ -3,130 +3,136 @@ package mq
 import (
 	"encoding/binary"
 	"errors"
-	"log"
+	"math/rand"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/dgraph-io/badger"
+	"github.com/etcd-io/bbolt"
 )
 
 var (
-	counter uint32
-
+	bkName        = []byte("queue")
 	ErrEmptyQueue = errors.New("empty queue")
 )
 
 type SimpleMessageQueue struct {
-	mu   sync.Mutex
-	db   *badger.DB
-	keys []string
-	gc   *time.Ticker
+	mu       sync.Mutex
+	db       *bbolt.DB
+	kvs      [][2][]byte
+	consumed [][]byte
+	counter  uint32
 }
 
 func New(path string) (*SimpleMessageQueue, error) {
-	opts := badger.DefaultOptions(path)
-	db, err := badger.Open(opts)
-
+	db, err := bbolt.Open(path, 0600, nil)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := db.Update(func(tx *bbolt.Tx) error {
+		_, err := tx.CreateBucketIfNotExists(bkName)
+		return err
+	}); err != nil {
 		return nil, err
 	}
 
 	mq := &SimpleMessageQueue{
 		db: db,
-		gc: time.NewTicker(time.Second * 10),
 	}
-
-	go func() {
-		for range mq.gc.C {
-			for {
-				if err := db.RunValueLogGC(0.7); err != nil {
-					break
-				}
-			}
-		}
-		log.Println("[smq.gc] closed")
-	}()
 	return mq, nil
 }
 
 func (mq *SimpleMessageQueue) Close() error {
-	mq.gc.Stop()
 	return mq.db.Close()
 }
 
 func (mq *SimpleMessageQueue) PushBack(value []byte) error {
-	return mq.db.Update(func(tx *badger.Txn) error {
+	return mq.db.Update(func(tx *bbolt.Tx) error {
 		key := [8]byte{}
 		binary.BigEndian.PutUint32(key[:4], uint32(time.Now().Unix()))
-		binary.BigEndian.PutUint32(key[4:], atomic.AddUint32(&counter, 1))
-		if err := tx.Set(key[:], value); err != nil {
-			log.Println("[smq.push] push:", string(value), err)
-			return err
-		}
-		return nil
+		binary.BigEndian.PutUint16(key[4:], uint16(atomic.AddUint32(&mq.counter, 1)))
+		binary.BigEndian.PutUint16(key[6:], uint16(rand.Uint64()))
+		return tx.Bucket(bkName).Put(key[:], value)
 	})
 }
 
-func (mq *SimpleMessageQueue) PopFront() ([]byte, error) {
-	mq.mu.Lock()
-	if len(mq.keys) == 0 {
-		if err := mq.refill(); err != nil {
-			mq.mu.Unlock()
-			return nil, err
-		}
-	}
-	k := mq.keys[0]
-	mq.keys = mq.keys[1:]
-	mq.mu.Unlock()
-
-	var value []byte
-	err := mq.db.Update(func(tx *badger.Txn) error {
-		item, err := tx.Get([]byte(k))
-		if err != nil {
-			return err
-		}
-
-		value, err = item.ValueCopy(nil)
-		if err != nil {
-			return err
-		}
-
-		log.Println(string(value))
-		return tx.Delete([]byte(k))
-	})
-
+func (mq *SimpleMessageQueue) PopFront() ([]byte, time.Time, error) {
+	key, value, err := mq.first()
 	if err != nil {
-		log.Println("[smq.pop]", err)
-		mq.mu.Lock()
-		// Misorder, but okay
-		mq.keys = append(mq.keys, k)
-		mq.mu.Unlock()
+		return nil, time.Time{}, err
 	}
-
-	log.Println(string(value))
-	return value, err
+	mq.consumed = append(mq.consumed, key)
+	return value, time.Unix(int64(binary.BigEndian.Uint32(key)), 0), nil
 }
 
-func (mq *SimpleMessageQueue) refill() error {
-	return mq.db.View(func(tx *badger.Txn) error {
-		opts := badger.DefaultIteratorOptions
-		opts.PrefetchValues = false
-		it := tx.NewIterator(opts)
-		defer it.Close()
+func (mq *SimpleMessageQueue) first() ([]byte, []byte, error) {
+	mq.mu.Lock()
+	defer mq.mu.Unlock()
 
-		for it.Rewind(); it.Valid(); it.Next() {
-			item := it.Item()
-			mq.keys = append(mq.keys, string(item.Key()))
-			if len(mq.keys) >= 100 {
+	for {
+		if len(mq.kvs) > 0 {
+			k := mq.kvs[0][0]
+			v := mq.kvs[0][1]
+			mq.kvs = mq.kvs[1:]
+			return k, v, nil
+		}
+
+		if err := mq.db.Update(func(tx *bbolt.Tx) error {
+			bk := tx.Bucket(bkName)
+			// Delete consumed keys first
+			for _, key := range mq.consumed {
+				if err := bk.Delete(key); err != nil {
+					return err
+				}
+			}
+			mq.consumed = mq.consumed[:0]
+			// Iterate the remaining keys
+			c := bk.Cursor()
+			for k, v := c.First(); len(k) == 8; k, v = c.Next() {
+				mq.kvs = append(mq.kvs, [2][]byte{
+					dupBytes(k),
+					dupBytes(v),
+				})
+				if len(mq.kvs) >= 64 {
+					break
+				}
+			}
+
+			if len(mq.kvs) == 0 {
+				return ErrEmptyQueue
+			}
+			return nil
+		}); err != nil {
+			return nil, nil, err
+		}
+	}
+}
+
+func dupBytes(p []byte) []byte {
+	p2 := make([]byte, len(p))
+	copy(p2, p)
+	return p2
+}
+
+func (mq *SimpleMessageQueue) FirstN(n int) ([][]byte, []time.Time, error) {
+	var values [][]byte
+	var times []time.Time
+
+	err := mq.db.View(func(tx *bbolt.Tx) error {
+		c := tx.Bucket(bkName).Cursor()
+		for k, v := c.First(); len(k) == 8; k, v = c.Next() {
+			values = append(values, dupBytes(v))
+			times = append(times, time.Unix(int64(binary.BigEndian.Uint32(k)), 0))
+			if len(values) >= n {
 				break
 			}
 		}
-
-		if len(mq.keys) == 0 {
+		if len(values) == 0 {
 			return ErrEmptyQueue
 		}
-		log.Println("[smq.refill]", len(mq.keys), "keys")
 		return nil
 	})
+
+	return values, times, err
 }

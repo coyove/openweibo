@@ -39,6 +39,20 @@ func updateStat() {
 	sched.Schedule(func() { go updateStat() }, time.Minute)
 }
 
+func formatWebURL(u string) string {
+	u2, err := url.Parse(u)
+	if err != nil {
+		return ""
+	}
+	if u2.Scheme != "https" && u2.Scheme != "http" {
+		return ""
+	}
+	if u2.Host == "" {
+		return ""
+	}
+	return u2.Host + "/" + u2.EscapedPath()
+}
+
 func currentStat() interface{} {
 	type nodeView struct {
 		Name       string
