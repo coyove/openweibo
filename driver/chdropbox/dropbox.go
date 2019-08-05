@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -17,15 +18,15 @@ import (
 
 var rxFn = regexp.MustCompile(`[^a-zA-Z0-9\.]`)
 
-func NewNode(name string, config map[interface{}]interface{}) *driver.Node {
+func NewNode(name string, config driver.StorageConfig) *driver.Node {
 	n := &driver.Node{
 		KV: &Storage{
-			accessToken: driver.Itos(config["AccessToken"], ""),
+			accessToken: config.AccessToken,
 			client:      &http.Client{},
-			throt:       driver.NewTokenBucket(driver.Itos(config["Throt"], "0x0/0")),
+			throt:       driver.NewTokenBucket(config.Throt),
 		},
 		Name:   name,
-		Weight: driver.Itoi(config["Weight"], 0),
+		Weight: config.Weight,
 	}
 	if n.Weight <= 0 {
 		panic(n.Weight)
@@ -89,7 +90,7 @@ func (s *Storage) Put(k string, v []byte) error {
 		return err
 	}
 
-	if driver.Itos(m["id"], "") == "" {
+	if id, _ := m["id"].(string); id == "" {
 		return fmt.Errorf("failed to put %s, error: %s", k, string(m["_ch_raw"].([]byte)))
 	}
 
@@ -111,11 +112,11 @@ func (s *Storage) Get(k string) ([]byte, error) {
 
 	m := map[string]interface{}{}
 	if err := json.Unmarshal([]byte(resp.Header.Get("Dropbox-API-Result")), &m); err == nil {
-		if driver.Itos(m["id"], "") != "" {
-			if !s.throt.Consume(driver.Itoi(m["size"], 0)) {
+		if id, _ := m["id"].(string); id != "" {
+			size, _ := strconv.Atoi(fmt.Sprint(m["size"]))
+			if !s.throt.Consume(int64(size)) {
 				return nil, driver.ErrThrottled
 			}
-
 			buf, _ := ioutil.ReadAll(resp.Body)
 			return buf, nil
 		}
@@ -132,8 +133,10 @@ func (s *Storage) Delete(k string) error {
 	if err != nil {
 		return err
 	}
-	if m, _ := m["metadata"].(map[string]interface{}); m != nil && driver.Itos(m["id"], "") != "" {
-		return nil
+	if m, _ := m["metadata"].(map[string]interface{}); m != nil {
+		if id, _ := m["id"]; id != "" {
+			return nil
+		}
 	}
 	return fmt.Errorf("failed to delete %s, error: %s", k, string(m["_ch_raw"].([]byte)))
 }
@@ -160,5 +163,6 @@ func (s *Storage) Stat() driver.Stat {
 		UpdateTime:     time.Now(),
 		AvailableBytes: stat.Allocation.Allocated - stat.Used,
 		Ping:           time.Since(start).Nanoseconds() / 1e6,
+		Throt:          s.throt.String(),
 	}
 }

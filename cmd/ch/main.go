@@ -22,36 +22,29 @@ func main() {
 		panic(err)
 	}
 
-	config := map[interface{}]interface{}{}
-	if err := yaml.Unmarshal(buf, config); err != nil {
+	if err := yaml.Unmarshal(buf, &config); err != nil {
 		panic(err)
 	}
 
+	log.Println("==== config:", config)
+
 	nodes := []*driver.Node{}
-	storages, _ := config["Storages"].([]interface{})
-	for _, s := range storages {
-		s := s.(map[interface{}]interface{})
-		name, ty := driver.Itos(s["Name"], ""), driver.Itos(s["Type"], "")
-		if name == "" {
+	for _, s := range config.Storages {
+		if s.Name == "" {
 			panic("empty storage node name")
 		}
-		log.Println("[config] load storage:", name)
-		switch strings.ToLower(ty) {
+		log.Println("[config] load storage:", s.Name)
+		switch strings.ToLower(s.Type) {
 		case "dropbox":
-			nodes = append(nodes, chdropbox.NewNode(name, s))
+			nodes = append(nodes, chdropbox.NewNode(s.Name, s))
 		default:
-			panic("unknown storage type: " + ty)
+			panic("unknown storage type: " + s.Type)
 		}
 	}
 
 	mgr.LoadNodes(nodes)
-	mgr.StartTransferAgent("tmp")
-	cachemgr = cache.New("tmp/cache", driver.Itoi(config["CacheSize"], 1)*1024*1024*1024,
-		func(k string) ([]byte, error) {
-			return mgr.Get(k)
-		})
-
-	updateStat()
+	mgr.StartTransferAgent("tmp/transfer.db")
+	cachemgr = cache.New("tmp/cache", config.CacheSize*1024*1024*1024, mgr.Get)
 
 	r := gin.Default()
 	r.LoadHTMLGlob("template/*")

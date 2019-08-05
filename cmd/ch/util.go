@@ -31,6 +31,13 @@ var (
 	}
 )
 
+var config = struct {
+	Storages  []driver.StorageConfig `yaml:"Storages"`
+	CacheSize int64                  `yaml:"CacheSize"`
+}{
+	CacheSize: 1,
+}
+
 func updateStat() {
 	for _, n := range mgr.Nodes() {
 		mgrStats.Store(n.Name, n.Stat())
@@ -57,6 +64,7 @@ func currentStat() interface{} {
 	type nodeView struct {
 		Name       string
 		Capacity   string
+		Throt      string
 		Free       string
 		Ping       int64
 		LastUpdate string
@@ -75,6 +83,7 @@ func currentStat() interface{} {
 			Capacity:   fmt.Sprintf("%dG", n.Weight),
 			Free:       fmt.Sprintf("%.3fM", float64(stat.AvailableBytes)/1024/1024),
 			Ping:       stat.Ping,
+			Throt:      stat.Throt,
 			LastUpdate: time.Since(stat.UpdateTime).String(),
 		})
 	}

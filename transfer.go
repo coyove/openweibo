@@ -32,9 +32,9 @@ func (ns *Nodes) transferDaemon() {
 			continue
 		}
 
-		parts := strings.Split(string(p), "@")
+		parts := strings.Split(string(p.Value), "@")
 		if !ns.transferKey(parts[0], parts[1]) {
-			ns.transferDB.PushBack(p)
+			ns.transferDB.PushBack(p.Value)
 		}
 	}
 }
