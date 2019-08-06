@@ -45,6 +45,36 @@
 			"revisionTime": "2019-05-27T06:04:30Z"
 		},
 		{
+			"checksumSHA1": "O1v7ZY6psIKMtE2Ma/hp1myzM2o=",
+			"path": "github.com/globalsign/mgo",
+			"revision": "eeefdecb41b842af6dc652aaea4026e8403e62df",
+			"revisionTime": "2018-10-15T13:59:52Z"
+		},
+		{
+			"checksumSHA1": "6070Ot/n8eAtJPtejV9SovspdJU=",
+			"path": "github.com/globalsign/mgo/bson",
+			"revision": "eeefdecb41b842af6dc652aaea4026e8403e62df",
+			"revisionTime": "2018-10-15T13:59:52Z"
+		},
+		{
+			"checksumSHA1": "//bXQG4HblBwxHJDIW/PklXAxu0=",
+			"path": "github.com/globalsign/mgo/internal/json",
+			"revision": "eeefdecb41b842af6dc652aaea4026e8403e62df",
+			"revisionTime": "2018-10-15T13:59:52Z"
+		},
+		{
+			"checksumSHA1": "loubUcDO2QAStKIlVd7DqSeoEaw=",
+			"path": "github.com/globalsign/mgo/internal/sasl",
+			"revision": "eeefdecb41b842af6dc652aaea4026e8403e62df",
+			"revisionTime": "2018-10-15T13:59:52Z"
+		},
+		{
+			"checksumSHA1": "xjfEsfN7ho6dDOVeUQJhW4KzD2I=",
+			"path": "github.com/globalsign/mgo/internal/scram",
+			"revision": "eeefdecb41b842af6dc652aaea4026e8403e62df",
+			"revisionTime": "2018-10-15T13:59:52Z"
+		},
+		{
 			"checksumSHA1": "CGj8VcI/CpzxaNqlqpEVM7qElD4=",
 			"path": "github.com/golang/protobuf/proto",
 			"revision": "b285ee9cfc6c881bb20c0d8dc73370ea9b9ec90f",

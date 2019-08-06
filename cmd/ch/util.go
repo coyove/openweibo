@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -21,6 +22,7 @@ import (
 	"github.com/coyove/ch/cache"
 	"github.com/coyove/ch/driver"
 	"github.com/coyove/common/sched"
+	"github.com/globalsign/mgo/bson"
 )
 
 var (
@@ -37,10 +39,12 @@ var (
 			SecretToken string `yaml:"SecretToken"`
 			Region      string `yaml:"Region"`
 		} `yaml:"DynamoDB"`
-		CacheSize int64 `yaml:"CacheSize"`
-		ProdMode  bool  `yaml:"Production"`
+		CacheSize int64  `yaml:"CacheSize"`
+		ProdMode  bool   `yaml:"Production"`
+		Key       string `yaml:"Key"`
 	}{
 		CacheSize: 1,
+		Key:       "0123456789abcdef",
 	}
 )
 
@@ -140,4 +144,9 @@ func fetchImageAsJPEG(url string) ([]byte, image.Point, error) {
 	}
 
 	return buf, img.Bounds().Max, nil
+}
+
+func prettyBSON(m bson.M) string {
+	buf, _ := json.MarshalIndent(m, "", "  ")
+	return string(buf)
 }
