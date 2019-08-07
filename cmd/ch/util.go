@@ -2,6 +2,9 @@ package main
 
 import (
 	"bytes"
+	"crypto/cipher"
+	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"image"
@@ -10,6 +13,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"path/filepath"
@@ -21,7 +25,9 @@ import (
 	"github.com/coyove/ch"
 	"github.com/coyove/ch/cache"
 	"github.com/coyove/ch/driver"
+	"github.com/coyove/common/lru"
 	"github.com/coyove/common/sched"
+	"github.com/gin-gonic/gin"
 	"github.com/globalsign/mgo/bson"
 )
 
@@ -29,6 +35,7 @@ var (
 	mgr      ch.Nodes
 	mgrStats sync.Map
 	cachemgr *cache.Cache
+	dedup    *lru.Cache
 	client   = &http.Client{
 		Timeout: time.Second,
 	}
@@ -39,12 +46,21 @@ var (
 			SecretToken string `yaml:"SecretToken"`
 			Region      string `yaml:"Region"`
 		} `yaml:"DynamoDB"`
-		CacheSize int64  `yaml:"CacheSize"`
-		ProdMode  bool   `yaml:"Production"`
-		Key       string `yaml:"Key"`
+		CacheSize  int64  `yaml:"CacheSize"`
+		ProdMode   bool   `yaml:"Production"`
+		Key        string `yaml:"Key"`
+		TokenTTL   int64  `yaml:"TokenTTL"`
+		MaxContent int64  `yaml:"MaxContent"`
+		MaxTags    int64  `yaml:"MaxTags"`
+		AdminName  string `yaml:"AdminName"`
+		Blk        cipher.Block
 	}{
-		CacheSize: 1,
-		Key:       "0123456789abcdef",
+		CacheSize:  1,
+		TokenTTL:   1,
+		Key:        "0123456789abcdef",
+		AdminName:  "zzz",
+		MaxContent: 4096,
+		MaxTags:    4,
 	}
 )
 
@@ -149,4 +165,84 @@ func fetchImageAsJPEG(url string) ([]byte, image.Point, error) {
 func prettyBSON(m bson.M) string {
 	buf, _ := json.MarshalIndent(m, "", "  ")
 	return string(buf)
+}
+
+func softTrunc(a string, n int) string {
+	if len(a) <= n {
+		return a
+	}
+	a = a[:n+2]
+	for len(a) > 0 && a[len(a)-1]>>6 == 2 {
+		a = a[:len(a)-1]
+	}
+	if len(a) == 0 {
+		return a
+	}
+	a = a[:len(a)-1]
+	return a + "..."
+}
+
+func makeCSRFToken(g *gin.Context) string {
+	var p [16]byte
+	exp := time.Now().Add(time.Minute * time.Duration(config.TokenTTL)).Unix()
+	binary.BigEndian.PutUint32(p[:], uint32(exp))
+	if ip := g.ClientIP(); len(ip) >= 6 {
+		copy(p[4:10], ip)
+	} else {
+		copy(p[4:10], "unknow")
+	}
+	rand.Read(p[10:])
+	config.Blk.Encrypt(p[:], p[:])
+	return hex.EncodeToString(p[:])
+}
+
+func isCSRFTokenValid(g *gin.Context, tok string) bool {
+	buf, _ := hex.DecodeString(tok)
+	if len(buf) != 16 {
+		return false
+	}
+	config.Blk.Decrypt(buf, buf)
+	exp := binary.BigEndian.Uint32(buf)
+	if now := time.Now(); now.After(time.Unix(int64(exp), 0)) ||
+		now.Before(time.Unix(int64(exp)-config.TokenTTL*60, 0)) {
+		return false
+	}
+
+	var ok bool
+	if ip := g.ClientIP(); len(ip) >= 6 {
+		ok = strings.HasPrefix(ip, string(buf[4:10]))
+	} else {
+		ok = string(buf[4:10]) == "unknow"
+	}
+
+	if ok {
+		if _, existed := dedup.Get(tok); existed {
+			return false
+		}
+		dedup.Add(tok, true)
+	}
+	return ok
+}
+
+func splitTags(u string) []string {
+	urls := []string{}
+NEXT:
+	for _, u := range regexp.MustCompile(`[\r\n\s\t,]`).Split(u, -1) {
+		if u = strings.TrimSpace(u); u == "" {
+			continue
+		}
+		if u[0] == '#' {
+			u = u[1:]
+		}
+		u = softTrunc(u, 15)
+		for _, u2 := range urls {
+			if u2 == u {
+				continue NEXT
+			}
+		}
+		if urls = append(urls, u); len(urls) >= int(config.MaxTags) {
+			break
+		}
+	}
+	return urls
 }

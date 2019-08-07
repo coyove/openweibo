@@ -1,11 +1,9 @@
 package main
 
 import (
-	"encoding/binary"
+	"fmt"
 	"log"
 	"math"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/globalsign/mgo"
@@ -29,7 +27,7 @@ func NewManager(name, uri string) (*Manager, error) {
 		articles: client.DB(name).C("articles"),
 	}
 	m.articles.DropCollection()
-	m.articles.EnsureIndex(mgo.Index{Key: []string{"reply_time", "author", "tags", "parent"}})
+	m.articles.EnsureIndex(mgo.Index{Key: []string{"reply_time", "create_time", "author", "tags", "parent"}})
 	if err := m.articles.EnsureIndex(mgo.Index{Key: []string{"$text:title"}}); err != nil {
 		m.session.Close()
 		return nil, err
@@ -46,29 +44,42 @@ const (
 	SortByCreate sortby = "create_time"
 )
 
-func (m *Manager) ByTags(tag ...string) findby {
+func ByTags(tag ...string) findby {
 	return findby(bson.M{"tags": bson.M{"$all": tag}})
 }
 
-func (m *Manager) ByTitle(title string) findby {
+func ByTitle(title string) findby {
 	return findby(bson.M{"$text": bson.M{"$search": title}})
 }
 
-func (m *Manager) ByParent(parent bson.ObjectId) findby {
+func ByAuthor(author uint64) findby {
+	return findby(bson.M{"author": author})
+}
+
+func ByParent(parent bson.ObjectId) findby {
 	return findby(bson.M{"parent": parent})
 }
 
-func (m *Manager) ByNone() findby {
+func ByNone() findby {
 	return findby(bson.M{})
 }
 
 func (m *Manager) FindBack(filter findby, sort sortby, cursor int64, n int) ([]*Article, error) {
-	filter[string(sort)] = bson.M{"$gt": cursor}
+	dir := ""
 	if _, ok := filter["parent"]; !ok {
+		// Find articles
 		filter["parent"] = bson.M{"$exists": false}
+		filter[string(sort)] = bson.M{"$gt": cursor}
+	} else {
+		// Find replies of an article
+		if cursor == -1 {
+			cursor = math.MaxInt64
+		}
+		dir = "-"
+		filter[string(sort)] = bson.M{"$lt": cursor}
 	}
 
-	q := m.articles.Find(bson.M(filter)).Sort(string(sort)).Limit(n)
+	q := m.articles.Find(bson.M(filter)).Sort(dir + string(sort)).Limit(n)
 	a := []*Article{}
 	if err := q.All(&a); err != nil {
 		return nil, err
@@ -80,15 +91,24 @@ func (m *Manager) FindBack(filter findby, sort sortby, cursor int64, n int) ([]*
 }
 
 func (m *Manager) Find(filter findby, sort sortby, cursor int64, n int) ([]*Article, error) {
-	if cursor == 0 {
-		cursor = math.MaxInt64
-	}
-	filter[string(sort)] = bson.M{"$lt": cursor}
+	dir := "-"
+
 	if _, ok := filter["parent"]; !ok {
+		// Find articles
+		if cursor == 0 {
+			cursor = math.MaxInt64
+		}
+		filter[string(sort)] = bson.M{"$lt": cursor}
 		filter["parent"] = bson.M{"$exists": false}
+	} else {
+		// Find replies of an article
+		dir = ""
+		filter[string(sort)] = bson.M{"$gt": cursor}
 	}
 
-	q := m.articles.Find(bson.M(filter)).Sort("-" + string(sort)).Limit(n)
+	log.Println(filter)
+
+	q := m.articles.Find(bson.M(filter)).Sort(dir + string(sort)).Limit(n)
 	a := []*Article{}
 	if err := q.All(&a); err != nil {
 		return nil, err
@@ -107,85 +127,34 @@ func (m *Manager) PostReply(parent bson.ObjectId, a *Article) error {
 	}
 	return m.articles.UpdateId(parent, bson.M{
 		"$set": bson.M{"reply_time": time.Now().UnixNano() / 1e3},
-		"$inc": bson.M{"replies": 1},
+		"$inc": bson.M{"replies_count": 1},
+	})
+}
+
+func (m *Manager) GetArticle(id bson.ObjectId) (*Article, error) {
+	a := []*Article{}
+	if err := m.articles.FindId(id).All(&a); err != nil {
+		return nil, err
+	}
+	if len(a) != 1 {
+		return nil, fmt.Errorf("%s not found", objectIDToDisplayID(id))
+	}
+	return a[0], nil
+}
+
+func (m *Manager) UpdateArticle(id bson.ObjectId, del bool, title, content string, tags []string) error {
+	if del {
+		return m.articles.RemoveId(id)
+	}
+	return m.articles.UpdateId(id, bson.M{
+		"$set": bson.M{
+			"title":   title,
+			"content": content,
+			"tags":    tags,
+		},
 	})
 }
 
 func (m *Manager) Close() {
 	m.session.Close()
-}
-
-type Article struct {
-	ID         bson.ObjectId `bson:"_id"`
-	Parent     bson.ObjectId `bson:"parent,omitempty"`
-	Replies    int64         `bson:"replies_count"`
-	Title      string        `bson:"title"`
-	Content    string        `bson:"content"`
-	Author     string        `bson:"author"`
-	Images     []string      `bson:"images"`
-	Tags       []string      `bson:"tags"`
-	CreateTime int64         `bson:"create_time"`
-	ReplyTime  int64         `bson:"reply_time"`
-}
-
-func NewArticle(title, content, author string, images []string, tags []string) *Article {
-	return &Article{
-		ID:         bson.NewObjectId(),
-		Title:      title,
-		Content:    content,
-		Author:     author,
-		Images:     images,
-		Tags:       tags,
-		CreateTime: time.Now().UnixNano() / 1e3,
-		ReplyTime:  time.Now().UnixNano() / 1e3,
-	}
-}
-
-func (a *Article) DisplayID() string {
-	return objectIDToDisplayID(a.ID)
-}
-
-func (a *Article) DisplayParentID() string {
-	return objectIDToDisplayID(a.Parent)
-}
-
-func (a *Article) String() string {
-	log.Println(a.ID == displayIDToObejctID(a.DisplayID()))
-	return a.DisplayID() + "-" + a.Title + "-" + strconv.FormatInt(a.ReplyTime, 10) + "-" + a.DisplayParentID()
-}
-
-func objectIDToDisplayID(id bson.ObjectId) string {
-	if id == "" {
-		return ""
-	}
-	x := []byte(id)
-	for i := 0; i < 11; i++ {
-		x[i] += x[11] * x[11]
-	}
-	e3 := func(b []byte) string {
-		return strconv.FormatUint(uint64(b[0])<<40+uint64(b[1])<<32+
-			uint64(b[2])<<24+uint64(b[3])<<16+
-			uint64(b[4])<<8+uint64(b[5])<<0, 8)
-	}
-	return e3(x) + "." + e3(x[6:])
-}
-
-func displayIDToObejctID(id string) bson.ObjectId {
-	if id == "" {
-		return ""
-	}
-	idx := strings.Index(id, ".")
-	if idx == -1 {
-		return ""
-	}
-	x := make([]byte, 16)
-	v1, _ := strconv.ParseUint(id[:idx], 8, 64)
-	v2, _ := strconv.ParseUint(id[idx+1:], 8, 64)
-	binary.BigEndian.PutUint64(x[8:], v2)
-	binary.BigEndian.PutUint64(x[2:], v1)
-	x = x[4:]
-	for i := 0; i < 11; i++ {
-		x[i] -= x[11] * x[11]
-	}
-	return bson.ObjectId(x)
 }

@@ -1,14 +1,96 @@
-<html>
-<style>
-* {
-    padding: 0;
-    box-sizing: border-box;
-    font-size: 16px;
-}
-</style>
-    <form method="POST" action="/upload" enctype='multipart/form-data'>
-        <input type=hidden name="web" value="1">
-        <input type=file name="image">
-        <input type=submit>
-    </form>
+{{template "header.html" .}}
+
+    {{if .ParentArticle}}
+        <h2>{{.ParentArticle.Title}}</h2>
+        {{if .ParentArticle.Title}}
+        <title>{{.ParentArticle.Title}}</title>
+        {{else}}
+        <title>回复: {{.ParentArticle.DisplayID}}</title>
+        {{end}}
+
+        <div>
+            {{if .ParentArticle.Parent}}
+                <a href="/p/by_create/parent:{{.ParentArticle.DisplayParentID}}">上一层</a>
+            {{else}}
+                <a href="/p/by_reply/index">首页</a>
+            {{end}}/
+            <a href="/edit/{{.ParentArticle.DisplayID}}">编辑</a> /
+            {{.ParentArticle.Replies}} 回复 /
+            ID: <b>{{.ParentArticle.AuthorString}}</b>
+            (<a href="/p/by_create/author:{{.ParentArticle.AuthorString}}">历史</a>) /
+            发布: {{.ParentArticle.CreateTimeString}} /
+            最后回复: {{.ParentArticle.ReplyTimeString}}
+        </div> 
+        <pre>{{.ParentArticle.Content}}</pre>
+        <div>
+            {{range .ParentArticle.Tags}}
+            <b>#</b><a href="/p/by_create/tags:{{.}}">{{.}}</a>
+            {{end}}
+        </div>
+        <hr>
+
+        {{if len .Articles}}
+            {{range .Articles}}
+            <div>
+                <div>
+                    &bull; <b>{{.AuthorString}}</b> / {{.CreateTimeString}} /
+                    <a href="/p/by_create/parent:{{.DisplayID}}">展开{{if .Replies}} ({{.Replies}}){{end}}</a>
+                </div>
+                <pre>{{.Content}}</pre>
+            </div>
+            {{end}}
+        {{else}}
+            <div>无回复</div>
+        {{end}}
+
+    {{else}}
+
+        <div>
+            <form action="/search" method="POST">
+                <input name=q value="{{.SearchTerm}}">
+                <input type=submit value="搜索">
+            </form>
+            <hr>
+        </div>
+
+        <title>{{.FindType}}</title>
+
+        {{if len .Articles}}
+        {{range .Articles}}
+        <div class=row>
+                {{range .Tags}}<b>#</b><a href="/p/by_create/tags:{{.}}">{{.}}</a> {{end}}
+                <a href="/p/by_create/parent:{{.DisplayID}}">{{.Title}}{{if .Replies}} ({{.Replies}}回复){{end}}</a>
+                <b>{{.AuthorString}}</b> 发布于 {{.CreateTimeString}}
+            </div>
+        {{end}}
+        {{else}}
+        <div>无内容</div>
+        {{end}}
+
+    {{end}}
+
+    <hr>
+    <div>
+        [ <a href="?n=0">第一页</a> ]
+        [ <a href="?p={{.Prev}}">上页</a> ]
+        [ <a href="?n={{.Next}}">下页</a> ]
+        [ <a href="?p=-1">末页</a> ]
+        [
+        <b>{{if .ParentArticle}}
+        <a href="/new/{{.ParentArticle.DisplayID}}">回复</a>
+        {{else}}
+        <a href="/new/0">新主题</a>
+        {{end}}</b>
+        ]
+        [
+        {{if eq .SortMode "reply_time"}}
+        <a href="/p/by_create/{{.FindType}}">按创建时间排序</a>
+        {{else}}
+        <a href="/p/by_reply/{{.FindType}}">按回复时间排序</a>
+        {{end}}
+        ] 
+    </div>
+
+</body>
+
 </html>

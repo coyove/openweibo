@@ -1,0 +1,47 @@
+{{template "header.html" .}}
+
+<a href="/p/by_create/parent:{{.Reply}}">&laquo;后退</a>
+<hr>
+
+<form method="POST" action="/edit">
+    <input type=hidden name=uuid value="{{.UUID}}">
+    <table>
+    <tr>
+        <title>编辑: {{.Article.DisplayID}}</title>
+        <td>编辑:</td>
+        <td>{{.Article.DisplayID}}<input type=hidden name=reply value="{{.Reply}}"></td>
+    </tr>
+    {{if not .Article.Parent}}
+    <tr>
+        <td>标题:</td>
+        <td><input class=t name=title value="{{.Article.Title}}"></td>
+    </tr> 
+    <tr>
+        <td></td><td style="font-size:80%">最少10字节，最多64字节</td>
+    </tr>
+    <tr>
+        <td>标签:</td>
+        <td><input class=t name=tags value="{{range .Article.Tags}}{{.}} {{end}}"></td>
+    </tr>
+    {{end}}
+    <tr>
+        <td>内容:</td>
+        <td><textarea rows=10 name="content">{{.Article.Content}}</textarea></td>
+    </tr> 
+    <tr>
+        <td>删除:</td>
+        <td><input name=delete type=checkbox></td>
+    </tr>
+    <tr>
+        <td>ID认证:</td>
+        <td><input class=t name=author></td>
+    </tr>
+    <tr>
+        <td></td><td style="font-size:80%">必须: 请输入发帖时的ID</td>
+    </tr>
+    <tr>
+        <td></td>
+        <td><input type=submit></td>
+    </tr>
+    </table>
+</form>

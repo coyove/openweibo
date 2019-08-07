@@ -1,0 +1,49 @@
+{{template "header.html" .}}
+
+{{if .Reply}}
+<a href="/p/by_create/parent:{{.Reply}}">&laquo;后退</a>
+{{else}}
+<a href="/p/by_reply/index">&laquo;后退</a>
+{{end}}
+<hr>
+
+<form method="POST" action="/new">
+    <input type=hidden name=uuid value="{{.UUID}}">
+    <table>
+    {{if .Reply}}
+    <tr>
+        <title>回复: {{.Abstract}}</title>
+        <td>回复:</td>
+        <td>{{.Abstract}}<input type=hidden name=reply value="{{.Reply}}"></td>
+    </tr>
+    {{else}}
+    <tr>
+        <title>新主题</title>
+        <td>新主题:</td>
+        <td><input class=t name=title></td>
+    </tr>
+    <tr>
+        <td>标签:</td>
+        <td><input class=t name=tags></td>
+    </tr>
+    <tr>
+        <td></td><td style="font-size:80%">以空格分隔</td>
+    </tr>
+    {{end}}
+    <tr>
+        <td>ID: (选填)</td>
+        <td><input class=t name=author></td>
+    </tr>
+    <tr>
+        <td></td><td style="font-size:80%">ID是编辑/删除自己的发言时凭证，留空则这些功能不可用</td>
+    </tr>
+    <tr>
+        <td>内容:</td>
+        <td><textarea rows=10 name="content"></textarea></td>
+    </tr>
+    <tr>
+        <td></td>
+        <td><input type=submit></td>
+    </tr>
+    </table>
+</form>
