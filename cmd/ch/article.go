@@ -12,16 +12,18 @@ import (
 )
 
 type Article struct {
-	ID         bson.ObjectId `bson:"_id"`
-	Parent     bson.ObjectId `bson:"parent,omitempty"`
-	Replies    int64         `bson:"replies_count"`
-	Title      string        `bson:"title"`
-	Content    string        `bson:"content"`
-	Author     uint64        `bson:"author"`
-	Images     []string      `bson:"images"`
-	Tags       []string      `bson:"tags"`
-	CreateTime int64         `bson:"create_time"`
-	ReplyTime  int64         `bson:"reply_time"`
+	ID           bson.ObjectId `bson:"_id"`
+	Parent       bson.ObjectId `bson:"parent,omitempty"`
+	Replies      int64         `bson:"replies_count"`
+	Announcement bool          `bson:"announcement,omitempty"`
+	Locked       bool          `bson:"locked,omitempty"`
+	Title        string        `bson:"title"`
+	Content      string        `bson:"content"`
+	Author       uint64        `bson:"author"`
+	Images       []string      `bson:"images"`
+	Tags         []string      `bson:"tags"`
+	CreateTime   int64         `bson:"create_time"`
+	ReplyTime    int64         `bson:"reply_time"`
 }
 
 func NewArticle(title, content string, author uint64, images []string, tags []string) *Article {

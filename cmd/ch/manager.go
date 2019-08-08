@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"time"
 
@@ -26,6 +25,7 @@ func NewManager(name, uri string) (*Manager, error) {
 		session:  client,
 		articles: client.DB(name).C("articles"),
 	}
+
 	m.articles.DropCollection()
 	m.articles.EnsureIndex(mgo.Index{Key: []string{"reply_time", "create_time", "author", "tags", "parent"}})
 	if err := m.articles.EnsureIndex(mgo.Index{Key: []string{"$text:title"}}); err != nil {
@@ -106,8 +106,6 @@ func (m *Manager) Find(filter findby, sort sortby, cursor int64, n int) ([]*Arti
 		filter[string(sort)] = bson.M{"$gt": cursor}
 	}
 
-	log.Println(filter)
-
 	q := m.articles.Find(bson.M(filter)).Sort(dir + string(sort)).Limit(n)
 	a := []*Article{}
 	if err := q.All(&a); err != nil {
@@ -121,12 +119,23 @@ func (m *Manager) PostArticle(a *Article) error {
 }
 
 func (m *Manager) PostReply(parent bson.ObjectId, a *Article) error {
-	a.Parent = parent
+	p, err := m.GetArticle(parent)
+	if err != nil {
+		return err
+	}
+	replyTime := time.Now().UnixNano() / 1e3
+	if p.Locked {
+		return fmt.Errorf("locked parent")
+	}
+	if p.Announcement {
+		replyTime = math.MaxInt64 - 1
+	}
+	a.Parent = p.ID
 	if err := m.articles.Insert(a); err != nil {
 		return err
 	}
 	return m.articles.UpdateId(parent, bson.M{
-		"$set": bson.M{"reply_time": time.Now().UnixNano() / 1e3},
+		"$set": bson.M{"reply_time": replyTime},
 		"$inc": bson.M{"replies_count": 1},
 	})
 }
@@ -151,6 +160,24 @@ func (m *Manager) UpdateArticle(id bson.ObjectId, del bool, title, content strin
 			"title":   title,
 			"content": content,
 			"tags":    tags,
+		},
+	})
+}
+
+func (m *Manager) AnnounceArticle(id bson.ObjectId) error {
+	return m.articles.UpdateId(id, bson.M{
+		"$set": bson.M{
+			"announcement": true,
+			"create_time":  math.MaxInt64 - 1,
+			"reply_time":   math.MaxInt64 - 1,
+		},
+	})
+}
+
+func (m *Manager) LockArticle(id bson.ObjectId, v bool) error {
+	return m.articles.UpdateId(id, bson.M{
+		"$set": bson.M{
+			"locked": v,
 		},
 	})
 }

@@ -14,6 +14,8 @@
             {{else}}
                 <a href="/p/by_reply/index">首页</a>
             {{end}}/
+            {{if .ParentArticle.Announcement}}<b>公告</b> / {{end}}
+            {{if .ParentArticle.Locked}}<b>锁定</b> / {{end}}
             <a href="/edit/{{.ParentArticle.DisplayID}}">编辑</a> /
             {{.ParentArticle.Replies}} 回复 /
             ID: <b>{{.ParentArticle.AuthorString}}</b>
@@ -57,9 +59,13 @@
 
         {{if len .Articles}}
         {{range .Articles}}
-        <div class=row>
+            <div class=row>
                 {{range .Tags}}<b>#</b><a href="/p/by_create/tags:{{.}}">{{.}}</a> {{end}}
-                <a href="/p/by_create/parent:{{.DisplayID}}">{{.Title}}{{if .Replies}} ({{.Replies}}回复){{end}}</a>
+                <a href="/p/by_create/parent:{{.DisplayID}}">
+                    {{if .Announcement}}<b>[公告]</b>{{end}}
+                    {{if .Locked}}<b>[锁定]</b>{{end}}
+                    {{.Title}}{{if .Replies}} ({{.Replies}}回复){{end}}
+                </a>
                 <b>{{.AuthorString}}</b> 发布于 {{.CreateTimeString}}
             </div>
         {{end}}

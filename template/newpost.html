@@ -20,11 +20,11 @@
     <tr>
         <title>新主题</title>
         <td>新主题:</td>
-        <td><input class=t name=title></td>
+        <td><input class=t name=title value="{{.RTitle}}"></td>
     </tr>
     <tr>
-        <td>标签:</td>
-        <td><input class=t name=tags></td>
+        <td>标签: (选填)</td>
+        <td><input class=t name=tags value="{{.RTags}}"></td>
     </tr>
     <tr>
         <td></td><td style="font-size:80%">以空格分隔</td>
@@ -39,11 +39,24 @@
     </tr>
     <tr>
         <td>内容:</td>
-        <td><textarea rows=10 name="content"></textarea></td>
+        <td><textarea rows=10 name="content">{{.RContent}}</textarea></td>
     </tr>
     <tr>
         <td></td>
-        <td><input type=submit></td>
+        <td><img src="/captcha/{{.Challenge}}"><input type=hidden name=challenge value="{{.Challenge}}"></td>
+    </tr>
+    <tr>
+        <td>验证码:</td>
+        <td>
+            <input size=10 name="answer">
+            <input name=refresh type=submit value="刷新">
+        </td>
+    </tr>
+    <tr>
+        <td></td>
+        <td>
+            <div>{{if .EError}}错误: {{.EError}}{{end}}</div>
+            <input type=submit> </td>
     </tr>
     </table>
 </form>

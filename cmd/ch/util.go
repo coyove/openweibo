@@ -51,6 +51,7 @@ var (
 		Key        string `yaml:"Key"`
 		TokenTTL   int64  `yaml:"TokenTTL"`
 		MaxContent int64  `yaml:"MaxContent"`
+		MinContent int64  `yaml:"MinContent"`
 		MaxTags    int64  `yaml:"MaxTags"`
 		AdminName  string `yaml:"AdminName"`
 		Blk        cipher.Block
@@ -59,7 +60,8 @@ var (
 		TokenTTL:   1,
 		Key:        "0123456789abcdef",
 		AdminName:  "zzz",
-		MaxContent: 4096,
+		MaxContent: 2048,
+		MinContent: 10,
 		MaxTags:    4,
 	}
 )
@@ -224,6 +226,35 @@ func isCSRFTokenValid(g *gin.Context, tok string) bool {
 	return ok
 }
 
+func makeChallengeToken() string {
+	c := make([]byte, 16)
+	for i := 0; i < 6; i++ {
+		c[i] = byte(rand.Uint64()) % 10
+	}
+	rand.Read(c[6:])
+	config.Blk.Encrypt(c, c)
+	return hex.EncodeToString(c)
+}
+
+func isChallengeTokenValid(tok string, answer string) bool {
+	buf, _ := hex.DecodeString(tok)
+	if len(buf) != 16 || len(answer) != 6 {
+		return false
+	}
+	config.Blk.Decrypt(buf, buf)
+	for i := range answer {
+		x := byte(answer[i] - '0')
+		if buf[i] != x {
+			return false
+		}
+	}
+	if _, existed := dedup.Get(tok); existed {
+		return false
+	}
+	dedup.Add(tok, true)
+	return true
+}
+
 func splitTags(u string) []string {
 	urls := []string{}
 NEXT:
@@ -245,4 +276,14 @@ NEXT:
 		}
 	}
 	return urls
+}
+
+func encodeQuery(a ...string) string {
+	query := url.Values{}
+	for i := 0; i < len(a); i += 2 {
+		if a[i] != "" {
+			query.Add(a[i], a[i+1])
+		}
+	}
+	return query.Encode()
 }

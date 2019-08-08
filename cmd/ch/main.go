@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/aes"
+	"encoding/hex"
 	_ "image/png"
 	"io/ioutil"
 	"log"
@@ -9,18 +10,21 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/coyove/ch/driver"
 	"github.com/coyove/ch/driver/chdropbox"
 	"github.com/coyove/common/lru"
+	"github.com/dchest/captcha"
 	"github.com/gin-gonic/gin"
 	"github.com/globalsign/mgo/bson"
 	"gopkg.in/yaml.v2"
 )
 
+var m *Manager
+
 func main() {
-	m, err := NewManager("zzz", "mongodb://localhost")
+	var err error
+	m, err = NewManager("zzz", "mongodb://localhost")
 	if err != nil {
 		panic(err)
 	}
@@ -75,131 +79,26 @@ func main() {
 	var app = 20
 
 	r := gin.Default()
+	r.Use(mwIPThrot)
 	r.LoadHTMLGlob("template/*")
+	r.Handle("GET", "/captcha/:challenge", func(g *gin.Context) {
+		challenge, _ := hex.DecodeString(g.Param("challenge"))
+		if len(challenge) != 16 {
+			g.AbortWithStatus(400)
+			return
+		}
+		config.Blk.Decrypt(challenge, challenge)
+		g.Writer.Header().Add("Content-Type", "image/png")
+		captcha.NewImage(config.Key, challenge[:6], 180, 60).WriteTo(g.Writer)
+	})
 	r.Handle("POST", "/search", func(g *gin.Context) {
 		g.Redirect(302, "/p/by_create/title:"+url.PathEscape(g.PostForm("q")))
 	})
-	r.Handle("GET", "/new/:id", func(g *gin.Context) {
-		var pl = struct {
-			UUID     string
-			Reply    string
-			Abstract string
-		}{
-			UUID: makeCSRFToken(g),
-		}
 
-		if id := g.Param("id"); id != "0" {
-			pl.Reply = id
-			a, err := m.GetArticle(displayIDToObejctID(id))
-			if err != nil {
-				log.Println(err)
-				g.AbortWithStatus(400)
-				return
-			}
-			if a.Title != "" {
-				pl.Abstract = softTrunc(a.Title, 50)
-			} else {
-				pl.Abstract = softTrunc(a.Content, 50)
-			}
-		}
-		g.HTML(200, "newpost.html", pl)
-	})
-	r.Handle("GET", "/edit/:id", func(g *gin.Context) {
-		var pl = struct {
-			UUID    string
-			Reply   string
-			Article *Article
-		}{
-			UUID:  makeCSRFToken(g),
-			Reply: g.Param("id"),
-		}
-
-		a, err := m.GetArticle(displayIDToObejctID(pl.Reply))
-		if err != nil {
-			log.Println(err)
-			g.AbortWithStatus(400)
-			return
-		}
-
-		pl.Article = a
-		g.HTML(200, "editpost.html", pl)
-	})
-	r.Handle("POST", "/edit", func(g *gin.Context) {
-		if !isCSRFTokenValid(g, g.PostForm("uuid")) {
-			g.AbortWithStatus(400)
-			return
-		}
-
-		title := softTrunc(g.PostForm("title"), 64)
-		content := softTrunc(g.PostForm("content"), int(config.MaxContent))
-		author := authorNameToHash(g.PostForm("author"))
-		tags := splitTags(g.PostForm("tags"))
-		deleted := g.PostForm("delete")
-
-		a, err := m.GetArticle(displayIDToObejctID(g.PostForm("reply")))
-		if err != nil {
-			g.AbortWithStatus(400)
-			return
-		}
-		if a.Author != author && author != authorNameToHash(config.AdminName) {
-			g.AbortWithStatus(400)
-			return
-		}
-		if deleted == "" {
-			if a.Parent == "" && len(title) < 10 {
-				g.AbortWithStatus(400)
-				return
-			}
-		}
-		if err := m.UpdateArticle(a.ID, deleted != "", title, content, tags); err != nil {
-			log.Println(err)
-			g.AbortWithStatus(500)
-			return
-		}
-		if a.Parent != "" {
-			g.Redirect(302, "/p/by_create/parent:"+a.DisplayParentID())
-		} else {
-			g.Redirect(302, "/p/by_reply/index")
-		}
-	})
-	r.Handle("POST", "/new", func(g *gin.Context) {
-		if !isCSRFTokenValid(g, g.PostForm("uuid")) {
-			g.AbortWithStatus(400)
-			return
-		}
-
-		reply := displayIDToObejctID(g.PostForm("reply"))
-		content := softTrunc(g.PostForm("content"), int(config.MaxContent))
-		author := g.PostForm("author")
-		if author == "" {
-			if author = g.ClientIP(); author == "" {
-				g.AbortWithStatus(400)
-				return
-			}
-		}
-
-		var err error
-		if reply != "" {
-			err = m.PostReply(reply, NewArticle("", content, authorNameToHash(author), nil, nil))
-		} else {
-			title := g.PostForm("title")
-			if len(title) < 10 {
-				title = "UNTITLED - " + time.Now().String()
-			}
-			title = softTrunc(title, 64)
-			tags := splitTags(g.PostForm("tags"))
-			err = m.PostArticle(NewArticle(title, content, authorNameToHash(author), nil, tags))
-		}
-		if err != nil {
-			g.String(500, "Error: %v", err)
-			return
-		}
-		if reply != "" {
-			g.Redirect(302, "/p/by_create/parent:"+objectIDToDisplayID(reply)+"?p=-1")
-		} else {
-			g.Redirect(302, "/p/by_reply/index")
-		}
-	})
+	r.Handle("GET", "/new/:id", handleNewPostView)
+	r.Handle("POST", "/new", handleNewPostAction)
+	r.Handle("GET", "/edit/:id", handleEditPostView)
+	r.Handle("POST", "/edit", handleEditPostAction)
 	r.Handle("GET", "/p/:sort/:type", func(g *gin.Context) {
 		var (
 			sort        = SortByReply
