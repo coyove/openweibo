@@ -12,21 +12,20 @@
             {{if .ParentArticle.Parent}}
                 <a href="/p/{{.ParentArticle.DisplayParentID}}">上一层</a>
             {{else}}
-                <a href="/">首页</a>
+                <a href="/">主页</a>
             {{end}}/
             {{if .ParentArticle.Announcement}}<b>公告</b> / {{end}}
             {{if .ParentArticle.Locked}}<b>锁定</b> / {{end}}
             <a href="/edit/{{.ParentArticle.DisplayID}}">编辑</a> /
             {{.ParentArticle.Replies}} 回复 /
-            ID: <b>{{.ParentArticle.AuthorString}}</b>
-            (<a href="/id/{{.ParentArticle.AuthorString}}">历史</a>) /
+            ID: <a href="/id/{{.ParentArticle.AuthorString}}">{{.ParentArticle.AuthorString}}</a> /
             发布: {{.ParentArticle.CreateTimeString}} /
             最后回复: {{.ParentArticle.ReplyTimeString}}
         </div> 
-        <pre>{{.ParentArticle.Content}}</pre>
+        <pre>{{.ParentArticle.ContentHTML}}</pre>
         <div>
             {{range .ParentArticle.Tags}}
-            <b>#</b><a href="/tag/{{.}}">{{.}}</a>
+                <span class=tag><a href="/tag/{{.}}"><b>#</b>{{.}}</a></span>
             {{end}}
         </div>
         <hr>
@@ -38,7 +37,7 @@
                     &bull; <b>{{.AuthorString}}</b> / {{.CreateTimeString}} /
                     <a href="/p/{{.DisplayID}}">展开{{if .Replies}} ({{.Replies}}){{end}}</a>
                 </div>
-                <pre>{{.Content}}</pre>
+                <pre>{{.ContentHTML}}</pre>
             </div>
             {{end}}
         {{else}}
@@ -60,13 +59,15 @@
         {{if len .Articles}}
         {{range .Articles}}
             <div class=row>
-                {{range .Tags}}<b>#</b><a href="/tag/{{.}}">{{.}}</a> {{end}}
+                {{range .Tags}}
+                <span class=tag><a href="/tag/{{.}}"><b>#</b>{{.}}</a></span>
+                {{end}}
                 <a href="/p/{{.DisplayID}}">
                     {{if .Announcement}}<b>[公告]</b>{{end}}
                     {{if .Locked}}<b>[锁定]</b>{{end}}
                     {{.Title}}{{if .Replies}} ({{.Replies}}回复){{end}}
                 </a>
-                <b>{{.AuthorString}}</b> 发布于 {{.CreateTimeString}}
+                &nbsp;<b>{{.AuthorString}}</b> 发布于 {{.CreateTimeString}}
             </div>
         {{end}}
         {{else}}
@@ -78,7 +79,7 @@
     <hr>
     <div>
         {{if not .NoPrev}}
-        [ <a href="?n=0">第一页</a> ]
+        [ <a href="?n=0">首页</a> ]
         [ <a href="?p={{.Prev}}">上页</a> ]
         {{end}}
         {{if not .NoNext}}
@@ -93,3 +94,5 @@
         {{end}}</b>
         ]
     </div>
+
+{{template "footer.html" .}}

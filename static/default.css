@@ -7,18 +7,23 @@
 body {
     background: #F0EDE3;
     color: #33290A;
+    padding: 0;
+    margin: 0;
     box-sizing: border-box;
+}
+
+#container {
+    padding: 0.5em;
 }
 
 h1, h2, h3, h4, h5, h6 {
     font-family: oswald,helvetica,sans-serif;
-    margin: 0;
+    margin: 2px 0;
 }
 
 a {
     color: #3357D6;
     text-decoration: none;
-    transition: color 0.25s;
 }
 
 a:visited {
@@ -45,7 +50,11 @@ input.t, textarea {
 }
 
 div.row {
-    margin: 0.33em 0;
+    margin: 0.5em 0;
+}
+
+div.row * {
+    vertical-align: top;
 }
 
 div.reply {
@@ -55,7 +64,84 @@ div.reply {
 
 pre {
     font: inherit;
-    margin: 0;
+    margin: 0.33em 0;
     white-space: pre-wrap;
 }
 
+span.tag {
+    display: inline-block;
+    position: relative;
+    padding: 0 3px 0 4px;
+    overflow: hidden;
+    background: rgba(0,0,0,0.05);
+}
+
+span.tag:before {
+    content: ' ';
+    position: absolute;
+    display: block;
+    width: 0;
+    height: 0;
+    left: 0;
+    top: -6px;
+    border: 6px solid transparent;
+    border-left: 6px solid #076;
+}
+
+span.tag b {
+    color: #233;
+    margin-right: 2px;
+}
+
+nav {
+	background-color: #678;
+}
+
+nav ul {
+    z-index: 9999;
+	padding: 0;
+    margin: 0;
+	list-style: none;
+	position: relative;
+}
+
+nav ul li {
+	display: inline-block;
+	background-color: #678;
+}
+
+nav a {
+    cursor: pointer;
+	display: block;
+    color: white !important;
+    padding: 2px 4px;
+    line-height: 26px;
+	text-decoration: none;
+}
+
+nav a:hover {
+    background: #233;
+    color: white;
+}
+
+nav ul ul li {
+    background: #789;
+}
+
+nav ul ul {
+	display: none;
+	position: absolute;
+	top: 30px; /* the height of the main nav */
+}
+
+nav ul li:hover > ul, nav ul a:active + ul {
+	display: inherit;
+}
+
+/* Fisrt Tier Dropdown */
+nav ul ul li {
+	width:170px;
+	float:none;
+	display:list-item;
+	position: relative;
+}

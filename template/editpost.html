@@ -21,7 +21,12 @@
     </tr>
     <tr>
         <td>标签:</td>
-        <td><input class=t name=tags value="{{range .Article.Tags}}{{.}} {{end}}"></td>
+        <td>
+            <input list=tags class=t name=tags value="{{range .Article.Tags}}{{.}} {{end}}">
+            <datalist id="tags">
+            {{range .Tags}}<option value="{{.}}">{{end}}
+            </datalist>
+        </td>
     </tr>
     {{end}}
     <tr>
@@ -53,3 +58,5 @@
     </tr>
     </table>
 </form>
+
+{{template "footer.html" .}}

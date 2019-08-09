@@ -1,0 +1,7 @@
+{{template "header.html" .}}
+
+{{range .Tags}}
+<ul>
+    <li><a href="/tag/{{.}}">{{.}}</a>
+</ul>
+{{end}}

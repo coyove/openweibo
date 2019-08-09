@@ -10,10 +10,12 @@ func handleEditPostView(g *gin.Context) {
 	var pl = struct {
 		UUID    string
 		Reply   string
+		Tags    []string
 		Article *Article
 	}{
 		UUID:  makeCSRFToken(g),
 		Reply: g.Param("id"),
+		Tags:  config.Tags,
 	}
 
 	a, err := m.GetArticle(displayIDToObejctID(pl.Reply))
@@ -53,7 +55,7 @@ func handleEditPostAction(g *gin.Context) {
 	redir := "/p/" + a.DisplayID()
 
 	if announced && !a.Announcement {
-		if author == authorNameToHash(config.AdminName) {
+		if author == config.AdminNameHash {
 			m.AnnounceArticle(eid)
 		}
 		g.Redirect(302, redir)
@@ -61,14 +63,14 @@ func handleEditPostAction(g *gin.Context) {
 	}
 
 	if locked != a.Locked {
-		if author == authorNameToHash(config.AdminName) {
+		if author == config.AdminNameHash {
 			m.LockArticle(eid, locked)
 		}
 		g.Redirect(302, redir)
 		return
 	}
 
-	if a.Author != author && author != authorNameToHash(config.AdminName) {
+	if a.Author != author && author != config.AdminNameHash {
 		g.Redirect(302, redir)
 		return
 	}

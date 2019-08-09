@@ -4,6 +4,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/binary"
+	"html/template"
 	"strconv"
 	"strings"
 	"time"
@@ -65,7 +66,15 @@ func (a *Article) ReplyTimeString() string {
 }
 
 func (a *Article) AuthorString() string {
-	return strconv.FormatUint(a.Author, 36)
+	n := strconv.FormatUint(a.Author, 36)
+	if a.Author == config.AdminNameHash {
+		n += "*"
+	}
+	return n
+}
+
+func (a *Article) ContentHTML() template.HTML {
+	return template.HTML(sanText(a.Content))
 }
 
 func (a *Article) String() string {

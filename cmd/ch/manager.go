@@ -13,6 +13,7 @@ type Manager struct {
 	name     string
 	articles *mgo.Collection
 	session  *mgo.Session
+	closed   bool
 }
 
 func NewManager(name, uri string) (*Manager, error) {
@@ -205,5 +206,6 @@ func (m *Manager) LockArticle(id bson.ObjectId, v bool) error {
 }
 
 func (m *Manager) Close() {
+	m.closed = true
 	m.session.Close()
 }

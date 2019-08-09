@@ -39,23 +39,29 @@ var (
 	client   = &http.Client{
 		Timeout: time.Second,
 	}
-	config = struct {
+	rxSan      = regexp.MustCompile(`(<|https?://\S+)`)
+	rxCRLF     = regexp.MustCompile(`\r?\n`)
+	rxNonASCII = regexp.MustCompile(`[^a-zA-Z0-9\-_]`)
+	config     = struct {
 		Storages []driver.StorageConfig `yaml:"Storages"`
 		DynamoDB struct {
 			AccessToken string `yaml:"AccessToken"`
 			SecretToken string `yaml:"SecretToken"`
 			Region      string `yaml:"Region"`
 		} `yaml:"DynamoDB"`
-		CacheSize    int64  `yaml:"CacheSize"`
-		ProdMode     bool   `yaml:"Production"`
-		Key          string `yaml:"Key"`
-		TokenTTL     int64  `yaml:"TokenTTL"`
-		MaxContent   int64  `yaml:"MaxContent"`
-		MinContent   int64  `yaml:"MinContent"`
-		MaxTags      int64  `yaml:"MaxTags"`
-		AdminName    string `yaml:"AdminName"`
-		PostsPerPage int64  `yaml:"PostsPerPage"`
-		Blk          cipher.Block
+		CacheSize    int64    `yaml:"CacheSize"`
+		ProdMode     bool     `yaml:"Production"`
+		Key          string   `yaml:"Key"`
+		TokenTTL     int64    `yaml:"TokenTTL"`
+		MaxContent   int64    `yaml:"MaxContent"`
+		MinContent   int64    `yaml:"MinContent"`
+		MaxTags      int64    `yaml:"MaxTags"`
+		AdminName    string   `yaml:"AdminName"`
+		PostsPerPage int64    `yaml:"PostsPerPage"`
+		Tags         []string `yaml:"Tags"`
+
+		Blk           cipher.Block
+		AdminNameHash uint64
 	}{
 		CacheSize:    1,
 		TokenTTL:     1,
@@ -65,6 +71,7 @@ var (
 		MinContent:   10,
 		MaxTags:      4,
 		PostsPerPage: 30,
+		Tags:         []string{"zzz"},
 	}
 )
 
@@ -261,7 +268,7 @@ func splitTags(u string) []string {
 	urls := []string{}
 NEXT:
 	for _, u := range regexp.MustCompile(`[\r\n\s\t,]`).Split(u, -1) {
-		if u = strings.TrimSpace(u); u == "" {
+		if u = strings.TrimSpace(u); len(u) < 3 {
 			continue
 		}
 		if u[0] == '#' {

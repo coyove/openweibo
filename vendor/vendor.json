@@ -3,10 +3,22 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "v5fnAwXMz00AwYMW+K5cRUTUsnk=",
+			"path": "github.com/coyove/common/lru",
+			"revision": "3b064b385f252d869851ba0572770462a85a32ad",
+			"revisionTime": "2019-07-25T04:47:12Z"
+		},
+		{
 			"checksumSHA1": "c7g5/Wz2Ee6KzUAX148IYH4V3z4=",
 			"path": "github.com/coyove/common/sched",
 			"revision": "3b064b385f252d869851ba0572770462a85a32ad",
 			"revisionTime": "2019-07-25T04:47:12Z"
+		},
+		{
+			"checksumSHA1": "JWZrgYCNTmyUqrrfbUhIW0mNvck=",
+			"path": "github.com/dchest/captcha",
+			"revision": "6a29415a8364ec2971fdc62d9e415ed53fc20410",
+			"revisionTime": "2017-06-22T15:38:21Z"
 		},
 		{
 			"checksumSHA1": "DJuE6tUM2By3ymVt9oei0wu/ySM=",

@@ -13,15 +13,18 @@ func handleNewPostView(g *gin.Context) {
 		Reply     string
 		Abstract  string
 		Challenge string
+		Tags      []string
 
-		RTitle, RContent, RTags, EError string
+		RTitle, RAuthor, RContent, RTags, EError string
 	}{
 		UUID:      makeCSRFToken(g),
 		Challenge: makeChallengeToken(),
 		RTitle:    g.Query("title"),
 		RContent:  g.Query("content"),
 		RTags:     g.Query("tags"),
+		RAuthor:   g.Query("author"),
 		EError:    g.Query("error"),
+		Tags:      config.Tags,
 	}
 
 	if id := g.Param("id"); id != "0" {
@@ -39,6 +42,10 @@ func handleNewPostView(g *gin.Context) {
 		}
 	}
 
+	if id, _ := g.Cookie("id"); id != "" && pl.RAuthor == "" {
+		pl.RAuthor = id
+	}
+
 	g.HTML(200, "newpost.html", pl)
 }
 
@@ -53,7 +60,7 @@ func handleNewPostAction(g *gin.Context) {
 		author    = softTrunc(g.PostForm("author"), 32)
 		tags      = splitTags(softTrunc(g.PostForm("tags"), 128))
 		redir     = func(a, b string) {
-			q := encodeQuery(a, b, "content", content, "title", title, "tags", strings.Join(tags, " "))
+			q := encodeQuery(a, b, "author", author, "content", content, "title", title, "tags", strings.Join(tags, " "))
 			if reply == "" {
 				g.Redirect(302, "/new/0?"+q)
 			} else {
@@ -84,7 +91,7 @@ func handleNewPostAction(g *gin.Context) {
 	}
 
 	if author == "" {
-		author = g.ClientIP() + config.Key
+		author = g.ClientIP()
 	}
 
 	if len(content) < int(config.MinContent) {
@@ -111,4 +118,20 @@ func handleNewPostAction(g *gin.Context) {
 	} else {
 		g.Redirect(302, "/")
 	}
+}
+
+func sanText(in string) string {
+	firstImg := false
+	return rxSan.ReplaceAllStringFunc(in, func(in string) string {
+		if in == "<" {
+			return "&lt;"
+		}
+		if strings.HasSuffix(in, ".jpg") || strings.HasSuffix(in, ".gif") || strings.HasSuffix(in, ".png") {
+			if !firstImg {
+				firstImg = true
+				return "<a href='" + in + "' target=_blank><img src='" + in + "' class='image'></a>"
+			}
+		}
+		return "<a href='" + in + "' target=_blank>" + in + "</a>"
+	})
 }

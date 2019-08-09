@@ -56,6 +56,7 @@ func main() {
 
 	dedup = lru.NewCache(1024)
 	config.Blk, _ = aes.NewCipher([]byte(config.Key))
+	config.AdminNameHash = authorNameToHash(config.AdminName)
 
 	nodes := []*driver.Node{}
 	for _, s := range config.Storages {
@@ -95,6 +96,7 @@ func main() {
 	r.Handle("GET", "/p/:parent", handleRepliesView)
 	r.Handle("GET", "/tag/:tag", makeHandleMainView('t'))
 	r.Handle("GET", "/search/:title", makeHandleMainView('T'))
+	r.Handle("GET", "/tags", func(g *gin.Context) { g.HTML(200, "tags.html", struct{ Tags []string }{config.Tags}) })
 	r.Handle("POST", "/search", func(g *gin.Context) { g.Redirect(302, "/search/"+url.PathEscape(g.PostForm("q"))) })
 	r.Handle("GET", "/id/:id", makeHandleMainView('a'))
 
