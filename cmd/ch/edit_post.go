@@ -50,7 +50,7 @@ func handleEditPostAction(g *gin.Context) {
 		return
 	}
 
-	redir := "/p/by_create/parent:" + a.DisplayID()
+	redir := "/p/" + a.DisplayID()
 
 	if announced && !a.Announcement {
 		if author == authorNameToHash(config.AdminName) {
@@ -95,8 +95,8 @@ func handleEditPostAction(g *gin.Context) {
 	}
 
 	if a.Parent != "" {
-		g.Redirect(302, "/p/by_create/parent:"+a.DisplayParentID())
+		g.Redirect(302, "/p/"+a.DisplayParentID())
 	} else {
-		g.Redirect(302, "/p/by_reply/index")
+		g.Redirect(302, "/")
 	}
 }

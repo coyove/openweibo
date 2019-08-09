@@ -1,9 +1,9 @@
 {{template "header.html" .}}
 
 {{if .Reply}}
-<a href="/p/by_create/parent:{{.Reply}}">&laquo;后退</a>
+<a href="/p/{{.Reply}}">&laquo;后退</a>
 {{else}}
-<a href="/p/by_reply/index">&laquo;后退</a>
+<a href="/">&laquo;后退</a>
 {{end}}
 <hr>
 

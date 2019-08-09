@@ -37,13 +37,6 @@ func NewManager(name, uri string) (*Manager, error) {
 
 type findby bson.M
 
-type sortby string
-
-const (
-	SortByReply  sortby = "reply_time"
-	SortByCreate sortby = "create_time"
-)
-
 func ByTags(tag ...string) findby {
 	return findby(bson.M{"tags": bson.M{"$all": tag}})
 }
@@ -56,62 +49,91 @@ func ByAuthor(author uint64) findby {
 	return findby(bson.M{"author": author})
 }
 
-func ByParent(parent bson.ObjectId) findby {
-	return findby(bson.M{"parent": parent})
-}
-
 func ByNone() findby {
 	return findby(bson.M{})
 }
 
-func (m *Manager) FindBack(filter findby, sort sortby, cursor int64, n int) ([]*Article, error) {
-	dir := ""
-	if _, ok := filter["parent"]; !ok {
-		// Find articles
-		filter["parent"] = bson.M{"$exists": false}
-		filter[string(sort)] = bson.M{"$gt": cursor}
-	} else {
-		// Find replies of an article
-		if cursor == -1 {
-			cursor = math.MaxInt64
-		}
-		dir = "-"
-		filter[string(sort)] = bson.M{"$lt": cursor}
-	}
+func (m *Manager) FindBack(filter findby, cursor int64, n int) ([]*Article, bool, error) {
+	filter["parent"] = bson.M{"$exists": false}
+	filter["reply_time"] = bson.M{"$gt": cursor}
 
-	q := m.articles.Find(bson.M(filter)).Sort(dir + string(sort)).Limit(n)
+	q := m.articles.Find(bson.M(filter)).Sort("reply_time").Limit(n + 1)
 	a := []*Article{}
 	if err := q.All(&a); err != nil {
-		return nil, err
+		return nil, false, err
 	}
+
+	more := len(a) == n+1
+	if more {
+		a = a[:n]
+	}
+
 	for left, right := 0, len(a)-1; left < right; left, right = left+1, right-1 {
 		a[left], a[right] = a[right], a[left]
 	}
-	return a, nil
+	return a, more, nil
 }
 
-func (m *Manager) Find(filter findby, sort sortby, cursor int64, n int) ([]*Article, error) {
-	dir := "-"
-
-	if _, ok := filter["parent"]; !ok {
-		// Find articles
-		if cursor == 0 {
-			cursor = math.MaxInt64
-		}
-		filter[string(sort)] = bson.M{"$lt": cursor}
-		filter["parent"] = bson.M{"$exists": false}
-	} else {
-		// Find replies of an article
-		dir = ""
-		filter[string(sort)] = bson.M{"$gt": cursor}
+func (m *Manager) Find(filter findby, cursor int64, n int) ([]*Article, bool, error) {
+	if cursor == 0 {
+		cursor = math.MaxInt64
 	}
+	filter["reply_time"] = bson.M{"$lt": cursor}
+	filter["parent"] = bson.M{"$exists": false}
 
-	q := m.articles.Find(bson.M(filter)).Sort(dir + string(sort)).Limit(n)
+	q := m.articles.Find(bson.M(filter)).Sort("-reply_time").Limit(n + 1)
 	a := []*Article{}
 	if err := q.All(&a); err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return a, nil
+	more := len(a) == n+1
+	if more {
+		a = a[:n]
+	}
+	return a, more, nil
+}
+
+func (m *Manager) FindRepliesBack(parent bson.ObjectId, cursor int64, n int) ([]*Article, bool, error) {
+	if cursor == -1 {
+		cursor = math.MaxInt64
+	}
+
+	q := m.articles.Find(bson.M{
+		"create_time": bson.M{"$lt": cursor},
+		"parent":      parent,
+	}).Sort("-create_time").Limit(n + 1)
+
+	a := []*Article{}
+	if err := q.All(&a); err != nil {
+		return nil, false, err
+	}
+
+	more := len(a) == n+1
+	if more {
+		a = a[:n]
+	}
+
+	for left, right := 0, len(a)-1; left < right; left, right = left+1, right-1 {
+		a[left], a[right] = a[right], a[left]
+	}
+	return a, more, nil
+}
+
+func (m *Manager) FindReplies(parent bson.ObjectId, cursor int64, n int) ([]*Article, bool, error) {
+	q := m.articles.Find(bson.M{
+		"create_time": bson.M{"$gt": cursor},
+		"parent":      parent,
+	}).Sort("create_time").Limit(n + 1)
+
+	a := []*Article{}
+	if err := q.All(&a); err != nil {
+		return nil, false, err
+	}
+	more := len(a) == n+1
+	if more {
+		a = a[:n]
+	}
+	return a, more, nil
 }
 
 func (m *Manager) PostArticle(a *Article) error {

@@ -107,8 +107,8 @@ func handleNewPostAction(g *gin.Context) {
 		return
 	}
 	if reply != "" {
-		g.Redirect(302, "/p/by_create/parent:"+objectIDToDisplayID(reply)+"?p=-1")
+		g.Redirect(302, "/p/"+objectIDToDisplayID(reply)+"?p=-1")
 	} else {
-		g.Redirect(302, "/p/by_reply/index")
+		g.Redirect(302, "/")
 	}
 }

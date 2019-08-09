@@ -46,23 +46,25 @@ var (
 			SecretToken string `yaml:"SecretToken"`
 			Region      string `yaml:"Region"`
 		} `yaml:"DynamoDB"`
-		CacheSize  int64  `yaml:"CacheSize"`
-		ProdMode   bool   `yaml:"Production"`
-		Key        string `yaml:"Key"`
-		TokenTTL   int64  `yaml:"TokenTTL"`
-		MaxContent int64  `yaml:"MaxContent"`
-		MinContent int64  `yaml:"MinContent"`
-		MaxTags    int64  `yaml:"MaxTags"`
-		AdminName  string `yaml:"AdminName"`
-		Blk        cipher.Block
+		CacheSize    int64  `yaml:"CacheSize"`
+		ProdMode     bool   `yaml:"Production"`
+		Key          string `yaml:"Key"`
+		TokenTTL     int64  `yaml:"TokenTTL"`
+		MaxContent   int64  `yaml:"MaxContent"`
+		MinContent   int64  `yaml:"MinContent"`
+		MaxTags      int64  `yaml:"MaxTags"`
+		AdminName    string `yaml:"AdminName"`
+		PostsPerPage int64  `yaml:"PostsPerPage"`
+		Blk          cipher.Block
 	}{
-		CacheSize:  1,
-		TokenTTL:   1,
-		Key:        "0123456789abcdef",
-		AdminName:  "zzz",
-		MaxContent: 2048,
-		MinContent: 10,
-		MaxTags:    4,
+		CacheSize:    1,
+		TokenTTL:     1,
+		Key:          "0123456789abcdef",
+		AdminName:    "zzz",
+		MaxContent:   2048,
+		MinContent:   10,
+		MaxTags:      4,
+		PostsPerPage: 30,
 	}
 )
 

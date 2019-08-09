@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/aes"
 	"encoding/hex"
+	"fmt"
 	_ "image/png"
 	"io/ioutil"
 	"log"
@@ -16,7 +17,6 @@ import (
 	"github.com/coyove/common/lru"
 	"github.com/dchest/captcha"
 	"github.com/gin-gonic/gin"
-	"github.com/globalsign/mgo/bson"
 	"gopkg.in/yaml.v2"
 )
 
@@ -76,11 +76,10 @@ func main() {
 	//cachemgr = cache.New("tmp/cache", config.CacheSize*1024*1024*1024, mgr.Get)
 	//updateStat()
 
-	var app = 20
-
 	r := gin.Default()
 	r.Use(mwIPThrot)
 	r.LoadHTMLGlob("template/*")
+	r.Static("/s/", "static")
 	r.Handle("GET", "/captcha/:challenge", func(g *gin.Context) {
 		challenge, _ := hex.DecodeString(g.Param("challenge"))
 		if len(challenge) != 16 {
@@ -91,101 +90,19 @@ func main() {
 		g.Writer.Header().Add("Content-Type", "image/png")
 		captcha.NewImage(config.Key, challenge[:6], 180, 60).WriteTo(g.Writer)
 	})
-	r.Handle("POST", "/search", func(g *gin.Context) {
-		g.Redirect(302, "/p/by_create/title:"+url.PathEscape(g.PostForm("q")))
-	})
+
+	r.Handle("GET", "/", makeHandleMainView(0))
+	r.Handle("GET", "/p/:parent", handleRepliesView)
+	r.Handle("GET", "/tag/:tag", makeHandleMainView('t'))
+	r.Handle("GET", "/search/:title", makeHandleMainView('T'))
+	r.Handle("POST", "/search", func(g *gin.Context) { g.Redirect(302, "/search/"+url.PathEscape(g.PostForm("q"))) })
+	r.Handle("GET", "/id/:id", makeHandleMainView('a'))
 
 	r.Handle("GET", "/new/:id", handleNewPostView)
 	r.Handle("POST", "/new", handleNewPostAction)
 	r.Handle("GET", "/edit/:id", handleEditPostView)
 	r.Handle("POST", "/edit", handleEditPostAction)
-	r.Handle("GET", "/p/:sort/:type", func(g *gin.Context) {
-		var (
-			sort        = SortByReply
-			findby      = ByNone()
-			showReplies bson.ObjectId
-			pl          struct {
-				Articles      []*Article
-				ParentArticle *Article
-				Next, Prev    int64
-				SortMode      string
-				FindType      string
-				SearchTerm    string
-			}
-		)
 
-		if g.Param("sort") == "by_create" {
-			sort = SortByCreate
-		}
-
-		if t := g.Param("type"); t == "index" {
-			// ByNone
-		} else if strings.HasPrefix(t, "tags:") {
-			parts := strings.Split(t[5:], ",")
-			findby = ByTags(parts...)
-		} else if strings.HasPrefix(t, "title:") {
-			pl.SearchTerm = t[6:]
-			if strings.HasPrefix(pl.SearchTerm, "#") {
-				findby = ByTags(splitTags(pl.SearchTerm)...)
-			} else {
-				findby = ByTitle(t[6:])
-			}
-		} else if strings.HasPrefix(t, "author:") {
-			a, _ := strconv.ParseUint(t[7:], 36, 64)
-			findby = ByAuthor(a)
-		} else if strings.HasPrefix(t, "parent:") {
-			pid := displayIDToObejctID(t[7:])
-			if pid == "" {
-				g.AbortWithStatus(404)
-				return
-			}
-			findby = ByParent(pid)
-			showReplies = pid
-		} else {
-			g.AbortWithStatus(404)
-			return
-		}
-
-		var a []*Article
-		next, err := strconv.Atoi(g.Query("n"))
-		prev, err := strconv.Atoi(g.Query("p"))
-		if prev != 0 {
-			a, err = m.FindBack(findby, sort, int64(prev), app)
-		} else {
-			a, err = m.Find(findby, sort, int64(next), app)
-		}
-
-		if err != nil {
-			g.AbortWithStatus(500)
-			log.Println(err)
-			return
-		}
-
-		pl.Articles = a
-		pl.SortMode = string(sort)
-		pl.FindType = g.Param("type")
-
-		if showReplies != "" {
-			pl.ParentArticle, err = m.GetArticle(showReplies)
-			if err != nil {
-				g.AbortWithStatus(404)
-				log.Println(err)
-				return
-			}
-		}
-
-		if len(a) > 0 {
-			if sort == SortByCreate {
-				pl.Next = a[len(a)-1].CreateTime
-				pl.Prev = a[0].CreateTime
-			} else {
-				pl.Next = a[len(a)-1].ReplyTime
-				pl.Prev = a[0].ReplyTime
-			}
-		}
-
-		g.HTML(200, "index.html", pl)
-	})
 	//r.Handle("GET", "/stat", func(g *gin.Context) {
 	//	g.HTML(200, "stat.html", currentStat())
 	//})
@@ -233,4 +150,111 @@ func main() {
 	//	}
 	//})
 	log.Fatal(r.Run(":5010"))
+}
+
+func makeHandleMainView(t byte) func(g *gin.Context) {
+	return func(g *gin.Context) {
+		var (
+			findby = ByNone()
+			pl     ArticlesView
+		)
+
+		if t == 't' {
+			parts := strings.Split(g.Param("tag"), ",")
+			findby = ByTags(parts...)
+		} else if t == 'T' {
+			pl.SearchTerm = g.Param("title")
+			if strings.HasPrefix(pl.SearchTerm, "#") {
+				findby = ByTags(splitTags(pl.SearchTerm)...)
+			} else {
+				findby = ByTitle(pl.SearchTerm)
+			}
+		} else if t == 'a' {
+			a, _ := strconv.ParseUint(g.Param("id"), 36, 64)
+			findby = ByAuthor(a)
+		}
+
+		var a []*Article
+		var more bool
+
+		next, err := strconv.Atoi(g.Query("n"))
+		prev, err := strconv.Atoi(g.Query("p"))
+
+		if prev != 0 {
+			a, more, err = m.FindBack(findby, int64(prev), int(config.PostsPerPage))
+			if !more {
+				pl.NoPrev = true
+			}
+		} else {
+			a, more, err = m.Find(findby, int64(next), int(config.PostsPerPage))
+			if !more {
+				pl.NoNext = true
+			}
+		}
+
+		if err != nil {
+			g.AbortWithStatus(500)
+			log.Println(err)
+			return
+		}
+
+		pl.Articles = a
+		if len(a) > 0 {
+			pl.Next = a[len(a)-1].ReplyTime
+			pl.Prev = a[0].ReplyTime
+			pl.Title = fmt.Sprintf("%s - %s", a[0].ReplyTimeString(), a[len(a)-1].ReplyTimeString())
+		}
+
+		g.HTML(200, "index.html", pl)
+	}
+}
+
+func handleRepliesView(g *gin.Context) {
+	var (
+		pl   ArticlesView
+		a    []*Article
+		more bool
+	)
+
+	pid := displayIDToObejctID(g.Param("parent"))
+	if pid == "" {
+		g.AbortWithStatus(404)
+		return
+	}
+
+	next, err := strconv.Atoi(g.Query("n"))
+	prev, err := strconv.Atoi(g.Query("p"))
+
+	if prev != 0 {
+		a, more, err = m.FindRepliesBack(pid, int64(prev), int(config.PostsPerPage))
+		if !more {
+			pl.NoPrev = true
+		}
+	} else {
+		a, more, err = m.FindReplies(pid, int64(next), int(config.PostsPerPage))
+		if !more {
+			pl.NoNext = true
+		}
+	}
+
+	if err != nil {
+		g.AbortWithStatus(500)
+		log.Println(err)
+		return
+	}
+
+	pl.Articles = a
+	pl.ParentArticle, err = m.GetArticle(pid)
+	if err != nil {
+		g.AbortWithStatus(404)
+		log.Println(err)
+		return
+	}
+
+	if len(a) > 0 {
+		pl.Next = a[len(a)-1].CreateTime
+		pl.Prev = a[0].CreateTime
+	}
+
+	g.HTML(200, "index.html", pl)
 }

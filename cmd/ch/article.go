@@ -11,6 +11,15 @@ import (
 	"github.com/globalsign/mgo/bson"
 )
 
+type ArticlesView struct {
+	Articles       []*Article
+	ParentArticle  *Article
+	Next, Prev     int64
+	NoNext, NoPrev bool
+	SearchTerm     string
+	Title          string
+}
+
 type Article struct {
 	ID           bson.ObjectId `bson:"_id"`
 	Parent       bson.ObjectId `bson:"parent,omitempty"`

@@ -10,33 +10,33 @@
 
         <div>
             {{if .ParentArticle.Parent}}
-                <a href="/p/by_create/parent:{{.ParentArticle.DisplayParentID}}">上一层</a>
+                <a href="/p/{{.ParentArticle.DisplayParentID}}">上一层</a>
             {{else}}
-                <a href="/p/by_reply/index">首页</a>
+                <a href="/">首页</a>
             {{end}}/
             {{if .ParentArticle.Announcement}}<b>公告</b> / {{end}}
             {{if .ParentArticle.Locked}}<b>锁定</b> / {{end}}
             <a href="/edit/{{.ParentArticle.DisplayID}}">编辑</a> /
             {{.ParentArticle.Replies}} 回复 /
             ID: <b>{{.ParentArticle.AuthorString}}</b>
-            (<a href="/p/by_create/author:{{.ParentArticle.AuthorString}}">历史</a>) /
+            (<a href="/id/{{.ParentArticle.AuthorString}}">历史</a>) /
             发布: {{.ParentArticle.CreateTimeString}} /
             最后回复: {{.ParentArticle.ReplyTimeString}}
         </div> 
         <pre>{{.ParentArticle.Content}}</pre>
         <div>
             {{range .ParentArticle.Tags}}
-            <b>#</b><a href="/p/by_create/tags:{{.}}">{{.}}</a>
+            <b>#</b><a href="/tag/{{.}}">{{.}}</a>
             {{end}}
         </div>
         <hr>
 
         {{if len .Articles}}
             {{range .Articles}}
-            <div>
+            <div class="row reply">
                 <div>
                     &bull; <b>{{.AuthorString}}</b> / {{.CreateTimeString}} /
-                    <a href="/p/by_create/parent:{{.DisplayID}}">展开{{if .Replies}} ({{.Replies}}){{end}}</a>
+                    <a href="/p/{{.DisplayID}}">展开{{if .Replies}} ({{.Replies}}){{end}}</a>
                 </div>
                 <pre>{{.Content}}</pre>
             </div>
@@ -55,13 +55,13 @@
             <hr>
         </div>
 
-        <title>{{.FindType}}</title>
+        <title>{{.Title}}</title>
 
         {{if len .Articles}}
         {{range .Articles}}
             <div class=row>
-                {{range .Tags}}<b>#</b><a href="/p/by_create/tags:{{.}}">{{.}}</a> {{end}}
-                <a href="/p/by_create/parent:{{.DisplayID}}">
+                {{range .Tags}}<b>#</b><a href="/tag/{{.}}">{{.}}</a> {{end}}
+                <a href="/p/{{.DisplayID}}">
                     {{if .Announcement}}<b>[公告]</b>{{end}}
                     {{if .Locked}}<b>[锁定]</b>{{end}}
                     {{.Title}}{{if .Replies}} ({{.Replies}}回复){{end}}
@@ -77,10 +77,14 @@
 
     <hr>
     <div>
+        {{if not .NoPrev}}
         [ <a href="?n=0">第一页</a> ]
         [ <a href="?p={{.Prev}}">上页</a> ]
+        {{end}}
+        {{if not .NoNext}}
         [ <a href="?n={{.Next}}">下页</a> ]
         [ <a href="?p=-1">末页</a> ]
+        {{end}}
         [
         <b>{{if .ParentArticle}}
         <a href="/new/{{.ParentArticle.DisplayID}}">回复</a>
@@ -88,15 +92,4 @@
         <a href="/new/0">新主题</a>
         {{end}}</b>
         ]
-        [
-        {{if eq .SortMode "reply_time"}}
-        <a href="/p/by_create/{{.FindType}}">按创建时间排序</a>
-        {{else}}
-        <a href="/p/by_reply/{{.FindType}}">按回复时间排序</a>
-        {{end}}
-        ] 
     </div>
-
-</body>
-
-</html>

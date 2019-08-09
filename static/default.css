@@ -1,0 +1,61 @@
+/** Fifty shades of Tux
+ * A black, white and yellow css for kernel.org based on normalize.css
+ * MIT License
+ * BenoÃ®t Monin [benoit.monin gmx.fr]
+ */
+
+body {
+    background: #F0EDE3;
+    color: #33290A;
+    box-sizing: border-box;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: oswald,helvetica,sans-serif;
+    margin: 0;
+}
+
+a {
+    color: #3357D6;
+    text-decoration: none;
+    transition: color 0.25s;
+}
+
+a:visited {
+    color: #865796;
+    text-decoration: none;
+}
+
+a:hover,
+a:active {
+    color: #B39223;
+    text-decoration: none;
+}
+
+abbr[title] {
+    border: none;
+}
+
+hr {
+    border: none;
+}
+
+input.t, textarea {
+    width: 100%;
+}
+
+div.row {
+    margin: 0.33em 0;
+}
+
+div.reply {
+    border-bottom: dotted 1px #666;
+    display: table;
+}
+
+pre {
+    font: inherit;
+    margin: 0;
+    white-space: pre-wrap;
+}
+
