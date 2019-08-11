@@ -1,12 +1,14 @@
 package ch
 
 import (
+	"crypto/sha1"
 	"encoding/base32"
 	"encoding/binary"
 	"fmt"
 	"log"
 	"math/rand"
 	"sync"
+	"time"
 
 	"github.com/coyove/ch/driver"
 	"github.com/coyove/ch/mq"
@@ -19,30 +21,31 @@ func (k Key) String() string {
 }
 
 func (k Key) Replicas() (r []int32) {
-	p := [4]byte{}
-	r = make([]int32, 0)
-	for i := 0; i < 3; i++ {
-		copy(p[1:], k[i*3:i*3+3])
-		x := int32(binary.BigEndian.Uint32(p[:]))
-		if x > -1 {
-			r = append(r, x)
-		}
+	x := binary.BigEndian.Uint64(k[:])
+	for i := 1; i <= 43; i += 21 {
+		r = append(r, int32(x<<uint(i)>>43))
 	}
 	return
 }
 
 func (k *Key) SetReplicas(r [3]int32) {
-	p := [4]byte{}
-	for i, r := range r {
-		binary.BigEndian.PutUint32(p[:], uint32(r))
-		copy((*k)[i*3:i*3+3], p[1:])
-	}
+	x := uint64(r[0]&0x1fffff)<<42 + uint64(r[1]&0x1fffff)<<21 + uint64(r[2]&0x1fffff)
+	binary.BigEndian.PutUint64(k[:], x)
+}
+
+func (k Key) Time() time.Time {
+	return time.Unix(int64(binary.BigEndian.Uint32(k[8:])), 0)
+}
+
+func (k *Key) SetTime() {
+	binary.BigEndian.PutUint32((*k)[8:], uint32(time.Now().Unix()))
 }
 
 type Nodes struct {
 	mu         sync.RWMutex
 	nodes      []*driver.Node
 	transferDB *mq.SimpleMessageQueue
+	Cooldown   time.Duration
 }
 
 func (ns *Nodes) LoadNodes(nodes []*driver.Node) {
@@ -63,37 +66,47 @@ func (ns *Nodes) GetNode(name string) *driver.Node {
 	return nil
 }
 
-func (ns *Nodes) Put(v []byte) (string, error) {
+func (ns *Nodes) MakeKey(v []byte) string {
 	nodes := ns.Nodes()
 	r := selectNodes(v, nodes)
 
-	key := Key{}
-	rand.Read(key[:])
+	key := Key(sha1.Sum(v))
 	key.SetReplicas(r)
-	k := key.String()
+	key.SetTime()
+	return key.String()
+}
+
+func (ns *Nodes) Put(v []byte) (string, error) {
+	var (
+		nodes   = ns.Nodes()
+		r       = selectNodes(v, nodes)
+		k       = ns.MakeKey(v)
+		wg      sync.WaitGroup
+		success bool
+		failure error
+	)
 
 	for i := range r {
 		if r[i] == -1 {
 			continue
 		}
-		if err := nodes[r[i]].Put(k, v); err != nil {
-			if i == len(r)-1 {
-				return "", err // All nodes failed, so we have to return an error
-			}
-			continue // Try next node
-		}
 
-		// Replicate to the rest nodes, we don't care the result
-		// If a node failed to put the key, it will eventually be transferred anyway
-		for j := i + 1; j < len(r); j++ {
-			if r[j] == -1 {
-				continue
+		wg.Add(1)
+		go func(node *driver.Node) {
+			if err := node.Put(k, v); err != nil {
+				failure = err
+			} else {
+				success = true
 			}
-			go nodes[r[j]].Put(k, v)
-		}
+			wg.Done()
+		}(nodes[r[i]])
+	}
+
+	wg.Wait()
+	if success {
 		return k, nil
 	}
-	return "", fmt.Errorf("no node available")
+	return "", fmt.Errorf("no node available, last error: %v", failure)
 }
 
 func (ns *Nodes) Get(k string) ([]byte, error) {
@@ -116,6 +129,9 @@ func (ns *Nodes) get(key string, del bool, noTransfer bool) (v []byte, err error
 	r := k.Replicas()
 	if len(r) == 0 {
 		return nil, fmt.Errorf("invalid key: %s, no replicas", key)
+	}
+	if ns.Cooldown != 0 && time.Since(k.Time()) < ns.Cooldown {
+		return nil, fmt.Errorf("invalid key: %s, cooldown", key)
 	}
 
 	nodes := ns.Nodes()

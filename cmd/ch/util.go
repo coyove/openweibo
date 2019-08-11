@@ -12,7 +12,6 @@ import (
 	_ "image/png"
 	"io"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -26,14 +25,12 @@ import (
 	"github.com/coyove/ch/cache"
 	"github.com/coyove/ch/driver"
 	"github.com/coyove/common/lru"
-	"github.com/coyove/common/sched"
 	"github.com/gin-gonic/gin"
 	"github.com/globalsign/mgo/bson"
 )
 
 var (
 	mgr       ch.Nodes
-	mgrStats  sync.Map
 	cachemgr  *cache.Cache
 	dedup     *lru.Cache
 	bytesPool = &sync.Pool{New: func() interface{} { return &bytes.Buffer{} }}
@@ -76,14 +73,6 @@ var (
 	}
 )
 
-func updateStat() {
-	for _, n := range mgr.Nodes() {
-		mgrStats.Store(n.Name, n.Stat())
-		log.Println("[stat] updated:", n.Name)
-	}
-	sched.Schedule(func() { go updateStat() }, time.Minute)
-}
-
 func splitImageURLs(u string) []string {
 	urls := []string{}
 	for _, u := range regexp.MustCompile(`[\r\n\s\t]`).Split(u, -1) {
@@ -112,6 +101,7 @@ func currentStat() interface{} {
 		Throt      string
 		Free       string
 		Error      string
+		Offline    bool
 		Ping       int64
 		LastUpdate string
 	}
@@ -121,13 +111,13 @@ func currentStat() interface{} {
 	}{}
 
 	for _, n := range mgr.Nodes() {
-		stati, _ := mgrStats.Load(n.Name)
-		stat, _ := stati.(driver.Stat)
-
+		offline, total, used := n.Space()
+		stat := n.Stat()
 		p.Nodes = append(p.Nodes, nodeView{
 			Name:       n.Name,
+			Offline:    offline,
 			Capacity:   fmt.Sprintf("%dG", n.Weight),
-			Free:       fmt.Sprintf("%.3fM", float64(stat.AvailableBytes)/1024/1024),
+			Free:       fmt.Sprintf("%.3fM", float64(total-used)/1024/1024),
 			Ping:       stat.Ping,
 			Throt:      stat.Throt,
 			LastUpdate: time.Since(stat.UpdateTime).String(),

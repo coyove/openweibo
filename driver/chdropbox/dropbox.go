@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
+	"math/rand"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -14,6 +16,7 @@ import (
 	"time"
 
 	"github.com/coyove/ch/driver"
+	"github.com/coyove/common/sched"
 )
 
 var rxFn = regexp.MustCompile(`[^a-zA-Z0-9\.]`)
@@ -32,6 +35,7 @@ func NewNode(name string, config driver.StorageConfig) *driver.Node {
 	if n.Weight <= 0 {
 		panic(n.Weight)
 	}
+	n.KV.(*Storage).checkSpace()
 	return n
 }
 
@@ -40,6 +44,13 @@ type Storage struct {
 	throt       *driver.TokenBucket
 	client      *http.Client
 	config      driver.StorageConfig
+	stat        struct {
+		ping       int64
+		Used       int64 `json:"used"`
+		Allocation struct {
+			Allocated int64 `json:"allocated"`
+		} `json:"allocation"`
+	}
 }
 
 func sanitize(k string) string {
@@ -144,49 +155,34 @@ func (s *Storage) Delete(k string) error {
 }
 
 func (s *Storage) Stat() driver.Stat {
-	stat := struct {
-		Used       int64 `json:"used"`
-		Allocation struct {
-			Allocated int64 `json:"allocated"`
-		} `json:"allocation"`
-	}{}
-
-	start := time.Now()
-	req := s.newReq("https://api.dropboxapi.com/2/users/get_space_usage", nil)
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return driver.Stat{Error: err}
-	}
-	buf, _ := ioutil.ReadAll(resp.Body)
-	resp.Body.Close()
-
-	json.Unmarshal(buf, &stat)
-
 	return driver.Stat{
-		UpdateTime:     time.Now(),
-		AvailableBytes: stat.Allocation.Allocated - stat.Used,
-		Ping:           time.Since(start).Nanoseconds() / 1e6,
-		Throt:          s.throt.String(),
+		UpdateTime: time.Now(),
+		Ping:       s.stat.ping,
+		Throt:      s.throt.String(),
 	}
 }
 
 func (s *Storage) Space() (bool, int64, int64) {
-	stat := struct {
-		Used       int64 `json:"used"`
-		Allocation struct {
-			Allocated int64 `json:"allocated"`
-		} `json:"allocation"`
-	}{}
+	return s.config.Offline, s.stat.Allocation.Allocated, s.stat.Used
+}
 
+func (s *Storage) checkSpace() {
+	start := time.Now()
 	req := s.newReq("https://api.dropboxapi.com/2/users/get_space_usage", nil)
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return 0, 0
+		log.Println("[dropbox]", err)
+		return
 	}
 
 	buf, _ := ioutil.ReadAll(resp.Body)
 	resp.Body.Close()
-	json.Unmarshal(buf, &stat)
+	json.Unmarshal(buf, &s.stat)
 
-	return s.config.Offline, stat.Allocation.Allocated, stat.Used
+	s.stat.ping = time.Since(start).Nanoseconds() / 1e6
+	log.Println("[dropbox]", s.stat)
+
+	sched.Schedule(func() {
+		go s.checkSpace()
+	}, time.Second*time.Duration(20+rand.Intn(50)))
 }

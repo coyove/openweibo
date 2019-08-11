@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/coyove/ch/cache"
 	"github.com/coyove/ch/driver"
 	"github.com/coyove/ch/driver/chdropbox"
 	"github.com/coyove/common/lru"
@@ -28,18 +29,53 @@ func main() {
 		panic(err)
 	}
 
-	//	tmpa := []*Article{}
-	//	tags := []string{"a", "B"}
-	//	for i := 0; i < 100; i++ {
-	//		a := NewArticle("hello"+strconv.Itoa(i), strconv.FormatUint(rand.Uint64(), 10)+"-"+strconv.Itoa(i), 100, nil, tags)
-	//		tmpa = append(tmpa, a)
-	//		if rand.Intn(2) == 0 && len(tmpa) > 0 {
-	//			//m.PostReply(tmpa[rand.Intn(len(tmpa))].ID, a)
-	//			m.PostReply(tmpa[0].ID, a)
-	//		} else {
-	//			m.PostArticle(a)
-	//		}
-	//	}
+	// titles := []string{
+	// 	"ofo押金难退，你可以试试“假破产真逼债”，但是不建议 手机发帖  ...2 New	",
+	// 	"各省适龄学生参加高考参加率以及其211、985录取率 手机发帖  ...2 New	",
+	// 	"猫咪缺铁性贫血 该怎么补 attach_img New	",
+	// 	"国产人造肉九月上市 手机发帖  ...2 New	",
+	// 	"7天内美国三个枪手的照片排排看。 New	",
+	// 	"台风让闻得出别人身上地铁站味道的小布尔乔亚崩溃了  ...23456 New	",
+	// 	"为啥龙族吧会变成黑江南的呢？ 手机发帖  ...23	",
+	// 	"“你可以不同意我的观点，但是我会捍卫你说话的权利”  ...23	",
+	// 	"超员1人被查，司机怒将3岁儿子甩丢出去，准备驾车离开	",
+	// 	"突然发现人与人的处境多么奇妙 attach_img	",
+	// 	"秀得飞起的高速轮胎，开头无厘头片结尾惊悚片	",
+	// 	"太极大师马保国亲戚张麒约战50岁业余摔跤手邓勇	",
+	// 	"颜值成第一择偶条件 上海青年婚恋数据曝光  ...234	",
+	// 	"咸阳51岁独居男家中去世 一周后被发现  ...2	",
+	// 	"工商联：北京取消限购，各区单独设置新能源汽车号牌！	",
+	// 	"乌贼娘《诡秘之主》集中讨论帖：scp克苏鲁蒸汽朋克 attach_img 手机发帖 heatlevel  ...23456..447	",
+	// 	"脑洞，几个利奇马级别的台风能改变撒哈拉沙漠的地形地貌？	",
+	// 	"华为这个次世代地图的饼画的还真有点意思 attach_img  ...23	",
+	// 	"【持续更新图片】工作的营地隔壁发生了针对车辆IED炸弹... attach_img 手机发帖  ...234	",
+	// 	"这不就是唐僧在车迟国比试的那个运动吗？ 手机发帖  ...2	",
+	// 	"朋友家小区楼下的告示，管理人尽力了 手机发帖	",
+	// 	"2.4米长眼镜王蛇爬入农家浴室 女主人被吓跑	",
+	// 	"力保健也一般呐……	",
+	// 	"那多笔记为什么感觉吊着一口气，欠点火候	",
+	// 	"深圳1.5亿的房子长什么样子？! 手机发帖  ...2345	",
+	// 	"想了解下论坛各位的父母吵架/相处情况 手机发帖  ...234	",
+	// 	"求推万元左右的电钢琴 attach_img  ...2	",
+	// 	"邮轮答疑帖S2 走咯？上船去咯？ attach_img	",
+	// 	"总感觉有点怪，路上老有人找我问路 手机发帖  ...2	",
+	// 	"微信表情包的麻将脸太大了，没了感觉 attach_img	",
+	// 	"【树洞】爹妈年纪大了开始迷信，真是无解的难题 attach_img  ...2	",
+	// 	"T恤设计将港澳归为国家 范思哲道歉：已下架并销毁 手机发帖	",
+	// 	"洪阿姨勇气可嘉",
+	// }
+	// tmpa := []*Article{}
+	// tags := []string{"a", "B"}
+	// for i := 0; i < len(titles); i++ {
+	// 	a := NewArticle(titles[i], strconv.FormatUint(rand.Uint64(), 10)+"-"+strconv.Itoa(i), 100, nil, tags, 0)
+	// 	tmpa = append(tmpa, a)
+	// 	if rand.Intn(2) == 0 && len(tmpa) > 0 && false {
+	// 		//m.PostReply(tmpa[rand.Intn(len(tmpa))].ID, a)
+	// 		m.PostReply(tmpa[0].ID, a)
+	// 	} else {
+	// 		m.PostArticle(a)
+	// 	}
+	// }
 
 	buf, err := ioutil.ReadFile("config.yml")
 	if err != nil {
@@ -71,9 +107,9 @@ func main() {
 		}
 	}
 
-	//mgr.LoadNodes(nodes)
-	//mgr.StartTransferAgent("tmp/transfer.db")
-	//cachemgr = cache.New("tmp/cache", config.CacheSize*1024*1024*1024, mgr.Get)
+	mgr.LoadNodes(nodes)
+	mgr.StartTransferAgent("tmp/transfer.db")
+	cachemgr = cache.New("tmp/cache", config.CacheSize*1024*1024*1024, mgr.Get)
 	//updateStat()
 
 	r := gin.Default()
@@ -95,8 +131,12 @@ func main() {
 	r.Handle("GET", "/p/:parent", handleRepliesView)
 	r.Handle("GET", "/tag/:tag", makeHandleMainView('t'))
 	r.Handle("GET", "/search/:title", makeHandleMainView('T'))
-	r.Handle("GET", "/tags", func(g *gin.Context) { g.HTML(200, "tags.html", struct{ Tags []string }{config.Tags}) })
-	r.Handle("POST", "/search", func(g *gin.Context) { g.Redirect(302, "/search/"+url.PathEscape(g.PostForm("q"))) })
+	r.Handle("GET", "/tags", func(g *gin.Context) {
+		g.HTML(200, "tags.html", struct{ Tags []string }{config.Tags})
+	})
+	r.Handle("POST", "/search", func(g *gin.Context) {
+		g.Redirect(302, "/search/"+url.PathEscape(g.PostForm("q")))
+	})
 	r.Handle("GET", "/search", func(g *gin.Context) {
 		if p := g.Query("provider"); p != "" {
 			host := ""
@@ -115,10 +155,9 @@ func main() {
 	r.Handle("POST", "/new", handleNewPostAction)
 	r.Handle("GET", "/edit/:id", handleEditPostView)
 	r.Handle("POST", "/edit", handleEditPostAction)
-
-	//r.Handle("GET", "/stat", func(g *gin.Context) {
-	//	g.HTML(200, "stat.html", currentStat())
-	//})
+	r.Handle("GET", "/stat", func(g *gin.Context) {
+		g.HTML(200, "stat.html", currentStat())
+	})
 	//r.Handle("GET", "/i/:url", func(g *gin.Context) {
 	//	url, k := g.Param("url"), ""
 	//	if url == "raw" {

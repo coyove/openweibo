@@ -61,7 +61,7 @@ func (m *Manager) FindBack(filter findby, cursor int64, n int) ([]*Article, bool
 	filter["parent"] = bson.M{"$exists": false}
 	filter["reply_time"] = bson.M{"$gt": cursor}
 
-	q := m.articles.Find(bson.M(filter)).Sort("reply_time").Limit(n + 1)
+	q := m.articles.Find(bson.M(filter)).Sort("reply_time").Limit(n + 1).SetMaxTime(time.Second)
 	a := []*Article{}
 	if err := q.All(&a); err != nil {
 		return nil, false, err
@@ -85,7 +85,7 @@ func (m *Manager) Find(filter findby, cursor int64, n int) ([]*Article, bool, er
 	filter["reply_time"] = bson.M{"$lt": cursor}
 	filter["parent"] = bson.M{"$exists": false}
 
-	q := m.articles.Find(bson.M(filter)).Sort("-reply_time").Limit(n + 1)
+	q := m.articles.Find(bson.M(filter)).Sort("-reply_time").Limit(n + 1).SetMaxTime(time.Second)
 	a := []*Article{}
 	if err := q.All(&a); err != nil {
 		return nil, false, err

@@ -37,7 +37,7 @@ func handleEditPostAction(g *gin.Context) {
 
 	var (
 		eid       = displayIDToObejctID(g.PostForm("reply"))
-		title     = softTrunc(g.PostForm("title"), 64)
+		title     = softTrunc(g.PostForm("title"), 100)
 		content   = softTrunc(g.PostForm("content"), int(config.MaxContent))
 		author    = authorNameToHash(g.PostForm("author"))
 		tags      = splitTags(g.PostForm("tags"))

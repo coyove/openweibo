@@ -73,7 +73,7 @@ func handleNewPostAction(g *gin.Context) {
 		uuid      = g.PostForm("uuid")
 		ip        = hashIP(g)
 		content   = softTrunc(g.PostForm("content"), int(config.MaxContent))
-		title     = softTrunc(g.PostForm("title"), 64)
+		title     = softTrunc(g.PostForm("title"), 100)
 		author    = softTrunc(g.PostForm("author"), 32)
 		tags      = splitTags(softTrunc(g.PostForm("tags"), 128))
 		redir     = func(a, b string) {
