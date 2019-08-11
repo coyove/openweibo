@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coyove/ch/driver"
 	"github.com/coyove/ch/mq"
 	"github.com/coyove/common/sched"
 )
@@ -28,7 +27,7 @@ func (ns *Nodes) transferDaemon() {
 	for {
 		p, err := ns.transferDB.PopFront()
 		if err == mq.ErrEmptyQueue {
-			time.Sleep(time.Second * 10)
+			time.Sleep(time.Second * 5)
 			continue
 		}
 
@@ -39,36 +38,23 @@ func (ns *Nodes) transferDaemon() {
 	}
 }
 
-func (ns *Nodes) transferKey(k string, from string) bool {
-	ns.mu.RLock()
-	toNode := SelectNode(k, ns.nodes)
-	fromNode := ns.NodeByName(from)
-	ns.mu.RUnlock()
-
-	if fromNode == nil {
-		log.Println("[transfer] invalid from node name:", from, k)
-		return false
-	}
-
-	log.Println("[transfer] from:", from, ", to:", toNode.Name, ", key:", k)
-
-	v, err := fromNode.Get(k)
-	if err == driver.ErrKeyNotFound {
-		goto OK
-	}
+func (ns *Nodes) transferKey(k string, to string) bool {
+	v, err := ns.get(k, false, true)
 	if err != nil {
-		log.Println("[transfer] get:", fromNode.Name, "key:", k, "err:", err)
-		return false
+		log.Println("[transfer] lost ", k, err)
+		return true
 	}
+
+	toNode := ns.GetNode(to)
+	if toNode == nil {
+		log.Println("[transfer] FATAL: invalid to node name:", to, k)
+		return true
+	}
+
 	if err := toNode.Put(k, v); err != nil {
-		log.Println("[transfer] put:", toNode.Name, "key:", k, "err:", err)
-		return false
-	}
-	if err := fromNode.Delete(k); err != nil {
-		log.Println("[transfer] delete:", fromNode.Name, "key:", k, "err:", err)
+		log.Println("[transfer] failed to put ", k, err)
 		return false
 	}
 
-OK:
 	return true
 }

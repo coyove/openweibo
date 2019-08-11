@@ -3,24 +3,31 @@ package chmemory
 import (
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/coyove/ch/driver"
+	"github.com/coyove/common/sched"
 )
 
 func NewNode(name string, weight int64) *driver.Node {
-	return &driver.Node{
+	n := &driver.Node{
 		KV: &Storage{
-			weight: weight,
+			weight:  weight,
+			Offline: false,
 		},
 		Name:   name,
 		Weight: weight,
 	}
+	n.KV.(*Storage).checkSpace()
+	return n
 }
 
 type Storage struct {
-	kv     sync.Map
-	count  int64
-	weight int64
+	kv      sync.Map
+	count   int64
+	weight  int64
+	used    int64
+	Offline bool
 }
 
 func (s *Storage) Put(k string, v []byte) error {
@@ -49,11 +56,18 @@ func (s *Storage) Stat() driver.Stat {
 	}
 }
 
-func (s *Storage) Space() (int64, int64) {
+func (s *Storage) Space() (bool, int64, int64) {
+	return s.Offline, s.weight, s.used
+}
+
+func (s *Storage) checkSpace() {
 	var used int64
 	s.kv.Range(func(k, v interface{}) bool {
 		used += int64(len(v.([]byte)))
 		return true
 	})
-	return s.weight, used
+	s.used = used
+	sched.Schedule(func() {
+		go s.checkSpace()
+	}, time.Second)
 }

@@ -24,6 +24,7 @@ func NewNode(name string, config driver.StorageConfig) *driver.Node {
 			accessToken: config.AccessToken,
 			client:      &http.Client{},
 			throt:       driver.NewTokenBucket(config.Throt),
+			config:      config,
 		},
 		Name:   name,
 		Weight: config.Weight,
@@ -38,6 +39,7 @@ type Storage struct {
 	accessToken string
 	throt       *driver.TokenBucket
 	client      *http.Client
+	config      driver.StorageConfig
 }
 
 func sanitize(k string) string {
@@ -168,7 +170,7 @@ func (s *Storage) Stat() driver.Stat {
 	}
 }
 
-func (s *Storage) Space() (int64, int64) {
+func (s *Storage) Space() (bool, int64, int64) {
 	stat := struct {
 		Used       int64 `json:"used"`
 		Allocation struct {
@@ -186,5 +188,5 @@ func (s *Storage) Space() (int64, int64) {
 	resp.Body.Close()
 	json.Unmarshal(buf, &stat)
 
-	return stat.Allocation.Allocated, stat.Used
+	return s.config.Offline, stat.Allocation.Allocated, stat.Used
 }

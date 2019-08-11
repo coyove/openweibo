@@ -20,7 +20,7 @@ type KV interface {
 	Get(k string) ([]byte, error)
 	Delete(k string) error
 	Stat() Stat
-	Space() (int64, int64)
+	Space() (offline bool, totalBytes int64, usedBytes int64)
 }
 
 type Stat struct {
@@ -38,6 +38,7 @@ type StorageConfig struct {
 	Name        string `yaml:"Name"`
 	Type        string `yaml:"Type"`
 	Weight      int64  `yaml:"Weight"`
+	Offline     bool   `yaml:"Offline"`
 	Throt       string `yaml:"Throt"`
 	AccessToken string `yaml:"AccessToken"`
 }

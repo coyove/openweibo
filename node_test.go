@@ -16,18 +16,17 @@ import (
 
 func TestNodesFuzzy(t *testing.T) {
 	rand.Seed(time.Now().Unix())
-	testNode = true
 
 	nodes := []*driver.Node{
-		chmemory.NewNode("aa", 10),
-		chmemory.NewNode("bb", 25),
-		chmemory.NewNode("cc", 10),
-		chmemory.NewNode("dd", 5),
+		chmemory.NewNode("aa", 1024*10),
+		chmemory.NewNode("bb", 1024*25),
+		chmemory.NewNode("cc", 1024*10),
+		chmemory.NewNode("dd", 1024*5),
 	}
 
 	mgr := &Nodes{}
 	mgr.LoadNodes(nodes)
-	mgr.StartTransferAgent("tmp/test")
+	mgr.StartTransferAgent("transfer.db")
 
 	m := sync.Map{}
 
@@ -38,26 +37,24 @@ func TestNodesFuzzy(t *testing.T) {
 
 			if rand.Intn(10000) == 0 {
 				//if i == 1 && j == 1 {
-				nodes = append(nodes, chmemory.NewNode(strconv.Itoa(i*200000+j), int64(rand.Intn(10)+10)))
+				nodes = append(nodes, chmemory.NewNode(strconv.Itoa(i*200000+j), 1024*int64(rand.Intn(10)+10)))
 				mgr.LoadNodes(nodes)
 			}
 
 			go func() {
-				k, v := fmt.Sprintf("%x", rand.Uint64()), fmt.Sprintf("%x", rand.Uint64())
-				mgr.Put(k, []byte(v))
+				v := fmt.Sprintf("%x", rand.Uint64())
+				k, _ := mgr.Put([]byte(v))
+				//log.Println(k, err)
 				m.Store(k, []byte(v))
 				wg.Done()
 			}()
 		}
 		wg.Wait()
-		//log.Println(i)
+		log.Println(i)
 	}
-
-	Retries = len(nodes)
 
 	for i := 0; i < 2; i++ {
 		count := 0
-		avgTries := 0
 
 		m.Range(func(k, v interface{}) bool {
 			v2, err := mgr.Get(k.(string))
@@ -69,11 +66,10 @@ func TestNodesFuzzy(t *testing.T) {
 			}
 			count++
 			//log.Println(count)
-			avgTries += testRetries
 			return true
 		})
 
-		log.Println(avgTries, count, float64(avgTries)/float64(count))
+		log.Println(count)
 	}
 
 	log.Println(nodes)

@@ -1,27 +1,59 @@
 package ch
 
 import (
-	"hash/fnv"
+	"crypto/sha1"
+	"hash/crc32"
 	"math"
 
 	"github.com/coyove/ch/driver"
 )
 
-// Straw2
-func SelectNode(k string, nodes []*driver.Node) *driver.Node {
-	var maxNode = nodes[0]
-	var maxStraw float64 = -math.MaxFloat64
+const selectCount = 3
 
-	for _, n := range nodes {
-		h := fnv.New64()
-		h.Write([]byte(n.Name))
-		h.Write([]byte(k))
-		s := math.Log(float64(h.Sum64()&0xffff)/65536) / float64(n.Weight)
-		if s >= maxStraw {
-			maxNode = n
-			maxStraw = s
+func selectNodes(v []byte, nodes []*driver.Node) [selectCount]int32 {
+	var (
+		h    = crc32.NewIEEE()
+		w    = sha1.Sum(v)
+		list [selectCount]struct {
+			node  int32
+			straw float64
 		}
+	)
+
+	for i := range list {
+		list[i].node = -1
 	}
 
-	return maxNode
+	for i := range list {
+		list[i].straw = -math.MaxFloat64
+	}
+
+	for ni, n := range nodes {
+		offline, total, used := n.Space()
+		if int64(len(v)) > total-used || offline {
+			continue
+		}
+
+		h.Reset()
+		h.Write([]byte(n.Name))
+		h.Write(w[:])
+
+		s := math.Log(float64(h.Sum32()&0xffff)/65536) * 1024 * 1024 / float64(total-used)
+
+		for i := range list {
+			if s > list[i].straw {
+				copy(list[i+1:], list[i:])
+				list[i].node = int32(ni)
+				list[i].straw = s
+				break
+			}
+		}
+
+	}
+
+	res := [selectCount]int32{}
+	for i, l := range list {
+		res[i] = int32(l.node)
+	}
+	return res
 }
