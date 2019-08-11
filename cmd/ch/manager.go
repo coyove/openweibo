@@ -27,7 +27,7 @@ func NewManager(name, uri string) (*Manager, error) {
 		articles: client.DB(name).C("articles"),
 	}
 
-	m.articles.DropCollection()
+	//m.articles.DropCollection()
 	m.articles.EnsureIndex(mgo.Index{Key: []string{"reply_time", "create_time", "author", "tags", "parent"}})
 	if err := m.articles.EnsureIndex(mgo.Index{Key: []string{"$text:title"}}); err != nil {
 		m.session.Close()
@@ -43,7 +43,10 @@ func ByTags(tag ...string) findby {
 }
 
 func ByTitle(title string) findby {
-	return findby(bson.M{"$text": bson.M{"$search": title}})
+	return findby(bson.M{"$text": bson.M{
+		"$search": title,
+		//"$language": "en",
+	}})
 }
 
 func ByAuthor(author uint64) findby {

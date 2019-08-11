@@ -30,20 +30,22 @@ type Article struct {
 	Title        string        `bson:"title"`
 	Content      string        `bson:"content"`
 	Author       uint64        `bson:"author"`
+	IP           uint64        `bson:"ip"`
 	Images       []string      `bson:"images"`
 	Tags         []string      `bson:"tags"`
 	CreateTime   int64         `bson:"create_time"`
 	ReplyTime    int64         `bson:"reply_time"`
 }
 
-func NewArticle(title, content string, author uint64, images []string, tags []string) *Article {
+func NewArticle(title, content string, author uint64, images []string, tags []string, ip uint64) *Article {
 	return &Article{
 		ID:         bson.NewObjectId(),
-		Title:      title,
+		Title:      expandText(title),
 		Content:    content,
 		Author:     author,
 		Images:     images,
 		Tags:       tags,
+		IP:         ip,
 		CreateTime: time.Now().UnixNano() / 1e3,
 		ReplyTime:  time.Now().UnixNano() / 1e3,
 	}
@@ -75,6 +77,10 @@ func (a *Article) AuthorString() string {
 
 func (a *Article) ContentHTML() template.HTML {
 	return template.HTML(sanText(a.Content))
+}
+
+func (a *Article) TitleString() string {
+	return collapseText(a.Title)
 }
 
 func (a *Article) String() string {

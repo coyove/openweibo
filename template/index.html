@@ -1,9 +1,9 @@
 {{template "header.html" .}}
 
     {{if .ParentArticle}}
-        <h2>{{.ParentArticle.Title}}</h2>
-        {{if .ParentArticle.Title}}
-        <title>{{.ParentArticle.Title}}</title>
+        <h2>{{.ParentArticle.TitleString}}</h2>
+        {{if .ParentArticle.TitleString}}
+        <title>{{.ParentArticle.TitleString}}</title>
         {{else}}
         <title>回复: {{.ParentArticle.DisplayID}}</title>
         {{end}}
@@ -46,14 +46,6 @@
 
     {{else}}
 
-        <div>
-            <form action="/search" method="POST">
-                <input name=q value="{{.SearchTerm}}">
-                <input type=submit value="搜索">
-            </form>
-            <hr>
-        </div>
-
         <title>{{.Title}}</title>
 
         {{if len .Articles}}
@@ -65,7 +57,7 @@
                 <a href="/p/{{.DisplayID}}">
                     {{if .Announcement}}<b>[公告]</b>{{end}}
                     {{if .Locked}}<b>[锁定]</b>{{end}}
-                    {{.Title}}{{if .Replies}} ({{.Replies}}回复){{end}}
+                    {{.TitleString}}{{if .Replies}} ({{.Replies}}回复){{end}}
                 </a>
                 &nbsp;<b>{{.AuthorString}}</b> 发布于 {{.CreateTimeString}}
             </div>

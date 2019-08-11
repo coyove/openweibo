@@ -145,3 +145,10 @@ nav ul ul li {
 	display:list-item;
 	position: relative;
 }
+
+.image {
+    max-width: 200px;
+    max-height: 200px;
+    width: 100%;
+    height: auto;
+}

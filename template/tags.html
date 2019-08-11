@@ -1,7 +1,7 @@
 {{template "header.html" .}}
-
-{{range .Tags}}
+<title>全部标签</title>
 <ul>
+{{range .Tags}}
     <li><a href="/tag/{{.}}">{{.}}</a>
-</ul>
 {{end}}
+</ul>

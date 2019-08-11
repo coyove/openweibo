@@ -7,7 +7,6 @@ import (
 	_ "image/png"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"net/url"
 	"strconv"
 	"strings"
@@ -29,18 +28,18 @@ func main() {
 		panic(err)
 	}
 
-	tmpa := []*Article{}
-	tags := []string{"a", "B"}
-	for i := 0; i < 100; i++ {
-		a := NewArticle("hello"+strconv.Itoa(i), strconv.FormatUint(rand.Uint64(), 10)+"-"+strconv.Itoa(i), 100, nil, tags)
-		tmpa = append(tmpa, a)
-		if rand.Intn(2) == 0 && len(tmpa) > 0 {
-			//m.PostReply(tmpa[rand.Intn(len(tmpa))].ID, a)
-			m.PostReply(tmpa[0].ID, a)
-		} else {
-			m.PostArticle(a)
-		}
-	}
+	//	tmpa := []*Article{}
+	//	tags := []string{"a", "B"}
+	//	for i := 0; i < 100; i++ {
+	//		a := NewArticle("hello"+strconv.Itoa(i), strconv.FormatUint(rand.Uint64(), 10)+"-"+strconv.Itoa(i), 100, nil, tags)
+	//		tmpa = append(tmpa, a)
+	//		if rand.Intn(2) == 0 && len(tmpa) > 0 {
+	//			//m.PostReply(tmpa[rand.Intn(len(tmpa))].ID, a)
+	//			m.PostReply(tmpa[0].ID, a)
+	//		} else {
+	//			m.PostArticle(a)
+	//		}
+	//	}
 
 	buf, err := ioutil.ReadFile("config.yml")
 	if err != nil {
@@ -98,6 +97,18 @@ func main() {
 	r.Handle("GET", "/search/:title", makeHandleMainView('T'))
 	r.Handle("GET", "/tags", func(g *gin.Context) { g.HTML(200, "tags.html", struct{ Tags []string }{config.Tags}) })
 	r.Handle("POST", "/search", func(g *gin.Context) { g.Redirect(302, "/search/"+url.PathEscape(g.PostForm("q"))) })
+	r.Handle("GET", "/search", func(g *gin.Context) {
+		if p := g.Query("provider"); p != "" {
+			host := ""
+			u, _ := url.Parse(g.Request.Referer())
+			if u != nil {
+				host = u.Host
+			}
+			g.Redirect(302, p+url.PathEscape("site:"+host+" "+g.Query("q")))
+		} else {
+			g.HTML(200, "search.html", nil)
+		}
+	})
 	r.Handle("GET", "/id/:id", makeHandleMainView('a'))
 
 	r.Handle("GET", "/new/:id", handleNewPostView)
@@ -169,10 +180,10 @@ func makeHandleMainView(t byte) func(g *gin.Context) {
 			if strings.HasPrefix(pl.SearchTerm, "#") {
 				findby = ByTags(splitTags(pl.SearchTerm)...)
 			} else {
-				findby = ByTitle(pl.SearchTerm)
+				findby = ByTitle(expandText(pl.SearchTerm))
 			}
 		} else if t == 'a' {
-			a, _ := strconv.ParseUint(g.Param("id"), 36, 64)
+			a, _ := strconv.ParseUint(strings.TrimRight(g.Param("id"), "*"), 36, 64)
 			findby = ByAuthor(a)
 		}
 
@@ -205,6 +216,10 @@ func makeHandleMainView(t byte) func(g *gin.Context) {
 			pl.Next = a[len(a)-1].ReplyTime
 			pl.Prev = a[0].ReplyTime
 			pl.Title = fmt.Sprintf("%s - %s", a[0].ReplyTimeString(), a[len(a)-1].ReplyTimeString())
+		}
+
+		if pl.SearchTerm != "" {
+			pl.Title = "search " + pl.SearchTerm
 		}
 
 		g.HTML(200, "index.html", pl)

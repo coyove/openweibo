@@ -9,15 +9,18 @@ import (
 
 func NewNode(name string, weight int64) *driver.Node {
 	return &driver.Node{
-		KV:     &Storage{},
+		KV: &Storage{
+			weight: weight,
+		},
 		Name:   name,
 		Weight: weight,
 	}
 }
 
 type Storage struct {
-	kv    sync.Map
-	count int64
+	kv     sync.Map
+	count  int64
+	weight int64
 }
 
 func (s *Storage) Put(k string, v []byte) error {
@@ -44,4 +47,13 @@ func (s *Storage) Stat() driver.Stat {
 	return driver.Stat{
 		ObjectCount: s.count,
 	}
+}
+
+func (s *Storage) Space() (int64, int64) {
+	var used int64
+	s.kv.Range(func(k, v interface{}) bool {
+		used += int64(len(v.([]byte)))
+		return true
+	})
+	return s.weight, used
 }

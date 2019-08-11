@@ -32,11 +32,12 @@ import (
 )
 
 var (
-	mgr      ch.Nodes
-	mgrStats sync.Map
-	cachemgr *cache.Cache
-	dedup    *lru.Cache
-	client   = &http.Client{
+	mgr       ch.Nodes
+	mgrStats  sync.Map
+	cachemgr  *cache.Cache
+	dedup     *lru.Cache
+	bytesPool = &sync.Pool{New: func() interface{} { return &bytes.Buffer{} }}
+	client    = &http.Client{
 		Timeout: time.Second,
 	}
 	rxSan      = regexp.MustCompile(`(<|https?://\S+)`)
@@ -295,4 +296,36 @@ func encodeQuery(a ...string) string {
 		}
 	}
 	return query.Encode()
+}
+
+func expandText(in string) string {
+	t := bytesPool.Get().(*bytes.Buffer)
+	for _, r := range in {
+		t.WriteRune(r)
+		if r > 128 {
+			t.WriteRune(' ')
+		}
+	}
+	x := t.String()
+	t.Reset()
+	bytesPool.Put(t)
+	return x
+}
+
+func collapseText(in string) string {
+	t := bytesPool.Get().(*bytes.Buffer)
+	var lastr rune
+	for _, r := range in {
+		if r == ' ' {
+			if lastr > 128 {
+				continue
+			}
+		}
+		t.WriteRune(r)
+		lastr = r
+	}
+	x := t.String()
+	t.Reset()
+	bytesPool.Put(t)
+	return x
 }

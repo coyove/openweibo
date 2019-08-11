@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/binary"
 	"log"
+	"net"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -49,12 +51,27 @@ func handleNewPostView(g *gin.Context) {
 	g.HTML(200, "newpost.html", pl)
 }
 
+func hashIP(g *gin.Context) uint64 {
+	buf := make([]byte, 8)
+	ip := g.ClientIP()
+	ip2 := net.ParseIP(ip)
+	if len(ip2) == net.IPv4len {
+		copy(buf, ip2[:3]) // first 3 bytes
+	} else if len(ip2) == net.IPv6len {
+		copy(buf, ip2) // first 8 byte
+	} else {
+		copy(buf, ip)
+	}
+	return binary.BigEndian.Uint64(buf)
+}
+
 func handleNewPostAction(g *gin.Context) {
 	var (
 		reply     = displayIDToObejctID(g.PostForm("reply"))
 		answer    = g.PostForm("answer")
 		challenge = g.PostForm("challenge")
 		uuid      = g.PostForm("uuid")
+		ip        = hashIP(g)
 		content   = softTrunc(g.PostForm("content"), int(config.MaxContent))
 		title     = softTrunc(g.PostForm("title"), 64)
 		author    = softTrunc(g.PostForm("author"), 32)
@@ -101,23 +118,22 @@ func handleNewPostAction(g *gin.Context) {
 
 	var err error
 	if reply != "" {
-		err = m.PostReply(reply, NewArticle("", content, authorNameToHash(author), nil, nil))
+		err = m.PostReply(reply, NewArticle("", content, authorNameToHash(author), nil, nil, ip))
 	} else {
 		if len(title) < int(config.MinContent) {
 			redir("error", "title too short")
 			return
 		}
-		err = m.PostArticle(NewArticle(title, content, authorNameToHash(author), nil, tags))
+		a := NewArticle(title, content, authorNameToHash(author), nil, tags, ip)
+		err = m.PostArticle(a)
+		reply = a.ID
 	}
 	if err != nil {
 		redir("error", err.Error())
 		return
 	}
-	if reply != "" {
-		g.Redirect(302, "/p/"+objectIDToDisplayID(reply)+"?p=-1")
-	} else {
-		g.Redirect(302, "/")
-	}
+
+	g.Redirect(302, "/p/"+objectIDToDisplayID(reply)+"?p=-1")
 }
 
 func sanText(in string) string {

@@ -1,0 +1,25 @@
+{{template "header.html" .}}
+<title>搜索</title>
+        <div>
+            <div>标题搜索（以“#”开头搜索标签）：</div>
+            <form action="/search" method="POST">
+                <input name=q value="">
+                <input type=submit value="搜索">
+            </form>
+            <hr>
+        </div>
+        <div>
+            <div>全站搜索：</div>
+            <form action="/search" method="GET" target="_blank">
+                <input name=q value="">
+                <input name=provider value="https://www.google.com/search?q=" type=hidden>
+                <input type=submit value="Google搜索">
+            </form>
+            <form action="/search" method="GET" target="_blank">
+                <input name=q value="">
+                <input name=provider value="https://duckduckgo.com/?q=" type=hidden>
+                <input type=submit value="DuckDuckGo搜索">
+            </form>
+            <hr>
+        </div>
+{{template "footer.html" .}}

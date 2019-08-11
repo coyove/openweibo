@@ -167,3 +167,24 @@ func (s *Storage) Stat() driver.Stat {
 		Throt:          s.throt.String(),
 	}
 }
+
+func (s *Storage) Space() (int64, int64) {
+	stat := struct {
+		Used       int64 `json:"used"`
+		Allocation struct {
+			Allocated int64 `json:"allocated"`
+		} `json:"allocation"`
+	}{}
+
+	req := s.newReq("https://api.dropboxapi.com/2/users/get_space_usage", nil)
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return 0, 0
+	}
+
+	buf, _ := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
+	json.Unmarshal(buf, &stat)
+
+	return stat.Allocation.Allocated, stat.Used
+}

@@ -20,19 +20,18 @@ type KV interface {
 	Get(k string) ([]byte, error)
 	Delete(k string) error
 	Stat() Stat
+	Space() (int64, int64)
 }
 
 type Stat struct {
-	TotalBytes     int64
-	AvailableBytes int64
-	DownloadBytes  int64
-	UploadBytes    int64
-	Ping           int64
-	ObjectCount    int64
-	UpdateTime     time.Time
-	Sealed         bool
-	Error          error
-	Throt          string
+	DownloadBytes int64
+	UploadBytes   int64
+	Ping          int64
+	ObjectCount   int64
+	UpdateTime    time.Time
+	Sealed        bool
+	Error         error
+	Throt         string
 }
 
 type StorageConfig struct {
