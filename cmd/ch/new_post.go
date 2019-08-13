@@ -2,8 +2,11 @@ package main
 
 import (
 	"encoding/binary"
+	"io"
+	"io/ioutil"
 	"log"
 	"net"
+	"path/filepath"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -76,6 +79,7 @@ func handleNewPostAction(g *gin.Context) {
 		title     = softTrunc(g.PostForm("title"), 100)
 		author    = softTrunc(g.PostForm("author"), 32)
 		tags      = splitTags(softTrunc(g.PostForm("tags"), 128))
+		image, _  = g.FormFile("image")
 		redir     = func(a, b string) {
 			q := encodeQuery(a, b, "author", author, "content", content, "title", title, "tags", strings.Join(tags, " "))
 			if reply == "" {
@@ -116,15 +120,36 @@ func handleNewPostAction(g *gin.Context) {
 		return
 	}
 
+	var imagek string
+	if image != nil {
+		ext := filepath.Ext(image.Filename)
+		f, err := image.Open()
+		if err != nil || (ext != ".jpg" && ext != ".png") {
+			redir("error", "image upload failed")
+			return
+		}
+		buf, _ := ioutil.ReadAll(io.LimitReader(f, 1024*1024))
+		f.Close()
+
+		localpath, displaypath := getImageLocalTmpPath(image.Filename, buf)
+		if err := ioutil.WriteFile(localpath, buf, 0700); err != nil {
+			redir("error", "image write failed")
+			return
+		}
+		imagek = displaypath
+
+		log.Println(imagek, localpath)
+	}
+
 	var err error
 	if reply != "" {
-		err = m.PostReply(reply, NewArticle("", content, authorNameToHash(author), nil, nil, ip))
+		err = m.PostReply(reply, NewArticle("", content, authorNameToHash(author), []string{imagek}, nil, ip))
 	} else {
 		if len(title) < int(config.MinContent) {
 			redir("error", "title too short")
 			return
 		}
-		a := NewArticle(title, content, authorNameToHash(author), nil, tags, ip)
+		a := NewArticle(title, content, authorNameToHash(author), []string{imagek}, tags, ip)
 		err = m.PostArticle(a)
 		reply = a.ID
 	}

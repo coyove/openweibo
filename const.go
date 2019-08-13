@@ -8,14 +8,16 @@ import (
 	"github.com/coyove/ch/driver"
 )
 
-const selectCount = 3
+const (
+	selectCount = 3
+)
 
-func selectNodes(v []byte, nodes []*driver.Node) [selectCount]int32 {
+func selectNodes(v []byte, nodes []*driver.Node) [selectCount]int16 {
 	var (
 		h    = crc32.NewIEEE()
 		w    = sha1.Sum(v)
 		list [selectCount]struct {
-			node  int32
+			node  int16
 			straw float64
 		}
 	)
@@ -43,7 +45,7 @@ func selectNodes(v []byte, nodes []*driver.Node) [selectCount]int32 {
 		for i := range list {
 			if s > list[i].straw {
 				copy(list[i+1:], list[i:])
-				list[i].node = int32(ni)
+				list[i].node = int16(ni)
 				list[i].straw = s
 				break
 			}
@@ -51,9 +53,15 @@ func selectNodes(v []byte, nodes []*driver.Node) [selectCount]int32 {
 
 	}
 
-	res := [selectCount]int32{}
+	res := [selectCount]int16{}
+	next := len(nodes)
+
 	for i, l := range list {
-		res[i] = int32(l.node)
+		res[i] = l.node
+		if l.node == -1 {
+			res[i] = int16(next)
+			next++
+		}
 	}
 	return res
 }

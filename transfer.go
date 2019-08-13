@@ -1,8 +1,8 @@
 package ch
 
 import (
+	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/coyove/ch/mq"
@@ -31,15 +31,18 @@ func (ns *Nodes) transferDaemon() {
 			continue
 		}
 
-		parts := strings.Split(string(p.Value), "@")
-		if !ns.transferKey(parts[0], parts[1]) {
+		var k string
+		var i int
+		fmt.Sscanf("%s@%d", string(p.Value), &k, &i)
+
+		if !ns.transferKey(k, i) {
 			ns.transferDB.PushBack(p.Value)
 		}
 	}
 }
 
-func (ns *Nodes) transferKey(k string, to string) bool {
-	v, err := ns.get(k, false, true)
+func (ns *Nodes) transferKey(k string, to int) bool {
+	v, err := ns.get(k, 'g', true)
 	if err != nil {
 		log.Println("[transfer] lost ", k, err)
 		return true
@@ -47,7 +50,7 @@ func (ns *Nodes) transferKey(k string, to string) bool {
 
 	toNode := ns.GetNode(to)
 	if toNode == nil {
-		log.Println("[transfer] FATAL: invalid to node name:", to, k)
+		log.Println("[transfer] FATAL: invalid to node:", to, k)
 		return true
 	}
 

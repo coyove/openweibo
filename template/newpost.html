@@ -7,7 +7,7 @@
 {{end}}
 <hr>
 
-<form method="POST" action="/new">
+<form method="POST" action="/new" enctype="multipart/form-data">
     <input type=hidden name=uuid value="{{.UUID}}">
     <table>
     {{if .Reply}}
@@ -45,6 +45,10 @@
     <tr>
         <td>内容:</td>
         <td><textarea rows=10 name="content">{{.RContent}}</textarea></td>
+    </tr>
+    <tr>
+        <td>图片:</td>
+        <td><input type=file name=image></td>
     </tr>
     <tr>
         <td></td>

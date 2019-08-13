@@ -6,91 +6,92 @@ import (
 	"encoding/binary"
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"sync"
-	"time"
 
 	"github.com/coyove/ch/driver"
 	"github.com/coyove/ch/mq"
 )
 
-type Key [20]byte
+type Key [15]byte
 
 func (k Key) String() string {
 	return base32.HexEncoding.EncodeToString(k[:])
 }
 
-func (k Key) Replicas() (r []int32) {
-	x := binary.BigEndian.Uint64(k[:])
-	for i := 1; i <= 43; i += 21 {
-		r = append(r, int32(x<<uint(i)>>43))
+func (k *Key) FromString(key string) error {
+	buf, _ := base32.HexEncoding.DecodeString(key)
+	if len(buf) != len(*k) {
+		return fmt.Errorf("invalid key: %v", key)
+	}
+	copy((*k)[:], buf)
+	return nil
+}
+
+func (k Key) Replicas() (r []int16) {
+	for i := 0; i < 3; i++ {
+		x := int16(binary.BigEndian.Uint16(k[6+i*2:]))
+		if x < 0 {
+			continue
+		}
+		r = append(r, x)
 	}
 	return
 }
 
-func (k *Key) SetReplicas(r [3]int32) {
-	x := uint64(r[0]&0x1fffff)<<42 + uint64(r[1]&0x1fffff)<<21 + uint64(r[2]&0x1fffff)
-	binary.BigEndian.PutUint64(k[:], x)
+func (k *Key) init(r [3]int16) {
+	binary.BigEndian.PutUint16(k[6:], uint16(r[0]))
+	binary.BigEndian.PutUint16(k[8:], uint16(r[1]))
+	binary.BigEndian.PutUint16(k[10:], uint16(r[2]))
 }
 
-func (k Key) Time() time.Time {
-	return time.Unix(int64(binary.BigEndian.Uint32(k[8:])), 0)
-}
-
-func (k *Key) SetTime() {
-	binary.BigEndian.PutUint32((*k)[8:], uint32(time.Now().Unix()))
+func (ns *Nodes) MakeKey(v []byte) Key {
+	x := sha1.Sum(v)
+	key := Key{}
+	copy(key[:], x[:])
+	key.init(selectNodes(v, ns.Nodes()))
+	return key
 }
 
 type Nodes struct {
 	mu         sync.RWMutex
 	nodes      []*driver.Node
 	transferDB *mq.SimpleMessageQueue
-	Cooldown   time.Duration
 }
 
 func (ns *Nodes) LoadNodes(nodes []*driver.Node) {
+	if len(nodes) >= math.MaxInt16 {
+		panic("too many nodes")
+	}
 	ns.mu.Lock()
 	ns.nodes = nodes
 	ns.mu.Unlock()
 }
 
-func (ns *Nodes) GetNode(name string) *driver.Node {
+func (ns *Nodes) GetNode(i int) *driver.Node {
 	ns.mu.RLock()
 	defer ns.mu.RUnlock()
-
-	for _, n := range ns.nodes {
-		if n.Name == name {
-			return n
-		}
+	if i >= len(ns.nodes) {
+		return nil
 	}
-	return nil
-}
-
-func (ns *Nodes) MakeKey(v []byte) string {
-	nodes := ns.Nodes()
-	r := selectNodes(v, nodes)
-
-	key := Key(sha1.Sum(v))
-	key.SetReplicas(r)
-	key.SetTime()
-	return key.String()
+	return ns.nodes[i]
 }
 
 func (ns *Nodes) Put(v []byte) (string, error) {
 	var (
 		nodes   = ns.Nodes()
-		r       = selectNodes(v, nodes)
-		k       = ns.MakeKey(v)
+		key     = ns.MakeKey(v)
+		k, r    = key.String(), key.Replicas()
 		wg      sync.WaitGroup
 		success bool
 		failure error
 	)
 
 	for i := range r {
-		if r[i] == -1 {
+		if int(r[i]) >= len(nodes) {
 			continue
 		}
-
 		wg.Add(1)
 		go func(node *driver.Node) {
 			if err := node.Put(k, v); err != nil {
@@ -101,7 +102,6 @@ func (ns *Nodes) Put(v []byte) (string, error) {
 			wg.Done()
 		}(nodes[r[i]])
 	}
-
 	wg.Wait()
 	if success {
 		return k, nil
@@ -109,56 +109,63 @@ func (ns *Nodes) Put(v []byte) (string, error) {
 	return "", fmt.Errorf("no node available, last error: %v", failure)
 }
 
-func (ns *Nodes) Get(k string) ([]byte, error) {
-	v, err := ns.get(k, false, false)
+func (ns *Nodes) Get(k interface{}) ([]byte, error) {
+	v, err := ns.get(k, 'g', false)
 	return v, err
 }
 
-func (ns *Nodes) Delete(k string) error {
-	_, err := ns.get(k, true, false)
+func (ns *Nodes) Delete(k interface{}) error {
+	_, err := ns.get(k, 'd', false)
 	return err
 }
 
-func (ns *Nodes) get(key string, del bool, noTransfer bool) (v []byte, err error) {
-	buf, _ := base32.HexEncoding.DecodeString(key)
-	k := Key{}
-	if len(buf) != len(k) {
-		return nil, fmt.Errorf("invalid key: %s", key)
-	}
-	copy(k[:], buf)
-	r := k.Replicas()
-	if len(r) == 0 {
-		return nil, fmt.Errorf("invalid key: %s, no replicas", key)
-	}
-	if ns.Cooldown != 0 && time.Since(k.Time()) < ns.Cooldown {
-		return nil, fmt.Errorf("invalid key: %s, cooldown", key)
+func (ns *Nodes) get(key interface{}, del byte, noTransfer bool) (v []byte, err error) {
+	k, ok := key.(Key)
+	if !ok {
+		if err := k.FromString(key.(string)); err != nil {
+			return nil, err
+		}
+	} else {
+		key = k.String()
 	}
 
-	nodes := ns.Nodes()
-	if del {
+	nodes, r := ns.Nodes(), k.Replicas()
+	if len(r) != 3 {
+		return nil, fmt.Errorf("invalid key: %s, no replicas", key)
+	}
+
+	if del == 'd' {
 		for i := range r {
+			if int(r[i]) >= len(nodes) {
+				continue
+			}
 			// TODO: del
-			nodes[r[i]].Delete(key)
+			nodes[r[i]].Delete(key.(string))
 		}
 	} else {
 		for i := range rand.Perm(len(r)) {
-			if v, err = nodes[r[i]].Get(key); err == nil {
+			if int(r[i]) >= len(nodes) {
+				err = driver.ErrKeyNotFound
+				continue
+			}
+			if v, err = nodes[r[i]].Get(key.(string)); err == nil {
 				return
 			}
 			if err == driver.ErrKeyNotFound && !noTransfer {
-				if err := ns.transferDB.PushBack([]byte(fmt.Sprintf("%s@%s", key, nodes[r[i]].Name))); err != nil {
+				tkey := fmt.Sprintf("%v@%d", key, r[i])
+				if err := ns.transferDB.PushBack([]byte(tkey)); err != nil {
 					log.Println("[nodes.get] push to transfer.db:", err)
 				}
 			}
 		}
 	}
+	// If we reach here, the last error will be returned
 	return
 }
 
 func (ns *Nodes) Nodes() []*driver.Node {
 	ns.mu.RLock()
-	n := make([]*driver.Node, len(ns.nodes))
-	copy(n, ns.nodes)
+	n := ns.nodes
 	ns.mu.RUnlock()
 	return n
 }

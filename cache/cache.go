@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"crypto/sha1"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -30,7 +29,7 @@ type Cache struct {
 }
 
 func New(path string, maxSize int64, getter func(k string) ([]byte, error)) *Cache {
-	for i := 0; i < 1024; i++ {
+	for i := 0; i < 256; i++ {
 		dir := filepath.Join(path, strconv.Itoa(i))
 		if err := os.MkdirAll(dir, 0777); err != nil {
 			panic(err)
@@ -49,15 +48,13 @@ func New(path string, maxSize int64, getter func(k string) ([]byte, error)) *Cac
 	return c
 }
 
-func (c *Cache) makePath(key string) string {
-	k := sha1.Sum([]byte(key))
-	idx := (uint16(k[0])<<8 | uint16(k[1])) / 64
-	return filepath.Join(c.path, fmt.Sprintf("%d/%x", idx, k[1:]))
+func (c *Cache) makePath(k string) string {
+	return filepath.Join(c.path, fmt.Sprintf("%s/%s", k[:2], k))
 }
 
 func (c *Cache) watchCacheDir() {
 	var totalSize int64
-	var r = rand.Intn(1024)
+	var r = rand.Intn(256)
 	var randDir = filepath.Join(c.path, strconv.Itoa(r))
 
 	filepath.Walk(randDir, func(path string, info os.FileInfo, err error) error {
@@ -69,7 +66,7 @@ func (c *Cache) watchCacheDir() {
 
 	log.Println("[cache.survey]", randDir, "size:", totalSize, "b")
 
-	if diff := totalSize - int64(float64(c.maxSize)/1024*c.factor); diff > 0 {
+	if diff := totalSize - int64(float64(c.maxSize)/256*c.factor); diff > 0 {
 		c.purge(diff)
 	}
 
@@ -82,7 +79,7 @@ func (c *Cache) purge(amount int64) {
 	start := time.Now()
 	totalNames := 0
 
-	for i := 0; i < 1024; i++ {
+	for i := 0; i < 256; i++ {
 		dir := filepath.Join(c.path, strconv.Itoa(i))
 		file, err := os.Open(dir)
 		if err != nil {

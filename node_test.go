@@ -73,4 +73,5 @@ func TestNodesFuzzy(t *testing.T) {
 	}
 
 	log.Println(nodes)
+	log.Println(mgr.Get("123456789012345678901234"))
 }

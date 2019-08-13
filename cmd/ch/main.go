@@ -109,8 +109,10 @@ func main() {
 
 	mgr.LoadNodes(nodes)
 	mgr.StartTransferAgent("tmp/transfer.db")
-	cachemgr = cache.New("tmp/cache", config.CacheSize*1024*1024*1024, mgr.Get)
-	//updateStat()
+	cachemgr = cache.New("tmp/cache", config.CacheSize*1024*1024*1024, func(k string) ([]byte, error) {
+		return mgr.Get(k)
+	})
+	go uploadLocalImages()
 
 	r := gin.Default()
 	r.Use(mwIPThrot)
@@ -173,33 +175,6 @@ func main() {
 	//	}
 	//	g.Writer.Header().Add("Content-Type", "image/jpeg") // mime.TypeByExtension(filepath.Ext(url)))
 	//	g.Writer.Write(buf)
-	//})
-	//r.Handle("POST", "/upload", func(g *gin.Context) {
-	//	g.Request.Body = ioutil.NopCloser(io.LimitReader(g.Request.Body, 1024*1024))
-	//	img, err := g.FormFile("image")
-	//	if err != nil {
-	//		g.String(400, "[ERR] bad request: %v", err)
-	//		return
-	//	}
-	//	f, err := img.Open()
-	//	if err != nil {
-	//		g.String(500, "[ERR] upload: %v", err)
-	//		return
-	//	}
-	//	buf, _ := ioutil.ReadAll(f)
-	//	f.Close()
-
-	//	k := fmt.Sprintf("%x", sha1.Sum([]byte(img.Filename)))
-	//	if err := mgr.Put(k, buf); err != nil {
-	//		g.String(500, "[ERR] put error: %v", err)
-	//		return
-	//	}
-
-	//	if g.PostForm("web") == "1" {
-	//		g.Redirect(302, fmt.Sprintf("/i/%s.jpg", k))
-	//	} else {
-	//		g.String(200, "[OK:%s.jpg] size: %.3fK, dim", k, float64(len(buf))/1024)
-	//	}
 	//})
 	log.Fatal(r.Run(":5010"))
 }
@@ -268,7 +243,6 @@ func makeHandleMainView(t byte) func(g *gin.Context) {
 func handleRepliesView(g *gin.Context) {
 	var (
 		pl   ArticlesView
-		a    []*Article
 		more bool
 	)
 
@@ -281,13 +255,20 @@ func handleRepliesView(g *gin.Context) {
 	next, err := strconv.Atoi(g.Query("n"))
 	prev, err := strconv.Atoi(g.Query("p"))
 
+	pl.ParentArticle, err = m.GetArticle(pid)
+	if err != nil {
+		g.AbortWithStatus(404)
+		log.Println(err)
+		return
+	}
+
 	if prev != 0 {
-		a, more, err = m.FindRepliesBack(pid, int64(prev), int(config.PostsPerPage))
+		pl.Articles, more, err = m.FindRepliesBack(pid, int64(prev), int(config.PostsPerPage))
 		if !more {
 			pl.NoPrev = true
 		}
 	} else {
-		a, more, err = m.FindReplies(pid, int64(next), int(config.PostsPerPage))
+		pl.Articles, more, err = m.FindReplies(pid, int64(next), int(config.PostsPerPage))
 		if !more {
 			pl.NoNext = true
 		}
@@ -299,17 +280,9 @@ func handleRepliesView(g *gin.Context) {
 		return
 	}
 
-	pl.Articles = a
-	pl.ParentArticle, err = m.GetArticle(pid)
-	if err != nil {
-		g.AbortWithStatus(404)
-		log.Println(err)
-		return
-	}
-
-	if len(a) > 0 {
-		pl.Next = a[len(a)-1].CreateTime
-		pl.Prev = a[0].CreateTime
+	if len(pl.Articles) > 0 {
+		pl.Next = pl.Articles[len(pl.Articles)-1].CreateTime
+		pl.Prev = pl.Articles[0].CreateTime
 	}
 
 	g.HTML(200, "index.html", pl)
