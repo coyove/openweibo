@@ -1,6 +1,4 @@
-<title>Storage Status</title>
-<h2>Total {{len .Nodes}} Nodes</h2>
-<a href="/">&larr; Home</a>
+{{template "header.html" .}}
 
 {{range .Nodes}}
 <div>
@@ -14,7 +12,10 @@
         <li>Ping: {{.Ping}}ms</li>
         <li>Last Update: {{.LastUpdate}}</li>
         <li>Throttling Policy: {{.Throt}}</li>
+        <li>Offline: {{.Offline}}</li>
         {{end}}
     </ul>
 </div>
 {{end}}
+
+{{template "footer.html" .}}

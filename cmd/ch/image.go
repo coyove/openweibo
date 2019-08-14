@@ -1,25 +1,27 @@
 package main
 
 import (
-	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/coyove/ch"
+	"github.com/gin-gonic/gin"
 )
+
+func isValidImage(v []byte) bool {
+	ct := http.DetectContentType(v)
+	return strings.HasPrefix(ct, "image/")
+}
 
 func getImageLocalTmpPath(filename string, v []byte) (localPath string, displayPath string) {
 	key := mgr.MakeKey(v)
-	x := [16]byte{}
-	copy(x[:], key[:])
-	config.Blk.Encrypt(x[:], x[:])
-
-	displayPath = hex.EncodeToString(x[:]) + filepath.Ext(filename)
-
+	displayPath = key.String() + filepath.Ext(filename)
 	localPath = fmt.Sprintf("tmp/images/%d", key[0])
 	os.MkdirAll(localPath, 0700)
 	localPath += "/" + key.String()
@@ -29,14 +31,31 @@ func getImageLocalTmpPath(filename string, v []byte) (localPath string, displayP
 func extractImageKey(key string) (ch.Key, string, error) {
 	k := ch.Key{}
 	key = filepath.Base(key)
-	buf, _ := hex.DecodeString(key)
-	if len(buf) != 16 {
-		return k, "", fmt.Errorf("invalid key: %v", key)
+	if err := k.FromString(key); err != nil {
+		return k, "", err
 	}
-
-	config.Blk.Decrypt(buf, buf)
-	copy(k[:], buf)
 	return k, fmt.Sprintf("tmp/images/%d/%s", k[0], k.String()), nil
+}
+
+func handleImage(g *gin.Context) {
+	x := g.Param("image")
+	k, localpath, err := extractImageKey(x)
+	if err != nil {
+		log.Println("[image]", err)
+		g.AbortWithStatus(400)
+		return
+	}
+	if _, err := os.Stat(localpath); err == nil {
+		g.File(localpath)
+		return
+	}
+	v, err := cachemgr.Fetch(k.String())
+	if err != nil {
+		log.Println("[image.fetch]", err)
+		g.AbortWithStatus(500)
+		return
+	}
+	g.Writer.Write(v)
 }
 
 func uploadLocalImages() {
@@ -63,14 +82,14 @@ func uploadLocalImages() {
 				return nil
 			} else if k2 != k.String() {
 				log.Println("[upload] missed keys:", k2, k)
+				os.Remove(path)
 				return nil
 			}
 
 			log.Println("[upload] finished:", path, len(v))
 			os.Remove(path)
 
-			keystr := k.String()
-			cachepath := fmt.Sprintf("tmp/cache/%s/%s", keystr[:2], keystr)
+			cachepath := cachemgr.MakePath(k.String())
 			ioutil.WriteFile(cachepath, v, 0700)
 
 			time.Sleep(time.Second)

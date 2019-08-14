@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/binary"
@@ -8,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unsafe"
 
 	"github.com/globalsign/mgo/bson"
 )
@@ -17,6 +19,7 @@ type ArticlesView struct {
 	ParentArticle  *Article
 	Next, Prev     int64
 	NoNext, NoPrev bool
+	ShowIP         bool
 	SearchTerm     string
 	Title          string
 }
@@ -75,12 +78,38 @@ func (a *Article) AuthorString() string {
 	return n
 }
 
+func (a *Article) IPString() string {
+	x := *(*[8]byte)(unsafe.Pointer(&a.IP))
+	p := make([]byte, 0, 32)
+	s := 0
+	for i, x := range x {
+		if (x >= '0' && x <= '9') || x == '.' || x == 0 {
+			s++
+		}
+		p = strconv.AppendInt(p, int64(x), 10)
+		if i < 7 {
+			p = append(p, '.')
+		}
+	}
+	if s == 8 {
+		return string(bytes.TrimRight(x[:], "\x00"))
+	}
+	return string(p)
+}
+
 func (a *Article) ContentHTML() template.HTML {
 	return template.HTML(sanText(a.Content))
 }
 
 func (a *Article) TitleString() string {
 	return collapseText(a.Title)
+}
+
+func (a *Article) FirstImage() string {
+	if len(a.Images) > 0 {
+		return "/i/" + a.Images[0]
+	}
+	return ""
 }
 
 func (a *Article) String() string {

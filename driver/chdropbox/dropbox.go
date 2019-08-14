@@ -35,7 +35,9 @@ func NewNode(name string, config driver.StorageConfig) *driver.Node {
 	if n.Weight <= 0 {
 		panic(n.Weight)
 	}
-	n.KV.(*Storage).checkSpace()
+	if err := n.KV.(*Storage).checkSpace(); err != nil {
+		n.KV.(*Storage).config.Offline = true
+	}
 	return n
 }
 
@@ -46,6 +48,7 @@ type Storage struct {
 	config      driver.StorageConfig
 	stat        struct {
 		ping       int64
+		lastUpdate time.Time
 		Used       int64 `json:"used"`
 		Allocation struct {
 			Allocated int64 `json:"allocated"`
@@ -156,7 +159,7 @@ func (s *Storage) Delete(k string) error {
 
 func (s *Storage) Stat() driver.Stat {
 	return driver.Stat{
-		UpdateTime: time.Now(),
+		UpdateTime: s.stat.lastUpdate,
 		Ping:       s.stat.ping,
 		Throt:      s.throt.String(),
 	}
@@ -166,13 +169,13 @@ func (s *Storage) Space() (bool, int64, int64) {
 	return s.config.Offline, s.stat.Allocation.Allocated, s.stat.Used
 }
 
-func (s *Storage) checkSpace() {
+func (s *Storage) checkSpace() error {
 	start := time.Now()
 	req := s.newReq("https://api.dropboxapi.com/2/users/get_space_usage", nil)
 	resp, err := s.client.Do(req)
 	if err != nil {
 		log.Println("[dropbox]", err)
-		return
+		return err
 	}
 
 	buf, _ := ioutil.ReadAll(resp.Body)
@@ -180,9 +183,11 @@ func (s *Storage) checkSpace() {
 	json.Unmarshal(buf, &s.stat)
 
 	s.stat.ping = time.Since(start).Nanoseconds() / 1e6
-	log.Println("[dropbox]", s.stat)
+	s.stat.lastUpdate = time.Now()
 
 	sched.Schedule(func() {
 		go s.checkSpace()
 	}, time.Second*time.Duration(20+rand.Intn(50)))
+
+	return nil
 }

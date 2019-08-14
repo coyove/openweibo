@@ -115,6 +115,13 @@ func main() {
 	go uploadLocalImages()
 
 	r := gin.Default()
+
+	if config.Key != "0123456789abcdef" {
+		log.Println("P R O D U C A T I O N")
+		gin.SetMode(gin.ReleaseMode)
+		gin.DefaultWriter = ioutil.Discard
+	}
+
 	r.Use(mwIPThrot)
 	r.LoadHTMLGlob("template/*")
 	r.Static("/s/", "static")
@@ -128,6 +135,7 @@ func main() {
 		g.Writer.Header().Add("Content-Type", "image/png")
 		captcha.NewImage(config.Key, challenge[:6], 180, 60).WriteTo(g.Writer)
 	})
+	r.Handle("GET", "/i/:image", handleImage)
 
 	r.Handle("GET", "/", makeHandleMainView(0))
 	r.Handle("GET", "/p/:parent", handleRepliesView)
@@ -152,14 +160,13 @@ func main() {
 		}
 	})
 	r.Handle("GET", "/id/:id", makeHandleMainView('a'))
+	r.Handle("GET", "/ip/:ip", makeHandleMainView('i'))
 
 	r.Handle("GET", "/new/:id", handleNewPostView)
 	r.Handle("POST", "/new", handleNewPostAction)
 	r.Handle("GET", "/edit/:id", handleEditPostView)
 	r.Handle("POST", "/edit", handleEditPostAction)
-	r.Handle("GET", "/stat", func(g *gin.Context) {
-		g.HTML(200, "stat.html", currentStat())
-	})
+	r.Handle("GET", "/stat", handleCurrentStat)
 	//r.Handle("GET", "/i/:url", func(g *gin.Context) {
 	//	url, k := g.Param("url"), ""
 	//	if url == "raw" {
@@ -189,16 +196,27 @@ func makeHandleMainView(t byte) func(g *gin.Context) {
 		if t == 't' {
 			parts := strings.Split(g.Param("tag"), ",")
 			findby = ByTags(parts...)
+			pl.Title = "Tags: " + g.Param("tag")
 		} else if t == 'T' {
 			pl.SearchTerm = g.Param("title")
 			if strings.HasPrefix(pl.SearchTerm, "#") {
 				findby = ByTags(splitTags(pl.SearchTerm)...)
+				pl.Title = "Tags: " + pl.SearchTerm
 			} else {
 				findby = ByTitle(expandText(pl.SearchTerm))
+				pl.Title = "Search: " + pl.SearchTerm
 			}
 		} else if t == 'a' {
-			a, _ := strconv.ParseUint(strings.TrimRight(g.Param("id"), "*"), 36, 64)
+			name := strings.TrimRight(g.Param("id"), "*")
+			a, _ := strconv.ParseUint(name, 36, 64)
 			findby = ByAuthor(a)
+			pl.Title = "Author: " + name
+		} else if t == 'i' {
+			ip, _ := strconv.ParseUint(g.Param("ip"), 10, 64)
+			findby = ByIP(ip)
+			pl.Title = "IP: " + (&Article{IP: ip}).IPString()
+		} else {
+			pl.Title = "Index"
 		}
 
 		var a []*Article
@@ -229,11 +247,7 @@ func makeHandleMainView(t byte) func(g *gin.Context) {
 		if len(a) > 0 {
 			pl.Next = a[len(a)-1].ReplyTime
 			pl.Prev = a[0].ReplyTime
-			pl.Title = fmt.Sprintf("%s - %s", a[0].ReplyTimeString(), a[len(a)-1].ReplyTimeString())
-		}
-
-		if pl.SearchTerm != "" {
-			pl.Title = "search " + pl.SearchTerm
+			pl.Title += fmt.Sprintf(" = %s ~ %s", a[0].ReplyTimeString(), a[len(a)-1].ReplyTimeString())
 		}
 
 		g.HTML(200, "index.html", pl)
@@ -246,6 +260,7 @@ func handleRepliesView(g *gin.Context) {
 		more bool
 	)
 
+	pl.ShowIP = isAdmin(g)
 	pid := displayIDToObejctID(g.Param("parent"))
 	if pid == "" {
 		g.AbortWithStatus(404)

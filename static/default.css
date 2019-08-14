@@ -10,6 +10,7 @@ body {
     padding: 0;
     margin: 0;
     box-sizing: border-box;
+    font-family: "Helvetica Neue",Helvetica,Arial,"Hiragino Sans GB","Hiragino Sans GB W3","WenQuanYi Micro Hei",sans-serif
 }
 
 #container {

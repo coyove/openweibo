@@ -16,13 +16,17 @@
             {{end}}/
             {{if .ParentArticle.Announcement}}<b>公告</b> / {{end}}
             {{if .ParentArticle.Locked}}<b>锁定</b> / {{end}}
+            {{if .ShowIP}}<a href="/ip/{{.ParentArticle.IP}}">{{.ParentArticle.IPString}}</a> / {{end}}
             <a href="/edit/{{.ParentArticle.DisplayID}}">编辑</a> /
             {{.ParentArticle.Replies}} 回复 /
             ID: <a href="/id/{{.ParentArticle.AuthorString}}">{{.ParentArticle.AuthorString}}</a> /
             发布: {{.ParentArticle.CreateTimeString}} /
             最后回复: {{.ParentArticle.ReplyTimeString}}
         </div> 
+
+        {{if .ParentArticle.FirstImage}}<img class="image" src="{{.ParentArticle.FirstImage}}">{{end}}
         <pre>{{.ParentArticle.ContentHTML}}</pre>
+
         <div>
             {{range .ParentArticle.Tags}}
                 <span class=tag><a href="/tag/{{.}}"><b>#</b>{{.}}</a></span>
@@ -34,9 +38,12 @@
             {{range .Articles}}
             <div class="row reply">
                 <div>
-                    &bull; <b>{{.AuthorString}}</b> / {{.CreateTimeString}} /
+                    &bull; <b>{{.AuthorString}}</b> /
+                    {{.CreateTimeString}} /
+                    {{if $.ShowIP}}<a href="/ip/{{.IP}}">{{.IPString}}</a> / {{end}}
                     <a href="/p/{{.DisplayID}}">展开{{if .Replies}} ({{.Replies}}){{end}}</a>
                 </div>
+                {{if .FirstImage}}<img class="image" src="{{.FirstImage}}">{{end}}
                 <pre>{{.ContentHTML}}</pre>
             </div>
             {{end}}
@@ -59,7 +66,8 @@
                     {{if .Locked}}<b>[锁定]</b>{{end}}
                     {{.TitleString}}{{if .Replies}} ({{.Replies}}回复){{end}}
                 </a>
-                &nbsp;<b>{{.AuthorString}}</b> 发布于 {{.CreateTimeString}}
+                &nbsp;<b>{{.AuthorString}}</b>
+                <span>发布于 {{.CreateTimeString}}</span>
             </div>
         {{end}}
         {{else}}

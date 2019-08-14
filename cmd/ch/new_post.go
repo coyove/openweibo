@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
-	"path/filepath"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -41,7 +40,7 @@ func handleNewPostView(g *gin.Context) {
 			return
 		}
 		if a.Title != "" {
-			pl.Abstract = softTrunc(a.Title, 50)
+			pl.Abstract = softTrunc(a.TitleString(), 50)
 		} else {
 			pl.Abstract = softTrunc(a.Content, 50)
 		}
@@ -61,11 +60,15 @@ func hashIP(g *gin.Context) uint64 {
 	if len(ip2) == net.IPv4len {
 		copy(buf, ip2[:3]) // first 3 bytes
 	} else if len(ip2) == net.IPv6len {
-		copy(buf, ip2) // first 8 byte
+		if len(ip2.To4()) == net.IPv4len {
+			copy(buf, ip2.To4()[:3]) // first 3 bytes
+		} else {
+			copy(buf, ip2) // first 8 byte
+		}
 	} else {
 		copy(buf, ip)
 	}
-	return binary.BigEndian.Uint64(buf)
+	return binary.LittleEndian.Uint64(buf)
 }
 
 func handleNewPostAction(g *gin.Context) {
@@ -91,7 +94,7 @@ func handleNewPostAction(g *gin.Context) {
 	)
 
 	if !g.GetBool("ip-ok") {
-		redir("error", "cooling down")
+		redir("error", "guard/cooling-down")
 		return
 	}
 
@@ -105,9 +108,9 @@ func handleNewPostAction(g *gin.Context) {
 		return
 	}
 
-	if !isChallengeTokenValid(challenge, answer) && author != config.AdminName {
+	if !isChallengeTokenValid(challenge, answer) && !isAdmin(author) {
 		log.Println(g.ClientIP(), "challenge failed")
-		redir("error", "wrong captcha")
+		redir("error", "guard/failed-captcha")
 		return
 	}
 
@@ -115,64 +118,50 @@ func handleNewPostAction(g *gin.Context) {
 		author = g.ClientIP()
 	}
 
-	if len(content) < int(config.MinContent) {
-		redir("error", "content too short")
+	if image == nil && len(content) < int(config.MinContent) {
+		redir("error", "content/too-short")
 		return
 	}
 
-	var imagek string
+	var imagek []string
 	if image != nil {
-		ext := filepath.Ext(image.Filename)
 		f, err := image.Open()
-		if err != nil || (ext != ".jpg" && ext != ".png") {
-			redir("error", "image upload failed")
+		if err != nil {
+			redir("error", "image/open-error: "+err.Error())
 			return
 		}
 		buf, _ := ioutil.ReadAll(io.LimitReader(f, 1024*1024))
 		f.Close()
 
-		localpath, displaypath := getImageLocalTmpPath(image.Filename, buf)
-		if err := ioutil.WriteFile(localpath, buf, 0700); err != nil {
-			redir("error", "image write failed")
+		if !isValidImage(buf) {
+			redir("error", "image/invalid-format")
 			return
 		}
-		imagek = displaypath
 
-		log.Println(imagek, localpath)
+		localpath, displaypath := getImageLocalTmpPath(image.Filename, buf)
+		if err := ioutil.WriteFile(localpath, buf, 0700); err != nil {
+			redir("error", "image/write-error: "+err.Error())
+			return
+		}
+		imagek = []string{displaypath}
 	}
 
 	var err error
 	if reply != "" {
-		err = m.PostReply(reply, NewArticle("", content, authorNameToHash(author), []string{imagek}, nil, ip))
+		err = m.PostReply(reply, NewArticle("", content, authorNameToHash(author), imagek, nil, ip))
 	} else {
 		if len(title) < int(config.MinContent) {
-			redir("error", "title too short")
+			redir("error", "title/too-short")
 			return
 		}
-		a := NewArticle(title, content, authorNameToHash(author), []string{imagek}, tags, ip)
+		a := NewArticle(title, content, authorNameToHash(author), imagek, tags, ip)
 		err = m.PostArticle(a)
 		reply = a.ID
 	}
 	if err != nil {
-		redir("error", err.Error())
+		redir("error", "internal/error: "+err.Error())
 		return
 	}
 
 	g.Redirect(302, "/p/"+objectIDToDisplayID(reply)+"?p=-1")
-}
-
-func sanText(in string) string {
-	firstImg := false
-	return rxSan.ReplaceAllStringFunc(in, func(in string) string {
-		if in == "<" {
-			return "&lt;"
-		}
-		if strings.HasSuffix(in, ".jpg") || strings.HasSuffix(in, ".gif") || strings.HasSuffix(in, ".png") {
-			if !firstImg {
-				firstImg = true
-				return "<a href='" + in + "' target=_blank><img src='" + in + "' class='image'></a>"
-			}
-		}
-		return "<a href='" + in + "' target=_blank>" + in + "</a>"
-	})
 }

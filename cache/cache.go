@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"crypto/sha1"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -31,7 +32,7 @@ type Cache struct {
 func New(path string, maxSize int64, getter func(k string) ([]byte, error)) *Cache {
 	for i := 0; i < 256; i++ {
 		dir := filepath.Join(path, strconv.Itoa(i))
-		if err := os.MkdirAll(dir, 0777); err != nil {
+		if err := os.MkdirAll(dir, 0700); err != nil {
 			panic(err)
 		}
 	}
@@ -48,8 +49,9 @@ func New(path string, maxSize int64, getter func(k string) ([]byte, error)) *Cac
 	return c
 }
 
-func (c *Cache) makePath(k string) string {
-	return filepath.Join(c.path, fmt.Sprintf("%s/%s", k[:2], k))
+func (c *Cache) MakePath(k string) string {
+	x := sha1.Sum([]byte(k))
+	return filepath.Join(c.path, fmt.Sprintf("%d/%s", x[0], k))
 }
 
 func (c *Cache) watchCacheDir() {
@@ -121,7 +123,7 @@ func (c *Cache) purge(amount int64) {
 }
 
 func (c *Cache) Fetch(key string) ([]byte, error) {
-	k := c.makePath(key)
+	k := c.MakePath(key)
 
 	buf, err := ioutil.ReadFile(k)
 	if err == nil {
@@ -148,8 +150,12 @@ func (c *Cache) Fetch(key string) ([]byte, error) {
 		return nil, err
 	}
 
+	//os.MkdirAll(filepath.Dir(k), 0700)
+
 	if err := ioutil.WriteFile(k, buf, 0777); err != nil {
 		log.Println("[cache.get]", err)
+	} else {
+		log.Println("[cache.get.ok]", len(buf))
 	}
 	return buf, nil
 }

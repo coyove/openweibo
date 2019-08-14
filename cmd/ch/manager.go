@@ -28,7 +28,7 @@ func NewManager(name, uri string) (*Manager, error) {
 	}
 
 	//m.articles.DropCollection()
-	m.articles.EnsureIndex(mgo.Index{Key: []string{"reply_time", "create_time", "author", "tags", "parent"}})
+	m.articles.EnsureIndex(mgo.Index{Key: []string{"reply_time", "create_time", "ip", "author", "tags", "parent"}})
 	if err := m.articles.EnsureIndex(mgo.Index{Key: []string{"$text:title"}}); err != nil {
 		m.session.Close()
 		return nil, err
@@ -51,6 +51,10 @@ func ByTitle(title string) findby {
 
 func ByAuthor(author uint64) findby {
 	return findby(bson.M{"author": author})
+}
+
+func ByIP(ip uint64) findby {
+	return findby(bson.M{"ip": ip})
 }
 
 func ByNone() findby {
@@ -177,7 +181,7 @@ func (m *Manager) GetArticle(id bson.ObjectId) (*Article, error) {
 	return a[0], nil
 }
 
-func (m *Manager) UpdateArticle(id bson.ObjectId, del bool, title, content string, tags []string) error {
+func (m *Manager) UpdateArticle(id bson.ObjectId, del bool, title, content string, images []string, tags []string) error {
 	if del {
 		return m.articles.RemoveId(id)
 	}
@@ -186,6 +190,7 @@ func (m *Manager) UpdateArticle(id bson.ObjectId, del bool, title, content strin
 			"title":   title,
 			"content": content,
 			"tags":    tags,
+			"images":  images,
 		},
 	})
 }

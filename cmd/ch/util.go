@@ -7,15 +7,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"image"
-	"image/jpeg"
 	_ "image/png"
-	"io"
-	"io/ioutil"
 	"math/rand"
-	"net/http"
 	"net/url"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -34,13 +28,8 @@ var (
 	cachemgr  *cache.Cache
 	dedup     *lru.Cache
 	bytesPool = &sync.Pool{New: func() interface{} { return &bytes.Buffer{} }}
-	client    = &http.Client{
-		Timeout: time.Second,
-	}
-	rxSan      = regexp.MustCompile(`(<|https?://\S+)`)
-	rxCRLF     = regexp.MustCompile(`\r?\n`)
-	rxNonASCII = regexp.MustCompile(`[^a-zA-Z0-9\-_]`)
-	config     = struct {
+	rxSan     = regexp.MustCompile(`(<|https?://\S+)`)
+	config    = struct {
 		Storages []driver.StorageConfig `yaml:"Storages"`
 		DynamoDB struct {
 			AccessToken string `yaml:"AccessToken"`
@@ -48,7 +37,6 @@ var (
 			Region      string `yaml:"Region"`
 		} `yaml:"DynamoDB"`
 		CacheSize    int64    `yaml:"CacheSize"`
-		ProdMode     bool     `yaml:"Production"`
 		Key          string   `yaml:"Key"`
 		TokenTTL     int64    `yaml:"TokenTTL"`
 		MaxContent   int64    `yaml:"MaxContent"`
@@ -58,6 +46,7 @@ var (
 		PostsPerPage int64    `yaml:"PostsPerPage"`
 		Tags         []string `yaml:"Tags"`
 
+		// inited after config being read
 		Blk           cipher.Block
 		AdminNameHash uint64
 	}{
@@ -66,35 +55,14 @@ var (
 		Key:          "0123456789abcdef",
 		AdminName:    "zzz",
 		MaxContent:   2048,
-		MinContent:   10,
+		MinContent:   8,
 		MaxTags:      4,
 		PostsPerPage: 30,
 		Tags:         []string{"zzz"},
 	}
 )
 
-func splitImageURLs(u string) []string {
-	urls := []string{}
-	for _, u := range regexp.MustCompile(`[\r\n\s\t]`).Split(u, -1) {
-		if u = strings.TrimSpace(u); u == "" {
-			continue
-		}
-		u2, err := url.Parse(u)
-		if err != nil {
-			continue
-		} else if u2.Scheme != "https" && u2.Scheme != "http" {
-			continue
-		} else if u2.Host == "" {
-			continue
-		} else if len(u2.Path) > 1024 || len(u2.RawPath) > 1024 {
-			continue
-		}
-		urls = append(urls, u2.Host+"/"+u2.EscapedPath())
-	}
-	return urls
-}
-
-func currentStat() interface{} {
+func handleCurrentStat(g *gin.Context) {
 	type nodeView struct {
 		Name       string
 		Capacity   string
@@ -124,44 +92,7 @@ func currentStat() interface{} {
 		})
 	}
 
-	return p
-}
-
-func extURL(u string) string {
-	u2, err := url.Parse(u)
-	fmt.Println(u2.Path)
-	if err != nil {
-		return ""
-	}
-	return strings.ToLower(filepath.Ext(u2.Path))
-}
-
-func fetchImageAsJPEG(url string) ([]byte, image.Point, error) {
-	resp, err := client.Get(url)
-	if err != nil {
-		return nil, image.ZP, err
-	}
-	defer resp.Body.Close()
-
-	buf, err := ioutil.ReadAll(io.LimitReader(resp.Body, 1024*1024))
-	if err != nil {
-		return nil, image.ZP, err
-	}
-
-	img, format, err := image.Decode(bytes.NewReader(buf))
-	if err != nil {
-		return nil, image.ZP, err
-	}
-
-	if format != "jpeg" {
-		x := bytes.Buffer{}
-		if err := jpeg.Encode(&x, img, &jpeg.Options{Quality: 80}); err != nil {
-			return nil, image.ZP, err
-		}
-		return x.Bytes(), img.Bounds().Max, nil
-	}
-
-	return buf, img.Bounds().Max, nil
+	g.HTML(200, "stat.html", p)
 }
 
 func prettyBSON(m bson.M) string {
@@ -318,4 +249,28 @@ func collapseText(in string) string {
 	t.Reset()
 	bytesPool.Put(t)
 	return x
+}
+
+func isAdmin(g interface{}) bool {
+	switch g := g.(type) {
+	case *gin.Context:
+		ck, _ := g.Request.Cookie("id")
+		if ck != nil {
+			return ck.Value == config.AdminName
+		}
+	case string:
+		return g == config.AdminName
+	case uint64:
+		return g == config.AdminNameHash
+	}
+	return false
+}
+
+func sanText(in string) string {
+	return rxSan.ReplaceAllStringFunc(in, func(in string) string {
+		if in == "<" {
+			return "&lt;"
+		}
+		return "<a href='" + in + "' target=_blank>" + in + "</a>"
+	})
 }
