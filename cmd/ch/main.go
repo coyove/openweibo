@@ -1,9 +1,9 @@
 package main
 
 import (
-	"crypto/aes"
 	"encoding/hex"
 	"fmt"
+	"html/template"
 	_ "image/png"
 	"io/ioutil"
 	"log"
@@ -14,10 +14,9 @@ import (
 	"github.com/coyove/ch/cache"
 	"github.com/coyove/ch/driver"
 	"github.com/coyove/ch/driver/chdropbox"
-	"github.com/coyove/common/lru"
 	"github.com/dchest/captcha"
+	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"
-	"gopkg.in/yaml.v2"
 )
 
 var m *Manager
@@ -64,35 +63,8 @@ func main() {
 	// 	"T恤设计将港澳归为国家 范思哲道歉：已下架并销毁 手机发帖	",
 	// 	"洪阿姨勇气可嘉",
 	// }
-	// tmpa := []*Article{}
-	// tags := []string{"a", "B"}
-	// for i := 0; i < len(titles); i++ {
-	// 	a := NewArticle(titles[i], strconv.FormatUint(rand.Uint64(), 10)+"-"+strconv.Itoa(i), 100, nil, tags, 0)
-	// 	tmpa = append(tmpa, a)
-	// 	if rand.Intn(2) == 0 && len(tmpa) > 0 && false {
-	// 		//m.PostReply(tmpa[rand.Intn(len(tmpa))].ID, a)
-	// 		m.PostReply(tmpa[0].ID, a)
-	// 	} else {
-	// 		m.PostArticle(a)
-	// 	}
-	// }
 
-	buf, err := ioutil.ReadFile("config.yml")
-	if err != nil {
-		panic(err)
-	}
-
-	if err := yaml.Unmarshal(buf, &config); err != nil {
-		panic(err)
-	}
-
-	buf, _ = yaml.Marshal(config)
-	log.Println("==== config:", string(buf))
-
-	dedup = lru.NewCache(1024)
-	config.Blk, _ = aes.NewCipher([]byte(config.Key))
-	config.AdminNameHash = authorNameToHash(config.AdminName)
-
+	loadConfig()
 	nodes := []*driver.Node{}
 	for _, s := range config.Storages {
 		if s.Name == "" {
@@ -122,7 +94,12 @@ func main() {
 		gin.DefaultWriter = ioutil.Discard
 	}
 
-	r.Use(mwIPThrot)
+	r.Use(mwRenderPerf, mwIPThrot)
+	r.SetFuncMap(template.FuncMap{
+		"RenderPerf": func() string {
+			return fmt.Sprintf("%dms/%dms", survey.render.avg, survey.render.max)
+		},
+	})
 	r.LoadHTMLGlob("template/*")
 	r.Static("/s/", "static")
 	r.Handle("GET", "/captcha/:challenge", func(g *gin.Context) {
@@ -131,8 +108,9 @@ func main() {
 			g.AbortWithStatus(400)
 			return
 		}
-		config.Blk.Decrypt(challenge, challenge)
+		config.blk.Decrypt(challenge, challenge)
 		g.Writer.Header().Add("Content-Type", "image/png")
+		// captcha package has been modified to suit my needs, so all future changes must happen in vendor folder
 		captcha.NewImage(config.Key, challenge[:6], 180, 60).WriteTo(g.Writer)
 	})
 	r.Handle("GET", "/i/:image", handleImage)
@@ -143,6 +121,14 @@ func main() {
 	r.Handle("GET", "/search/:title", makeHandleMainView('T'))
 	r.Handle("GET", "/tags", func(g *gin.Context) {
 		g.HTML(200, "tags.html", struct{ Tags []string }{config.Tags})
+	})
+	r.Handle("GET", "/cookie", func(g *gin.Context) {
+		id, _ := g.Cookie("id")
+		g.HTML(200, "cookie.html", struct{ ID string }{id})
+	})
+	r.Handle("POST", "/cookie", func(g *gin.Context) {
+		g.SetCookie("id", g.PostForm("id"), 86400*365, "", "", false, false)
+		g.Redirect(302, "/")
 	})
 	r.Handle("POST", "/search", func(g *gin.Context) {
 		g.Redirect(302, "/search/"+url.PathEscape(g.PostForm("q")))
@@ -167,23 +153,12 @@ func main() {
 	r.Handle("GET", "/edit/:id", handleEditPostView)
 	r.Handle("POST", "/edit", handleEditPostAction)
 	r.Handle("GET", "/stat", handleCurrentStat)
-	//r.Handle("GET", "/i/:url", func(g *gin.Context) {
-	//	url, k := g.Param("url"), ""
-	//	if url == "raw" {
-	//		url = g.Query("u")
-	//		k = fmt.Sprintf("%x", sha1.Sum([]byte(url)))
-	//	} else {
-	//		k = strings.TrimRight(url, filepath.Ext(url))
-	//	}
-	//	buf, err := cachemgr.Fetch(k)
-	//	if err != nil {
-	//		g.String(500, "[ERR] fetch error: %v", err)
-	//		return
-	//	}
-	//	g.Writer.Header().Add("Content-Type", "image/jpeg") // mime.TypeByExtension(filepath.Ext(url)))
-	//	g.Writer.Write(buf)
-	//})
-	log.Fatal(r.Run(":5010"))
+
+	if config.Domain == "" {
+		log.Fatal(r.Run(":5010"))
+	} else {
+		log.Fatal(autotls.Run(r, config.Domain))
+	}
 }
 
 func makeHandleMainView(t byte) func(g *gin.Context) {

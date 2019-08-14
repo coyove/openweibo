@@ -72,7 +72,7 @@ func (a *Article) ReplyTimeString() string {
 
 func (a *Article) AuthorString() string {
 	n := strconv.FormatUint(a.Author, 36)
-	if a.Author == config.AdminNameHash {
+	if isAdmin(a.Author) {
 		n += "*"
 	}
 	return n
@@ -107,7 +107,7 @@ func (a *Article) TitleString() string {
 
 func (a *Article) FirstImage() string {
 	if len(a.Images) > 0 {
-		return "/i/" + a.Images[0]
+		return config.ImageDomain + "/i/" + a.Images[0]
 	}
 	return ""
 }

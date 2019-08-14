@@ -1,5 +1,7 @@
 {{template "header.html" .}}
 
+<title>配置</title>
+
 {{range .Nodes}}
 <div>
     <h3>{{.Name}}</h3>
@@ -11,11 +13,12 @@
         <li>Free: {{.Free}}</li>
         <li>Ping: {{.Ping}}ms</li>
         <li>Last Update: {{.LastUpdate}}</li>
-        <li>Throttling Policy: {{.Throt}}</li>
-        <li>Offline: {{.Offline}}</li>
         {{end}}
     </ul>
 </div>
 {{end}}
+
+<h3>配置</h3>
+<pre><ul>{{.Config}}</ul></pre>
 
 {{template "footer.html" .}}

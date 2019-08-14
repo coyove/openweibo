@@ -46,10 +46,19 @@ func handleImage(g *gin.Context) {
 		return
 	}
 	if _, err := os.Stat(localpath); err == nil {
+		// the image exists in the tmp/images folder
 		g.File(localpath)
 		return
 	}
-	v, err := cachemgr.Fetch(k.String())
+
+	kstr := k.String()
+	cachepath := cachemgr.MakePath(kstr)
+	if _, err := os.Stat(cachepath); err == nil {
+		g.File(cachepath)
+		return
+	}
+
+	v, err := cachemgr.Fetch(kstr)
 	if err != nil {
 		log.Println("[image.fetch]", err)
 		g.AbortWithStatus(500)

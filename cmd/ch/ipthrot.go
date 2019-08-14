@@ -1,10 +1,33 @@
 package main
 
 import (
+	"sync/atomic"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
+
+func mwRenderPerf(g *gin.Context) {
+	start := time.Now()
+	g.Next()
+	msec := time.Since(start).Nanoseconds() / 1e6
+
+	for {
+		x := atomic.LoadInt64(&survey.render.avg)
+		x2 := atomic.LoadInt64(&survey.render.max)
+		y := (x + msec) / 2
+		y2 := x2
+		if msec > y2 {
+			y2 = msec
+		}
+
+		if atomic.CompareAndSwapInt64(&survey.render.avg, x, y) {
+			survey.render.max = y2
+			break
+		}
+	}
+
+}
 
 func mwIPThrot(g *gin.Context) {
 	if g.Request.Method != "POST" {

@@ -33,6 +33,12 @@
 			"revisionTime": "2019-03-01T06:25:29Z"
 		},
 		{
+			"checksumSHA1": "bbC9u8ZOvGtSu2/pbOy2F3xHFcE=",
+			"path": "github.com/gin-gonic/autotls",
+			"revision": "3135c7b8d15d09e1b80b0e657b6c6c84be6253d1",
+			"revisionTime": "2019-05-28T14:23:57Z"
+		},
+		{
 			"checksumSHA1": "P9oDcX8JH7E6shNd9NkVaQEpnbc=",
 			"path": "github.com/gin-gonic/gin",
 			"revision": "6e320c97e83a61df3daa0f28695a736bece3104b",

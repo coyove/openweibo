@@ -125,6 +125,11 @@ func handleNewPostAction(g *gin.Context) {
 
 	var imagek []string
 	if image != nil {
+		if config.ImageDisabled && !isAdmin(author) {
+			redir("error", "image/disabled")
+			return
+		}
+
 		f, err := image.Open()
 		if err != nil {
 			redir("error", "image/open-error: "+err.Error())

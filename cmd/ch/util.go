@@ -2,11 +2,11 @@ package main
 
 import (
 	"bytes"
-	"crypto/cipher"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	_ "image/png"
 	"math/rand"
 	"net/url"
@@ -17,7 +17,6 @@ import (
 
 	"github.com/coyove/ch"
 	"github.com/coyove/ch/cache"
-	"github.com/coyove/ch/driver"
 	"github.com/coyove/common/lru"
 	"github.com/gin-gonic/gin"
 	"github.com/globalsign/mgo/bson"
@@ -29,37 +28,6 @@ var (
 	dedup     *lru.Cache
 	bytesPool = &sync.Pool{New: func() interface{} { return &bytes.Buffer{} }}
 	rxSan     = regexp.MustCompile(`(<|https?://\S+)`)
-	config    = struct {
-		Storages []driver.StorageConfig `yaml:"Storages"`
-		DynamoDB struct {
-			AccessToken string `yaml:"AccessToken"`
-			SecretToken string `yaml:"SecretToken"`
-			Region      string `yaml:"Region"`
-		} `yaml:"DynamoDB"`
-		CacheSize    int64    `yaml:"CacheSize"`
-		Key          string   `yaml:"Key"`
-		TokenTTL     int64    `yaml:"TokenTTL"`
-		MaxContent   int64    `yaml:"MaxContent"`
-		MinContent   int64    `yaml:"MinContent"`
-		MaxTags      int64    `yaml:"MaxTags"`
-		AdminName    string   `yaml:"AdminName"`
-		PostsPerPage int64    `yaml:"PostsPerPage"`
-		Tags         []string `yaml:"Tags"`
-
-		// inited after config being read
-		Blk           cipher.Block
-		AdminNameHash uint64
-	}{
-		CacheSize:    1,
-		TokenTTL:     1,
-		Key:          "0123456789abcdef",
-		AdminName:    "zzz",
-		MaxContent:   2048,
-		MinContent:   8,
-		MaxTags:      4,
-		PostsPerPage: 30,
-		Tags:         []string{"zzz"},
-	}
 )
 
 func handleCurrentStat(g *gin.Context) {
@@ -75,8 +43,11 @@ func handleCurrentStat(g *gin.Context) {
 	}
 
 	p := struct {
-		Nodes []nodeView
-	}{}
+		Nodes  []nodeView
+		Config template.HTML
+	}{
+		Config: template.HTML(config.publicString),
+	}
 
 	for _, n := range mgr.Nodes() {
 		offline, total, used := n.Space()
@@ -84,8 +55,8 @@ func handleCurrentStat(g *gin.Context) {
 		p.Nodes = append(p.Nodes, nodeView{
 			Name:       n.Name,
 			Offline:    offline,
-			Capacity:   fmt.Sprintf("%dG", n.Weight),
-			Free:       fmt.Sprintf("%.3fM", float64(total-used)/1024/1024),
+			Capacity:   fmt.Sprintf("%.3fG", float64(total)/1024/1024/1024),
+			Free:       fmt.Sprintf("%.3fG", float64(total-used)/1024/1024/1024),
 			Ping:       stat.Ping,
 			Throt:      stat.Throt,
 			LastUpdate: time.Since(stat.UpdateTime).String(),
@@ -125,7 +96,7 @@ func makeCSRFToken(g *gin.Context) string {
 		copy(p[4:10], "unknow")
 	}
 	rand.Read(p[10:])
-	config.Blk.Encrypt(p[:], p[:])
+	config.blk.Encrypt(p[:], p[:])
 	return hex.EncodeToString(p[:])
 }
 
@@ -134,7 +105,7 @@ func isCSRFTokenValid(g *gin.Context, tok string) bool {
 	if len(buf) != 16 {
 		return false
 	}
-	config.Blk.Decrypt(buf, buf)
+	config.blk.Decrypt(buf, buf)
 	exp := binary.BigEndian.Uint32(buf)
 	if now := time.Now(); now.After(time.Unix(int64(exp), 0)) ||
 		now.Before(time.Unix(int64(exp)-config.TokenTTL*60, 0)) {
@@ -163,7 +134,7 @@ func makeChallengeToken() string {
 		c[i] = byte(rand.Uint64()) % 10
 	}
 	rand.Read(c[6:])
-	config.Blk.Encrypt(c, c)
+	config.blk.Encrypt(c, c)
 	return hex.EncodeToString(c)
 }
 
@@ -172,7 +143,7 @@ func isChallengeTokenValid(tok string, answer string) bool {
 	if len(buf) != 16 || len(answer) != 6 {
 		return false
 	}
-	config.Blk.Decrypt(buf, buf)
+	config.blk.Decrypt(buf, buf)
 	for i := range answer {
 		x := byte(answer[i] - '0')
 		if buf[i] != x {
@@ -261,7 +232,7 @@ func isAdmin(g interface{}) bool {
 	case string:
 		return g == config.AdminName
 	case uint64:
-		return g == config.AdminNameHash
+		return g == config.adminNameHash
 	}
 	return false
 }

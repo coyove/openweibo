@@ -27,7 +27,7 @@
         {{if .ParentArticle.FirstImage}}<img class="image" src="{{.ParentArticle.FirstImage}}">{{end}}
         <pre>{{.ParentArticle.ContentHTML}}</pre>
 
-        <div>
+        <div class=row> 
             {{range .ParentArticle.Tags}}
                 <span class=tag><a href="/tag/{{.}}"><b>#</b>{{.}}</a></span>
             {{end}}
