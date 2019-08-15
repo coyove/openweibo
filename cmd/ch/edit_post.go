@@ -105,7 +105,11 @@ func handleEditPostAction(g *gin.Context) {
 	}
 
 	oldtags := a.Tags
-	a.Title, a.Content, a.Tags = title, content, tags
+	a.Content, a.Tags = content, tags
+
+	if a.Parent == 0 {
+		a.Title = title
+	}
 
 	if err := m.UpdateArticle(a, oldtags, deleted); err != nil {
 		log.Println(err)

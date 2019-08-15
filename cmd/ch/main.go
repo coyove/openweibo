@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/url"
-	"strconv"
 	"strings"
 
 	"github.com/coyove/ch/cache"
@@ -151,7 +150,11 @@ func main() {
 		g.HTML(200, "cookie.html", struct{ ID string }{id})
 	})
 	r.Handle("POST", "/cookie", func(g *gin.Context) {
-		g.SetCookie("id", g.PostForm("id"), 86400*365, "", "", false, false)
+		if g.PostForm("clear") != "" {
+			g.SetCookie("id", "", -1, "", "", false, false)
+		} else {
+			g.SetCookie("id", g.PostForm("id"), 86400*365, "", "", false, false)
+		}
 		g.Redirect(302, "/")
 	})
 	r.Handle("POST", "/search", func(g *gin.Context) {
@@ -191,59 +194,50 @@ func makeHandleMainView(t byte) func(g *gin.Context) {
 		var (
 			findby = ByTimeline()
 			pl     ArticlesView
+			err    error
+			more   bool
 		)
 
 		if t == 't' {
-			pl.SearchTerm = g.Param("tag")
-			pl.Type = "tag"
+			pl.SearchTerm, pl.Type = g.Param("tag"), "tag"
 			findby = ByTag(pl.SearchTerm)
 		} else if t == 'a' {
-			pl.SearchTerm = strings.TrimRight(g.Param("id"), "*")
-			pl.Type = "id"
+			pl.SearchTerm, pl.Type = g.Param("id"), "id"
 			findby = ByAuthor(pl.SearchTerm)
 		} else if t == 'n' {
-			pl.SearchTerm = strings.TrimRight(g.Param("id"), "*")
-			pl.Type = "notify"
+			pl.SearchTerm, pl.Type = g.Param("id"), "notify"
 			findby = ByNotify(pl.SearchTerm)
 		} else if t == 'i' {
-			pl.SearchTerm = g.Param("ip")
-			pl.Type = "ip"
+			pl.SearchTerm, pl.Type = g.Param("ip"), "ip"
 			findby = ByIP(pl.SearchTerm)
-		} else {
+
+			if !isAdmin(g) {
+				errorPage(403, "NOT ADMIN", g)
+				return
+			}
 		}
 
-		var a []*Article
-		var more bool
+		next, dir := parseCursor(g.Query("n"))
 
-		next, err := strconv.Atoi(g.Query("n"))
-		prev, err := strconv.Atoi(g.Query("p"))
-
-		if prev != 0 {
-			a, more, err = m.Find('a', findby, int64(prev), int(config.PostsPerPage))
-			if !more {
-				pl.NoPrev = true
-			}
-			if prev == -1 {
-				pl.NoNext = true
-			}
+		if dir == "prev" {
+			pl.Articles, more, err = m.Find('a', findby, next, int(config.PostsPerPage))
+			pl.NoPrev = !more
+			pl.NoNext = next == 0
 		} else {
-			a, more, err = m.Find('d', findby, int64(next), int(config.PostsPerPage))
-			if !more {
-				pl.NoNext = true
-			}
+			pl.Articles, more, err = m.Find('d', findby, next, int(config.PostsPerPage))
+			pl.NoNext = !more
+			pl.NoPrev = next == 0
 		}
 
 		if err != nil {
-			g.AbortWithStatus(500)
-			log.Println(err)
+			errorPage(500, "INTERNAL: "+err.Error(), g)
 			return
 		}
 
-		pl.Articles = a
-		if len(a) > 0 {
-			pl.Next = a[len(a)-1].ID - 1
-			pl.Prev = a[0].ID + 1
-			pl.Title = fmt.Sprintf("%s ~ %s", a[0].CreateTimeString(), a[len(a)-1].CreateTimeString())
+		if len(pl.Articles) > 0 {
+			pl.Next = pl.Articles[len(pl.Articles)-1].ID - 1
+			pl.Prev = pl.Articles[0].ID + 1
+			pl.Title = fmt.Sprintf("%s ~ %s", pl.Articles[0].CreateTimeString(), pl.Articles[len(pl.Articles)-1].CreateTimeString())
 		}
 
 		g.HTML(200, "index.html", pl)
@@ -254,6 +248,7 @@ func handleRepliesView(g *gin.Context) {
 	var (
 		pl   ArticlesView
 		more bool
+		err  error
 	)
 
 	pl.ShowIP = isAdmin(g)
@@ -263,8 +258,7 @@ func handleRepliesView(g *gin.Context) {
 		return
 	}
 
-	next, err := strconv.Atoi(g.Query("n"))
-	prev, err := strconv.Atoi(g.Query("p"))
+	next, dir := parseCursor(g.Query("n"))
 
 	pl.ParentArticle, err = m.GetArticle(pid)
 	if err != nil {
@@ -273,24 +267,18 @@ func handleRepliesView(g *gin.Context) {
 		return
 	}
 
-	if prev != 0 {
-		pl.Articles, more, err = m.FindReplies('d', pid, int64(prev), int(config.PostsPerPage))
-		if !more {
-			pl.NoPrev = true
-		}
-		if prev == -1 {
-			pl.NoNext = true
-		}
+	if dir == "prev" {
+		pl.Articles, more, err = m.FindReplies('d', pid, next, int(config.PostsPerPage))
+		pl.NoPrev = !more
+		pl.NoNext = next == 0
 	} else {
-		pl.Articles, more, err = m.FindReplies('a', pid, int64(next), int(config.PostsPerPage))
-		if !more {
-			pl.NoNext = true
-		}
+		pl.Articles, more, err = m.FindReplies('a', pid, next, int(config.PostsPerPage))
+		pl.NoNext = !more
+		pl.NoPrev = next == 0
 	}
 
 	if err != nil {
-		g.AbortWithStatus(500)
-		log.Println(err)
+		errorPage(500, "INTERNAL: "+err.Error(), g)
 		return
 	}
 

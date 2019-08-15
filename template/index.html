@@ -55,17 +55,17 @@
         {{if eq .Type "notify"}}
         <title>{{.SearchTerm}}的提醒 {{.Title}}</title>
         <h3>{{.SearchTerm}}的提醒</h3>
-        <a href="/id/{{.SearchTerm}}">查看{{.SearchTerm}}的回复/新主题</a>
+        <a href="/id/{{.SearchTerm}}">查看{{.SearchTerm}}的回复/新主题</a><hr>
         {{else if eq .Type "id"}}
         <title>{{.SearchTerm}}的发言 {{.Title}}</title>
         <h3>{{.SearchTerm}}的发言</h3>
-        <a href="/notify/{{.SearchTerm}}">查看谁回复了{{.SearchTerm}}</a>
+        <a href="/notify/{{.SearchTerm}}">查看谁回复了{{.SearchTerm}}</a><hr>
         {{else if eq .Type "ip"}}
         <title>IP: {{.SearchTerm}}的发言 {{.Title}}</title>
-        <h3>IP: {{.SearchTerm}}的发言</h3>
+        <h3>IP: {{.SearchTerm}}的发言</h3><hr>
         {{else if eq .Type "tag"}}
         <title>标签: {{.SearchTerm}} {{.Title}}</title>
-        <h3>标签: {{.SearchTerm}}</h3>
+        <h3>标签: {{.SearchTerm}}</h3><hr>
         {{else}}
         <title>时间线 {{.Title}}</title>
         {{end}}
@@ -81,7 +81,7 @@
                     {{if .Announce}}<b>[公告]</b>{{end}}
                     {{.Title}}{{if .Replies}} ({{.Replies}}回复){{end}}
                 </a>
-                &nbsp;<b>{{.Author}}</b>
+                &nbsp;<a href="/id/{{.Author}}" class=keepcolor><b>{{.Author}}</b></a>
                 <span>发布于 {{.CreateTimeString}}</span>
             </div>
         {{end}}
@@ -95,11 +95,11 @@
     <div>
         {{if not .NoPrev}}
         [ <a href="?n=0">首页</a> ]
-        [ <a href="?p={{.Prev}}">上页</a> ]
+        [ <a href="?n=-{{.Prev}}">上页</a> ]
         {{end}}
         {{if not .NoNext}}
         [ <a href="?n={{.Next}}">下页</a> ]
-        [ <a href="?p=-1">末页</a> ]
+        [ <a href="?n=-0">末页</a> ]
         {{end}}
         [
         <b>{{if .ParentArticle}}

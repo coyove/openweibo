@@ -13,6 +13,10 @@ body {
     font-family: "Helvetica Neue",Helvetica,Arial,"Hiragino Sans GB","Hiragino Sans GB W3","WenQuanYi Micro Hei",sans-serif
 }
 
+.keepcolor {
+    color: #33290A !important;
+}
+
 #container {
     padding: 0.5em;
 }
@@ -43,7 +47,8 @@ abbr[title] {
 }
 
 hr {
-    border: none;
+    border-color: rgba(0, 0, 0, 0.05);
+    border-style: dotted;
 }
 
 input.t, textarea {

@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -183,38 +184,6 @@ func encodeQuery(a ...string) string {
 	return query.Encode()
 }
 
-func expandText(in string) string {
-	t := bytesPool.Get().(*bytes.Buffer)
-	for _, r := range in {
-		t.WriteRune(r)
-		if r > 128 {
-			t.WriteRune(' ')
-		}
-	}
-	x := t.String()
-	t.Reset()
-	bytesPool.Put(t)
-	return x
-}
-
-func collapseText(in string) string {
-	t := bytesPool.Get().(*bytes.Buffer)
-	var lastr rune
-	for _, r := range in {
-		if r == ' ' {
-			if lastr > 128 {
-				continue
-			}
-		}
-		t.WriteRune(r)
-		lastr = r
-	}
-	x := t.String()
-	t.Reset()
-	bytesPool.Put(t)
-	return x
-}
-
 func isAdmin(g interface{}) bool {
 	switch g := g.(type) {
 	case *gin.Context:
@@ -239,4 +208,13 @@ func sanText(in string) string {
 
 func errorPage(code int, msg string, g *gin.Context) {
 	g.HTML(code, "error.html", struct{ Message string }{msg})
+}
+
+func parseCursor(p string) (int64, string) {
+	a := "next"
+	if strings.HasPrefix(p, "-") {
+		a, p = "prev", p[1:]
+	}
+	v, _ := strconv.ParseInt(p, 10, 64)
+	return v, a
 }
