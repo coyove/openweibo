@@ -8,8 +8,8 @@ import (
 	"io/ioutil"
 	"regexp"
 
-	"github.com/coyove/ch/driver"
 	"github.com/coyove/common/lru"
+	"github.com/coyove/iis/driver"
 	"gopkg.in/yaml.v2"
 )
 

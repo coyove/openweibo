@@ -15,9 +15,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/coyove/ch"
-	"github.com/coyove/ch/cache"
 	"github.com/coyove/common/lru"
+	ch "github.com/coyove/iis"
+	"github.com/coyove/iis/cache"
 	"github.com/gin-gonic/gin"
 )
 

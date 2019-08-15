@@ -10,8 +10,8 @@ import (
 	"math/rand"
 	"sync"
 
-	"github.com/coyove/ch/driver"
-	"github.com/coyove/ch/mq"
+	"github.com/coyove/iis/driver"
+	"github.com/coyove/iis/mq"
 )
 
 type Key [15]byte

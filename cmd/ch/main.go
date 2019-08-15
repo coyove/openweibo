@@ -10,9 +10,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/coyove/ch/cache"
-	"github.com/coyove/ch/driver"
-	"github.com/coyove/ch/driver/chdropbox"
+	"github.com/coyove/iis/cache"
+	"github.com/coyove/iis/driver"
+	"github.com/coyove/iis/driver/chdropbox"
 	"github.com/dchest/captcha"
 	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"

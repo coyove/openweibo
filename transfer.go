@@ -5,8 +5,8 @@ import (
 	"log"
 	"time"
 
-	"github.com/coyove/ch/mq"
 	"github.com/coyove/common/sched"
+	"github.com/coyove/iis/mq"
 )
 
 func init() {

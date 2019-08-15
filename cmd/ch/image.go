@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coyove/ch"
+	ch "github.com/coyove/iis"
 	"github.com/gin-gonic/gin"
 )
 

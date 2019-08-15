@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coyove/ch/driver"
 	"github.com/coyove/common/sched"
+	"github.com/coyove/iis/driver"
 )
 
 var rxFn = regexp.MustCompile(`[^a-zA-Z0-9\.]`)

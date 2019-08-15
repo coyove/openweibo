@@ -5,7 +5,7 @@ import (
 	"hash/crc32"
 	"math"
 
-	"github.com/coyove/ch/driver"
+	"github.com/coyove/iis/driver"
 )
 
 const (
