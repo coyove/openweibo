@@ -1,219 +1,325 @@
 package main
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
-	"math"
+	"math/rand"
+	"sync"
 	"time"
 
-	"github.com/globalsign/mgo"
-	"github.com/globalsign/mgo/bson"
+	"github.com/etcd-io/bbolt"
 )
 
+var errNoBucket = errors.New("")
+
 type Manager struct {
-	name     string
-	articles *mgo.Collection
-	session  *mgo.Session
-	closed   bool
+	db      *bbolt.DB
+	mu      sync.Mutex
+	counter int64
+	closed  bool
 }
 
-func NewManager(name, uri string) (*Manager, error) {
-	client, err := mgo.Dial(uri)
+func NewManager(path string) (*Manager, error) {
+	db, err := bbolt.Open(path, 0700, nil)
 	if err != nil {
 		return nil, err
 	}
-	m := &Manager{
-		name:     name,
-		session:  client,
-		articles: client.DB(name).C("articles"),
-	}
 
-	//m.articles.DropCollection()
-	m.articles.EnsureIndex(mgo.Index{Key: []string{"reply_time", "create_time", "ip", "author", "tags", "parent"}})
-	if err := m.articles.EnsureIndex(mgo.Index{Key: []string{"$text:title"}}); err != nil {
-		m.session.Close()
+	if err := db.Update(func(tx *bbolt.Tx) error {
+		for _, bk := range bkNames {
+			if _, err = tx.CreateBucketIfNotExists(bk); err != nil {
+				return err
+			}
+		}
+		return nil
+	}); err != nil {
 		return nil, err
 	}
-	return m, nil
+
+	return &Manager{
+		db:      db,
+		counter: rand.Int63(),
+	}, nil
 }
 
-type findby bson.M
-
-func ByTags(tag ...string) findby {
-	return findby(bson.M{"tags": bson.M{"$all": tag}})
+type findby struct {
+	bkName  []byte
+	bkName2 []byte
 }
 
-func ByTitle(title string) findby {
-	return findby(bson.M{"$text": bson.M{
-		"$search": title,
-		//"$language": "en",
-	}})
+func ByTag(tag string) findby {
+	return findby{
+		bkName:  bkTag,
+		bkName2: []byte(tag),
+	}
 }
 
-func ByAuthor(author uint64) findby {
-	return findby(bson.M{"author": author})
+func ByAuthor(a string) findby {
+	return findby{
+		bkName:  bkAuthor,
+		bkName2: []byte(a),
+	}
 }
 
-func ByIP(ip uint64) findby {
-	return findby(bson.M{"ip": ip})
+func ByNotify(a string) findby {
+	return findby{
+		bkName:  bkNotify,
+		bkName2: []byte(a),
+	}
 }
 
-func ByNone() findby {
-	return findby(bson.M{})
+func ByIP(ip string) findby {
+	return findby{
+		bkName:  bkIP,
+		bkName2: []byte(ip),
+	}
 }
 
-func (m *Manager) FindBack(filter findby, cursor int64, n int) ([]*Article, bool, error) {
-	filter["parent"] = bson.M{"$exists": false}
-	filter["reply_time"] = bson.M{"$gt": cursor}
-
-	q := m.articles.Find(bson.M(filter)).Sort("reply_time").Limit(n + 1).SetMaxTime(time.Second)
-	a := []*Article{}
-	if err := q.All(&a); err != nil {
-		return nil, false, err
+func ByTimeline() findby {
+	return findby{
+		bkName: bkTimeline,
 	}
-
-	more := len(a) == n+1
-	if more {
-		a = a[:n]
-	}
-
-	for left, right := 0, len(a)-1; left < right; left, right = left+1, right-1 {
-		a[left], a[right] = a[right], a[left]
-	}
-	return a, more, nil
 }
 
-func (m *Manager) Find(filter findby, cursor int64, n int) ([]*Article, bool, error) {
-	if cursor == 0 {
-		cursor = math.MaxInt64
-	}
-	filter["reply_time"] = bson.M{"$lt": cursor}
-	filter["parent"] = bson.M{"$exists": false}
+func (m *Manager) Find(dir byte, filter findby, cursor int64, n int) ([]*Article, bool, error) {
+	var (
+		more bool
+		a    []*Article
+		err  = m.db.View(func(tx *bbolt.Tx) error {
+			main := tx.Bucket(bkPost)
+			bk := tx.Bucket(filter.bkName)
+			if filter.bkName2 != nil {
+				bk = bk.Bucket(filter.bkName2)
+			}
+			if bk == nil {
+				return nil
+			}
 
-	q := m.articles.Find(bson.M(filter)).Sort("-reply_time").Limit(n + 1).SetMaxTime(time.Second)
-	a := []*Article{}
-	if err := q.All(&a); err != nil {
-		return nil, false, err
-	}
-	more := len(a) == n+1
-	if more {
-		a = a[:n]
-	}
-	return a, more, nil
+			var res [][2][]byte
+			var next []byte
+
+			if dir == 'a' {
+				if cursor == -1 {
+					cursor = 0
+				}
+				res, next = ScanBucketAsc(bk, idBytes(cursor), n, true)
+			} else {
+				res, next = ScanBucketDesc(bk, idBytes(cursor), n, false)
+			}
+
+			more = next != nil
+
+			for _, r := range res {
+				p := &Article{}
+				if bytes.Equal(filter.bkName, bkNotify) {
+					if p.Unmarshal(main.Get(r[1])) == nil {
+						a = append(a, p)
+					}
+				} else {
+					if p.Unmarshal(main.Get(r[0])) == nil {
+						a = append(a, p)
+					}
+				}
+			}
+			return nil
+		})
+	)
+	return a, more, err
 }
 
-func (m *Manager) FindRepliesBack(parent bson.ObjectId, cursor int64, n int) ([]*Article, bool, error) {
-	if cursor == -1 {
-		cursor = math.MaxInt64
-	}
+func (m *Manager) FindReplies(dir byte, parent int64, cursor int64, n int) ([]*Article, bool, error) {
+	var (
+		more bool
+		a    []*Article
+		err  = m.db.View(func(tx *bbolt.Tx) error {
+			main := tx.Bucket(bkPost)
 
-	q := m.articles.Find(bson.M{
-		"create_time": bson.M{"$lt": cursor},
-		"parent":      parent,
-	}).Sort("-create_time").Limit(n + 1)
+			bk := tx.Bucket(bkReply).Bucket(idBytes(parent))
+			if bk == nil {
+				return errNoBucket
+			}
 
-	a := []*Article{}
-	if err := q.All(&a); err != nil {
-		return nil, false, err
-	}
+			var res [][2][]byte
+			var next []byte
 
-	more := len(a) == n+1
-	if more {
-		a = a[:n]
-	}
+			if dir == 'a' {
+				res, next = ScanBucketAsc(bk, idBytes(cursor), n, false)
+			} else {
+				if cursor == -1 {
+					cursor = 0
+				}
+				res, next = ScanBucketDesc(bk, idBytes(cursor), n, true)
+			}
 
-	for left, right := 0, len(a)-1; left < right; left, right = left+1, right-1 {
-		a[left], a[right] = a[right], a[left]
+			more = next != nil
+			for _, r := range res {
+				p := &Article{}
+				if p.Unmarshal(main.Get(r[0])) == nil {
+					a = append(a, p)
+				}
+			}
+			return nil
+		})
+	)
+	if err == errNoBucket {
+		err = nil
 	}
-	return a, more, nil
+	return a, more, err
 }
 
-func (m *Manager) FindReplies(parent bson.ObjectId, cursor int64, n int) ([]*Article, bool, error) {
-	q := m.articles.Find(bson.M{
-		"create_time": bson.M{"$gt": cursor},
-		"parent":      parent,
-	}).Sort("create_time").Limit(n + 1)
-
-	a := []*Article{}
-	if err := q.All(&a); err != nil {
-		return nil, false, err
+func (m *Manager) insertID(tx *bbolt.Tx, filter findby, id int64) error {
+	var err error
+	bk := tx.Bucket(filter.bkName)
+	if filter.bkName2 != nil {
+		bk, err = bk.CreateBucketIfNotExists(filter.bkName2)
 	}
-	more := len(a) == n+1
-	if more {
-		a = a[:n]
+	if err != nil {
+		return err
 	}
-	return a, more, nil
+	return bk.Put(idBytes(id), []byte{})
 }
 
 func (m *Manager) PostArticle(a *Article) error {
-	return m.articles.Insert(a)
+	return m.db.Update(func(tx *bbolt.Tx) error {
+		idbuf := idBytes(a.ID)
+		if err := tx.Bucket(bkPost).Put(idbuf, a.Marshal()); err != nil {
+			return err
+		}
+		if err := m.insertID(tx, ByAuthor(a.Author), a.ID); err != nil {
+			return err
+		}
+		if err := m.insertID(tx, ByIP(a.IP), a.ID); err != nil {
+			return err
+		}
+		for _, tag := range a.Tags {
+			if err := m.insertID(tx, ByTag(tag), a.ID); err != nil {
+				return err
+			}
+		}
+		if err := m.insertID(tx, ByTimeline(), a.ID); err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
-func (m *Manager) PostReply(parent bson.ObjectId, a *Article) error {
+func (m *Manager) PostReply(parent int64, a *Article) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	p, err := m.GetArticle(parent)
 	if err != nil {
 		return err
 	}
-	replyTime := time.Now().UnixNano() / 1e3
 	if p.Locked {
 		return fmt.Errorf("locked parent")
 	}
-	if p.Announcement {
-		replyTime = math.MaxInt64 - 1
-	}
-	a.Parent = p.ID
-	if err := m.articles.Insert(a); err != nil {
-		return err
-	}
-	return m.articles.UpdateId(parent, bson.M{
-		"$set": bson.M{"reply_time": replyTime},
-		"$inc": bson.M{"replies_count": 1},
+
+	p.ReplyTime = time.Now().UnixNano() / 1e3
+	p.Replies++
+	a.Parent = parent
+	a.Title = "RE: " + p.Title
+
+	return m.db.Update(func(tx *bbolt.Tx) error {
+		if err := tx.Bucket(bkPost).Put(idBytes(a.ID), a.Marshal()); err != nil {
+			return err
+		}
+		if err := tx.Bucket(bkPost).Put(idBytes(p.ID), p.Marshal()); err != nil {
+			return err
+		}
+		if err := m.insertID(tx, ByAuthor(a.Author), a.ID); err != nil {
+			return err
+		}
+		if err := m.insertID(tx, ByIP(a.IP), a.ID); err != nil {
+			return err
+		}
+		if err := m.insertID(tx, findby{bkName: bkReply, bkName2: idBytes(p.ID)}, a.ID); err != nil {
+			return err
+		}
+		bk, err := tx.Bucket(bkNotify).CreateBucketIfNotExists([]byte(p.Author))
+		if err != nil {
+			return err
+		}
+		return bk.Put(idBytes(newID()), idBytes(a.ID))
 	})
 }
 
-func (m *Manager) GetArticle(id bson.ObjectId) (*Article, error) {
-	a := []*Article{}
-	if err := m.articles.FindId(id).All(&a); err != nil {
-		return nil, err
-	}
-	if len(a) != 1 {
-		return nil, fmt.Errorf("%s not found", objectIDToDisplayID(id))
-	}
-	return a[0], nil
-}
-
-func (m *Manager) UpdateArticle(id bson.ObjectId, del bool, title, content string, images []string, tags []string) error {
-	if del {
-		return m.articles.RemoveId(id)
-	}
-	return m.articles.UpdateId(id, bson.M{
-		"$set": bson.M{
-			"title":   title,
-			"content": content,
-			"tags":    tags,
-			"images":  images,
-		},
+func (m *Manager) GetArticle(id int64) (*Article, error) {
+	a := &Article{}
+	return a, m.db.View(func(tx *bbolt.Tx) error {
+		return a.Unmarshal(tx.Bucket(bkPost).Get(idBytes(id)))
 	})
 }
 
-func (m *Manager) AnnounceArticle(id bson.ObjectId) error {
-	return m.articles.UpdateId(id, bson.M{
-		"$set": bson.M{
-			"announcement": true,
-			"create_time":  math.MaxInt64 - 1,
-			"reply_time":   math.MaxInt64 - 1,
-		},
-	})
-}
+func (m *Manager) UpdateArticle(a *Article, oldtags []string, del bool) error {
+	return m.db.Update(func(tx *bbolt.Tx) error {
+		idbuf := idBytes(a.ID)
+		mustget := func(a, b []byte) *bbolt.Bucket {
+			bk, _ := tx.Bucket(a).CreateBucketIfNotExists(b)
+			return bk
+		}
 
-func (m *Manager) LockArticle(id bson.ObjectId, v bool) error {
-	return m.articles.UpdateId(id, bson.M{
-		"$set": bson.M{
-			"locked": v,
-		},
+		if del {
+			if err := tx.Bucket(bkPost).Delete(idbuf); err != nil {
+				return err
+			}
+			if err := tx.Bucket(bkTimeline).Delete(idbuf); err != nil {
+				return err
+			}
+			if err := mustget(bkAuthor, []byte(a.Author)).Delete(idbuf); err != nil {
+				return err
+			}
+			if err := mustget(bkIP, []byte(a.IP)).Delete(idbuf); err != nil {
+				return err
+			}
+			if err := mustget(bkNotify, []byte(a.Author)).Delete(idbuf); err != nil {
+				return err
+			}
+			if err := mustget(bkReply, idBytes(a.Parent)).Delete(idbuf); err != nil {
+				return err
+			}
+			for _, tag := range a.Tags {
+				if err := mustget(bkTag, []byte(tag)).Delete(idbuf); err != nil {
+					return err
+				}
+			}
+		} else {
+			newtags := make([]string, len(a.Tags))
+			copy(newtags, a.Tags)
+
+		DIFF:
+			for i := len(oldtags) - 1; i > 0; i-- {
+				for j, t := range newtags {
+					if t == oldtags[i] {
+						newtags = append(newtags[:j], newtags[j+1:]...)
+						oldtags = append(oldtags[:i], oldtags[i+1:]...)
+						continue DIFF
+					}
+				}
+			}
+
+			for _, tag := range oldtags {
+				if err := mustget(bkTag, []byte(tag)).Delete(idbuf); err != nil {
+					return err
+				}
+			}
+
+			for _, tag := range newtags {
+				if err := m.insertID(tx, ByTag(tag), a.ID); err != nil {
+					return err
+				}
+			}
+
+			if err := tx.Bucket(bkPost).Put(idbuf, a.Marshal()); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 }
 
 func (m *Manager) Close() {
 	m.closed = true
-	m.session.Close()
+	m.db.Close()
 }

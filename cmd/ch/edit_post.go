@@ -11,12 +11,15 @@ func handleEditPostView(g *gin.Context) {
 		UUID    string
 		Reply   string
 		Tags    []string
+		RAuthor string
 		Article *Article
 	}{
 		UUID:  makeCSRFToken(g),
 		Reply: g.Param("id"),
 		Tags:  config.Tags,
 	}
+
+	pl.RAuthor, _ = g.Cookie("id")
 
 	a, err := m.GetArticle(displayIDToObejctID(pl.Reply))
 	if err != nil {
@@ -36,15 +39,15 @@ func handleEditPostAction(g *gin.Context) {
 	}
 
 	var (
-		eid       = displayIDToObejctID(g.PostForm("reply"))
-		title     = softTrunc(g.PostForm("title"), 100)
-		content   = softTrunc(g.PostForm("content"), int(config.MaxContent))
-		author    = authorNameToHash(g.PostForm("author"))
-		tags      = splitTags(g.PostForm("tags"))
-		deleted   = g.PostForm("delete") != ""
-		announced = g.PostForm("announce") != ""
-		locked    = g.PostForm("locked") != ""
-		delimg    = g.PostForm("delimg") != ""
+		eid        = displayIDToObejctID(g.PostForm("reply"))
+		title      = softTrunc(g.PostForm("title"), 100)
+		content    = softTrunc(g.PostForm("content"), int(config.MaxContent))
+		author     = g.PostForm("author")
+		authorHash = authorNameToHash(author)
+		tags       = splitTags(g.PostForm("tags"))
+		deleted    = g.PostForm("delete") != ""
+		locked     = g.PostForm("locked") != ""
+		delimg     = g.PostForm("delimg") != ""
 	)
 
 	a, err := m.GetArticle(eid)
@@ -55,29 +58,22 @@ func handleEditPostAction(g *gin.Context) {
 
 	redir := "/p/" + a.DisplayID()
 
-	if announced && !a.Announcement {
-		if isAdmin(author) {
-			m.AnnounceArticle(eid)
-		}
-		g.Redirect(302, redir)
-		return
-	}
-
 	if locked != a.Locked {
 		if isAdmin(author) {
-			m.LockArticle(eid, locked)
+			a.Locked = true
+			m.UpdateArticle(a, a.Tags, false)
 		}
 		g.Redirect(302, redir)
 		return
 	}
 
-	if a.Author != author && !isAdmin(author) {
+	if a.Author != authorHash && !isAdmin(author) {
 		g.Redirect(302, redir)
 		return
 	}
 
 	if !deleted {
-		if a.Parent == "" && len(title) < int(config.MinContent) {
+		if a.Parent == 0 && len(title) < int(config.MinContent) {
 			g.String(400, "title/too-short")
 			return
 		}
@@ -92,10 +88,13 @@ func handleEditPostAction(g *gin.Context) {
 	}
 
 	if delimg {
-		a.Images = nil
+		a.Image = ""
 	}
 
-	if err := m.UpdateArticle(a.ID, deleted, title, content, a.Images, tags); err != nil {
+	oldtags := a.Tags
+	a.Title, a.Content, a.Tags = title, content, tags
+
+	if err := m.UpdateArticle(a, oldtags, deleted); err != nil {
 		log.Println(err)
 		g.String(500, "internal/error")
 		return
@@ -106,7 +105,7 @@ func handleEditPostAction(g *gin.Context) {
 		return
 	}
 
-	if a.Parent != "" {
+	if a.Parent != 0 {
 		g.Redirect(302, "/p/"+a.DisplayParentID())
 	} else {
 		g.Redirect(302, "/p/"+a.DisplayID())

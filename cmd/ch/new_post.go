@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/binary"
 	"io"
 	"io/ioutil"
 	"log"
@@ -39,8 +38,8 @@ func handleNewPostView(g *gin.Context) {
 			g.AbortWithStatus(400)
 			return
 		}
-		if a.Title != "" {
-			pl.Abstract = softTrunc(a.TitleString(), 50)
+		if a.Title != "" && !strings.HasPrefix(a.Title, "RE:") {
+			pl.Abstract = softTrunc(a.Title, 50)
 		} else {
 			pl.Abstract = softTrunc(a.Content, 50)
 		}
@@ -53,22 +52,23 @@ func handleNewPostView(g *gin.Context) {
 	g.HTML(200, "newpost.html", pl)
 }
 
-func hashIP(g *gin.Context) uint64 {
-	buf := make([]byte, 8)
+func hashIP(g *gin.Context) string {
 	ip := g.ClientIP()
 	ip2 := net.ParseIP(ip)
 	if len(ip2) == net.IPv4len {
-		copy(buf, ip2[:3]) // first 3 bytes
+		// copy(buf, ip2[:3]) // first 3 bytes
+		ip2[3] = 0
 	} else if len(ip2) == net.IPv6len {
 		if len(ip2.To4()) == net.IPv4len {
-			copy(buf, ip2.To4()[:3]) // first 3 bytes
+			ip2 = ip2.To4()
+			ip2[3] = 0
 		} else {
-			copy(buf, ip2) // first 8 byte
+			copy(ip2[8:], make([]byte, 8)) // first 8 byte
 		}
 	} else {
-		copy(buf, ip)
+		return ip
 	}
-	return binary.LittleEndian.Uint64(buf)
+	return ip2.String()
 }
 
 func handleNewPostAction(g *gin.Context) {
@@ -85,7 +85,7 @@ func handleNewPostAction(g *gin.Context) {
 		image, _  = g.FormFile("image")
 		redir     = func(a, b string) {
 			q := encodeQuery(a, b, "author", author, "content", content, "title", title, "tags", strings.Join(tags, " "))
-			if reply == "" {
+			if reply == 0 {
 				g.Redirect(302, "/new/0?"+q)
 			} else {
 				g.Redirect(302, "/new/"+objectIDToDisplayID(reply)+"?"+q)
@@ -123,7 +123,7 @@ func handleNewPostAction(g *gin.Context) {
 		return
 	}
 
-	var imagek []string
+	var imagek string
 	if image != nil {
 		if config.ImageDisabled && !isAdmin(author) {
 			redir("error", "image/disabled")
@@ -148,18 +148,18 @@ func handleNewPostAction(g *gin.Context) {
 			redir("error", "image/write-error: "+err.Error())
 			return
 		}
-		imagek = []string{displaypath}
+		imagek = displaypath
 	}
 
 	var err error
-	if reply != "" {
-		err = m.PostReply(reply, NewArticle("", content, authorNameToHash(author), imagek, nil, ip))
+	if reply != 0 {
+		err = m.PostReply(reply, m.NewArticle("", content, authorNameToHash(author), ip, imagek, nil))
 	} else {
 		if len(title) < int(config.MinContent) {
 			redir("error", "title/too-short")
 			return
 		}
-		a := NewArticle(title, content, authorNameToHash(author), imagek, tags, ip)
+		a := m.NewArticle(title, content, authorNameToHash(author), ip, imagek, tags)
 		err = m.PostArticle(a)
 		reply = a.ID
 	}

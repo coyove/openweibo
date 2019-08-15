@@ -231,8 +231,6 @@ func isAdmin(g interface{}) bool {
 		}
 	case string:
 		return g == config.AdminName
-	case uint64:
-		return g == config.adminNameHash
 	}
 	return false
 }

@@ -31,7 +31,7 @@ var (
 
 		// inited after config being read
 		blk           cipher.Block
-		adminNameHash uint64
+		adminNameHash string
 		publicString  string
 	}{
 		CacheSize:    1,
