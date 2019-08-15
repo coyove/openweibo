@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"html/template"
 	_ "image/png"
@@ -19,7 +18,6 @@ import (
 	"github.com/coyove/ch/cache"
 	"github.com/coyove/common/lru"
 	"github.com/gin-gonic/gin"
-	"github.com/globalsign/mgo/bson"
 )
 
 var (
@@ -64,11 +62,6 @@ func handleCurrentStat(g *gin.Context) {
 	}
 
 	g.HTML(200, "stat.html", p)
-}
-
-func prettyBSON(m bson.M) string {
-	buf, _ := json.MarshalIndent(m, "", "  ")
-	return string(buf)
 }
 
 func softTrunc(a string, n int) string {
@@ -242,4 +235,8 @@ func sanText(in string) string {
 		}
 		return "<a href='" + in + "' target=_blank>" + in + "</a>"
 	})
+}
+
+func errorPage(code int, msg string, g *gin.Context) {
+	g.HTML(code, "error.html", struct{ Message string }{msg})
 }

@@ -46,6 +46,7 @@ func handleEditPostAction(g *gin.Context) {
 		authorHash = authorNameToHash(author)
 		tags       = splitTags(g.PostForm("tags"))
 		deleted    = g.PostForm("delete") != ""
+		announce   = g.PostForm("announce") != ""
 		locked     = g.PostForm("locked") != ""
 		delimg     = g.PostForm("delimg") != ""
 	)
@@ -72,17 +73,29 @@ func handleEditPostAction(g *gin.Context) {
 		return
 	}
 
+	if announce {
+		if isAdmin(author) {
+			m.UpdateArticle(a, a.Tags, true)
+			a := m.NewArticle(a.Title, a.Content, a.Author, a.IP, a.Image, a.Tags)
+			a.ID = newBigID()
+			a.Announce = true
+			m.PostArticle(a)
+		}
+		g.Redirect(302, "/")
+		return
+	}
+
 	if !deleted {
 		if a.Parent == 0 && len(title) < int(config.MinContent) {
-			g.String(400, "title/too-short")
+			errorPage(400, "title/too-short", g)
 			return
 		}
 		if len(content) < int(config.MinContent) {
-			g.String(400, "content/too-short")
+			errorPage(400, "content/too-short", g)
 			return
 		}
 		if a.Locked {
-			g.String(400, "guard/post-locked")
+			errorPage(400, "guard/post-locked", g)
 			return
 		}
 	}
@@ -96,7 +109,7 @@ func handleEditPostAction(g *gin.Context) {
 
 	if err := m.UpdateArticle(a, oldtags, deleted); err != nil {
 		log.Println(err)
-		g.String(500, "internal/error")
+		errorPage(500, "internal/error", g)
 		return
 	}
 

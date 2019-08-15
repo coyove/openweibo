@@ -132,7 +132,19 @@ func main() {
 	r.Handle("GET", "/tag/:tag", makeHandleMainView('t'))
 	r.Handle("GET", "/search/:title", makeHandleMainView('T'))
 	r.Handle("GET", "/tags", func(g *gin.Context) {
-		g.HTML(200, "tags.html", struct{ Tags []string }{config.Tags})
+		tags, n := m.FindTags(g.Query("n"), int(config.PostsPerPage))
+		next := ""
+		if len(tags) > 0 {
+			next = tags[len(tags)-1]
+		}
+		g.HTML(200, "tags.html", struct {
+			Tags     []string
+			Tags2    []string
+			Tags2Num int
+			Next     string
+		}{
+			config.Tags, tags, n, next,
+		})
 	})
 	r.Handle("GET", "/cookie", func(g *gin.Context) {
 		id, _ := g.Cookie("id")
@@ -247,7 +259,7 @@ func handleRepliesView(g *gin.Context) {
 	pl.ShowIP = isAdmin(g)
 	pid := displayIDToObejctID(g.Param("parent"))
 	if pid == 0 {
-		g.AbortWithStatus(404)
+		errorPage(404, "NOT FOUND", g)
 		return
 	}
 
@@ -256,7 +268,7 @@ func handleRepliesView(g *gin.Context) {
 
 	pl.ParentArticle, err = m.GetArticle(pid)
 	if err != nil {
-		g.AbortWithStatus(404)
+		errorPage(404, "NOT FOUND", g)
 		log.Println(err)
 		return
 	}

@@ -128,6 +128,19 @@ func (m *Manager) Find(dir byte, filter findby, cursor int64, n int) ([]*Article
 	return a, more, err
 }
 
+func (m *Manager) FindTags(cursor string, n int) ([]string, int) {
+	var a []string
+	m.db.View(func(tx *bbolt.Tx) error {
+		res, _ := ScanBucketAsc(tx.Bucket(bkTag), []byte(cursor), n, false)
+		for _, r := range res {
+			a = append(a, string(r[0]))
+		}
+		n = tx.Bucket(bkTag).Stats().BucketN
+		return nil
+	})
+	return a, n
+}
+
 func (m *Manager) FindReplies(dir byte, parent int64, cursor int64, n int) ([]*Article, bool, error) {
 	var (
 		more bool

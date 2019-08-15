@@ -115,7 +115,7 @@ func handleNewPostAction(g *gin.Context) {
 	}
 
 	if author == "" {
-		author = g.ClientIP()
+		author = "user/" + g.ClientIP()
 	}
 
 	if image == nil && len(content) < int(config.MinContent) {

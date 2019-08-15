@@ -1,7 +1,19 @@
 {{template "header.html" .}}
 <title>全部标签</title>
+
+<h3>全部标签 ({{len .Tags}}+{{.Tags2Num}})</h3>
+
 <ul>
 {{range .Tags}}
     <li><a href="/tag/{{.}}">{{.}}</a>
 {{end}}
+{{range .Tags2}}
+    <li><a href="/tag/{{.}}">{{.}}</a>
+{{end}}
+<li style="list-style: none">
+<a href="/tags?n={{.Next}}">更多标签&raquo;</a>
+</li>
 </ul>
+
+
+{{template "footer.html" .}}

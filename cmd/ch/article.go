@@ -29,6 +29,7 @@ type Article struct {
 	Parent     int64    `json:"p"`
 	Replies    int64    `json:"rc"`
 	Locked     bool     `json:"l"`
+	Announce   bool     `json:"A"`
 	Title      string   `json:"T"`
 	Content    string   `json:"C"`
 	Author     string   `json:"a"`
@@ -43,6 +44,12 @@ func newID() int64 {
 	id := uint64(time.Now().Unix()) << 32
 	id |= uint64(atomic.AddInt64(&m.counter, 1)) & 0xffff << 16
 	id |= rand.Uint64() & 0xffff
+	return int64(id)
+}
+
+func newBigID() int64 {
+	id := uint64(newID())
+	id |= 0x7fffffff00000000
 	return int64(id)
 }
 

@@ -55,7 +55,7 @@
         {{if eq .Type "notify"}}
         <title>{{.SearchTerm}}的提醒 {{.Title}}</title>
         <h3>{{.SearchTerm}}的提醒</h3>
-        <a href="/id/{{.SearchTerm}}">查看{{.SearchTerm}}回复了谁/新主题</a>
+        <a href="/id/{{.SearchTerm}}">查看{{.SearchTerm}}的回复/新主题</a>
         {{else if eq .Type "id"}}
         <title>{{.SearchTerm}}的发言 {{.Title}}</title>
         <h3>{{.SearchTerm}}的发言</h3>
@@ -78,6 +78,7 @@
                 {{end}}
                 <a href="/p/{{.DisplayID}}">
                     {{if .Locked}}<b>[锁定]</b>{{end}}
+                    {{if .Announce}}<b>[公告]</b>{{end}}
                     {{.Title}}{{if .Replies}} ({{.Replies}}回复){{end}}
                 </a>
                 &nbsp;<b>{{.Author}}</b>
