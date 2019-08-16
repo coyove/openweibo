@@ -9,6 +9,7 @@ import (
 	"html/template"
 	"math/rand"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"time"
 )
@@ -17,6 +18,7 @@ type ArticlesView struct {
 	Articles       []*Article
 	ParentArticle  *Article
 	Next, Prev     int64
+	TotalCount     int
 	NoNext, NoPrev bool
 	ShowIP         bool
 	Type           string
@@ -118,22 +120,46 @@ func authorNameToHash(n string) string {
 }
 
 func objectIDToDisplayID(id int64) string {
-	return strconv.FormatInt(id, 8)
+	var (
+		sum    uint32 = 0
+		delta  uint32 = 0x9E3779B9
+		v0, v1        = uint32(uint64(id) >> 32), uint32(uint64(id))
+		buf           = make([]byte, 0, 24)
+	)
+	for i := 0; i < 64; i++ {
+		v0 += (((v1 << 4) ^ (v1 >> 5)) + v1) ^ sum
+		sum += delta
+		v1 += (((v0 << 4) ^ (v0 >> 5)) + v0) ^ sum
+	}
+	buf = append(strconv.AppendUint(buf, uint64(v0), 8), '.')
+	buf = append(strconv.AppendUint(buf, uint64(v1), 8))
+	return string(buf)
 }
 
 func displayIDToObejctID(id string) int64 {
-	a, _ := strconv.ParseInt(id, 8, 64)
-	return a
+	idx := strings.Index(id, ".")
+	if idx == -1 {
+		return 0
+	}
+	var (
+		i32          = func(v uint64, e error) uint32 { return uint32(v) }
+		v0           = i32(strconv.ParseUint(id[:idx], 8, 64))
+		v1           = i32(strconv.ParseUint(id[idx+1:], 8, 64))
+		delta uint32 = 0x9E3779B9
+		sum   uint32 = delta * 64
+	)
+	for i := 0; i < 64; i++ {
+		v1 -= (((v0 << 4) ^ (v0 >> 5)) + v0) ^ sum
+		sum -= delta
+		v0 -= (((v1 << 4) ^ (v1 >> 5)) + v1) ^ sum
+	}
+	return int64(uint64(v0)<<32 + uint64(v1))
 }
 
 func idBytes(id int64) []byte {
 	b := make([]byte, 8)
 	binary.BigEndian.PutUint64(b, uint64(id))
 	return b
-}
-
-func bytesID(b []byte) int64 {
-	return int64(binary.BigEndian.Uint64(b))
 }
 
 func formatTime(t int64) string {

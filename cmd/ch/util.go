@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
-	"fmt"
-	"html/template"
 	_ "image/png"
 	"math/rand"
 	"net"
@@ -28,42 +26,6 @@ var (
 	rxSan    = regexp.MustCompile(`(<|https?://\S+)`)
 )
 
-func handleCurrentStat(g *gin.Context) {
-	type nodeView struct {
-		Name       string
-		Capacity   string
-		Throt      string
-		Free       string
-		Error      string
-		Offline    bool
-		Ping       int64
-		LastUpdate string
-	}
-
-	p := struct {
-		Nodes  []nodeView
-		Config template.HTML
-	}{
-		Config: template.HTML(config.publicString),
-	}
-
-	for _, n := range mgr.Nodes() {
-		offline, total, used := n.Space()
-		stat := n.Stat()
-		p.Nodes = append(p.Nodes, nodeView{
-			Name:       n.Name,
-			Offline:    offline,
-			Capacity:   fmt.Sprintf("%.3fG", float64(total)/1024/1024/1024),
-			Free:       fmt.Sprintf("%.3fG", float64(total-used)/1024/1024/1024),
-			Ping:       stat.Ping,
-			Throt:      stat.Throt,
-			LastUpdate: time.Since(stat.UpdateTime).String(),
-		})
-	}
-
-	g.HTML(200, "stat.html", p)
-}
-
 func softTrunc(a string, n int) string {
 	a = strings.TrimSpace(a)
 	if len(a) <= n {
@@ -84,8 +46,7 @@ func makeCSRFToken(g *gin.Context) string {
 	var p [16]byte
 	exp := time.Now().Add(time.Minute * time.Duration(config.TokenTTL)).Unix()
 	binary.BigEndian.PutUint32(p[:], uint32(exp))
-	ip := g.MustGet("ip").(net.IP)
-	copy(p[4:10], ip)
+	copy(p[4:10], g.MustGet("ip").(net.IP))
 	rand.Read(p[10:])
 	config.blk.Encrypt(p[:], p[:])
 	return hex.EncodeToString(p[:])

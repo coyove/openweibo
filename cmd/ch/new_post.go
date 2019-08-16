@@ -52,34 +52,26 @@ func handleNewPostView(g *gin.Context) {
 }
 
 func hashIP(g *gin.Context) string {
-	ip := g.ClientIP()
-	ip2 := net.ParseIP(ip)
-	if len(ip2) == net.IPv4len {
-		// copy(buf, ip2[:3]) // first 3 bytes
-		ip2[3] = 0
-	} else if len(ip2) == net.IPv6len {
-		if len(ip2.To4()) == net.IPv4len {
-			ip2 = ip2.To4()
-			ip2[3] = 0
-		} else {
-			copy(ip2[8:], make([]byte, 8)) // first 8 byte
-		}
-	} else {
-		return ip
+	ip := append(net.IP{}, g.MustGet("ip").(net.IP)...)
+	if len(ip) == net.IPv4len {
+		ip[3] = 0
+	} else if len(ip) == net.IPv6len {
+		copy(ip[8:], "\x00\x00\x00\x00\x00\x00\x00\x00")
 	}
-	return ip2.String()
+	return ip.String()
 }
 
 func handleNewPostAction(g *gin.Context) {
 	var (
 		reply    = displayIDToObejctID(g.PostForm("reply"))
-		answer   = g.PostForm("answer")
-		uuid     = g.PostForm("uuid")
 		ip       = hashIP(g)
+		answer   = softTrunc(g.PostForm("answer"), 6)
+		uuid     = softTrunc(g.PostForm("uuid"), 32)
 		content  = softTrunc(g.PostForm("content"), int(config.MaxContent))
 		title    = softTrunc(g.PostForm("title"), 100)
 		author   = softTrunc(g.PostForm("author"), 32)
 		tags     = splitTags(softTrunc(g.PostForm("tags"), 128))
+		announce = g.PostForm("announce") != ""
 		image, _ = g.FormFile("image")
 		redir    = func(a, b string) {
 			q := encodeQuery(a, b, "author", author, "content", content, "title", title, "tags", strings.Join(tags, " "))
@@ -173,6 +165,10 @@ func handleNewPostAction(g *gin.Context) {
 			return
 		}
 		a := m.NewArticle(title, content, authorNameToHash(author), ip, imagek, tags)
+		if isAdmin(g) && announce {
+			a.Announce = true
+			a.ID = newBigID()
+		}
 		err = m.PostArticle(a)
 		reply = a.ID
 	}

@@ -20,6 +20,11 @@ type Manager struct {
 	closed  bool
 }
 
+type Tag struct {
+	Name  string
+	Count int
+}
+
 func NewManager(path string) (*Manager, error) {
 	db, err := bbolt.Open(path, 0700, nil)
 	if err != nil {
@@ -82,11 +87,12 @@ func ByTimeline() findby {
 	}
 }
 
-func (m *Manager) Find(dir byte, filter findby, cursor int64, n int) ([]*Article, bool, error) {
+func (m *Manager) Find(dir byte, filter findby, cursor int64, n int) ([]*Article, bool, int, error) {
 	var (
-		more bool
-		a    []*Article
-		err  = m.db.View(func(tx *bbolt.Tx) error {
+		more  bool
+		a     []*Article
+		count int
+		err   = m.db.View(func(tx *bbolt.Tx) error {
 			main := tx.Bucket(bkPost)
 			bk := tx.Bucket(filter.bkName)
 			if filter.bkName2 != nil {
@@ -95,6 +101,8 @@ func (m *Manager) Find(dir byte, filter findby, cursor int64, n int) ([]*Article
 			if bk == nil {
 				return nil
 			}
+
+			count = bk.Stats().KeyN
 
 			var res [][2][]byte
 			var next []byte
@@ -125,17 +133,25 @@ func (m *Manager) Find(dir byte, filter findby, cursor int64, n int) ([]*Article
 			return nil
 		})
 	)
-	return a, more, err
+	return a, more, count, err
 }
 
-func (m *Manager) FindTags(cursor string, n int) ([]string, int) {
-	var a []string
+func (m *Manager) FindTags(cursor string, n int) ([]Tag, int) {
+	var a []Tag
 	m.db.View(func(tx *bbolt.Tx) error {
-		res, _ := ScanBucketAsc(tx.Bucket(bkTag), []byte(cursor), n, false)
+		bk := tx.Bucket(bkTag)
+		res, _ := ScanBucketAsc(bk, []byte(cursor), n, false)
+
 		for _, r := range res {
-			a = append(a, string(r[0]))
+			bkt := bk.Bucket(r[0])
+			t := Tag{Name: string(r[0])}
+			if bkt != nil {
+				t.Count = bkt.Stats().KeyN
+			}
+			a = append(a, t)
 		}
-		n = tx.Bucket(bkTag).Stats().BucketN
+
+		n = bk.Stats().BucketN
 		return nil
 	})
 	return a, n

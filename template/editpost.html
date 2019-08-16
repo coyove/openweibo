@@ -37,13 +37,7 @@
         <td>删除:</td>
         <td><input name=delete type=checkbox></td>
     </tr>
-    <tr>
-        <td>设为公告:</td>
-        <td>
-            <input name=announce type=checkbox>
-            设置后无法取消只能删除
-        </td>
-    </tr>
+    
     <tr>
         <td>锁定:</td>
         <td><input name=locked type=checkbox {{if .Article.Locked}}checked{{end}}></td>

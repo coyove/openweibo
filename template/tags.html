@@ -8,7 +8,7 @@
     <li><a href="/tag/{{.}}">{{.}}</a>
 {{end}}
 {{range .Tags2}}
-    <li><a href="/tag/{{.}}">{{.}}</a>
+<li><a href="/tag/{{.Name}}">{{.Name}} ({{.Count}})</a>
 {{end}}
 <li style="list-style: none">
 <a href="/tags?n={{.Next}}">更多标签&raquo;</a>

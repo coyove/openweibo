@@ -47,11 +47,10 @@ func handleEditPostAction(g *gin.Context) {
 		eid        = displayIDToObejctID(g.PostForm("reply"))
 		title      = softTrunc(g.PostForm("title"), 100)
 		content    = softTrunc(g.PostForm("content"), int(config.MaxContent))
-		author     = g.PostForm("author")
+		author     = softTrunc(g.PostForm("author"), 32)
 		authorHash = authorNameToHash(author)
 		tags       = splitTags(g.PostForm("tags"))
 		deleted    = g.PostForm("delete") != ""
-		announce   = g.PostForm("announce") != ""
 		locked     = g.PostForm("locked") != ""
 		delimg     = g.PostForm("delimg") != ""
 	)
@@ -66,7 +65,7 @@ func handleEditPostAction(g *gin.Context) {
 
 	if locked != a.Locked {
 		if isAdmin(author) {
-			a.Locked = true
+			a.Locked = locked
 			m.UpdateArticle(a, a.Tags, false)
 		}
 		g.Redirect(302, redir)
@@ -78,19 +77,7 @@ func handleEditPostAction(g *gin.Context) {
 		return
 	}
 
-	if announce {
-		if isAdmin(author) {
-			m.UpdateArticle(a, a.Tags, true)
-			a := m.NewArticle(a.Title, a.Content, a.Author, a.IP, a.Image, a.Tags)
-			a.ID = newBigID()
-			a.Announce = true
-			m.PostArticle(a)
-		}
-		g.Redirect(302, "/")
-		return
-	}
-
-	if !deleted {
+	if !deleted && !delimg {
 		if a.Parent == 0 && len(title) < int(config.MinContent) {
 			errorPage(400, "title/too-short", g)
 			return
@@ -122,14 +109,14 @@ func handleEditPostAction(g *gin.Context) {
 		return
 	}
 
-	if deleted {
-		g.Redirect(302, "/")
-		return
-	}
-
 	if a.Parent != 0 {
 		g.Redirect(302, "/p/"+a.DisplayParentID())
 	} else {
-		g.Redirect(302, "/p/"+a.DisplayID())
+		if deleted {
+			g.Redirect(302, "/")
+		} else {
+			g.Redirect(302, "/p/"+a.DisplayID())
+		}
 	}
+
 }

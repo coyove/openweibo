@@ -26,9 +26,6 @@ var (
 	}
 )
 
-func OpenDB() {
-}
-
 func ScanBucketAsc(bk *bbolt.Bucket, cursor []byte, n int, reverse bool) (keyvalues [][2][]byte, next []byte) {
 	var (
 		c    = bk.Cursor()

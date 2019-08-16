@@ -132,11 +132,11 @@ func main() {
 		tags, n := m.FindTags(g.Query("n"), int(config.PostsPerPage))
 		next := ""
 		if len(tags) > 0 {
-			next = tags[len(tags)-1]
+			next = tags[len(tags)-1].Name
 		}
 		g.HTML(200, "tags.html", struct {
 			Tags     []string
-			Tags2    []string
+			Tags2    []Tag
 			Tags2Num int
 			Next     string
 		}{
@@ -221,11 +221,11 @@ func makeHandleMainView(t byte) func(g *gin.Context) {
 		next, dir := parseCursor(g.Query("n"))
 
 		if dir == "prev" {
-			pl.Articles, more, err = m.Find('a', findby, next, int(config.PostsPerPage))
+			pl.Articles, more, pl.TotalCount, err = m.Find('a', findby, next, int(config.PostsPerPage))
 			pl.NoPrev = !more
 			pl.NoNext = next == 0
 		} else {
-			pl.Articles, more, err = m.Find('d', findby, next, int(config.PostsPerPage))
+			pl.Articles, more, pl.TotalCount, err = m.Find('d', findby, next, int(config.PostsPerPage))
 			pl.NoNext = !more
 			pl.NoPrev = next == 0
 		}

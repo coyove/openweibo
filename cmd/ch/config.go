@@ -5,12 +5,16 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/json"
+	"fmt"
+	"html/template"
 	"io/ioutil"
 	"net"
 	"regexp"
+	"time"
 
 	"github.com/coyove/common/lru"
 	"github.com/coyove/iis/driver"
+	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
 )
 
@@ -82,4 +86,40 @@ func loadConfig() {
 		return bytes.Repeat([]byte("\u2588"), len(in)/2+1)
 	})
 	config.publicString = "<li>" + string(buf)
+}
+
+func handleCurrentStat(g *gin.Context) {
+	type nodeView struct {
+		Name       string
+		Capacity   string
+		Throt      string
+		Free       string
+		Error      string
+		Offline    bool
+		Ping       int64
+		LastUpdate string
+	}
+
+	p := struct {
+		Nodes  []nodeView
+		Config template.HTML
+	}{
+		Config: template.HTML(config.publicString),
+	}
+
+	for _, n := range mgr.Nodes() {
+		offline, total, used := n.Space()
+		stat := n.Stat()
+		p.Nodes = append(p.Nodes, nodeView{
+			Name:       n.Name,
+			Offline:    offline,
+			Capacity:   fmt.Sprintf("%.3fG", float64(total)/1024/1024/1024),
+			Free:       fmt.Sprintf("%.3fG", float64(total-used)/1024/1024/1024),
+			Ping:       stat.Ping,
+			Throt:      stat.Throt,
+			LastUpdate: time.Since(stat.UpdateTime).String(),
+		})
+	}
+
+	g.HTML(200, "stat.html", p)
 }
