@@ -1,10 +1,11 @@
 {{template "header.html" .}}
-<title>Cookie 管理</title>
+<title>ID 管理</title>
 
 <form method="POST">
-    ID: <input name=id value="{{.ID}}">
-    <input type=submit value="更新我的ID">
-    <input type=submit name=clear value="清除Cookie">
+    <div class=row>ID: <input name=id value="{{.ID}}"></div>
+    <div class=row><input type=submit value="更新我的ID"></div>
+    <div class=row><input type=submit name=clear value="清除Cookie"></div>
+    <div class=row><input type=submit name=notify value="查看被回复"></div>
 </form>
 
 {{template "footer.html" .}}

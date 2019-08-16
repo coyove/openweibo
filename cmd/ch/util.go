@@ -66,6 +66,7 @@ func handleCurrentStat(g *gin.Context) {
 }
 
 func softTrunc(a string, n int) string {
+	a = strings.TrimSpace(a)
 	if len(a) <= n {
 		return a
 	}

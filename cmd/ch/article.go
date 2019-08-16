@@ -108,8 +108,13 @@ func (a *Article) Unmarshal(b []byte) error {
 }
 
 func authorNameToHash(n string) string {
-	x := hmac.New(sha1.New, []byte(config.Key)).Sum([]byte(n + config.Key))
-	return base64.URLEncoding.EncodeToString(x[:9])
+	h := hmac.New(sha1.New, []byte(config.Key))
+	h.Write([]byte(n + config.Key))
+	x := h.Sum(nil)
+	if len(n) > 4 {
+		n = n[:4]
+	}
+	return n + base64.URLEncoding.EncodeToString(x[:6])
 }
 
 func objectIDToDisplayID(id int64) string {

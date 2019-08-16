@@ -152,6 +152,9 @@ func main() {
 	r.Handle("POST", "/cookie", func(g *gin.Context) {
 		if g.PostForm("clear") != "" {
 			g.SetCookie("id", "", -1, "", "", false, false)
+		} else if g.PostForm("notify") != "" {
+			g.Redirect(302, "/notify/"+g.PostForm("id"))
+			return
 		} else {
 			g.SetCookie("id", g.PostForm("id"), 86400*365, "", "", false, false)
 		}
