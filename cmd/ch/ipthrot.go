@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net"
 	"sync/atomic"
 	"time"
 
@@ -8,6 +9,25 @@ import (
 )
 
 func mwRenderPerf(g *gin.Context) {
+	ip := net.ParseIP(g.ClientIP())
+	if ip == nil {
+		g.String(403, "Invalid IP: "+g.ClientIP())
+		return
+	}
+
+	if ip.To4() != nil {
+		ip = ip.To4()
+	}
+
+	for _, subnet := range config.ipblacklist {
+		if subnet.Contains(ip) {
+			g.AbortWithStatus(403)
+			return
+		}
+	}
+
+	g.Set("ip", ip)
+
 	start := time.Now()
 	g.Next()
 	msec := time.Since(start).Nanoseconds() / 1e6

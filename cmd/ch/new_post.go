@@ -20,14 +20,13 @@ func handleNewPostView(g *gin.Context) {
 
 		RTitle, RAuthor, RContent, RTags, EError string
 	}{
-		UUID:      makeCSRFToken(g),
-		Challenge: makeChallengeToken(),
-		RTitle:    g.Query("title"),
-		RContent:  g.Query("content"),
-		RTags:     g.Query("tags"),
-		RAuthor:   g.Query("author"),
-		EError:    g.Query("error"),
-		Tags:      config.Tags,
+		UUID:     makeCSRFToken(g),
+		RTitle:   g.Query("title"),
+		RContent: g.Query("content"),
+		RTags:    g.Query("tags"),
+		RAuthor:  g.Query("author"),
+		EError:   g.Query("error"),
+		Tags:     config.Tags,
 	}
 
 	if id := g.Param("id"); id != "0" {
@@ -73,17 +72,16 @@ func hashIP(g *gin.Context) string {
 
 func handleNewPostAction(g *gin.Context) {
 	var (
-		reply     = displayIDToObejctID(g.PostForm("reply"))
-		answer    = g.PostForm("answer")
-		challenge = g.PostForm("challenge")
-		uuid      = g.PostForm("uuid")
-		ip        = hashIP(g)
-		content   = softTrunc(g.PostForm("content"), int(config.MaxContent))
-		title     = softTrunc(g.PostForm("title"), 100)
-		author    = softTrunc(g.PostForm("author"), 32)
-		tags      = splitTags(softTrunc(g.PostForm("tags"), 128))
-		image, _  = g.FormFile("image")
-		redir     = func(a, b string) {
+		reply    = displayIDToObejctID(g.PostForm("reply"))
+		answer   = g.PostForm("answer")
+		uuid     = g.PostForm("uuid")
+		ip       = hashIP(g)
+		content  = softTrunc(g.PostForm("content"), int(config.MaxContent))
+		title    = softTrunc(g.PostForm("title"), 100)
+		author   = softTrunc(g.PostForm("author"), 32)
+		tags     = splitTags(softTrunc(g.PostForm("tags"), 128))
+		image, _ = g.FormFile("image")
+		redir    = func(a, b string) {
 			q := encodeQuery(a, b, "author", author, "content", content, "title", title, "tags", strings.Join(tags, " "))
 			if reply == 0 {
 				g.Redirect(302, "/new/0?"+q)
@@ -103,14 +101,29 @@ func handleNewPostAction(g *gin.Context) {
 		return
 	}
 
-	if !isCSRFTokenValid(g, uuid) {
-		redir("", "")
-		return
+	tokenbuf, tokenok := extractCSRFToken(g, uuid, true)
+
+	if !isAdmin(author) {
+		challengePassed := false
+		if len(answer) == 6 {
+			challengePassed = true
+			for i := range answer {
+				if answer[i]-'0' != tokenbuf[i]%10 {
+					challengePassed = false
+					break
+				}
+			}
+		}
+
+		if !challengePassed {
+			log.Println(g.ClientIP(), "challenge failed")
+			redir("error", "guard/failed-captcha")
+			return
+		}
 	}
 
-	if !isChallengeTokenValid(challenge, answer) && !isAdmin(author) {
-		log.Println(g.ClientIP(), "challenge failed")
-		redir("error", "guard/failed-captcha")
+	if !tokenok {
+		redir("error", "guard/token-expired")
 		return
 	}
 

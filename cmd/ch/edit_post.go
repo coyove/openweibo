@@ -24,7 +24,7 @@ func handleEditPostView(g *gin.Context) {
 	a, err := m.GetArticle(displayIDToObejctID(pl.Reply))
 	if err != nil {
 		log.Println(err)
-		g.AbortWithStatus(400)
+		g.Redirect(302, "/")
 		return
 	}
 
@@ -33,8 +33,13 @@ func handleEditPostView(g *gin.Context) {
 }
 
 func handleEditPostAction(g *gin.Context) {
-	if !g.GetBool("ip-ok") || !isCSRFTokenValid(g, g.PostForm("uuid")) {
+	if !g.GetBool("ip-ok") {
 		g.String(400, "guard/cooling-down")
+		return
+	}
+
+	if _, ok := extractCSRFToken(g, g.PostForm("uuid"), true); !ok {
+		g.String(400, "guard/token-expired")
 		return
 	}
 

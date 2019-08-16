@@ -6,6 +6,7 @@ import (
 	"crypto/cipher"
 	"encoding/json"
 	"io/ioutil"
+	"net"
 	"regexp"
 
 	"github.com/coyove/common/lru"
@@ -28,11 +29,14 @@ var (
 		Domain        string                 `yaml:"Domain"`
 		ImageDomain   string                 `yaml:"ImageDomain"`
 		ImageDisabled bool                   `yaml:"ImageDisabled"`
+		InboxSize     int                    `yaml:"InboxSize"`
+		IPBlacklist   []string               `yaml:"IPBlacklist"`
 
 		// inited after config being read
 		blk           cipher.Block
 		adminNameHash string
 		publicString  string
+		ipblacklist   []*net.IPNet
 	}{
 		CacheSize:    1,
 		TokenTTL:     1,
@@ -43,6 +47,7 @@ var (
 		MaxTags:      4,
 		PostsPerPage: 30,
 		Tags:         []string{},
+		InboxSize:    100,
 	}
 
 	survey struct {
@@ -66,6 +71,11 @@ func loadConfig() {
 	dedup = lru.NewCache(1024)
 	config.blk, _ = aes.NewCipher([]byte(config.Key))
 	config.adminNameHash = authorNameToHash(config.AdminName)
+
+	for _, addr := range config.IPBlacklist {
+		_, subnet, _ := net.ParseCIDR(addr)
+		config.ipblacklist = append(config.ipblacklist, subnet)
+	}
 
 	buf, _ = json.MarshalIndent(config, "<li>", "    ")
 	buf = regexp.MustCompile(`(?i)".*(token|key|admin).+`).ReplaceAllFunc(buf, func(in []byte) []byte {

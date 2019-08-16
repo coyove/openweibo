@@ -250,11 +250,21 @@ func (m *Manager) PostReply(parent int64, a *Article) error {
 		if err := m.insertID(tx, findby{bkName: bkReply, bkName2: idBytes(p.ID)}, a.ID); err != nil {
 			return err
 		}
+		// Insert the notify of this reply to parent's author's inbox
 		bk, err := tx.Bucket(bkNotify).CreateBucketIfNotExists([]byte(p.Author))
 		if err != nil {
 			return err
 		}
-		return bk.Put(idBytes(newID()), idBytes(a.ID))
+		if err := bk.Put(idBytes(newID()), idBytes(a.ID)); err != nil {
+			return err
+		}
+		if bk.Stats().KeyN > config.InboxSize {
+			k, _ := bk.Cursor().First()
+			if err := bk.Delete(k); err != nil {
+				return err
+			}
+		}
+		return nil
 	})
 }
 

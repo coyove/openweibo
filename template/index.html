@@ -52,14 +52,14 @@
 
     {{else}}
 
-        {{if eq .Type "notify"}}
+        {{if eq .Type "inbox"}}
         <title>{{.SearchTerm}}的提醒 {{.Title}}</title>
         <h3>{{.SearchTerm}}的提醒</h3>
         <a href="/id/{{.SearchTerm}}">查看{{.SearchTerm}}的回复/新主题</a><hr>
         {{else if eq .Type "id"}}
         <title>{{.SearchTerm}}的发言 {{.Title}}</title>
         <h3>{{.SearchTerm}}的发言</h3>
-        <a href="/notify/{{.SearchTerm}}">查看谁回复了{{.SearchTerm}}</a><hr>
+        <a href="/inbox/{{.SearchTerm}}">查看谁回复了{{.SearchTerm}}</a><hr>
         {{else if eq .Type "ip"}}
         <title>IP: {{.SearchTerm}}的发言 {{.Title}}</title>
         <h3>IP: {{.SearchTerm}}的发言</h3><hr>
@@ -105,7 +105,7 @@
         <b>{{if .ParentArticle}}
         <a href="/new/{{.ParentArticle.DisplayID}}">回复</a>
         {{else}}
-        <a href="/new/0">新主题</a>
+        <a href="/new/0{{if eq .Type "tag"}}?tags={{.SearchTerm}}{{end}}">新主题</a>
         {{end}}</b>
         ]
     </div>

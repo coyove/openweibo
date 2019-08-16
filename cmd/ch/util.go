@@ -8,11 +8,11 @@ import (
 	"html/template"
 	_ "image/png"
 	"math/rand"
+	"net"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/coyove/common/lru"
@@ -22,11 +22,10 @@ import (
 )
 
 var (
-	mgr       ch.Nodes
-	cachemgr  *cache.Cache
-	dedup     *lru.Cache
-	bytesPool = &sync.Pool{New: func() interface{} { return &bytes.Buffer{} }}
-	rxSan     = regexp.MustCompile(`(<|https?://\S+)`)
+	mgr      ch.Nodes
+	cachemgr *cache.Cache
+	dedup    *lru.Cache
+	rxSan    = regexp.MustCompile(`(<|https?://\S+)`)
 )
 
 func handleCurrentStat(g *gin.Context) {
@@ -85,71 +84,36 @@ func makeCSRFToken(g *gin.Context) string {
 	var p [16]byte
 	exp := time.Now().Add(time.Minute * time.Duration(config.TokenTTL)).Unix()
 	binary.BigEndian.PutUint32(p[:], uint32(exp))
-	if ip := g.ClientIP(); len(ip) >= 6 {
-		copy(p[4:10], ip)
-	} else {
-		copy(p[4:10], "unknow")
-	}
+	ip := g.MustGet("ip").(net.IP)
+	copy(p[4:10], ip)
 	rand.Read(p[10:])
 	config.blk.Encrypt(p[:], p[:])
 	return hex.EncodeToString(p[:])
 }
 
-func isCSRFTokenValid(g *gin.Context, tok string) bool {
+func extractCSRFToken(g *gin.Context, tok string, addToDedup bool) (r []byte, ok bool) {
 	buf, _ := hex.DecodeString(tok)
 	if len(buf) != 16 {
-		return false
+		return
 	}
 	config.blk.Decrypt(buf, buf)
 	exp := binary.BigEndian.Uint32(buf)
 	if now := time.Now(); now.After(time.Unix(int64(exp), 0)) ||
 		now.Before(time.Unix(int64(exp)-config.TokenTTL*60, 0)) {
-		return false
+		return
 	}
 
-	var ok bool
-	if ip := g.ClientIP(); len(ip) >= 6 {
-		ok = strings.HasPrefix(ip, string(buf[4:10]))
-	} else {
-		ok = string(buf[4:10]) == "unknow"
-	}
-
-	if ok {
+	ok = bytes.HasPrefix(buf[4:10], g.MustGet("ip").(net.IP))
+	//log.Println(buf[4:10], []byte(g.MustGet("ip").(net.IP)))
+	if ok && addToDedup {
 		if _, existed := dedup.Get(tok); existed {
-			return false
+			return nil, false
 		}
 		dedup.Add(tok, true)
 	}
-	return ok
-}
 
-func makeChallengeToken() string {
-	c := make([]byte, 16)
-	for i := 0; i < 6; i++ {
-		c[i] = byte(rand.Uint64()) % 10
-	}
-	rand.Read(c[6:])
-	config.blk.Encrypt(c, c)
-	return hex.EncodeToString(c)
-}
-
-func isChallengeTokenValid(tok string, answer string) bool {
-	buf, _ := hex.DecodeString(tok)
-	if len(buf) != 16 || len(answer) != 6 {
-		return false
-	}
-	config.blk.Decrypt(buf, buf)
-	for i := range answer {
-		x := byte(answer[i] - '0')
-		if buf[i] != x {
-			return false
-		}
-	}
-	if _, existed := dedup.Get(tok); existed {
-		return false
-	}
-	dedup.Add(tok, true)
-	return true
+	r = buf[10:]
+	return
 }
 
 func splitTags(u string) []string {

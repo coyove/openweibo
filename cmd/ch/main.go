@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/hex"
 	"fmt"
 	"html/template"
 	_ "image/png"
@@ -114,15 +113,14 @@ func main() {
 	r.LoadHTMLGlob("template/*")
 	r.Static("/s/", "static")
 	r.Handle("GET", "/captcha/:challenge", func(g *gin.Context) {
-		challenge, _ := hex.DecodeString(g.Param("challenge"))
-		if len(challenge) != 16 {
-			g.AbortWithStatus(400)
+		buf, ok := extractCSRFToken(g, g.Param("challenge"), false)
+		if !ok {
+			g.AbortWithStatus(403)
 			return
 		}
-		config.blk.Decrypt(challenge, challenge)
 		g.Writer.Header().Add("Content-Type", "image/png")
 		// captcha package has been modified to suit my needs, so all future changes must happen in vendor folder
-		captcha.NewImage(config.Key, challenge[:6], 180, 60).WriteTo(g.Writer)
+		captcha.NewImage(config.Key, buf[:6], 180, 60).WriteTo(g.Writer)
 	})
 	r.Handle("GET", "/i/:image", handleImage)
 
@@ -153,7 +151,7 @@ func main() {
 		if g.PostForm("clear") != "" {
 			g.SetCookie("id", "", -1, "", "", false, false)
 		} else if g.PostForm("notify") != "" {
-			g.Redirect(302, "/notify/"+g.PostForm("id"))
+			g.Redirect(302, "/inbox/"+g.PostForm("id"))
 			return
 		} else {
 			g.SetCookie("id", g.PostForm("id"), 86400*365, "", "", false, false)
@@ -176,7 +174,7 @@ func main() {
 		}
 	})
 	r.Handle("GET", "/id/:id", makeHandleMainView('a'))
-	r.Handle("GET", "/notify/:id", makeHandleMainView('n'))
+	r.Handle("GET", "/inbox/:id", makeHandleMainView('n'))
 	r.Handle("GET", "/ip/:ip", makeHandleMainView('i'))
 
 	r.Handle("GET", "/new/:id", handleNewPostView)
@@ -208,7 +206,7 @@ func makeHandleMainView(t byte) func(g *gin.Context) {
 			pl.SearchTerm, pl.Type = g.Param("id"), "id"
 			findby = ByAuthor(pl.SearchTerm)
 		} else if t == 'n' {
-			pl.SearchTerm, pl.Type = g.Param("id"), "notify"
+			pl.SearchTerm, pl.Type = g.Param("id"), "inbox"
 			findby = ByNotify(pl.SearchTerm)
 		} else if t == 'i' {
 			pl.SearchTerm, pl.Type = g.Param("ip"), "ip"
