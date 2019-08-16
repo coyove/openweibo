@@ -14,11 +14,11 @@ func handleEditPostView(g *gin.Context) {
 		RAuthor string
 		Article *Article
 	}{
-		UUID:  makeCSRFToken(g),
 		Reply: g.Param("id"),
 		Tags:  config.Tags,
 	}
 
+	pl.UUID, _ = makeCSRFToken(g)
 	pl.RAuthor, _ = g.Cookie("id")
 
 	a, err := m.GetArticle(displayIDToObejctID(pl.Reply))
@@ -38,7 +38,7 @@ func handleEditPostAction(g *gin.Context) {
 		return
 	}
 
-	if _, ok := extractCSRFToken(g, g.PostForm("uuid"), true); !ok {
+	if _, ok := extractCSRFToken(g, g.PostForm("uuid")); !ok {
 		g.String(400, "guard/token-expired")
 		return
 	}

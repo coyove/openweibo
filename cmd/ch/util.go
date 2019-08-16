@@ -42,17 +42,21 @@ func softTrunc(a string, n int) string {
 	return a + "..."
 }
 
-func makeCSRFToken(g *gin.Context) string {
+func makeCSRFToken(g *gin.Context) (string, [6]byte) {
 	var p [16]byte
 	exp := time.Now().Add(time.Minute * time.Duration(config.TokenTTL)).Unix()
 	binary.BigEndian.PutUint32(p[:], uint32(exp))
 	copy(p[4:10], g.MustGet("ip").(net.IP))
 	rand.Read(p[10:])
+
+	var x [6]byte
+	copy(x[:], p[10:])
+
 	config.blk.Encrypt(p[:], p[:])
-	return hex.EncodeToString(p[:])
+	return hex.EncodeToString(p[:]), x
 }
 
-func extractCSRFToken(g *gin.Context, tok string, addToDedup bool) (r []byte, ok bool) {
+func extractCSRFToken(g *gin.Context, tok string) (r []byte, ok bool) {
 	buf, _ := hex.DecodeString(tok)
 	if len(buf) != 16 {
 		return
@@ -66,7 +70,7 @@ func extractCSRFToken(g *gin.Context, tok string, addToDedup bool) (r []byte, ok
 
 	ok = bytes.HasPrefix(buf[4:10], g.MustGet("ip").(net.IP))
 	//log.Println(buf[4:10], []byte(g.MustGet("ip").(net.IP)))
-	if ok && addToDedup {
+	if ok {
 		if _, existed := dedup.Get(tok); existed {
 			return nil, false
 		}

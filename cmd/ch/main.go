@@ -6,13 +6,11 @@ import (
 	_ "image/png"
 	"io/ioutil"
 	"log"
-	"net/url"
 	"strings"
 
 	"github.com/coyove/iis/cache"
 	"github.com/coyove/iis/driver"
 	"github.com/coyove/iis/driver/chdropbox"
-	"github.com/dchest/captcha"
 	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"
 )
@@ -96,98 +94,58 @@ func main() {
 	})
 	go uploadLocalImages()
 
-	r := gin.Default()
-
 	if config.Key != "0123456789abcdef" {
 		log.Println("P R O D U C A T I O N")
 		gin.SetMode(gin.ReleaseMode)
 		gin.DefaultWriter = ioutil.Discard
 	}
 
+	r := gin.Default()
 	r.Use(mwRenderPerf, mwIPThrot)
 	r.SetFuncMap(template.FuncMap{
-		"RenderPerf": func() string {
-			return fmt.Sprintf("%dms/%dms", survey.render.avg, survey.render.max)
-		},
+		"RenderPerf": func() string { return fmt.Sprintf("%dms/%dms", survey.render.avg, survey.render.max) },
 	})
 	r.LoadHTMLGlob("template/*")
 	r.Static("/s/", "static")
-	r.Handle("GET", "/captcha/:challenge", func(g *gin.Context) {
-		buf, ok := extractCSRFToken(g, g.Param("challenge"), false)
-		if !ok {
-			g.AbortWithStatus(403)
-			return
-		}
-		g.Writer.Header().Add("Content-Type", "image/png")
-		// captcha package has been modified to suit my needs, so all future changes must happen in vendor folder
-		captcha.NewImage(config.Key, buf[:6], 180, 60).WriteTo(g.Writer)
-	})
-	r.Handle("GET", "/i/:image", handleImage)
-
 	r.Handle("GET", "/", makeHandleMainView(0))
+	r.Handle("GET", "/i/:image", handleImage)
 	r.Handle("GET", "/p/:parent", handleRepliesView)
 	r.Handle("GET", "/tag/:tag", makeHandleMainView('t'))
-	r.Handle("GET", "/search/:title", makeHandleMainView('T'))
-	r.Handle("GET", "/tags", func(g *gin.Context) {
-		tags, n := m.FindTags(g.Query("n"), int(config.PostsPerPage))
-		next := ""
-		if len(tags) > 0 {
-			next = tags[len(tags)-1].Name
-		}
-		g.HTML(200, "tags.html", struct {
-			Tags     []string
-			Tags2    []Tag
-			Tags2Num int
-			Next     string
-		}{
-			config.Tags, tags, n, next,
-		})
-	})
-	r.Handle("GET", "/cookie", func(g *gin.Context) {
-		id, _ := g.Cookie("id")
-		g.HTML(200, "cookie.html", struct{ ID string }{id})
-	})
-	r.Handle("POST", "/cookie", func(g *gin.Context) {
-		if g.PostForm("clear") != "" {
-			g.SetCookie("id", "", -1, "", "", false, false)
-		} else if g.PostForm("notify") != "" {
-			g.Redirect(302, "/inbox/"+g.PostForm("id"))
-			return
-		} else {
-			g.SetCookie("id", g.PostForm("id"), 86400*365, "", "", false, false)
-		}
-		g.Redirect(302, "/")
-	})
-	r.Handle("POST", "/search", func(g *gin.Context) {
-		g.Redirect(302, "/search/"+url.PathEscape(g.PostForm("q")))
-	})
-	r.Handle("GET", "/search", func(g *gin.Context) {
-		if p := g.Query("provider"); p != "" {
-			host := ""
-			u, _ := url.Parse(g.Request.Referer())
-			if u != nil {
-				host = u.Host
-			}
-			g.Redirect(302, p+url.PathEscape("site:"+host+" "+g.Query("q")))
-		} else {
-			g.HTML(200, "search.html", nil)
-		}
-	})
+	r.Handle("GET", "/tags", handleTags)
 	r.Handle("GET", "/id/:id", makeHandleMainView('a'))
 	r.Handle("GET", "/inbox/:id", makeHandleMainView('n'))
 	r.Handle("GET", "/ip/:ip", makeHandleMainView('i'))
-
 	r.Handle("GET", "/new/:id", handleNewPostView)
-	r.Handle("POST", "/new", handleNewPostAction)
 	r.Handle("GET", "/edit/:id", handleEditPostView)
-	r.Handle("POST", "/edit", handleEditPostAction)
+	r.Handle("GET", "/cookie", handleCookie)
 	r.Handle("GET", "/stat", handleCurrentStat)
+
+	r.Handle("POST", "/new", handleNewPostAction)
+	r.Handle("POST", "/edit", handleEditPostAction)
+	r.Handle("POST", "/cookie", handleCookie)
 
 	if config.Domain == "" {
 		log.Fatal(r.Run(":5010"))
 	} else {
 		log.Fatal(autotls.Run(r, config.Domain))
 	}
+}
+
+func handleCookie(g *gin.Context) {
+	if g.Request.Method == "GET" {
+		id, _ := g.Cookie("id")
+		g.HTML(200, "cookie.html", struct{ ID string }{id})
+		return
+	}
+	if id := g.PostForm("id"); g.PostForm("clear") != "" || id == "" {
+		g.SetCookie("id", "", -1, "", "", false, false)
+	} else if g.PostForm("notify") != "" {
+		g.Redirect(302, "/inbox/"+id)
+		return
+	} else {
+		g.SetCookie("id", id, 86400*365, "", "", false, false)
+	}
+	g.Redirect(302, "/")
 }
 
 func makeHandleMainView(t byte) func(g *gin.Context) {
@@ -219,7 +177,6 @@ func makeHandleMainView(t byte) func(g *gin.Context) {
 		}
 
 		next, dir := parseCursor(g.Query("n"))
-
 		if dir == "prev" {
 			pl.Articles, more, pl.TotalCount, err = m.Find('a', findby, next, int(config.PostsPerPage))
 			pl.NoPrev = !more
@@ -247,33 +204,25 @@ func makeHandleMainView(t byte) func(g *gin.Context) {
 
 func handleRepliesView(g *gin.Context) {
 	var (
-		pl   ArticlesView
+		pl   = ArticlesView{ShowIP: isAdmin(g)}
 		more bool
 		err  error
 	)
 
-	pl.ShowIP = isAdmin(g)
-	pid := displayIDToObejctID(g.Param("parent"))
-	if pid == 0 {
-		errorPage(404, "NOT FOUND", g)
-		return
-	}
-
-	next, dir := parseCursor(g.Query("n"))
-
-	pl.ParentArticle, err = m.GetArticle(pid)
+	pl.ParentArticle, err = m.GetArticle(displayIDToObejctID(g.Param("parent")))
 	if err != nil {
 		errorPage(404, "NOT FOUND", g)
 		log.Println(err)
 		return
 	}
 
+	next, dir := parseCursor(g.Query("n"))
 	if dir == "prev" {
-		pl.Articles, more, err = m.FindReplies('d', pid, next, int(config.PostsPerPage))
+		pl.Articles, more, err = m.FindReplies('d', pl.ParentArticle.ID, next, int(config.PostsPerPage))
 		pl.NoPrev = !more
 		pl.NoNext = next == 0
 	} else {
-		pl.Articles, more, err = m.FindReplies('a', pid, next, int(config.PostsPerPage))
+		pl.Articles, more, err = m.FindReplies('a', pl.ParentArticle.ID, next, int(config.PostsPerPage))
 		pl.NoNext = !more
 		pl.NoPrev = next == 0
 	}

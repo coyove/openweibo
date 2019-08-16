@@ -1,14 +1,29 @@
 package main
 
 import (
+	"bytes"
+	"encoding/base64"
 	"io"
 	"io/ioutil"
 	"log"
 	"net"
 	"strings"
+	"sync"
 
+	"github.com/dchest/captcha"
 	"github.com/gin-gonic/gin"
 )
+
+var bytesPool = sync.Pool{New: func() interface{} { return &bytes.Buffer{} }}
+
+func captchaBase64(buf [6]byte) string {
+	b := bytesPool.Get().(*bytes.Buffer)
+	captcha.NewImage(config.Key, buf[:6], 180, 60).WriteTo(b)
+	ret := base64.StdEncoding.EncodeToString(b.Bytes())
+	b.Reset()
+	bytesPool.Put(b)
+	return ret
+}
 
 func handleNewPostView(g *gin.Context) {
 	var pl = struct {
@@ -20,7 +35,6 @@ func handleNewPostView(g *gin.Context) {
 
 		RTitle, RAuthor, RContent, RTags, EError string
 	}{
-		UUID:     makeCSRFToken(g),
 		RTitle:   g.Query("title"),
 		RContent: g.Query("content"),
 		RTags:    g.Query("tags"),
@@ -28,6 +42,10 @@ func handleNewPostView(g *gin.Context) {
 		EError:   g.Query("error"),
 		Tags:     config.Tags,
 	}
+
+	var answer [6]byte
+	pl.UUID, answer = makeCSRFToken(g)
+	pl.Challenge = captchaBase64(answer)
 
 	if id := g.Param("id"); id != "0" {
 		pl.Reply = id
@@ -93,7 +111,7 @@ func handleNewPostAction(g *gin.Context) {
 		return
 	}
 
-	tokenbuf, tokenok := extractCSRFToken(g, uuid, true)
+	tokenbuf, tokenok := extractCSRFToken(g, uuid)
 
 	if !isAdmin(author) {
 		challengePassed := false

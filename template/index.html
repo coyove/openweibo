@@ -57,21 +57,21 @@
     {{else}}
 
         {{if eq .Type "inbox"}}
-        <title>{{.SearchTerm}}的提醒 {{.Title}}</title>
-        <h3>{{.SearchTerm}}的提醒 ({{.TotalCount}})</h3>
-        <a href="/id/{{.SearchTerm}}">查看{{.SearchTerm}}的回复/新主题</a><hr>
+            <title>{{.SearchTerm}}的提醒 {{.Title}}</title>
+            <h3>{{.SearchTerm}}的提醒 ({{.TotalCount}})</h3>
+            <a href="/id/{{.SearchTerm}}">查看{{.SearchTerm}}的回复/新主题</a><hr>
         {{else if eq .Type "id"}}
-        <title>{{.SearchTerm}}的发言 {{.Title}}</title>
-        <h3>{{.SearchTerm}}的发言 ({{.TotalCount}})</h3>
-        <a href="/inbox/{{.SearchTerm}}">查看谁回复了{{.SearchTerm}}</a><hr>
+            <title>{{.SearchTerm}}的发言 {{.Title}}</title>
+            <h3>{{.SearchTerm}}的发言 ({{.TotalCount}})</h3>
+            <a href="/inbox/{{.SearchTerm}}">查看谁回复了{{.SearchTerm}}</a><hr>
         {{else if eq .Type "ip"}}
-        <title>IP: {{.SearchTerm}}的发言 {{.Title}}</title>
-        <h3>IP: {{.SearchTerm}}的发言 ({{.TotalCount}})</h3><hr>
+            <title>IP: {{.SearchTerm}}的发言 {{.Title}}</title>
+            <h3>IP: {{.SearchTerm}}的发言 ({{.TotalCount}})</h3><hr>
         {{else if eq .Type "tag"}}
-        <title>标签: {{.SearchTerm}} {{.Title}}</title>
-        <h3>标签: {{.SearchTerm}} ({{.TotalCount}})</h3><hr>
+            <title>标签: {{.SearchTerm}} {{.Title}}</title>
+            <h3>标签: {{.SearchTerm}} ({{.TotalCount}})</h3><hr>
         {{else}}
-        <title>时间线 {{.Title}}</title>
+            <title>时间线 {{.Title}}</title>
         {{end}}
 
         {{if len .Articles}}

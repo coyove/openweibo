@@ -123,3 +123,19 @@ func handleCurrentStat(g *gin.Context) {
 
 	g.HTML(200, "stat.html", p)
 }
+
+func handleTags(g *gin.Context) {
+	tags, n := m.FindTags(g.Query("n"), int(config.PostsPerPage))
+	next := ""
+	if len(tags) > 0 {
+		next = tags[len(tags)-1].Name
+	}
+	g.HTML(200, "tags.html", struct {
+		Tags     []string
+		Tags2    []Tag
+		Tags2Num int
+		Next     string
+	}{
+		config.Tags, tags, n, next,
+	})
+}
