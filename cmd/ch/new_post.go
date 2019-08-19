@@ -90,6 +90,7 @@ func handleNewPostAction(g *gin.Context) {
 		author   = softTrunc(g.PostForm("author"), 32)
 		tags     = splitTags(softTrunc(g.PostForm("tags"), 128))
 		announce = g.PostForm("announce") != ""
+		homepage = g.PostForm("homepage") != ""
 		image, _ = g.FormFile("image")
 		redir    = func(a, b string) {
 			q := encodeQuery(a, b, "author", author, "content", content, "title", title, "tags", strings.Join(tags, " "))
@@ -128,6 +129,12 @@ func handleNewPostAction(g *gin.Context) {
 		if !challengePassed {
 			log.Println(g.ClientIP(), "challenge failed")
 			redir("error", "guard/failed-captcha")
+			return
+		}
+	} else {
+		if homepage {
+			m.SetHomePage(content)
+			g.Redirect(302, "/")
 			return
 		}
 	}
@@ -183,7 +190,7 @@ func handleNewPostAction(g *gin.Context) {
 			return
 		}
 		a := m.NewArticle(title, content, authorNameToHash(author), ip, imagek, tags)
-		if isAdmin(g) && announce {
+		if isAdmin(author) && announce {
 			a.Announce = true
 			a.ID = newBigID()
 		}

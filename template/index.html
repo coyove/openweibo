@@ -17,7 +17,7 @@
             {{if .ParentArticle.Parent}}
                 <a href="/p/{{.ParentArticle.DisplayParentID}}">上一层</a>
             {{else}}
-                <a href="/">主页</a>
+                <a href="/vec">主页</a>
             {{end}}/ 
             {{if .ShowIP}}<a href="/ip/{{.ParentArticle.IP}}">{{.ParentArticle.IP}}</a> / {{end}}
             <a href="/edit/{{.ParentArticle.DisplayID}}">编辑</a> /
@@ -76,14 +76,19 @@
 
         {{if len .Articles}}
         {{range .Articles}}
-            <div class=row>
+        <div class=row>
                 {{range .Tags}}
                 <span class=tag><a href="/tag/{{.}}"><b>#</b>{{.}}</a></span>
                 {{end}}
                 <a href="/p/{{.DisplayID}}">
                     {{if .Locked}}<b>[锁定]</b>{{end}}
                     {{if .Announce}}<b>[公告]</b>{{end}}
-                    {{.Title}}{{if .Replies}} ({{.Replies}}回复){{end}}
+                    {{if .Highlighted}}
+                        <b style="text-decoration:underline">{{.Title}}</b>
+                    {{else}}
+                        {{.Title}}
+                    {{end}}
+                    {{if .Replies}}({{.Replies}}回复){{end}}
                 </a>
                 &nbsp;<a href="/id/{{.Author}}" class=keepcolor><b>{{.Author}}</b></a>
                 <span>发布于 {{.CreateTimeString}}</span>

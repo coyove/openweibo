@@ -39,8 +39,10 @@ var (
 		// inited after config being read
 		blk           cipher.Block
 		adminNameHash string
-		publicString  string
 		ipblacklist   []*net.IPNet
+
+		publicString  string
+		privateString string
 	}{
 		CacheSize:    1,
 		TokenTTL:     1,
@@ -82,6 +84,7 @@ func loadConfig() {
 	}
 
 	buf, _ = json.MarshalIndent(config, "<li>", "    ")
+	config.privateString = "<li>" + string(buf)
 	buf = regexp.MustCompile(`(?i)".*(token|key|admin).+`).ReplaceAllFunc(buf, func(in []byte) []byte {
 		return bytes.Repeat([]byte("\u2588"), len(in)/2+1)
 	})
@@ -105,6 +108,10 @@ func handleCurrentStat(g *gin.Context) {
 		Config template.HTML
 	}{
 		Config: template.HTML(config.publicString),
+	}
+
+	if isAdmin(g) {
+		p.Config = template.HTML(config.privateString)
 	}
 
 	for _, n := range mgr.Nodes() {

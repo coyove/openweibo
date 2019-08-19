@@ -3,7 +3,7 @@
 {{if .Reply}}
 <a href="/p/{{.Reply}}">&laquo;后退</a>
 {{else}}
-<a href="/">&laquo;后退</a>
+<a href="/vec">&laquo;后退</a>
 {{end}}
 <hr>
 
@@ -49,14 +49,7 @@
     <tr>
         <td>图片:</td>
         <td><input type=file name=image></td>
-    </tr>
-    <tr>
-        <td>设为公告:</td>
-        <td>
-            <input name=announce type=checkbox>
-            设置后无法取消只能删除
-        </td>
-    </tr>
+    </tr> 
     <tr>
         <td></td>
         <td><img src="data:image/png;base64,{{.Challenge}}"></td>
@@ -67,7 +60,7 @@
             <input size=10 name="answer">
             <input name=refresh type=submit value="刷新">
         </td>
-    </tr>
+    </tr> 
     <tr>
         <td></td>
         <td>
@@ -75,6 +68,14 @@
             <input type=submit> </td>
     </tr>
     </table>
+
+    <hr>
+
+    <fieldset style="display:inline-block">
+    <legend>管理员:</legend>
+    设为公告: <input name=announce type=checkbox> 设置后无法取消只能删除<br>
+    大公告: <input name=homepage type=checkbox>
+    </fieldset>
 </form>
 
 {{template "footer.html" .}}

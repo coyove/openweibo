@@ -1,6 +1,11 @@
 {{template "header.html" .}}
 
+{{if eq .Reply "-1"}}
+<a href="/">&laquo;后退</a>
+{{else}}
 <a href="/p/{{.Reply}}">&laquo;后退</a>
+{{end}}
+
 <hr>
 
 <form method="POST" action="/edit">
@@ -41,6 +46,10 @@
     <tr>
         <td>锁定:</td>
         <td><input name=locked type=checkbox {{if .Article.Locked}}checked{{end}}></td>
+    </tr>
+    <tr>
+        <td>高亮:</td>
+        <td><input name=highlighted type=checkbox {{if .Article.Highlighted}}checked{{end}}></td>
     </tr>
     <tr>
         <td>删图:</td>

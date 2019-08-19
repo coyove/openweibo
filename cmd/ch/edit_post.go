@@ -21,14 +21,18 @@ func handleEditPostView(g *gin.Context) {
 	pl.UUID, _ = makeCSRFToken(g)
 	pl.RAuthor, _ = g.Cookie("id")
 
-	a, err := m.GetArticle(displayIDToObejctID(pl.Reply))
-	if err != nil {
-		log.Println(err)
-		g.Redirect(302, "/")
-		return
+	if pl.Reply == "-1" {
+		pl.Article = &Article{Content: string(m.GetHomePage())}
+	} else {
+		a, err := m.GetArticle(displayIDToObejctID(pl.Reply))
+		if err != nil {
+			log.Println(err)
+			g.Redirect(302, "/vec")
+			return
+		}
+		pl.Article = a
 	}
 
-	pl.Article = a
 	g.HTML(200, "editpost.html", pl)
 }
 
@@ -44,20 +48,27 @@ func handleEditPostAction(g *gin.Context) {
 	}
 
 	var (
-		eid        = displayIDToObejctID(g.PostForm("reply"))
-		title      = softTrunc(g.PostForm("title"), 100)
-		content    = softTrunc(g.PostForm("content"), int(config.MaxContent))
-		author     = softTrunc(g.PostForm("author"), 32)
-		authorHash = authorNameToHash(author)
-		tags       = splitTags(g.PostForm("tags"))
-		deleted    = g.PostForm("delete") != ""
-		locked     = g.PostForm("locked") != ""
-		delimg     = g.PostForm("delimg") != ""
+		eid         = displayIDToObejctID(g.PostForm("reply"))
+		title       = softTrunc(g.PostForm("title"), 100)
+		content     = softTrunc(g.PostForm("content"), int(config.MaxContent))
+		author      = softTrunc(g.PostForm("author"), 32)
+		authorHash  = authorNameToHash(author)
+		tags        = splitTags(g.PostForm("tags"))
+		deleted     = g.PostForm("delete") != ""
+		locked      = g.PostForm("locked") != ""
+		highlighted = g.PostForm("highlighted") != ""
+		delimg      = g.PostForm("delimg") != ""
 	)
+
+	if g.PostForm("reply") == "-1" && isAdmin(author) {
+		m.SetHomePage(content)
+		g.Redirect(302, "/")
+		return
+	}
 
 	a, err := m.GetArticle(eid)
 	if err != nil {
-		g.Redirect(302, "/")
+		g.Redirect(302, "/vec")
 		return
 	}
 
@@ -66,6 +77,15 @@ func handleEditPostAction(g *gin.Context) {
 	if locked != a.Locked {
 		if isAdmin(author) {
 			a.Locked = locked
+			m.UpdateArticle(a, a.Tags, false)
+		}
+		g.Redirect(302, redir)
+		return
+	}
+
+	if highlighted != a.Highlighted {
+		if isAdmin(author) {
+			a.Highlighted = highlighted
 			m.UpdateArticle(a, a.Tags, false)
 		}
 		g.Redirect(302, redir)
@@ -113,7 +133,7 @@ func handleEditPostAction(g *gin.Context) {
 		g.Redirect(302, "/p/"+a.DisplayParentID())
 	} else {
 		if deleted {
-			g.Redirect(302, "/")
+			g.Redirect(302, "/vec")
 		} else {
 			g.Redirect(302, "/p/"+a.DisplayID())
 		}

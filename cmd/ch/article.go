@@ -27,19 +27,20 @@ type ArticlesView struct {
 }
 
 type Article struct {
-	ID         int64    `json:"id"`
-	Parent     int64    `json:"p"`
-	Replies    int64    `json:"rc"`
-	Locked     bool     `json:"l"`
-	Announce   bool     `json:"A"`
-	Title      string   `json:"T"`
-	Content    string   `json:"C"`
-	Author     string   `json:"a"`
-	IP         string   `json:"ip"`
-	Image      string   `json:"i"`
-	Tags       []string `json:"t"`
-	CreateTime int64    `json:"c"`
-	ReplyTime  int64    `json:"r"`
+	ID          int64    `json:"id"`
+	Parent      int64    `json:"p"`
+	Replies     int64    `json:"rc"`
+	Locked      bool     `json:"l"`
+	Highlighted bool     `json:"h"`
+	Announce    bool     `json:"A"`
+	Title       string   `json:"T"`
+	Content     string   `json:"C"`
+	Author      string   `json:"a"`
+	IP          string   `json:"ip"`
+	Image       string   `json:"i"`
+	Tags        []string `json:"t"`
+	CreateTime  int64    `json:"c"`
+	ReplyTime   int64    `json:"r"`
 }
 
 func newID() int64 {

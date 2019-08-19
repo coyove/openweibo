@@ -27,6 +27,26 @@ func main() {
 		panic(err)
 	}
 
+	os.MkdirAll("tmp/logs", 0700)
+	logf, err := rotatelogs.New("tmp/logs/access_log.%Y%m%d%H%M", rotatelogs.WithLinkName("tmp/logs/access_log"), rotatelogs.WithMaxAge(24*time.Hour))
+	logerrf, err := rotatelogs.New("tmp/logs/error_log.%Y%m%d%H%M", rotatelogs.WithLinkName("tmp/logs/error_log"), rotatelogs.WithMaxAge(24*time.Hour))
+	if err != nil {
+		panic(err)
+	}
+
+	loadConfig()
+
+	if config.Key != "0123456789abcdef" {
+		log.Println("P R O D U C A T I O N")
+		gin.SetMode(gin.ReleaseMode)
+		gin.DisableConsoleColor()
+		gin.DefaultWriter, gin.DefaultErrorWriter = logf, logerrf
+	} else {
+		gin.DefaultWriter, gin.DefaultErrorWriter = io.MultiWriter(logf, os.Stdout), io.MultiWriter(logerrf, os.Stdout)
+	}
+
+	log.SetOutput(gin.DefaultWriter)
+
 	//titles := []string{
 	//	"ofo押金难退，你可以试试“假破产真逼债”，但是不建议 手机发帖  ...2 New	",
 	//	"各省适龄学生参加高考参加率以及其211、985录取率 手机发帖  ...2 New	",
@@ -75,7 +95,6 @@ func main() {
 	//	m.PostReply(last, a)
 	//}
 
-	loadConfig()
 	nodes := []*driver.Node{}
 	for _, s := range config.Storages {
 		if s.Name == "" {
@@ -97,26 +116,6 @@ func main() {
 	})
 	go uploadLocalImages()
 
-	os.MkdirAll("tmp/logs", 0700)
-	logf, err := rotatelogs.New(
-		"tmp/logs/access_log.%Y%m%d%H%M",
-		rotatelogs.WithLinkName("tmp/logs/access_log"),
-		rotatelogs.WithMaxAge(24*time.Hour),
-		rotatelogs.WithRotationTime(time.Hour),
-	)
-	if err != nil {
-		panic(err)
-	}
-
-	if config.Key != "0123456789abcdef" {
-		log.Println("P R O D U C A T I O N")
-		gin.SetMode(gin.ReleaseMode)
-		gin.DisableConsoleColor()
-		gin.DefaultWriter = logf
-	} else {
-		gin.DefaultWriter = io.MultiWriter(logf, os.Stdout)
-	}
-
 	r := gin.Default()
 	r.Use(mwRenderPerf, mwIPThrot)
 	r.SetFuncMap(template.FuncMap{
@@ -124,7 +123,8 @@ func main() {
 	})
 	r.LoadHTMLGlob("template/*")
 	r.Static("/s/", "static")
-	r.Handle("GET", "/", makeHandleMainView(0))
+	r.Handle("GET", "/", func(g *gin.Context) { g.HTML(200, "home.html", struct{ Home template.HTML }{m.GetHomePage()}) })
+	r.Handle("GET", "/vec", makeHandleMainView('v'))
 	r.Handle("GET", "/i/:image", handleImage)
 	r.Handle("GET", "/p/:parent", handleRepliesView)
 	r.Handle("GET", "/tag/:tag", makeHandleMainView('t'))
@@ -162,7 +162,7 @@ func handleCookie(g *gin.Context) {
 	} else {
 		g.SetCookie("id", id, 86400*365, "", "", false, false)
 	}
-	g.Redirect(302, "/")
+	g.Redirect(302, "/vec")
 }
 
 func makeHandleMainView(t byte) func(g *gin.Context) {

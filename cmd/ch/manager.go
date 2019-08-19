@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"html/template"
 	"math/rand"
 	"sync"
 	"time"
@@ -17,6 +18,7 @@ type Manager struct {
 	db      *bbolt.DB
 	mu      sync.Mutex
 	counter int64
+	home    string
 	closed  bool
 }
 
@@ -31,21 +33,24 @@ func NewManager(path string) (*Manager, error) {
 		return nil, err
 	}
 
+	m := &Manager{
+		db:      db,
+		counter: rand.Int63(),
+	}
+
 	if err := db.Update(func(tx *bbolt.Tx) error {
 		for _, bk := range bkNames {
 			if _, err = tx.CreateBucketIfNotExists(bk); err != nil {
 				return err
 			}
 		}
+		m.home = string(tx.Bucket(bkPost).Get([]byte("home")))
 		return nil
 	}); err != nil {
 		return nil, err
 	}
 
-	return &Manager{
-		db:      db,
-		counter: rand.Int63(),
-	}, nil
+	return m, nil
 }
 
 type findby struct {
@@ -361,4 +366,13 @@ func (m *Manager) UpdateArticle(a *Article, oldtags []string, del bool) error {
 func (m *Manager) Close() {
 	m.closed = true
 	m.db.Close()
+}
+
+func (m *Manager) GetHomePage() template.HTML {
+	return template.HTML(m.home)
+}
+
+func (m *Manager) SetHomePage(buf string) {
+	m.db.Update(func(tx *bbolt.Tx) error { return tx.Bucket(bkPost).Put([]byte("home"), []byte(buf)) })
+	m.home = buf
 }
