@@ -30,9 +30,9 @@ type Article struct {
 	ID          int64    `json:"id"`
 	Parent      int64    `json:"p"`
 	Replies     int64    `json:"rc"`
-	Locked      bool     `json:"l"`
-	Highlighted bool     `json:"h"`
-	Announce    bool     `json:"A"`
+	Locked      bool     `json:"l,omitempty"`
+	Highlighted bool     `json:"h,omitempty"`
+	Announce    bool     `json:"A,omitempty"`
 	Title       string   `json:"T"`
 	Content     string   `json:"C"`
 	Author      string   `json:"a"`
@@ -90,6 +90,10 @@ func (a *Article) ContentHTML() template.HTML {
 	return template.HTML(sanText(a.Content))
 }
 
+func (a *Article) ContentAbstract() string {
+	return softTrunc(a.Content, 64)
+}
+
 func (a *Article) ImageURL() string {
 	if a.Image != "" {
 		return config.ImageDomain + "/i/" + a.Image
@@ -111,13 +115,16 @@ func (a *Article) Unmarshal(b []byte) error {
 }
 
 func authorNameToHash(n string) string {
+	var n0 string
+	if len(n) >= 4 {
+		n0 = n[:4]
+		n = n[4:]
+	}
+
 	h := hmac.New(sha1.New, []byte(config.Key))
 	h.Write([]byte(n + config.Key))
 	x := h.Sum(nil)
-	if len(n) > 4 {
-		n = n[:4]
-	}
-	return n + base64.URLEncoding.EncodeToString(x[:6])
+	return n0 + base64.URLEncoding.EncodeToString(x[:6])
 }
 
 func objectIDToDisplayID(id int64) string {

@@ -76,7 +76,7 @@
 
         {{if len .Articles}}
         {{range .Articles}}
-        <div class=row>
+            <div class=row>
                 {{range .Tags}}
                 <span class=tag><a href="/tag/{{.}}"><b>#</b>{{.}}</a></span>
                 {{end}}
@@ -93,6 +93,9 @@
                 &nbsp;<a href="/id/{{.Author}}" class=keepcolor><b>{{.Author}}</b></a>
                 <span>发布于 {{.CreateTimeString}}</span>
             </div>
+            {{if .Parent}}
+            <div class="row preview">{{.ContentAbstract}}</div>
+            {{end}}
         {{end}}
         {{else}}
         <div>无内容</div>

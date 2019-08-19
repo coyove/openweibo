@@ -1,11 +1,15 @@
 package main
 
 import (
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/base64"
 	"fmt"
 	"html/template"
 	_ "image/png"
 	"io"
 	"log"
+	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -22,6 +26,40 @@ var m *Manager
 
 func main() {
 	var err error
+	loadConfig()
+
+	if os.Getenv("IIS_NAME") != "" {
+		s := make([]byte, 8)
+
+		keybuf := []byte(config.Key)
+		for i := 0; ; i++ {
+			rand.Read(s)
+			for i := range s {
+				s[i] = "abcdefghijklmnopqrstuvwxyz0123456789"[s[i]%36]
+			}
+
+			h := hmac.New(sha1.New, keybuf)
+			h.Write(s)
+			h.Write(keybuf)
+
+			x := h.Sum(nil)
+
+			y := base64.URLEncoding.EncodeToString(x[:4])[:5]
+			if (y[0] == 'y' || y[0] == 'Y') &&
+				(y[1] == 'm' || y[1] == 'M') &&
+				(y[2] == 'o' || y[2] == 'O' || y[2] == '0') &&
+				(y[3] == 'u' || y[3] == 'U') &&
+				(y[4] == 's' || y[4] == 'S' || y[4] == '5') {
+				fmt.Println("\nresult:", string(s))
+				break
+			}
+
+			if i%1e3 == 0 {
+				fmt.Printf("\rprogress: %dk", i/1e3)
+			}
+		}
+	}
+
 	m, err = NewManager("iis.db")
 	if err != nil {
 		panic(err)
@@ -33,8 +71,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	loadConfig()
 
 	if config.Key != "0123456789abcdef" {
 		log.Println("P R O D U C A T I O N")
@@ -207,6 +243,12 @@ func makeHandleMainView(t byte) func(g *gin.Context) {
 		if err != nil {
 			errorPage(500, "INTERNAL: "+err.Error(), g)
 			return
+		}
+
+		if t == 'a' {
+			for i := range pl.Articles {
+				pl.Articles[i].Author = ""
+			}
 		}
 
 		if len(pl.Articles) > 0 {

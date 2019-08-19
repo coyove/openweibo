@@ -69,6 +69,12 @@ div.reply {
     display: table;
 }
 
+div.preview {
+    font-size: 90%;
+    margin-top: 0;
+    padding-left: 1em;
+}
+
 pre {
     font: inherit;
     margin: 0.33em 0;

@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -41,6 +43,12 @@ func handleNewPostView(g *gin.Context) {
 		RAuthor:  g.Query("author"),
 		EError:   g.Query("error"),
 		Tags:     config.Tags,
+	}
+
+	if !g.GetBool("ip-ok") {
+		r := g.GetFloat64("ip-ok-remain")
+		errorPage(403, "COOLING DOWN, please retry after "+strconv.Itoa(config.Cooldown-int(r))+"s", g)
+		return
 	}
 
 	var answer [6]byte
@@ -91,8 +99,14 @@ func handleNewPostAction(g *gin.Context) {
 		tags     = splitTags(softTrunc(g.PostForm("tags"), 128))
 		announce = g.PostForm("announce") != ""
 		homepage = g.PostForm("homepage") != ""
+		isAPI    = g.PostForm("api") == "1"
 		image, _ = g.FormFile("image")
 		redir    = func(a, b string) {
+			if isAPI {
+				g.Status(500)
+				g.Header("Error", b)
+				return
+			}
 			q := encodeQuery(a, b, "author", author, "content", content, "title", title, "tags", strings.Join(tags, " "))
 			if reply == 0 {
 				g.Redirect(302, "/new/0?"+q)
@@ -202,5 +216,9 @@ func handleNewPostAction(g *gin.Context) {
 		return
 	}
 
-	g.Redirect(302, "/p/"+objectIDToDisplayID(reply)+"?p=-1")
+	if isAPI {
+		g.Status(http.StatusCreated)
+	} else {
+		g.Redirect(302, "/p/"+objectIDToDisplayID(reply)+"?p=-1")
+	}
 }

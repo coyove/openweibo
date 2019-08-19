@@ -143,6 +143,7 @@ func (m *Manager) Find(dir byte, filter findby, cursor int64, n int) ([]*Article
 
 func (m *Manager) FindTags(cursor string, n int) ([]Tag, int) {
 	var a []Tag
+	var holes []string
 	m.db.View(func(tx *bbolt.Tx) error {
 		bk := tx.Bucket(bkTag)
 		res, _ := ScanBucketAsc(bk, []byte(cursor), n, false)
@@ -152,6 +153,10 @@ func (m *Manager) FindTags(cursor string, n int) ([]Tag, int) {
 			t := Tag{Name: string(r[0])}
 			if bkt != nil {
 				t.Count = bkt.Stats().KeyN
+				if t.Count == 0 {
+					holes = append(holes, t.Name)
+					continue
+				}
 			}
 			a = append(a, t)
 		}
@@ -159,6 +164,19 @@ func (m *Manager) FindTags(cursor string, n int) ([]Tag, int) {
 		n = bk.Stats().BucketN
 		return nil
 	})
+
+	if len(holes) > 0 {
+		go func() {
+			m.db.Update(func(tx *bbolt.Tx) error {
+				bk := tx.Bucket(bkTag)
+				for _, h := range holes {
+					bk.DeleteBucket([]byte(h))
+				}
+				return nil
+			})
+		}()
+	}
+
 	return a, n
 }
 
@@ -281,9 +299,7 @@ func (m *Manager) PostReply(parent int64, a *Article) error {
 		}
 		if bk.Stats().KeyN > config.InboxSize {
 			k, _ := bk.Cursor().First()
-			if err := bk.Delete(k); err != nil {
-				return err
-			}
+			return bk.Delete(k)
 		}
 		return nil
 	})

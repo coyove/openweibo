@@ -35,6 +35,7 @@ var (
 		ImageDisabled bool                   `yaml:"ImageDisabled"`
 		InboxSize     int                    `yaml:"InboxSize"`
 		IPBlacklist   []string               `yaml:"IPBlacklist"`
+		Cooldown      int                    `yaml:"Cooldown"`
 
 		// inited after config being read
 		blk           cipher.Block
@@ -54,6 +55,7 @@ var (
 		PostsPerPage: 30,
 		Tags:         []string{},
 		InboxSize:    100,
+		Cooldown:     5,
 	}
 
 	survey struct {
