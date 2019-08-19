@@ -75,6 +75,24 @@
 			"revisionTime": "2019-05-23T05:57:43Z"
 		},
 		{
+			"checksumSHA1": "Zb9hyuDuhy4VqoSvZPM85qWwT3s=",
+			"path": "github.com/lestrrat-go/file-rotatelogs",
+			"revision": "e0a88b0fe8408240e1560882fc17cb0bf66765cd",
+			"revisionTime": "2019-07-18T00:03:51Z"
+		},
+		{
+			"checksumSHA1": "kCiYjWVsI7JrUA9SogAebi2cp00=",
+			"path": "github.com/lestrrat-go/file-rotatelogs/internal/option",
+			"revision": "e0a88b0fe8408240e1560882fc17cb0bf66765cd",
+			"revisionTime": "2019-07-18T00:03:51Z"
+		},
+		{
+			"checksumSHA1": "axIEoJw10GBpjx+yzYay7A/IeQI=",
+			"path": "github.com/lestrrat-go/strftime",
+			"revision": "5c849dd2c51dd10faf5f1b86abec2db1ac3b9101",
+			"revisionTime": "2019-07-25T01:19:45Z"
+		},
+		{
 			"checksumSHA1": "74gCzvJiE6bXX3i4vIVCYhffDHc=",
 			"path": "github.com/mattn/go-isatty",
 			"revision": "1311e847b0cb909da63b5fecfb5370aa66236465",
@@ -91,6 +109,12 @@
 			"path": "github.com/modern-go/reflect2",
 			"revision": "94122c33edd36123c84d5368cfb2b69df93a0ec8",
 			"revisionTime": "2018-07-18T01:23:57Z"
+		},
+		{
+			"checksumSHA1": "I7hloldMJZTqUx6hbVDp5nk9fZQ=",
+			"path": "github.com/pkg/errors",
+			"revision": "27936f6d90f9c8e1145f11ed52ffffbfdb9e0af7",
+			"revisionTime": "2019-02-27T00:00:51Z"
 		},
 		{
 			"checksumSHA1": "Pw/U4CMeGxIElJXFxL2Vbn68Sqs=",
@@ -159,5 +183,5 @@
 			"revisionTime": "2018-11-15T11:05:04Z"
 		}
 	],
-	"rootPath": "github.com/coyove/ch"
+	"rootPath": "github.com/coyove/iis"
 }

@@ -4,15 +4,18 @@ import (
 	"fmt"
 	"html/template"
 	_ "image/png"
-	"io/ioutil"
+	"io"
 	"log"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/coyove/iis/cache"
 	"github.com/coyove/iis/driver"
 	"github.com/coyove/iis/driver/chdropbox"
 	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"
+	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 )
 
 var m *Manager
@@ -94,10 +97,24 @@ func main() {
 	})
 	go uploadLocalImages()
 
+	os.MkdirAll("tmp/logs", 0700)
+	logf, err := rotatelogs.New(
+		"tmp/logs/access_log.%Y%m%d%H%M",
+		rotatelogs.WithLinkName("tmp/logs/access_log"),
+		rotatelogs.WithMaxAge(24*time.Hour),
+		rotatelogs.WithRotationTime(time.Hour),
+	)
+	if err != nil {
+		panic(err)
+	}
+
 	if config.Key != "0123456789abcdef" {
 		log.Println("P R O D U C A T I O N")
 		gin.SetMode(gin.ReleaseMode)
-		gin.DefaultWriter = ioutil.Discard
+		gin.DisableConsoleColor()
+		gin.DefaultWriter = logf
+	} else {
+		gin.DefaultWriter = io.MultiWriter(logf, os.Stdout)
 	}
 
 	r := gin.Default()
