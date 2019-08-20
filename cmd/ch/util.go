@@ -121,10 +121,11 @@ func encodeQuery(a ...string) string {
 func isAdmin(g interface{}) bool {
 	switch g := g.(type) {
 	case *gin.Context:
-		ck, _ := g.Request.Cookie("id")
-		if ck != nil {
-			return ck.Value == config.AdminName
+		ck, _ := g.Cookie("id")
+		if ck != config.AdminName {
+			return g.PostForm("author") == config.AdminName
 		}
+		return true
 	case string:
 		return g == config.AdminName
 	}

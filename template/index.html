@@ -21,10 +21,9 @@
             {{end}}/ 
             {{if .ShowIP}}<a href="/ip/{{.ParentArticle.IP}}">{{.ParentArticle.IP}}</a> / {{end}}
             <a href="/edit/{{.ParentArticle.DisplayID}}">编辑</a> /
-            {{.ParentArticle.Replies}} 回复 /
+            {{.ParentArticle.Views}} 浏览 /
             ID: <a href="/id/{{.ParentArticle.Author}}">{{.ParentArticle.Author}}</a> /
-            发布: {{.ParentArticle.CreateTimeString}} /
-            最后回复: {{.ParentArticle.ReplyTimeString}}
+            发布: {{.ParentArticle.CreateTimeString}}
         </div> 
 
         {{if .ParentArticle.Image}}<img class="image" src="{{.ParentArticle.ImageURL}}">{{end}}
@@ -36,6 +35,9 @@
             {{end}}
         </div>
         <hr>
+
+        <div class=row>&bull; {{.ParentArticle.Replies}} 回复</div>
+        <div class=row>&bull; 最后回复: {{.ParentArticle.ReplyTimeString}}</div>
 
         {{if len .Articles}}
             {{range .Articles}}
@@ -78,7 +80,7 @@
         {{range .Articles}}
             <div class=row>
                 {{range .Tags}}
-                <span class=tag><a href="/tag/{{.}}"><b>#</b>{{.}}</a></span>
+                <span class="tag {{if eq . $.SearchTerm}}hl{{end}}"><a href="/tag/{{.}}"><b>#</b>{{.}}</a></span>
                 {{end}}
                 <a href="/p/{{.DisplayID}}">
                     {{if .Locked}}<b>[锁定]</b>{{end}}
@@ -92,6 +94,7 @@
                 </a>
                 &nbsp;<a href="/id/{{.Author}}" class=keepcolor><b>{{.Author}}</b></a>
                 <span>发布于 {{.CreateTimeString}}</span>
+                <span><i style="color:#677">({{.Views}})</i></span>
             </div>
             {{if .Parent}}
             <div class="row preview">{{.ContentAbstract}}</div>

@@ -69,13 +69,13 @@
     </tr>
     </table>
 
+    {{if not .Reply}}
     <hr>
-
-    <fieldset style="display:inline-block">
-    <legend>管理员:</legend>
-    设为公告: <input name=announce type=checkbox> 设置后无法取消只能删除<br>
-    大公告: <input name=homepage type=checkbox>
+    <fieldset>
+    <legend>管理员选项</legend>
+    <input name=announce type=checkbox id=announce><label for=announce>设为公告，设置后无法取消只能删除</label>
     </fieldset>
+    {{end}}
 </form>
 
 {{template "footer.html" .}}

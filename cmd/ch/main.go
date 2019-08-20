@@ -223,7 +223,7 @@ func makeHandleMainView(t byte) func(g *gin.Context) {
 			pl.SearchTerm, pl.Type = g.Param("ip"), "ip"
 			findby = ByIP(pl.SearchTerm)
 
-			if !isAdmin(g) {
+			if !isAdmin(g) || !g.GetBool("ip-ok") {
 				errorPage(403, "NOT ADMIN", g)
 				return
 			}
@@ -274,6 +274,8 @@ func handleRepliesView(g *gin.Context) {
 		log.Println(err)
 		return
 	}
+
+	incrCounter(g, pl.ParentArticle.ID)
 
 	next, dir := parseCursor(g.Query("n"))
 	if dir == "prev" {

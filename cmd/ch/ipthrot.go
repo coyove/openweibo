@@ -51,12 +51,16 @@ func mwRenderPerf(g *gin.Context) {
 }
 
 func mwIPThrot(g *gin.Context) {
-	if g.Request.Method != "POST" && !strings.HasPrefix(g.Request.RequestURI, "/new/") {
+	shouldCheckIP := g.Request.Method == "POST" ||
+		strings.HasPrefix(g.Request.RequestURI, "/new/") ||
+		strings.HasPrefix(g.Request.RequestURI, "/ip/")
+
+	if !shouldCheckIP {
 		g.Next()
 		return
 	}
 
-	if g.PostForm("author") == config.AdminName {
+	if isAdmin(g) {
 		g.Set("ip-ok", true)
 		g.Next()
 		return

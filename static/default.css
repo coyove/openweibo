@@ -22,7 +22,6 @@ body {
 }
 
 h1, h2, h3, h4, h5, h6 {
-    font-family: oswald,helvetica,sans-serif;
     margin: 2px 0;
 }
 
@@ -106,6 +105,14 @@ span.tag b {
     margin-right: 2px;
 }
 
+span.tag.hl {
+    background: #076;
+}
+
+span.tag.hl * {
+    color: white !important;
+}
+
 nav {
 	background-color: #678;
 }
@@ -166,6 +173,6 @@ nav ul ul li {
     height: auto;
 }
 
-.bling {
-    background: url(/s/bling.gif);
+fieldset {
+    display: inline-block;
 }

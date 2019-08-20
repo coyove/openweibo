@@ -39,6 +39,7 @@ type Article struct {
 	IP          string   `json:"ip"`
 	Image       string   `json:"i"`
 	Tags        []string `json:"t"`
+	Views       int64    `json:"v"`
 	CreateTime  int64    `json:"c"`
 	ReplyTime   int64    `json:"r"`
 }

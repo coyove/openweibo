@@ -37,24 +37,7 @@
     <tr>
         <td>内容:</td>
         <td><textarea rows=10 name="content">{{.Article.Content}}</textarea></td>
-    </tr> 
-    <tr>
-        <td>删除:</td>
-        <td><input name=delete type=checkbox></td>
-    </tr>
-    
-    <tr>
-        <td>锁定:</td>
-        <td><input name=locked type=checkbox {{if .Article.Locked}}checked{{end}}></td>
-    </tr>
-    <tr>
-        <td>高亮:</td>
-        <td><input name=highlighted type=checkbox {{if .Article.Highlighted}}checked{{end}}></td>
-    </tr>
-    <tr>
-        <td>删图:</td>
-        <td><input name=delimg type=checkbox></td>
-    </tr>
+    </tr>  
     <tr>
         <td>ID认证:</td>
         <td><input class=t name=author value="{{.RAuthor}}"></td>
@@ -67,6 +50,18 @@
         <td><input type=submit></td>
     </tr>
     </table>
+
+    <hr>
+
+    <FIELDSET>
+        <LEGEND>选项</LEGEND>
+        <input id=delete name=delete type=checkbox><label for=delete >删除</label>
+        <input id=locked name=locked type=checkbox {{if .Article.Locked}}checked{{end}}><label for=locked >锁定</label>
+        <input id=highlighted name=highlighted type=checkbox {{if .Article.Highlighted}}checked{{end}}><label for=highlighted >高亮</label>
+        {{if .Article.Image}}
+        <input id=delimg name=delimg type=checkbox><label for=delimg >删图</label>
+        {{end}}
+    </FIELDSET>
 </form>
 
 {{template "footer.html" .}}
