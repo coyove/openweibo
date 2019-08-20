@@ -54,10 +54,11 @@ func mwRenderPerf(g *gin.Context) {
 
 func mwIPThrot(g *gin.Context) {
 	shouldCheckIP := g.Request.Method == "POST" ||
-		// strings.HasPrefix(g.Request.RequestURI, "/new/") ||
+		strings.HasPrefix(g.Request.RequestURI, "/new/") ||
 		strings.HasPrefix(g.Request.RequestURI, "/ip/")
 
 	if !shouldCheckIP {
+		g.Set("ip-ok", true)
 		g.Next()
 		return
 	}
@@ -70,6 +71,7 @@ func mwIPThrot(g *gin.Context) {
 
 	ip := g.ClientIP()
 	lastaccess, ok := dedup.Get(ip)
+
 	if !ok {
 		dedup.Add(ip, time.Now())
 		g.Set("ip-ok", true)

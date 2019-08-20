@@ -121,6 +121,7 @@ func handleNewPostAction(g *gin.Context) {
 	}
 
 	if g.PostForm("refresh") != "" {
+		dedup.Remove(g.ClientIP())
 		redir("", "")
 		return
 	}
