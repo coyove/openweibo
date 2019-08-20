@@ -17,6 +17,7 @@ import (
 	"github.com/coyove/iis/cache"
 	"github.com/coyove/iis/driver"
 	"github.com/coyove/iis/driver/chdropbox"
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
@@ -82,6 +83,7 @@ func main() {
 	}
 
 	log.SetOutput(gin.DefaultWriter)
+	log.SetFlags(log.Lshortfile | log.Ltime | log.Ldate)
 
 	//titles := []string{
 	//	"ofo押金难退，你可以试试“假破产真逼债”，但是不建议 手机发帖  ...2 New	",
@@ -152,10 +154,12 @@ func main() {
 	})
 	go uploadLocalImages()
 
-	r := gin.Default()
-	r.Use(mwRenderPerf, mwIPThrot)
+	r := gin.New()
+	r.Use(gin.Recovery(), gzip.Gzip(gzip.BestSpeed), mwLogger, mwRenderPerf, mwIPThrot)
 	r.SetFuncMap(template.FuncMap{
-		"RenderPerf": func() string { return fmt.Sprintf("%dms/%dms", survey.render.avg, survey.render.max) },
+		"RenderPerf": func() string {
+			return fmt.Sprintf("%dms/%dms/%.3fM", survey.render.avg, survey.render.max, float64(survey.written)/1024/1024)
+		},
 	})
 	r.LoadHTMLGlob("template/*")
 	r.Static("/s/", "static")

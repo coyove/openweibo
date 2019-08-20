@@ -2,6 +2,7 @@ package main
 
 import (
 	"net"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -48,6 +49,7 @@ func mwRenderPerf(g *gin.Context) {
 		}
 	}
 
+	atomic.AddInt64(&survey.written, int64(g.Writer.Size()))
 }
 
 func mwIPThrot(g *gin.Context) {
@@ -89,3 +91,54 @@ func mwIPThrot(g *gin.Context) {
 	g.Set("ip-ok-remain", diff)
 	g.Next()
 }
+
+var mwLogger = gin.LoggerWithFormatter(func(params gin.LogFormatterParams) string {
+	buf := strings.Builder{}
+	itoa := func(i int, wid int) {
+		var b [20]byte
+		bp := len(b) - 1
+		for i >= 10 || wid > 1 {
+			wid--
+			q := i / 10
+			b[bp] = byte('0' + i - q*10)
+			bp--
+			i = q
+		}
+		// i < 10
+		b[bp] = byte('0' + i)
+		buf.Write(b[bp:])
+	}
+
+	itoa(params.TimeStamp.Year(), 4)
+	buf.WriteByte('/')
+	itoa(int(params.TimeStamp.Month()), 2)
+	buf.WriteByte('/')
+	itoa(params.TimeStamp.Day(), 2)
+	buf.WriteByte(' ')
+	itoa(params.TimeStamp.Hour(), 2)
+	buf.WriteByte(':')
+	itoa(params.TimeStamp.Minute(), 2)
+	buf.WriteByte(':')
+	itoa(params.TimeStamp.Second(), 2)
+	buf.WriteByte(' ')
+	buf.WriteString("gin-stub:1:")
+	buf.WriteByte(' ')
+	buf.WriteString(params.ClientIP)
+	buf.WriteByte(' ')
+	buf.WriteString(params.Method)
+	buf.WriteByte(' ')
+	buf.WriteByte('[')
+	if params.StatusCode >= 400 {
+		buf.WriteString(strconv.Itoa(params.StatusCode))
+	}
+	buf.WriteByte(']')
+	buf.WriteByte(' ')
+	buf.WriteString(params.Path)
+	buf.WriteByte(' ')
+	buf.WriteString(strconv.FormatFloat(float64(params.BodySize)/1024, 'f', 3, 64))
+	buf.WriteByte('K')
+	buf.WriteByte(' ')
+	buf.WriteString(params.ErrorMessage)
+	buf.WriteByte('\n')
+	return buf.String()
+})

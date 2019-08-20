@@ -63,6 +63,7 @@ var (
 			avg int64
 			max int64
 		}
+		written int64
 	}
 )
 

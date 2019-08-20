@@ -64,8 +64,11 @@ div.row > * {
 }
 
 div.reply {
-    border-bottom: dotted 1px #666;
     display: table;
+}
+
+div.reply pre {
+    padding-left: 1em;
 }
 
 div.preview {

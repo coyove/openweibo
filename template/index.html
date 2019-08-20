@@ -36,10 +36,10 @@
         </div>
         <hr>
 
-        <div class=row>&bull; {{.ParentArticle.Replies}} 回复</div>
-        <div class=row>&bull; 最后回复: {{.ParentArticle.ReplyTimeString}}</div>
-
         {{if len .Articles}}
+            <div class=row>&bull; {{.ParentArticle.Replies}} 回复</div>
+            <div class=row>&bull; 最后回复: {{.ParentArticle.ReplyTimeString}}</div>
+
             {{range .Articles}}
             <div class="row reply">
                 <div>
@@ -53,7 +53,7 @@
             </div>
             {{end}}
         {{else}}
-            <div>无回复</div>
+            <div class=row>&bull; 无回复</div>
         {{end}}
 
     {{else}}
@@ -101,7 +101,7 @@
             {{end}}
         {{end}}
         {{else}}
-        <div>无内容</div>
+        <div class=row>&bull; 无内容</div>
         {{end}}
 
     {{end}}
