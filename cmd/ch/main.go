@@ -76,10 +76,9 @@ func main() {
 	if config.Key != "0123456789abcdef" {
 		log.Println("P R O D U C A T I O N")
 		gin.SetMode(gin.ReleaseMode)
-		gin.DisableConsoleColor()
-		gin.DefaultWriter, gin.DefaultErrorWriter = logf, logerrf
+		mwLoggerOutput, gin.DefaultErrorWriter = logf, logerrf
 	} else {
-		gin.DefaultWriter, gin.DefaultErrorWriter = io.MultiWriter(logf, os.Stdout), io.MultiWriter(logerrf, os.Stdout)
+		mwLoggerOutput, gin.DefaultErrorWriter = io.MultiWriter(logf, os.Stdout), io.MultiWriter(logerrf, os.Stdout)
 	}
 
 	log.SetOutput(gin.DefaultWriter)
