@@ -81,7 +81,7 @@ func main() {
 		mwLoggerOutput, gin.DefaultErrorWriter = io.MultiWriter(logf, os.Stdout), io.MultiWriter(logerrf, os.Stdout)
 	}
 
-	log.SetOutput(gin.DefaultWriter)
+	log.SetOutput(mwLoggerOutput)
 	log.SetFlags(log.Lshortfile | log.Ltime | log.Ldate)
 
 	//titles := []string{
@@ -154,7 +154,7 @@ func main() {
 	go uploadLocalImages()
 
 	r := gin.New()
-	r.Use(gin.Recovery(), gzip.Gzip(gzip.BestSpeed), mwLogger, mwRenderPerf, mwIPThrot)
+	r.Use(gin.Recovery(), gzip.Gzip(gzip.BestSpeed), mwLogger(), mwRenderPerf, mwIPThrot)
 	r.SetFuncMap(template.FuncMap{
 		"RenderPerf": func() string {
 			return fmt.Sprintf("%dms/%dms/%.3fM", survey.render.avg, survey.render.max, float64(survey.written)/1024/1024)
