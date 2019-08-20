@@ -97,7 +97,7 @@ func (a *Article) ContentAbstract() string {
 
 func (a *Article) ImageURL() string {
 	if a.Image != "" {
-		return config.ImageDomain + "/i/" + a.Image
+		return "//" + config.ImageDomain + "/i/" + a.Image
 	}
 	return ""
 }
