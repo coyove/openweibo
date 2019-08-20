@@ -1,9 +1,3 @@
-/** Fifty shades of Tux
- * A black, white and yellow css for kernel.org based on normalize.css
- * MIT License
- * BenoÃ®t Monin [benoit.monin gmx.fr]
- */
-
 body {
     background: #F0EDE3;
     color: #33290A;
@@ -35,14 +29,9 @@ a:visited {
     text-decoration: none;
 }
 
-a:hover,
-a:active {
+a:hover, a:active {
     color: #B39223;
     text-decoration: none;
-}
-
-abbr[title] {
-    border: none;
 }
 
 hr {
@@ -161,7 +150,6 @@ nav ul li:hover > ul, nav ul a:active + ul {
 	display: inherit;
 }
 
-/* Fisrt Tier Dropdown */
 nav ul ul li {
 	width:170px;
 	float:none;
@@ -174,6 +162,10 @@ nav ul ul li {
     max-height: 200px;
     width: 100%;
     height: auto;
+}
+
+.reply .image {
+    margin-left: 1em;
 }
 
 fieldset {

@@ -129,6 +129,7 @@ func authorNameToHash(n string) string {
 }
 
 func objectIDToDisplayID(id int64) string {
+	//return strconv.FormatInt(id, 10)
 	var (
 		sum    uint32 = 0
 		delta  uint32 = 0x9E3779B9
@@ -146,6 +147,9 @@ func objectIDToDisplayID(id int64) string {
 }
 
 func displayIDToObejctID(id string) int64 {
+	//xxx, _ := strconv.ParseInt(id, 10, 64)
+	//return xxx
+
 	idx := strings.Index(id, ".")
 	if idx == -1 {
 		return 0
