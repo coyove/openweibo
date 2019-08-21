@@ -119,6 +119,12 @@ func authorNameToHash(n string) string {
 	var n0 string
 	if len(n) >= 4 {
 		n0 = n[:4]
+		for i := 0; i < len(n0); i++ {
+			if n0[i] > 127 {
+				n0 = n0[:i]
+				break
+			}
+		}
 		n = n[4:]
 	}
 
