@@ -152,7 +152,7 @@ func (c *Cache) Fetch(key string) ([]byte, error) {
 
 	//os.MkdirAll(filepath.Dir(k), 0700)
 
-	if err := ioutil.WriteFile(k, buf, 0777); err != nil {
+	if err := ioutil.WriteFile(k, buf, 0700); err != nil {
 		log.Println("[cache.get]", err)
 	} else {
 		log.Println("[cache.get.ok]", len(buf))
