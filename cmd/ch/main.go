@@ -185,8 +185,8 @@ func main() {
 	} else {
 		go func() {
 			time.Sleep(time.Second)
-			log.Println("image server started on :80")
-			log.Fatal(autotls.Run(r, config.Domain))
+			log.Println("plain server started on :80")
+			log.Fatal(r.Run(":80"))
 		}()
 		log.Fatal(autotls.Run(r, config.Domain))
 	}

@@ -2,6 +2,12 @@
 
 <title>配置</title>
 
+<style>
+.config li {
+    word-break: break-all;
+}
+</style>
+
 {{range .Nodes}}
 <div>
     <h3>{{.Name}}</h3>
@@ -19,6 +25,6 @@
 {{end}}
 
 <h3>配置</h3>
-<pre><ul>{{.Config}}</ul></pre>
+<pre><ul class=config>{{.Config}}</ul></pre>
 
 {{template "footer.html" .}}

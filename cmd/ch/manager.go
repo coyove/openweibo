@@ -28,7 +28,9 @@ type Tag struct {
 }
 
 func NewManager(path string) (*Manager, error) {
-	db, err := bbolt.Open(path, 0700, nil)
+	db, err := bbolt.Open(path, 0700, &bbolt.Options{
+		InitialMmapSize: 1024 * 1024 * 1024,
+	})
 	if err != nil {
 		return nil, err
 	}
