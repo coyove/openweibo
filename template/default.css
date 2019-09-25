@@ -1,10 +1,9 @@
-body {
-    background: #F0EDE3;
-    color: #33290A;
+* {
     padding: 0;
     margin: 0;
     box-sizing: border-box;
-    font-family: "Helvetica Neue",Helvetica,Arial,"Hiragino Sans GB","Hiragino Sans GB W3","WenQuanYi Micro Hei",sans-serif
+    font-family: "Roboto", "Helvetica Neue",Helvetica,Arial,"Hiragino Sans GB","Hiragino Sans GB W3","WenQuanYi Micro Hei",sans-serif;
+    font-size: 14px;
 }
 
 .keepcolor {
@@ -12,7 +11,7 @@ body {
 }
 
 #container {
-    padding: 0.5em;
+    padding: 0.5em 0;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -20,23 +19,41 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 a {
-    color: #3357D6;
     text-decoration: none;
+    color: #2a66d9;
 }
-
-a:visited {
-    color: #865796;
-    text-decoration: none;
-}
-
-a:hover, a:active {
-    color: #B39223;
-    text-decoration: none;
+a:hover {
+    text-decoration: underline;
 }
 
 hr {
     border-color: rgba(0, 0, 0, 0.05);
     border-style: dotted;
+}
+
+.articles {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.articles th {
+    text-align: left;
+}
+
+.articles th, .articles td {
+    padding: 0.4em;
+    border: #ccc 1px solid;
+    border-width: 1px 0 1px 0;
+    line-height: 1.5em;
+}
+
+.articles tr.row:hover {
+    background-color: #ebf5fb;
+}
+
+.articles th.nowrap, .articles td.nowrap {
+    white-space: nowrap;
+    width: 1%;
 }
 
 input.t, textarea {
@@ -52,23 +69,20 @@ div.row > * {
     vertical-align: top;
 }
 
-div.reply {
+.reply {
     display: table;
 }
 
-div.reply pre {
-    padding-left: 1em;
+.reply pre {
+    padding-left: 2em;
 }
 
-div.preview {
-    font-size: 90%;
-    margin-top: 0;
-    padding-left: 1em;
+.reply .image {
+    margin-left: 2em;
 }
 
 pre {
     font: inherit;
-    margin: 0.33em 0;
     white-space: pre-wrap;
 }
 
@@ -76,8 +90,10 @@ span.tag {
     display: inline-block;
     position: relative;
     padding: 0 3px 0 4px;
+    margin-right: 0.2em;
     overflow: hidden;
-    background: rgba(0,0,0,0.05);
+    background: rgba(0,0,0,0.07);
+    vertical-align: bottom;
 }
 
 span.tag:before {
@@ -89,16 +105,21 @@ span.tag:before {
     left: 0;
     top: -6px;
     border: 6px solid transparent;
-    border-left: 6px solid #076;
+    border-left: 6px solid #6B82D6;
 }
 
-span.tag b {
+span.tag a {
     color: #233;
-    margin-right: 2px;
+    margin-left: 2px;
+    text-decoration: none !important;
 }
 
 span.tag.hl {
-    background: #076;
+    background: #6B82D6;
+}
+
+span.tag.hl:before {
+    border-left: 6px solid rgba(0,0,0,0.3);
 }
 
 span.tag.hl * {
@@ -164,9 +185,6 @@ nav ul ul li {
     height: auto;
 }
 
-.reply .image {
-    margin-left: 1em;
-}
 
 fieldset {
     display: inline-block;

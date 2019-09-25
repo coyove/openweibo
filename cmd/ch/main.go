@@ -160,8 +160,8 @@ func main() {
 			return fmt.Sprintf("%dms/%dms/%.3fM", survey.render.avg, survey.render.max, float64(survey.written)/1024/1024)
 		},
 	})
-	r.LoadHTMLGlob("template/*")
-	r.Static("/s/", "static")
+	r.LoadHTMLGlob("template/*.html")
+	r.Static("/s/", "template")
 	r.Handle("GET", "/", func(g *gin.Context) { g.HTML(200, "home.html", struct{ Home template.HTML }{m.GetHomePage()}) })
 	r.Handle("GET", "/vec", makeHandleMainView('v'))
 	r.Handle("GET", "/i/:image", handleImage)
@@ -253,10 +253,8 @@ func makeHandleMainView(t byte) func(g *gin.Context) {
 			return
 		}
 
-		if t == 'a' {
-			for i := range pl.Articles {
-				pl.Articles[i].Author = ""
-			}
+		for _, a := range pl.Articles {
+			a.SearchTerm = pl.SearchTerm
 		}
 
 		if len(pl.Articles) > 0 {

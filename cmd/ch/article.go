@@ -42,6 +42,7 @@ type Article struct {
 	Views       int64    `json:"v"`
 	CreateTime  int64    `json:"c"`
 	ReplyTime   int64    `json:"r"`
+	SearchTerm  string   `json:"-"`
 }
 
 func newID() int64 {
@@ -184,10 +185,10 @@ func idBytes(id int64) []byte {
 func formatTime(t int64) string {
 	x, now := time.Unix(0, t*1000), time.Now()
 	if now.YearDay() == x.YearDay() && now.Year() == x.Year() {
-		return x.Format("15:04:05")
+		return x.Format("15:04")
 	}
 	if now.Year() == x.Year() {
-		return x.Format("01-02 15:04:05")
+		return x.Format("Jan 02")
 	}
-	return x.Format("2006-01-02 15:04:05")
+	return x.Format("Jan 02, 2006")
 }

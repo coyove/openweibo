@@ -1,11 +1,6 @@
 {{template "header.html" .}}
 
     {{if .ParentArticle}}
-        <h2>
-            {{if .ParentArticle.Locked}}<b>[锁定]</b>{{end}}
-            {{if .ParentArticle.Announce}}<b>[公告]</b>{{end}}
-            {{.ParentArticle.Title}}
-        </h2>
 
         {{if .ParentArticle.Title}}
         <title>{{.ParentArticle.Title}}</title>
@@ -13,96 +8,107 @@
         <title>回复: {{.ParentArticle.DisplayID}}</title>
         {{end}}
 
-        <div>
-            {{if .ParentArticle.Parent}}
-                <a href="/p/{{.ParentArticle.DisplayParentID}}">上一层</a>
-            {{else}}
-                <a href="/vec">主页</a>
-            {{end}}/ 
-            {{if .ShowIP}}<a href="/ip/{{.ParentArticle.IP}}">{{.ParentArticle.IP}}</a> / {{end}}
-            <a href="/edit/{{.ParentArticle.DisplayID}}">编辑</a> /
-            {{.ParentArticle.Views}} 浏览 /
-            ID: <a href="/id/{{.ParentArticle.Author}}">{{.ParentArticle.Author}}</a> /
-            发布: {{.ParentArticle.CreateTimeString}}
-        </div> 
-
-        {{if .ParentArticle.Image}}<img class="image" src="{{.ParentArticle.ImageURL}}">{{end}}
-        <pre>{{.ParentArticle.ContentHTML}}</pre>
-
-        <div class=row> 
-            {{range .ParentArticle.Tags}}
-                <span class=tag><a href="/tag/{{.}}"><b>#</b>{{.}}</a></span>
-            {{end}}
-        </div>
-        <hr>
+        <table class="articles">
+            <tr>
+                <th>主题: {{.ParentArticle.DisplayID}}</th>
+                <th class=nowrap>回复</th>
+                <th class=nowrap>作者</th>
+                <th class=nowrap>日期</th>
+            </tr>
+        <tr class=row>
+            <td>
+                {{template "row_tags.html" .ParentArticle}}
+                {{if .ParentArticle.Parent}}<a href="/p/{{.ParentArticle.DisplayParentID}}">上一层</a> /{{end}} 
+                {{.ParentArticle.Title}}
+            </td>
+            <td class=nowrap><span>{{.ParentArticle.Replies}}/{{.ParentArticle.Views}}</span></td>
+            <td class=nowrap>
+                <a href="/id/{{.ParentArticle.Author}}">{{.ParentArticle.Author}}</a>
+                {{if .ShowIP}} / <a href="/ip/{{.ParentArticle.IP}}">{{.ParentArticle.IP}}</a>{{end}}
+            </td>
+            <td class=nowrap><span>{{.ParentArticle.CreateTimeString}}</span></td>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                {{if .ParentArticle.Image}}<img class="image" src="{{.ParentArticle.ImageURL}}">{{end}}
+                <pre>{{.ParentArticle.ContentHTML}}</pre>
+            </td>
+            <td class=nowrap style="vertical-align: top"><a href="/new/{{.ParentArticle.DisplayID}}">回复</a></td>
+            <td class=nowrap style="vertical-align: top"><a href="/edit/{{.ParentArticle.DisplayID}}">编辑</a></td>
+            <td class=nowrap style="vertical-align: top">{{.ParentArticle.ReplyTimeString}}</td>
+        </tr>
 
         {{if len .Articles}}
-            <div class=row>&bull; {{.ParentArticle.Replies}} 回复</div>
-            <div class=row>&bull; 最后回复: {{.ParentArticle.ReplyTimeString}}</div>
-
             {{range .Articles}}
-            <div class="row reply">
-                <div>
-                    &bull; <b>{{.Author}}</b> /
-                    {{.CreateTimeString}} /
-                    {{if $.ShowIP}}<a href="/ip/{{.IP}}">{{.IP}}</a> / {{end}}
-                    <a href="/p/{{.DisplayID}}">展开{{if .Replies}} ({{.Replies}}){{end}}</a>
-                </div>
-                {{if .Image}}<img class="image" src="{{.ImageURL}}">{{end}}
-                <pre>{{.ContentHTML}}</pre>
-            </div>
+            <tr class=row>
+                <td><a href="/p/{{.DisplayID}}">{{.Title}}</a></td>
+                <td>{{.Replies}}/{{.Views}}</td> 
+                <td class=nowrap><a href="/id/{{.Author}}">{{.Author}}</a>{{if $.ShowIP}} / <a href="/ip/{{.IP}}">{{.IP}}</a>{{end}}</td>
+                <td class=nowrap>{{.CreateTimeString}}</td>
+            </tr>
+            <tr>
+                <td colspan=4>
+                    <div class=reply>
+                        {{if .Image}}<img class="image" src="{{.ImageURL}}">{{end}}
+                        <pre>{{.ContentHTML}}</pre>
+                    </div>
+                </td>
+            </tr>
             {{end}}
         {{else}}
-            <div class=row>&bull; 无回复</div>
+            <tr><td colspan=4>无回复</td></tr>
         {{end}}
+        </table>
 
     {{else}}
 
-        {{if eq .Type "inbox"}}
-            <title>{{.SearchTerm}}的提醒 {{.Title}}</title>
-            <h3>{{.SearchTerm}}的提醒 ({{.TotalCount}})</h3>
-            <a href="/id/{{.SearchTerm}}">查看{{.SearchTerm}}的回复/新主题</a><hr>
-        {{else if eq .Type "id"}}
-            <title>{{.SearchTerm}}的发言 {{.Title}}</title>
-            <h3>{{.SearchTerm}}的发言 ({{.TotalCount}})</h3>
-            <a href="/inbox/{{.SearchTerm}}">查看谁回复了{{.SearchTerm}}</a><hr>
-        {{else if eq .Type "ip"}}
-            <title>IP: {{.SearchTerm}}的发言 {{.Title}}</title>
-            <h3>IP: {{.SearchTerm}}的发言 ({{.TotalCount}})</h3><hr>
-        {{else if eq .Type "tag"}}
-            <title>标签: {{.SearchTerm}} {{.Title}}</title>
-            <h3>标签: {{.SearchTerm}} ({{.TotalCount}})</h3><hr>
-        {{else}}
-            <title>时间线 {{.Title}}</title>
-        {{end}}
-
+        <table class="articles">
+            <tr>
+                {{if eq .Type "inbox"}}
+                <title>{{.SearchTerm}}的提醒 {{.Title}}</title>
+                <th>
+                    {{.SearchTerm}}的提醒 ({{.TotalCount}})
+                    <a href="/id/{{.SearchTerm}}">查看{{.SearchTerm}}的回复/新主题
+                </th>
+                {{else if eq .Type "id"}}
+                <title>{{.SearchTerm}}的发言 {{.Title}}</title>
+                <th>
+                    {{.SearchTerm}}的发言 ({{.TotalCount}})
+                    <a href="/inbox/{{.SearchTerm}}">查看谁回复了{{.SearchTerm}}
+                </th>
+                {{else if eq .Type "ip"}}
+                <title>IP: {{.SearchTerm}}的发言 {{.Title}}</title>
+                <th>IP: {{.SearchTerm}}的发言 ({{.TotalCount}})</th>
+                {{else if eq .Type "tag"}}
+                <title>标签: {{.SearchTerm}} {{.Title}}</title>
+                <th>标签 ({{.TotalCount}})</th>
+                {{else}}
+                <title>时间线 {{.Title}}</title>
+                <th>标题</th>
+                {{end}}
+                <th class=nowrap>回复</th>
+                <th class=nowrap>作者</th>
+                <th class=nowrap>日期</th>
+            </tr>
         {{if len .Articles}}
         {{range .Articles}}
-            <div class=row>
-                {{range .Tags}}
-                <span class="tag {{if eq . $.SearchTerm}}hl{{end}}"><a href="/tag/{{.}}"><b>#</b>{{.}}</a></span>
-                {{end}}
-                <a href="/p/{{.DisplayID}}">
-                    {{if .Locked}}<b>[锁定]</b>{{end}}
-                    {{if .Announce}}<b>[公告]</b>{{end}}
-                    {{if .Highlighted}}
-                        <b style="text-decoration:underline">{{.Title}}</b>
-                    {{else}}
-                        {{.Title}}
-                    {{end}}
-                    {{if .Replies}}({{.Replies}}回复){{end}}
-                </a>
-                &nbsp;<a href="/id/{{.Author}}" class=keepcolor><b>{{.Author}}</b></a>
-                <span>发布于 {{.CreateTimeString}}</span>
-                <span><i style="color:#677">({{.Views}})</i></span>
-            </div>
-            {{if .Parent}}
-            <div class="row preview">{{.ContentAbstract}}</div>
-            {{end}}
+        <tr class=row>
+            <td>{{template "row_tags.html" .}} <a href="/p/{{.DisplayID}}">{{.Title}}</a></td>
+            <td class=nowrap><span>{{.Replies}}/{{.Views}}</span></td>
+            <td class=nowrap><a href="/id/{{.Author}}">{{.Author}}</a></td>
+            <td class=nowrap><span>{{.CreateTimeString}}</span></td>
+        </tr>
+        {{if .Parent}}
+        <tr>
+            <td colspan=4><div class=reply><pre>{{.ContentAbstract}}</pre></div></td>
+        </tr>
+        {{end}}
         {{end}}
         {{else}}
-        <div class=row>无内容</div>
+        <tr><td colspan=4>无内容</td></tr>
         {{end}}
+        </table>
 
     {{end}}
 
@@ -116,13 +122,6 @@
         [ <a href="?n={{.Next}}">下页</a> ]
         [ <a href="?n=-0">末页</a> ]
         {{end}}
-        [
-        <b>{{if .ParentArticle}}
-        <a href="/new/{{.ParentArticle.DisplayID}}">回复</a>
-        {{else}}
-        <a href="/new/0{{if eq .Type "tag"}}?tags={{.SearchTerm}}{{end}}">新主题</a>
-        {{end}}</b>
-        ]
     </div>
 
 {{template "footer.html" .}}
