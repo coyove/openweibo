@@ -260,7 +260,7 @@ func makeHandleMainView(t byte) func(g *gin.Context) {
 		if len(pl.Articles) > 0 {
 			pl.Next = pl.Articles[len(pl.Articles)-1].ID - 1
 			pl.Prev = pl.Articles[0].ID + 1
-			pl.Title = fmt.Sprintf("%s ~ %s", pl.Articles[0].CreateTimeString(), pl.Articles[len(pl.Articles)-1].CreateTimeString())
+			pl.Title = fmt.Sprintf("%s ~ %s", pl.Articles[0].CreateTimeString(false), pl.Articles[len(pl.Articles)-1].CreateTimeString(false))
 		}
 
 		g.HTML(200, "index.html", pl)

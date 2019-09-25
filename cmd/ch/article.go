@@ -80,12 +80,12 @@ func (a *Article) DisplayParentID() string {
 	return objectIDToDisplayID(a.Parent)
 }
 
-func (a *Article) CreateTimeString() string {
-	return formatTime(a.CreateTime)
+func (a *Article) CreateTimeString(sec bool) string {
+	return formatTime(a.CreateTime, sec)
 }
 
-func (a *Article) ReplyTimeString() string {
-	return formatTime(a.ReplyTime)
+func (a *Article) ReplyTimeString(sec bool) string {
+	return formatTime(a.ReplyTime, sec)
 }
 
 func (a *Article) ContentHTML() template.HTML {
@@ -182,13 +182,22 @@ func idBytes(id int64) []byte {
 	return b
 }
 
-func formatTime(t int64) string {
+func formatTime(t int64, sec bool) string {
 	x, now := time.Unix(0, t*1000), time.Now()
 	if now.YearDay() == x.YearDay() && now.Year() == x.Year() {
-		return x.Format("15:04")
+		if !sec {
+			return x.Format("15:04")
+		}
+		return x.Format("15:04:05")
 	}
 	if now.Year() == x.Year() {
-		return x.Format("Jan 02")
+		if !sec {
+			return x.Format("Jan 02")
+		}
+		return x.Format("Jan 02 15:04")
 	}
-	return x.Format("Jan 02, 2006")
+	if !sec {
+		return x.Format("Jan 02, 2006")
+	}
+	return x.Format("Jan 02, 2006 15:04")
 }

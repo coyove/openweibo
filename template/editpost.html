@@ -1,67 +1,75 @@
 {{template "header.html" .}}
 
-{{if eq .Reply "-1"}}
-<a href="/">&laquo;后退</a>
-{{else}}
-<a href="/p/{{.Reply}}">&laquo;后退</a>
-{{end}}
+<style>
+table {
+    max-width: 500px;
+}
+td, th {
+    border: none !important;
+}
+</style>
 
-<hr>
 
 <form method="POST" action="/edit">
-    <input type=hidden name=uuid value="{{.UUID}}">
-    <table>
-    <tr>
-        <title>编辑: {{.Article.DisplayID}}</title>
-        <td>编辑:</td>
-        <td>{{.Article.DisplayID}}<input type=hidden name=reply value="{{.Reply}}"></td>
-    </tr>
-    {{if not .Article.Parent}}
-    <tr>
-        <td>标题:</td>
-        <td><input class=t name=title value="{{.Article.Title}}"></td>
-    </tr> 
-    <tr>
-        <td></td><td style="font-size:80%">最少10字节，最多64字节</td>
-    </tr>
-    <tr>
-        <td>标签:</td>
-        <td>
-            <input list=tags class=t name=tags value="{{range .Article.Tags}}{{.}} {{end}}">
-            <datalist id="tags">
-            {{range .Tags}}<option value="{{.}}">{{end}}
-            </datalist>
-        </td>
-    </tr>
-    {{end}}
-    <tr>
-        <td>内容:</td>
-        <td><textarea rows=10 name="content">{{.Article.Content}}</textarea></td>
-    </tr>  
-    <tr>
-        <td>ID认证:</td>
-        <td><input class=t name=author value="{{.RAuthor}}"></td>
-    </tr>
-    <tr>
-        <td></td><td style="font-size:80%">必须: 请输入发帖时的ID</td>
-    </tr>
-    <tr>
-        <td></td>
-        <td><input type=submit></td>
-    </tr>
+    <table class=articles>
+        <tr>
+            <input type=hidden name=uuid value="{{.UUID}}">
+            <tr>
+                <title>编辑: {{.Article.DisplayID}}</title>
+                <td class=nowrap>编辑:</td>
+                <td>{{.Article.DisplayID}}<input type=hidden name=reply value="{{.Reply}}"></td>
+            </tr>
+            {{if not .Article.Parent}}
+            <tr>
+                <td class=nowrap>标题:</td>
+                <td><input class=t name=title value="{{.Article.Title}}"></td>
+            </tr> 
+            <tr>
+                <td></td><td style="font-size:80%">最少10字节，最多64字节</td>
+            </tr>
+            <tr>
+                <td class=nowrap>标签:</td>
+                <td>
+                    <input list=tags class=t name=tags value="{{range .Article.Tags}}{{.}} {{end}}">
+                    <datalist id="tags">
+                        {{range .Tags}}<option value="{{.}}">{{end}}
+                    </datalist>
+                </td>
+            </tr>
+            {{end}}
+            <tr>
+                <td class=nowrap>内容:</td>
+                <td><textarea rows=10 name="content">{{.Article.Content}}</textarea></td>
+            </tr>  
+            <tr>
+                <td class=nowrap>ID认证:</td>
+                <td><input class=t name=author value="{{.RAuthor}}"></td>
+            </tr>
+            <tr>
+                <td></td><td style="font-size:80%">必须: 请输入发帖时的ID</td>
+            </tr>
+            <tr>
+                <td></td>
+                <td>
+                    <input id=delete name=delete type=checkbox>
+                    <label for=delete >删除</label>&emsp;
+                    <input id=locked name=locked type=checkbox {{if .Article.Locked}}checked{{end}}>
+                    <label for=locked >锁定</label>&emsp;
+                    <input id=highlighted name=highlighted type=checkbox {{if .Article.Highlighted}}checked{{end}}>
+                    <label for=highlighted >高亮</label>&emsp;
+                    {{if .Article.Image}}
+                    <input id=delimg name=delimg type=checkbox>
+                    <label for=delimg >删图</label>
+                    {{end}}
+                </td>
+            </tr>
+            <tr>
+                <td></td><td style="text-align: right">
+                    <input class="pure-material-button-outlined" type=submit value="编辑">
+                    <a class="pure-material-button-outlined" href="{{if .Reply}}/p/{{.Reply}}{{else}}/vec{{end}}">取消</a>
+                </td>
+            </tr>
     </table>
-
-    <hr>
-
-    <FIELDSET>
-        <LEGEND>选项</LEGEND>
-        <input id=delete name=delete type=checkbox><label for=delete >删除</label>
-        <input id=locked name=locked type=checkbox {{if .Article.Locked}}checked{{end}}><label for=locked >锁定</label>
-        <input id=highlighted name=highlighted type=checkbox {{if .Article.Highlighted}}checked{{end}}><label for=highlighted >高亮</label>
-        {{if .Article.Image}}
-        <input id=delimg name=delimg type=checkbox><label for=delimg >删图</label>
-        {{end}}
-    </FIELDSET>
 </form>
 
 {{template "footer.html" .}}

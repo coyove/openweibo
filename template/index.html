@@ -8,50 +8,55 @@
         <title>回复: {{.ParentArticle.DisplayID}}</title>
         {{end}}
 
+        {{with .ParentArticle}}
         <table class="articles">
             <tr>
-                <th>主题: {{.ParentArticle.DisplayID}}</th>
-                <th class=nowrap>回复</th>
+                <th>主题: {{.DisplayID}}</th>
+                <th class=nowrap>回/看</th>
                 <th class=nowrap>作者</th>
                 <th class=nowrap>日期</th>
             </tr>
-        <tr class=row>
+        <tr class="row">
             <td>
-                {{template "row_tags.html" .ParentArticle}}
-                {{if .ParentArticle.Parent}}<a href="/p/{{.ParentArticle.DisplayParentID}}">上一层</a> /{{end}} 
-                {{.ParentArticle.Title}}
+                {{if .Parent}}<a href="/p/{{.DisplayParentID}}">上一层</a> /{{end}} 
+                {{template "row_tags.html" .}}
             </td>
-            <td class=nowrap><span>{{.ParentArticle.Replies}}/{{.ParentArticle.Views}}</span></td>
+            <td class=nowrap><span>{{.Replies}}/{{.Views}}</span></td>
             <td class=nowrap>
-                <a href="/id/{{.ParentArticle.Author}}">{{.ParentArticle.Author}}</a>
-                {{if .ShowIP}} / <a href="/ip/{{.ParentArticle.IP}}">{{.ParentArticle.IP}}</a>{{end}}
+                <a href="/id/{{.Author}}">{{.Author}}</a>
+                {{if $.ShowIP}} / <a href="/ip/{{.IP}}">{{.IP}}</a>{{end}}
             </td>
-            <td class=nowrap><span>{{.ParentArticle.CreateTimeString}}</span></td>
+            <td class=nowrap><span>{{.CreateTimeString true}}</span></td>
             </td>
+        </tr>
+        <tr class=dark>
+            <td colspan=3>
+                <div class=reply>
+                    <pre>{{if .Image}}<a href="{{.ImageURL}}">查看附图</a><br>{{end}}{{.ContentHTML}}</pre>
+                </div>
+            </td>
+            <td class=nowrap style="vertical-align: top">{{.ReplyTimeString true}}</td>
         </tr>
         <tr>
-            <td>
-                {{if .ParentArticle.Image}}<img class="image" src="{{.ParentArticle.ImageURL}}">{{end}}
-                <pre>{{.ParentArticle.ContentHTML}}</pre>
+            <td colspan=4 style="text-align:center">
+                <a href="/new/{{.DisplayID}}"><b>回复该{{if .Parent}}回复{{else}}主题{{end}}</b></a>
+                <a style="float:right" href="/edit/{{.DisplayID}}">编辑</a>
             </td>
-            <td class=nowrap style="vertical-align: top"><a href="/new/{{.ParentArticle.DisplayID}}">回复</a></td>
-            <td class=nowrap style="vertical-align: top"><a href="/edit/{{.ParentArticle.DisplayID}}">编辑</a></td>
-            <td class=nowrap style="vertical-align: top">{{.ParentArticle.ReplyTimeString}}</td>
         </tr>
+        {{end}}
 
         {{if len .Articles}}
             {{range .Articles}}
-            <tr class=row>
+            <tr class="row">
                 <td><a href="/p/{{.DisplayID}}">{{.Title}}</a></td>
                 <td>{{.Replies}}/{{.Views}}</td> 
                 <td class=nowrap><a href="/id/{{.Author}}">{{.Author}}</a>{{if $.ShowIP}} / <a href="/ip/{{.IP}}">{{.IP}}</a>{{end}}</td>
-                <td class=nowrap>{{.CreateTimeString}}</td>
+                <td class=nowrap>{{.CreateTimeString true}}</td>
             </tr>
-            <tr>
+            <tr class="dark">
                 <td colspan=4>
                     <div class=reply>
-                        {{if .Image}}<img class="image" src="{{.ImageURL}}">{{end}}
-                        <pre>{{.ContentHTML}}</pre>
+                        <pre>{{if .Image}}<a href="{{.ImageURL}}">查看附图</a><br>{{end}}{{.ContentHTML}}</pre>
                     </div>
                 </td>
             </tr>
@@ -68,14 +73,14 @@
                 {{if eq .Type "inbox"}}
                 <title>{{.SearchTerm}}的提醒 {{.Title}}</title>
                 <th>
-                    {{.SearchTerm}}的提醒 ({{.TotalCount}})
-                    <a href="/id/{{.SearchTerm}}">查看{{.SearchTerm}}的回复/新主题
+                    {{.SearchTerm}}的收件箱 ({{.TotalCount}})
+                    <a href="/id/{{.SearchTerm}}">发言</a>
                 </th>
                 {{else if eq .Type "id"}}
                 <title>{{.SearchTerm}}的发言 {{.Title}}</title>
                 <th>
                     {{.SearchTerm}}的发言 ({{.TotalCount}})
-                    <a href="/inbox/{{.SearchTerm}}">查看谁回复了{{.SearchTerm}}
+                    <a href="/inbox/{{.SearchTerm}}">收件箱</a>
                 </th>
                 {{else if eq .Type "ip"}}
                 <title>IP: {{.SearchTerm}}的发言 {{.Title}}</title>
@@ -87,20 +92,20 @@
                 <title>时间线 {{.Title}}</title>
                 <th>标题</th>
                 {{end}}
-                <th class=nowrap>回复</th>
+                <th class=nowrap>回/看</th>
                 <th class=nowrap>作者</th>
                 <th class=nowrap>日期</th>
             </tr>
         {{if len .Articles}}
         {{range .Articles}}
-        <tr class=row>
-            <td>{{template "row_tags.html" .}} <a href="/p/{{.DisplayID}}">{{.Title}}</a></td>
+        <tr class="row">
+            <td>{{template "row_tags.html" .}}</td>
             <td class=nowrap><span>{{.Replies}}/{{.Views}}</span></td>
             <td class=nowrap><a href="/id/{{.Author}}">{{.Author}}</a></td>
-            <td class=nowrap><span>{{.CreateTimeString}}</span></td>
+            <td class=nowrap><span>{{.CreateTimeString false}}</span></td>
         </tr>
         {{if .Parent}}
-        <tr>
+        <tr class=dark>
             <td colspan=4><div class=reply><pre>{{.ContentAbstract}}</pre></div></td>
         </tr>
         {{end}}
@@ -112,15 +117,14 @@
 
     {{end}}
 
-    <hr>
-    <div>
+    <div class="paging">
         {{if not .NoPrev}}
-        [ <a href="?n=0">首页</a> ]
-        [ <a href="?n=-{{.Prev}}">上页</a> ]
+        <a href="?n=0">首页</a>
+        <a href="?n=-{{.Prev}}">&laquo; 上页</a>
         {{end}}
         {{if not .NoNext}}
-        [ <a href="?n={{.Next}}">下页</a> ]
-        [ <a href="?n=-0">末页</a> ]
+        <a href="?n={{.Next}}">下页 &raquo;</a>
+        <a href="?n=-0">末页</a>
         {{end}}
     </div>
 

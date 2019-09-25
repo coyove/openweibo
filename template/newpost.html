@@ -1,19 +1,21 @@
 {{template "header.html" .}}
 
-{{if .Reply}}
-<a href="/p/{{.Reply}}">&laquo;后退</a>
-{{else}}
-<a href="/vec">&laquo;后退</a>
-{{end}}
-<hr>
+<style>
+table {
+    max-width: 500px;
+}
+td, th {
+    border: none !important;
+}
+</style>
 
 <form method="POST" action="/new" enctype="multipart/form-data">
+<table class="articles">
     <input type=hidden name=uuid value="{{.UUID}}">
-    <table>
     {{if .Reply}}
     <tr>
         <title>回复: {{.Abstract}}</title>
-        <td>回复:</td>
+        <td class=nowrap>回复:</td>
         <td>{{.Abstract}}<input type=hidden name=reply value="{{.Reply}}"></td>
     </tr>
     {{else}}
@@ -23,7 +25,7 @@
         <td><input class=t name=title value="{{.RTitle}}"></td>
     </tr>
     <tr>
-        <td>标签: </td>
+        <td class=nowrap>标签: </td>
         <td>
             <input class=t name=tags list=tags value="{{.RTags}}">
             <datalist id="tags">
@@ -36,18 +38,18 @@
     </tr>
     {{end}}
     <tr>
-        <td>ID: </td>
+        <td class=nowrap>ID: </td>
         <td><input class=t name=author value="{{.RAuthor}}"></td>
     </tr>
     <tr>
-        <td></td><td style="font-size:80%">(选填) ID是编辑/删除自己的发言时凭证，留空则不可用</td>
+        <td></td><td style="font-size:80%">(选填) ID是编辑/删除自己的发言时的凭证</td>
     </tr>
     <tr>
-        <td>内容:</td>
+        <td class=nowrap>内容:</td>
         <td><textarea rows=10 name="content">{{.RContent}}</textarea></td>
     </tr>
     <tr>
-        <td>图片:</td>
+        <td class=nowrap>图片:</td>
         <td><input type=file name=image></td>
     </tr> 
     <tr>
@@ -55,27 +57,33 @@
         <td><img src="data:image/png;base64,{{.Challenge}}"></td>
     </tr>
     <tr>
-        <td>验证码:</td>
+        <td class=nowrap>验证码:</td>
         <td>
             <input size=10 name="answer">
             <input name=refresh type=submit value="刷新">
         </td>
     </tr> 
-    <tr>
-        <td></td>
-        <td>
-            <div>{{if .EError}}错误: {{.EError}}{{end}}</div>
-            <input type=submit> </td>
-    </tr>
-    </table>
-
     {{if not .Reply}}
-    <hr>
-    <fieldset>
-    <legend>管理员选项</legend>
-    <input name=announce type=checkbox id=announce><label for=announce>设为公告，设置后无法取消只能删除</label>
-    </fieldset>
+    <tr>
+        <td class=nowrap>管理员:</td>
+        <td>
+            <input name=announce type=checkbox id=announce>
+            <label for=announce>设为公告，设置后无法取消只能删除</label>
+        </td>
+    </tr>
     {{end}}
+    {{if .EError}}
+    <tr>
+        <td></td> <td> <div>错误: {{.EError}}</div></td>
+    </tr>
+    {{end}}
+    <tr>
+        <td></td> <td style="text-align:right">
+            <input class="pure-material-button-outlined" type=submit>
+            <a class="pure-material-button-outlined" href="{{if .Reply}}/p/{{.Reply}}{{else}}/vec{{end}}">取消</a>
+        </td>
+    </tr>
+</table>
 </form>
 
 {{template "footer.html" .}}

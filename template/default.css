@@ -10,18 +10,11 @@
     color: #33290A !important;
 }
 
-#container {
-    padding: 0.5em 0;
-}
-
-h1, h2, h3, h4, h5, h6 {
-    margin: 2px 0;
-}
-
 a {
     text-decoration: none;
     color: #2a66d9;
 }
+
 a:hover {
     text-decoration: underline;
 }
@@ -38,6 +31,7 @@ hr {
 
 .articles th {
     text-align: left;
+    border-top: none !important;
 }
 
 .articles th, .articles td {
@@ -56,29 +50,22 @@ hr {
     width: 1%;
 }
 
+.articles tr.dark {
+    background: rgba(0,0,0,0.033);
+}
+
+.articles .row a {
+    color: #233;
+}
+
 input.t, textarea {
     width: 100%;
-}
-
-div.row {
-    margin: 0.5em 0;
-    line-height: 1.5em;
-}
-
-div.row > * {
-    vertical-align: top;
-}
-
-.reply {
-    display: table;
+    border: solid 1px #ccc;
+    padding: 4px 6px;
 }
 
 .reply pre {
     padding-left: 2em;
-}
-
-.reply .image {
-    margin-left: 2em;
 }
 
 pre {
@@ -108,6 +95,10 @@ span.tag:before {
     border-left: 6px solid #6B82D6;
 }
 
+span.tag.solid:before {
+    display: none;
+}
+
 span.tag a {
     color: #233;
     margin-left: 2px;
@@ -127,7 +118,10 @@ span.tag.hl * {
 }
 
 nav {
-	background-color: #678;
+	background-color: #E0EBF5;
+    line-height: 2.5em;
+    font-weight: bold;
+    padding: 0 8px;
 }
 
 nav ul {
@@ -140,31 +134,30 @@ nav ul {
 
 nav ul li {
 	display: inline-block;
-	background-color: #678;
+	background-color: #E0EBF5;
 }
 
 nav a {
     cursor: pointer;
 	display: block;
-    color: white !important;
-    padding: 2px 6px;
-    line-height: 26px;
+    color: #233 !important;
+    padding: 0px 8px;
 	text-decoration: none;
 }
 
-nav a:hover {
-    background: #233;
-    color: white;
+nav ul li:hover > a {
+    background: rgba(0,0,0,0.1);
+    text-decoration: none;
 }
 
 nav ul ul li {
-    background: #789;
+    background: white;
 }
 
 nav ul ul {
 	display: none;
 	position: absolute;
-	top: 30px; /* the height of the main nav */
+    box-shadow: 0 1px 5px rgba(0, 0, 0, .3);
 }
 
 nav ul li:hover > ul, nav ul a:active + ul {
@@ -178,14 +171,109 @@ nav ul ul li {
 	position: relative;
 }
 
-.image {
-    max-width: 200px;
-    max-height: 200px;
-    width: 100%;
-    height: auto;
+.paging {
+    text-align:center;
+    margin:1em;
 }
 
-
-fieldset {
+.paging a {
     display: inline-block;
+    margin: 0 0.2em;
 }
+
+.pure-material-button-outlined {
+    position: relative;
+    display: inline-block;
+    box-sizing: border-box;
+    border-radius: 4px;
+    border: none;
+    padding: 0 16px;
+    min-width: 64px;
+    height: 36px;
+    vertical-align: middle;
+    text-align: center;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    color: rgb(var(--pure-material-primary-rgb, 33, 150, 243));
+    background-color: transparent;
+    font-family: var(--pure-material-font, "Roboto", "Segoe UI", BlinkMacSystemFont, system-ui, -apple-system);
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 34px;
+    overflow: hidden;
+    outline: none;
+    cursor: pointer;
+}
+
+.pure-material-button-outlined::-moz-focus-inner {
+    border: none;
+}
+
+/* Overlay */
+.pure-material-button-outlined::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: currentColor;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+/* Ripple */
+.pure-material-button-outlined::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    border-radius: 50%;
+    padding: 50%;
+    width: 32px;
+    height: 32px;
+    background-color: currentColor;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1) ;
+    transition: opacity 1s, transform 0.5s;
+}
+
+/* Hover, Focus */
+.pure-material-button-outlined:hover::before {
+    opacity: 0.12;
+}
+
+.pure-material-button-outlined:focus::before {
+    opacity: 0.16;
+}
+
+.pure-material-button-outlined:hover:focus::before {
+    opacity: 0.20;
+}
+
+/* Active */
+.pure-material-button-outlined:active::after {
+    opacity: 0.20;
+    transform: translate(-50%, -50%) scale(0);
+    transition: transform 0s;
+}
+
+/* Disabled */
+.pure-material-button-outlined:disabled {
+    color: rgba(var(--pure-material-onsurface-rgb, 0, 0, 0), 0.38);
+    background-color: transparent;
+    cursor: initial;
+}
+
+.pure-material-button-outlined:disabled::before {
+    opacity: 0;
+}
+
+.pure-material-button-outlined:disabled::after {
+    opacity: 0;
+}
+
+.pure-material-button-outlined:hover {
+    text-decoration: none;
+}
+

@@ -1,8 +1,8 @@
 {{range .Tags}}
 <span class="tag {{if eq . $.SearchTerm}}hl{{end}}"><b>#</b><a href="/tag/{{.}}">{{.}}</a></span>
 {{end}}
-{{if .Announce}}<span class=tag>公告</span>{{end}}
-{{if .Locked}}<span class=tag>锁定</span>{{end}}
-{{if .Highlighted}}<span class=tag>Starred</span>{{end}}
+{{if .Announce}}<span class="tag solid">公告</span>{{end}}
+{{if .Locked}}<span class="tag solid">锁定</span>{{end}}
+{{if .Highlighted}}<span class="tag solid">&#x2605;</span>{{end}}
 
-
+<a href="/p/{{.DisplayID}}">{{.Title}}</a>

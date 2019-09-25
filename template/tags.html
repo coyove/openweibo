@@ -1,20 +1,29 @@
 {{template "header.html" .}}
 <title>全部标签</title>
 
-<h3>全部标签 ({{len .Tags}}+{{.Tags2Num}})</h3>
 
-<ul>
-{{range .Tags}}
-    <li><a href="/tag/{{.}}">{{.}}</a>
-{{end}}
-<hr>
-{{range .Tags2}}
-<li><a href="/tag/{{.Name}}">{{.Name}} ({{.Count}})</a>
-{{end}}
-<li style="list-style: none">
+<table class=articles>
+    <tr>
+        <th>全部标签 ({{len .Tags}}+{{.Tags2Num}})</th>
+        <th class=nowrap>数量</th>
+    </tr>
+    {{range .Tags}}
+    <tr class=row>
+        <td><a href="/tag/{{.}}">{{.}}</a></td>
+        <td class=nowrap>-</td>
+    </tr>
+    {{end}}
+    {{range .Tags2}}
+    <tr class=row>
+        <td><a href="/tag/{{.Name}}">{{.Name}}</a></td>
+        <td class=nowrap>{{.Count}}</td>
+    </tr>
+    {{end}}
+</table>
+
+<div class=paging>
 <a href="/tags?n={{.Next}}">更多标签&raquo;</a>
-</li>
-</ul>
+</div>
 
 
 {{template "footer.html" .}}

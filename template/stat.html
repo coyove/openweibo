@@ -5,11 +5,14 @@
 <style>
 .config li {
     word-break: break-all;
+    list-style: none;
 }
 </style>
 
+<div style="margin: 1em">
+
 {{range .Nodes}}
-<div>
+<div class=config>
     <h3>{{.Name}}</h3>
     <ul>
         {{if .Error}}
@@ -26,5 +29,7 @@
 
 <h3>配置</h3>
 <pre><ul class=config>{{.Config}}</ul></pre>
+
+</div>
 
 {{template "footer.html" .}}
