@@ -12,6 +12,7 @@ func handleEditPostView(g *gin.Context) {
 		Reply   string
 		Tags    []string
 		RAuthor string
+		IsAdmin bool
 		Article *Article
 	}{
 		Reply: g.Param("id"),
@@ -20,6 +21,7 @@ func handleEditPostView(g *gin.Context) {
 
 	pl.UUID, _ = makeCSRFToken(g)
 	pl.RAuthor, _ = g.Cookie("id")
+	pl.IsAdmin = isAdmin(pl.RAuthor)
 
 	if pl.Reply == "-1" {
 		pl.Article = &Article{Content: string(m.GetHomePage())}
@@ -38,12 +40,12 @@ func handleEditPostView(g *gin.Context) {
 
 func handleEditPostAction(g *gin.Context) {
 	if !g.GetBool("ip-ok") {
-		g.String(400, "guard/cooling-down")
+		errorPage(400, "guard/cooling-down", g)
 		return
 	}
 
 	if _, ok := extractCSRFToken(g, g.PostForm("uuid")); !ok {
-		g.String(400, "guard/token-expired")
+		errorPage(400, "guard/token-expired", g)
 		return
 	}
 
@@ -52,15 +54,17 @@ func handleEditPostAction(g *gin.Context) {
 		title       = softTrunc(g.PostForm("title"), 100)
 		content     = softTrunc(g.PostForm("content"), int(config.MaxContent))
 		author      = softTrunc(g.PostForm("author"), 32)
-		authorHash  = authorNameToHash(author)
 		tags        = splitTags(g.PostForm("tags"))
-		deleted     = g.PostForm("delete") != ""
 		locked      = g.PostForm("locked") != ""
 		highlighted = g.PostForm("highlighted") != ""
-		delimg      = g.PostForm("delimg") != ""
 	)
 
-	if g.PostForm("reply") == "-1" && isAdmin(author) {
+	if !isAdmin(author) {
+		g.Redirect(302, "/")
+		return
+	}
+
+	if g.PostForm("reply") == "-1" {
 		m.SetHomePage(content)
 		g.Redirect(302, "/")
 		return
@@ -75,45 +79,27 @@ func handleEditPostAction(g *gin.Context) {
 	redir := "/p/" + a.DisplayID()
 
 	if locked != a.Locked {
-		if isAdmin(author) {
-			a.Locked = locked
-			m.UpdateArticle(a, a.Tags, false)
-		}
+		a.Locked = locked
+		m.UpdateArticle(a, a.Tags, false)
 		g.Redirect(302, redir)
 		return
 	}
 
 	if highlighted != a.Highlighted {
-		if isAdmin(author) {
-			a.Highlighted = highlighted
-			m.UpdateArticle(a, a.Tags, false)
-		}
+		a.Highlighted = highlighted
+		m.UpdateArticle(a, a.Tags, false)
 		g.Redirect(302, redir)
 		return
 	}
 
-	if a.Author != authorHash && !isAdmin(author) {
-		g.Redirect(302, redir)
+	if a.Parent == 0 && len(title) == 0 {
+		errorPage(400, "title/too-short", g)
 		return
 	}
 
-	if !deleted && !delimg {
-		if a.Parent == 0 && len(title) < int(config.MinContent) {
-			errorPage(400, "title/too-short", g)
-			return
-		}
-		if len(content) < int(config.MinContent) {
-			errorPage(400, "content/too-short", g)
-			return
-		}
-		if a.Locked {
-			errorPage(400, "guard/post-locked", g)
-			return
-		}
-	}
-
-	if delimg {
-		a.Image = ""
+	if len(content) == 0 {
+		errorPage(400, "content/too-short", g)
+		return
 	}
 
 	oldtags := a.Tags
@@ -123,7 +109,41 @@ func handleEditPostAction(g *gin.Context) {
 		a.Title = title
 	}
 
-	if err := m.UpdateArticle(a, oldtags, deleted); err != nil {
+	if err := m.UpdateArticle(a, oldtags, false); err != nil {
+		log.Println(err)
+		errorPage(500, "internal/error", g)
+		return
+	}
+
+	g.Redirect(302, "/p/"+a.DisplayID())
+}
+
+func handleDeletePostAction(g *gin.Context) {
+	if !g.GetBool("ip-ok") {
+		errorPage(400, "guard/cooling-down", g)
+		return
+	}
+
+	if _, ok := extractCSRFToken(g, g.PostForm("uuid")); !ok {
+		errorPage(400, "guard/token-expired", g)
+		return
+	}
+
+	var eid = displayIDToObejctID(g.PostForm("reply"))
+	var author = softTrunc(g.PostForm("author"), 32)
+
+	a, err := m.GetArticle(eid)
+	if err != nil {
+		g.Redirect(302, "/vec")
+		return
+	}
+
+	if a.Author != authorNameToHash(author) && !isAdmin(author) {
+		g.Redirect(302, "/p/"+a.DisplayID())
+		return
+	}
+
+	if err := m.UpdateArticle(a, nil, true); err != nil {
 		log.Println(err)
 		errorPage(500, "internal/error", g)
 		return
@@ -132,11 +152,6 @@ func handleEditPostAction(g *gin.Context) {
 	if a.Parent != 0 {
 		g.Redirect(302, "/p/"+a.DisplayParentID())
 	} else {
-		if deleted {
-			g.Redirect(302, "/vec")
-		} else {
-			g.Redirect(302, "/p/"+a.DisplayID())
-		}
+		g.Redirect(302, "/vec")
 	}
-
 }

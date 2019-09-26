@@ -3,12 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/base64"
-	"io"
-	"io/ioutil"
 	"log"
 	"net"
-	"net/http"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -17,6 +13,14 @@ import (
 )
 
 var bytesPool = sync.Pool{New: func() interface{} { return &bytes.Buffer{} }}
+
+func getAuthor(g *gin.Context) string {
+	a := softTrunc(g.PostForm("author"), 32)
+	if a == "" {
+		a = "user/" + g.MustGet("ip").(net.IP).String()
+	}
+	return a
+}
 
 func captchaBase64(buf [6]byte) string {
 	b := bytesPool.Get().(*bytes.Buffer)
@@ -45,36 +49,40 @@ func handleNewPostView(g *gin.Context) {
 		Tags:     config.Tags,
 	}
 
-	if !g.GetBool("ip-ok") {
-		r := g.GetFloat64("ip-ok-remain")
-		errorPage(403, "COOLING DOWN, please retry after "+strconv.Itoa(config.Cooldown-int(r))+"s", g)
-		return
+	var answer [6]byte
+	pl.UUID, answer = makeCSRFToken(g)
+	pl.Challenge = captchaBase64(answer)
+
+	if pl.RAuthor == "" {
+		pl.RAuthor, _ = g.Cookie("id")
+	}
+
+	g.HTML(200, "newpost.html", pl)
+}
+
+func generateNewReplyView(id int64, g *gin.Context) interface{} {
+	var pl = struct {
+		UUID      string
+		Challenge string
+		ShowReply bool
+		RAuthor   string
+		RContent  string
+		EError    string
+	}{}
+
+	pl.RContent = g.Query("content")
+	pl.RAuthor = g.Query("author")
+	pl.EError = g.Query("error")
+	pl.ShowReply = g.Query("refresh") == "1" || pl.EError != ""
+
+	if pl.RAuthor == "" {
+		pl.RAuthor, _ = g.Cookie("id")
 	}
 
 	var answer [6]byte
 	pl.UUID, answer = makeCSRFToken(g)
 	pl.Challenge = captchaBase64(answer)
-
-	if id := g.Param("id"); id != "0" {
-		pl.Reply = id
-		a, err := m.GetArticle(displayIDToObejctID(id))
-		if err != nil {
-			log.Println(err)
-			g.AbortWithStatus(400)
-			return
-		}
-		if a.Title != "" && !strings.HasPrefix(a.Title, "RE:") {
-			pl.Abstract = softTrunc(a.Title, 50)
-		} else {
-			pl.Abstract = softTrunc(a.Content, 50)
-		}
-	}
-
-	if id, _ := g.Cookie("id"); id != "" && pl.RAuthor == "" {
-		pl.RAuthor = id
-	}
-
-	g.HTML(200, "newpost.html", pl)
+	return pl
 }
 
 func hashIP(g *gin.Context) string {
@@ -89,40 +97,27 @@ func hashIP(g *gin.Context) string {
 
 func handleNewPostAction(g *gin.Context) {
 	var (
-		reply    = displayIDToObejctID(g.PostForm("reply"))
 		ip       = hashIP(g)
 		answer   = softTrunc(g.PostForm("answer"), 6)
 		uuid     = softTrunc(g.PostForm("uuid"), 32)
 		content  = softTrunc(g.PostForm("content"), int(config.MaxContent))
 		title    = softTrunc(g.PostForm("title"), 100)
-		author   = softTrunc(g.PostForm("author"), 32)
+		author   = getAuthor(g)
 		tags     = splitTags(softTrunc(g.PostForm("tags"), 128))
 		announce = g.PostForm("announce") != ""
-		isAPI    = g.PostForm("api") == "1"
-		image, _ = g.FormFile("image")
 		redir    = func(a, b string) {
-			if isAPI {
-				g.Status(500)
-				g.Header("Error", b)
-				return
-			}
 			q := encodeQuery(a, b, "author", author, "content", content, "title", title, "tags", strings.Join(tags, " "))
-			if reply == 0 {
-				g.Redirect(302, "/new/0?"+q)
-			} else {
-				g.Redirect(302, "/new/"+objectIDToDisplayID(reply)+"?"+q)
-			}
+			g.Redirect(302, "/new?"+q)
 		}
 	)
 
-	if !g.GetBool("ip-ok") {
-		redir("error", "guard/cooling-down")
+	if g.PostForm("refresh") != "" {
+		redir("", "")
 		return
 	}
 
-	if g.PostForm("refresh") != "" {
-		dedup.Remove(g.ClientIP())
-		redir("", "")
+	if !g.GetBool("ip-ok") {
+		redir("error", "guard/cooling-down")
 		return
 	}
 
@@ -141,7 +136,7 @@ func handleNewPostAction(g *gin.Context) {
 		}
 
 		if !challengePassed {
-			log.Println(g.ClientIP(), "challenge failed")
+			log.Println(g.MustGet("ip"), "challenge failed")
 			redir("error", "guard/failed-captcha")
 			return
 		}
@@ -152,67 +147,89 @@ func handleNewPostAction(g *gin.Context) {
 		return
 	}
 
-	if author == "" {
-		author = "user/" + g.ClientIP()
-	}
-
-	if image == nil && len(content) < int(config.MinContent) {
+	if len(content) < int(config.MinContent) {
 		redir("error", "content/too-short")
 		return
 	}
 
-	var imagek string
-	if image != nil {
-		if config.ImageDisabled && !isAdmin(author) {
-			redir("error", "image/disabled")
-			return
-		}
-
-		f, err := image.Open()
-		if err != nil {
-			redir("error", "image/open-error: "+err.Error())
-			return
-		}
-		buf, _ := ioutil.ReadAll(io.LimitReader(f, 1024*1024))
-		f.Close()
-
-		if !isValidImage(buf) {
-			redir("error", "image/invalid-format")
-			return
-		}
-
-		localpath, displaypath := getImageLocalTmpPath(image.Filename, buf)
-		if err := ioutil.WriteFile(localpath, buf, 0700); err != nil {
-			redir("error", "image/write-error: "+err.Error())
-			return
-		}
-		imagek = displaypath
+	if len(title) < int(config.MinContent) {
+		redir("error", "title/too-short")
+		return
 	}
 
-	var err error
-	if reply != 0 {
-		err = m.PostReply(reply, m.NewArticle("", content, authorNameToHash(author), ip, imagek, nil))
-	} else {
-		if len(title) < int(config.MinContent) {
-			redir("error", "title/too-short")
-			return
-		}
-		a := m.NewArticle(title, content, authorNameToHash(author), ip, imagek, tags)
-		if isAdmin(author) && announce {
-			a.Announce = true
-			a.ID = newBigID()
-		}
-		err = m.PostArticle(a)
-		reply = a.ID
+	a := m.NewArticle(title, content, authorNameToHash(author), ip, "", tags)
+	if isAdmin(author) && announce {
+		a.Announce = true
+		a.ID = newBigID()
 	}
-	if err != nil {
+
+	if err := m.PostArticle(a); err != nil {
 		redir("error", "internal/error: "+err.Error())
 		return
 	}
 
-	if isAPI {
-		g.Status(http.StatusCreated)
-	} else {
-		g.Redirect(302, "/p/"+objectIDToDisplayID(reply)+"?p=-1")
+	g.Redirect(302, "/p/"+a.DisplayID())
+}
+
+func handleNewReplyAction(g *gin.Context) {
+	var (
+		reply   = displayIDToObejctID(g.PostForm("reply"))
+		ip      = hashIP(g)
+		answer  = softTrunc(g.PostForm("answer"), 6)
+		uuid    = softTrunc(g.PostForm("uuid"), 32)
+		content = softTrunc(g.PostForm("content"), int(config.MaxContent))
+		author  = getAuthor(g)
+		redir   = func(a, b string) {
+			g.Redirect(302, "/p/"+objectIDToDisplayID(reply)+"?n=-0&"+encodeQuery(a, b, "author", author, "content", content)+"#paging")
+		}
+	)
+
+	if g.PostForm("refresh") != "" {
+		redir("refresh", "1")
+		return
 	}
+
+	if !g.GetBool("ip-ok") {
+		redir("error", "guard/cooling-down")
+		return
+	}
+
+	tokenbuf, tokenok := extractCSRFToken(g, uuid)
+
+	if !isAdmin(author) {
+		challengePassed := false
+		if len(answer) == 6 {
+			challengePassed = true
+			for i := range answer {
+				if answer[i]-'0' != tokenbuf[i]%10 {
+					challengePassed = false
+					break
+				}
+			}
+		}
+
+		if !challengePassed {
+			log.Println(g.MustGet("ip"), "challenge failed")
+			redir("error", "guard/failed-captcha")
+			return
+		}
+	}
+
+	if !tokenok {
+		redir("error", "guard/token-expired")
+		return
+	}
+
+	if len(content) < int(config.MinContent) {
+		redir("error", "content/too-short")
+		return
+	}
+
+	if err := m.PostReply(reply, m.NewArticle("", content, authorNameToHash(author), ip, "", nil)); err != nil {
+		log.Println(err)
+		redir("error", "internal/error")
+		return
+	}
+
+	redir("", "")
 }

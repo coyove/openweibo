@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"math/rand"
+	"strings"
 	"sync"
 	"time"
 
@@ -269,11 +270,16 @@ func (m *Manager) PostReply(parent int64, a *Article) error {
 	if p.Locked {
 		return fmt.Errorf("locked parent")
 	}
+	if strings.Count(p.Title, "RE:") > 4 {
+		return fmt.Errorf("too deep")
+	}
 
 	p.ReplyTime = time.Now().UnixNano() / 1e3
 	p.Replies++
 	a.Parent = parent
+	a.Tags = nil
 	a.Title = "RE: " + p.Title
+	a.Index = p.Replies
 
 	return m.db.Update(func(tx *bbolt.Tx) error {
 		if err := tx.Bucket(bkPost).Put(idBytes(a.ID), a.Marshal()); err != nil {

@@ -6,8 +6,8 @@
     font-size: 14px;
 }
 
-.keepcolor {
-    color: #33290A !important;
+input:focus, select:focus, textarea:focus, button:focus {
+    outline: none;
 }
 
 a {
@@ -29,15 +29,18 @@ hr {
     border-collapse: collapse;
 }
 
+.articles tr {
+    border: #ccc 1px solid;
+    border-width: 0 0 1px 0;
+}
+
 .articles th {
     text-align: left;
     border-top: none !important;
 }
 
 .articles th, .articles td {
-    padding: 0.4em;
-    border: #ccc 1px solid;
-    border-width: 1px 0 1px 0;
+    padding: 0.4em; 
     line-height: 1.5em;
 }
 
@@ -60,17 +63,22 @@ hr {
 
 input.t, textarea {
     width: 100%;
+    resize: none;
+}
+
+input.t, textarea, input.s {
     border: solid 1px #ccc;
     padding: 4px 6px;
 }
 
 .reply pre {
-    padding-left: 2em;
+    padding-left: 1.33em;
 }
 
 pre {
     font: inherit;
     white-space: pre-wrap;
+    word-break: break-all;
 }
 
 span.tag {
@@ -171,6 +179,28 @@ nav ul ul li {
 	position: relative;
 }
 
+.reply-toggle:checked + label + .reply-view {
+    display: block;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.reply-view {
+    text-align: left;
+    max-width: 600px;
+    width: 90%;
+    position: fixed;
+    background: white;
+    z-index: 10000;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, .3);
+    display: none;
+}
+
+.reply-view td {
+    padding: 0.4em 1em;
+}
+
 .paging {
     text-align:center;
     margin:1em;
@@ -181,6 +211,14 @@ nav ul ul li {
     margin: 0 0.2em;
 }
 
+button.none {
+   -webkit-appearance: none;
+   -moz-appearance:    none;
+   appearance:         none;
+   border: none;
+   cursor: pointer;
+}
+
 .pure-material-button-outlined {
     position: relative;
     display: inline-block;
@@ -189,7 +227,7 @@ nav ul ul li {
     border: none;
     padding: 0 16px;
     min-width: 64px;
-    height: 36px;
+    height: 34px;
     vertical-align: middle;
     text-align: center;
     text-overflow: ellipsis;
@@ -275,5 +313,35 @@ nav ul ul li {
 
 .pure-material-button-outlined:hover {
     text-decoration: none;
+}
+
+@media only screen and (max-width: 540px) {
+    .articles.small tr {
+        display: block;
+    }
+
+    .articles.small td {
+        display: inline-block;
+    }
+
+    .articles.small td.nowrap {
+        width: inherit;
+    }
+
+    .articles.small td.nowrap, .articles.small td.nowrap * {
+        font-size: 90%;
+    }
+
+    .articles.small .date {
+        float: right;
+    }
+
+    .articles.small td:first-child {
+        width: 100%;
+    }
+
+    .reply-view {
+        width: 100%;
+    }
 }
 

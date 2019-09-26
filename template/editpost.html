@@ -4,19 +4,41 @@
 table {
     max-width: 500px;
 }
-td, th {
+tr {
     border: none !important;
 }
 </style>
 
+<form method="POST" action="/delete">
+    <input type=hidden name=reply value="{{.Reply}}">
+    <input type=hidden name=uuid value="{{.UUID}}">
 
+    <table class=articles>
+        <tr>
+            <td class=nowrap>验证发帖人实际ID:</td>
+            <td style="line-height: 1.5em">
+                <input class=t name=author value="{{.RAuthor}}">
+            </td>
+        </tr>
+        <tr>
+            <td></td>
+            <td style="text-align:right">
+                <button class="pure-material-button-outlined" type=submit>删除该发言</button>
+                <a class="pure-material-button-outlined" href="{{if .Reply}}/p/{{.Reply}}{{else}}/vec{{end}}">取消</a>
+            </td>
+        </tr>
+    </table>
+</form>
+
+{{if .IsAdmin}}
 <form method="POST" action="/edit">
     <table class=articles>
         <tr>
-            <input type=hidden name=uuid value="{{.UUID}}">
+         <input type=hidden name=author value="{{.RAuthor}}">
+         <input type=hidden name=uuid value="{{.UUID}}">
             <tr>
                 <title>编辑: {{.Article.DisplayID}}</title>
-                <td class=nowrap>编辑:</td>
+                <td class=nowrap>Admin:</td>
                 <td>{{.Article.DisplayID}}<input type=hidden name=reply value="{{.Reply}}"></td>
             </tr>
             {{if not .Article.Parent}}
@@ -24,9 +46,6 @@ td, th {
                 <td class=nowrap>标题:</td>
                 <td><input class=t name=title value="{{.Article.Title}}"></td>
             </tr> 
-            <tr>
-                <td></td><td style="font-size:80%">最少10字节，最多64字节</td>
-            </tr>
             <tr>
                 <td class=nowrap>标签:</td>
                 <td>
@@ -42,34 +61,22 @@ td, th {
                 <td><textarea rows=10 name="content">{{.Article.Content}}</textarea></td>
             </tr>  
             <tr>
-                <td class=nowrap>ID认证:</td>
-                <td><input class=t name=author value="{{.RAuthor}}"></td>
-            </tr>
-            <tr>
-                <td></td><td style="font-size:80%">必须: 请输入发帖时的ID</td>
-            </tr>
-            <tr>
                 <td></td>
                 <td>
-                    <input id=delete name=delete type=checkbox>
-                    <label for=delete >删除</label>&emsp;
                     <input id=locked name=locked type=checkbox {{if .Article.Locked}}checked{{end}}>
                     <label for=locked >锁定</label>&emsp;
                     <input id=highlighted name=highlighted type=checkbox {{if .Article.Highlighted}}checked{{end}}>
                     <label for=highlighted >高亮</label>&emsp;
-                    {{if .Article.Image}}
-                    <input id=delimg name=delimg type=checkbox>
-                    <label for=delimg >删图</label>
-                    {{end}}
                 </td>
             </tr>
             <tr>
                 <td></td><td style="text-align: right">
-                    <input class="pure-material-button-outlined" type=submit value="编辑">
+                    <button class="pure-material-button-outlined" type=submit>编辑</button>
                     <a class="pure-material-button-outlined" href="{{if .Reply}}/p/{{.Reply}}{{else}}/vec{{end}}">取消</a>
                 </td>
             </tr>
     </table>
 </form>
+{{end}}
 
 {{template "footer.html" .}}

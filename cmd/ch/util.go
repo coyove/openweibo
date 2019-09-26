@@ -28,7 +28,7 @@ var (
 
 func softTrunc(a string, n int) string {
 	a = strings.TrimSpace(a)
-	if len(a) <= n {
+	if len(a) <= n+2 {
 		return a
 	}
 	a = a[:n+2]

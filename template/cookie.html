@@ -1,18 +1,18 @@
 {{template "header.html" .}}
 <title>ID 管理</title>
 
-<style>
-td.row {
-    padding: 0 !important;
-}
-</style>
-
 <form method="POST">
     <table class=articles>
-        <tr><td class=nowrap>ID:</td><td><input class=t name=id value="{{.ID}}"></td></tr>
-        <tr><td class=row colspan=2><input class="pure-material-button-outlined" type=submit value="更新我的ID"></td></tr>
-        <tr><td class=row colspan=2><input class="pure-material-button-outlined" type=submit name=clear value="清除Cookie ID"></td></tr>
-        <tr><td class=row colspan=2><input class="pure-material-button-outlined" type=submit name=notify value="查看收件箱"></td></tr>
+        <tr>
+            <td class=nowrap>Cookie ID:</td>
+            <td><input class=s size=30 name=id value="{{.ID}}"></td>
+        </tr>
+        <tr>
+            <td colspan=2>
+                <button class="pure-material-button-outlined" type=submit>更新我的ID</button>
+                <button class="pure-material-button-outlined" type=submit name=clear value=1>清除ID</button>
+            </td>
+        </tr>
 </table>
 </form>
 

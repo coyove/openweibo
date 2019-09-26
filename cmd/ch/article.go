@@ -9,7 +9,6 @@ import (
 	"html/template"
 	"math/rand"
 	"strconv"
-	"strings"
 	"sync/atomic"
 	"time"
 )
@@ -24,10 +23,12 @@ type ArticlesView struct {
 	Type           string
 	SearchTerm     string
 	Title          string
+	ReplyView      interface{}
 }
 
 type Article struct {
 	ID          int64    `json:"id"`
+	Index       int64    `json:"idx"`
 	Parent      int64    `json:"p"`
 	Replies     int64    `json:"rc"`
 	Locked      bool     `json:"l,omitempty"`
@@ -42,7 +43,8 @@ type Article struct {
 	Views       int64    `json:"v"`
 	CreateTime  int64    `json:"c"`
 	ReplyTime   int64    `json:"r"`
-	SearchTerm  string   `json:"-"`
+
+	SearchTerm string `json:"-"`
 }
 
 func newID() int64 {
@@ -136,35 +138,25 @@ func authorNameToHash(n string) string {
 }
 
 func objectIDToDisplayID(id int64) string {
-	//return strconv.FormatInt(id, 10)
 	var (
 		sum    uint32 = 0
 		delta  uint32 = 0x9E3779B9
 		v0, v1        = uint32(uint64(id) >> 32), uint32(uint64(id))
-		buf           = make([]byte, 0, 24)
 	)
 	for i := 0; i < 64; i++ {
 		v0 += (((v1 << 4) ^ (v1 >> 5)) + v1) ^ sum
 		sum += delta
 		v1 += (((v0 << 4) ^ (v0 >> 5)) + v0) ^ sum
 	}
-	buf = append(strconv.AppendUint(buf, uint64(v0), 8), '.')
-	buf = append(strconv.AppendUint(buf, uint64(v1), 8))
-	return string(buf)
+	return strconv.FormatUint(uint64(v0)<<32|uint64(v1), 36)
 }
 
 func displayIDToObejctID(id string) int64 {
-	//xxx, _ := strconv.ParseInt(id, 10, 64)
-	//return xxx
+	xxx, _ := strconv.ParseUint(id, 36, 64)
 
-	idx := strings.Index(id, ".")
-	if idx == -1 {
-		return 0
-	}
 	var (
-		i32          = func(v uint64, e error) uint32 { return uint32(v) }
-		v0           = i32(strconv.ParseUint(id[:idx], 8, 64))
-		v1           = i32(strconv.ParseUint(id[idx+1:], 8, 64))
+		v0           = uint32(xxx >> 32)
+		v1           = uint32(xxx)
 		delta uint32 = 0x9E3779B9
 		sum   uint32 = delta * 64
 	)

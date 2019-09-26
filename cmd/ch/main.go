@@ -11,12 +11,8 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	"strings"
 	"time"
 
-	"github.com/coyove/iis/cache"
-	"github.com/coyove/iis/driver"
-	"github.com/coyove/iis/driver/chdropbox"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"
@@ -132,26 +128,26 @@ func main() {
 	//	m.PostReply(last, a)
 	//}
 
-	nodes := []*driver.Node{}
-	for _, s := range config.Storages {
-		if s.Name == "" {
-			panic("empty storage node name")
-		}
-		log.Println("[config] load storage:", s.Name)
-		switch strings.ToLower(s.Type) {
-		case "dropbox":
-			nodes = append(nodes, chdropbox.NewNode(s.Name, s))
-		default:
-			panic("unknown storage type: " + s.Type)
-		}
-	}
+	// nodes := []*driver.Node{}
+	//for _, s := range config.Storages {
+	//	if s.Name == "" {
+	//		panic("empty storage node name")
+	//	}
+	//	log.Println("[config] load storage:", s.Name)
+	//	switch strings.ToLower(s.Type) {
+	//	case "dropbox":
+	//		nodes = append(nodes, chdropbox.NewNode(s.Name, s))
+	//	default:
+	//		panic("unknown storage type: " + s.Type)
+	//	}
+	//}
 
-	mgr.LoadNodes(nodes)
-	mgr.StartTransferAgent("tmp/transfer.db")
-	cachemgr = cache.New("tmp/cache", config.CacheSize*1024*1024*1024, func(k string) ([]byte, error) {
-		return mgr.Get(k)
-	})
-	go uploadLocalImages()
+	//mgr.LoadNodes(nodes)
+	//mgr.StartTransferAgent("tmp/transfer.db")
+	//cachemgr = cache.New("tmp/cache", config.CacheSize*1024*1024*1024, func(k string) ([]byte, error) {
+	//	return mgr.Get(k)
+	//})
+	//go uploadLocalImages()
 
 	r := gin.New()
 	r.Use(gin.Recovery(), gzip.Gzip(gzip.BestSpeed), mwLogger(), mwRenderPerf, mwIPThrot)
@@ -171,13 +167,15 @@ func main() {
 	r.Handle("GET", "/id/:id", makeHandleMainView('a'))
 	r.Handle("GET", "/inbox/:id", makeHandleMainView('n'))
 	r.Handle("GET", "/ip/:ip", makeHandleMainView('i'))
-	r.Handle("GET", "/new/:id", handleNewPostView)
+	r.Handle("GET", "/new", handleNewPostView)
 	r.Handle("GET", "/edit/:id", handleEditPostView)
 	r.Handle("GET", "/cookie", handleCookie)
 	r.Handle("GET", "/stat", handleCurrentStat)
 
 	r.Handle("POST", "/new", handleNewPostAction)
+	r.Handle("POST", "/reply", handleNewReplyAction)
 	r.Handle("POST", "/edit", handleEditPostAction)
+	r.Handle("POST", "/delete", handleDeletePostAction)
 	r.Handle("POST", "/cookie", handleCookie)
 
 	if config.Domain == "" {
@@ -260,7 +258,7 @@ func makeHandleMainView(t byte) func(g *gin.Context) {
 		if len(pl.Articles) > 0 {
 			pl.Next = pl.Articles[len(pl.Articles)-1].ID - 1
 			pl.Prev = pl.Articles[0].ID + 1
-			pl.Title = fmt.Sprintf("%s ~ %s", pl.Articles[0].CreateTimeString(false), pl.Articles[len(pl.Articles)-1].CreateTimeString(false))
+			pl.Title = fmt.Sprintf("%s ~ %s", pl.Articles[0].CreateTimeString(true), pl.Articles[len(pl.Articles)-1].CreateTimeString(true))
 		}
 
 		g.HTML(200, "index.html", pl)
@@ -304,5 +302,6 @@ func handleRepliesView(g *gin.Context) {
 		pl.Prev = pl.Articles[0].ID - 1
 	}
 
+	pl.ReplyView = generateNewReplyView(pl.ParentArticle.ID, g)
 	g.HTML(200, "index.html", pl)
 }
