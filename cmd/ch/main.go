@@ -160,22 +160,20 @@ func main() {
 	r.Static("/s/", "template")
 	r.Handle("GET", "/", func(g *gin.Context) { g.HTML(200, "home.html", struct{ Home template.HTML }{m.GetHomePage()}) })
 	r.Handle("GET", "/vec", makeHandleMainView('v'))
-	r.Handle("GET", "/i/:image", handleImage)
 	r.Handle("GET", "/p/:parent", handleRepliesView)
 	r.Handle("GET", "/tag/:tag", makeHandleMainView('t'))
 	r.Handle("GET", "/tags", handleTags)
 	r.Handle("GET", "/id/:id", makeHandleMainView('a'))
-	r.Handle("GET", "/inbox/:id", makeHandleMainView('n'))
-	r.Handle("GET", "/ip/:ip", makeHandleMainView('i'))
 	r.Handle("GET", "/new", handleNewPostView)
-	r.Handle("GET", "/edit/:id", handleEditPostView)
-	r.Handle("GET", "/cookie", handleCookie)
 	r.Handle("GET", "/stat", handleCurrentStat)
+	r.Handle("GET", "/edit/:id", handleEditPostView)
 
 	r.Handle("POST", "/new", handleNewPostAction)
 	r.Handle("POST", "/reply", handleNewReplyAction)
 	r.Handle("POST", "/edit", handleEditPostAction)
 	r.Handle("POST", "/delete", handleDeletePostAction)
+
+	r.Handle("GET", "/cookie", handleCookie)
 	r.Handle("POST", "/cookie", handleCookie)
 
 	if config.Domain == "" {
@@ -222,17 +220,6 @@ func makeHandleMainView(t byte) func(g *gin.Context) {
 		} else if t == 'a' {
 			pl.SearchTerm, pl.Type = g.Param("id"), "id"
 			findby = ByAuthor(pl.SearchTerm)
-		} else if t == 'n' {
-			pl.SearchTerm, pl.Type = g.Param("id"), "inbox"
-			findby = ByNotify(pl.SearchTerm)
-		} else if t == 'i' {
-			pl.SearchTerm, pl.Type = g.Param("ip"), "ip"
-			findby = ByIP(pl.SearchTerm)
-
-			if !isAdmin(g) || !g.GetBool("ip-ok") {
-				errorPage(403, "NOT ADMIN", g)
-				return
-			}
 		}
 
 		next, dir := parseCursor(g.Query("n"))

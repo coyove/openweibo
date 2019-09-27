@@ -12,17 +12,13 @@ var (
 	bkTimeline = []byte("timeline")
 	bkTag      = []byte("tag")
 	bkReply    = []byte("reply")
-	bkIP       = []byte("ip")
 	bkAuthor   = []byte("author")
-	bkNotify   = []byte("notify")
 	bkNames    = [][]byte{
 		bkPost,
 		bkTimeline,
 		bkTag,
 		bkReply,
-		bkIP,
 		bkAuthor,
-		bkNotify,
 	}
 )
 

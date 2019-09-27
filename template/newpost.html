@@ -9,13 +9,17 @@ tr {
             }
 </style>
 
+        <title>新主题</title>
+
 <form method="POST" action="/new" enctype="multipart/form-data">
 <table class="articles">
     <input type=hidden name=uuid value="{{.UUID}}">
     <tr>
-        <title>新主题</title>
         <td>新主题:</td>
         <td><input class=t name=title value="{{.RTitle}}"></td>
+    </tr>
+    <tr>
+        <td></td><td style="font-size:80%">最少10字节</td>
     </tr>
     <tr>
         <td class=nowrap>标签: </td>
@@ -34,7 +38,7 @@ tr {
         <td><input class=t name=author value="{{.RAuthor}}"></td>
     </tr>
     <tr>
-        <td></td><td style="font-size:80%">(选填) ID是删除自己发言时的凭证</td>
+        <td></td><td style="font-size:80%">(选填) ID是删除自己发言时的凭证，其他人看到的为加密后的名字</td>
     </tr>
     <tr>
         <td class=nowrap>内容:</td>

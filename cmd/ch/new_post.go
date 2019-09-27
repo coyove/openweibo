@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/base64"
+	"fmt"
 	"log"
 	"net"
 	"strings"
@@ -117,7 +118,7 @@ func handleNewPostAction(g *gin.Context) {
 	}
 
 	if !g.GetBool("ip-ok") {
-		redir("error", "guard/cooling-down")
+		redir("error", fmt.Sprintf("guard/cooling-down/%v", g.GetFloat64("ip-ok-remain")))
 		return
 	}
 
@@ -190,7 +191,7 @@ func handleNewReplyAction(g *gin.Context) {
 	}
 
 	if !g.GetBool("ip-ok") {
-		redir("error", "guard/cooling-down")
+		redir("error", fmt.Sprintf("guard/cooling-down/%v", g.GetFloat64("ip-ok-remain")))
 		return
 	}
 

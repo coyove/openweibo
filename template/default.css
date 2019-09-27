@@ -186,6 +186,10 @@ nav ul ul li {
     transform: translate(-50%, -50%);
 }
 
+.reply-toggle:checked + label + .reply-view + .bg {
+    display: block;
+}
+
 .reply-view {
     text-align: left;
     max-width: 600px;
@@ -199,6 +203,18 @@ nav ul ul li {
 
 .reply-view td {
     padding: 0.4em 1em;
+}
+
+.reply-view + .bg {
+    display: none;
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 100%;
+    z-index: 9999;
+    pointer-events: none;
+    background: rgba(0,0,0,0.1);
 }
 
 .paging {
@@ -217,6 +233,7 @@ button.none {
    appearance:         none;
    border: none;
    cursor: pointer;
+   background: transparent;
 }
 
 .pure-material-button-outlined {
@@ -344,4 +361,3 @@ button.none {
         width: 100%;
     }
 }
-

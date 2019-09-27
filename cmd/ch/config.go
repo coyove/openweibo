@@ -55,7 +55,7 @@ var (
 		PostsPerPage: 30,
 		Tags:         []string{},
 		InboxSize:    100,
-		Cooldown:     5,
+		Cooldown:     10,
 	}
 
 	survey struct {

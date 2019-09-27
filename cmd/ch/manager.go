@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"html/template"
@@ -75,20 +74,6 @@ func ByAuthor(a string) findby {
 	}
 }
 
-func ByNotify(a string) findby {
-	return findby{
-		bkName:  bkNotify,
-		bkName2: []byte(a),
-	}
-}
-
-func ByIP(ip string) findby {
-	return findby{
-		bkName:  bkIP,
-		bkName2: []byte(ip),
-	}
-}
-
 func ByTimeline() findby {
 	return findby{
 		bkName: bkTimeline,
@@ -101,7 +86,6 @@ func (m *Manager) Find(dir byte, filter findby, cursor int64, n int) ([]*Article
 		a     []*Article
 		count int
 		err   = m.db.View(func(tx *bbolt.Tx) error {
-			main := tx.Bucket(bkPost)
 			bk := tx.Bucket(filter.bkName)
 			if filter.bkName2 != nil {
 				bk = bk.Bucket(filter.bkName2)
@@ -125,19 +109,7 @@ func (m *Manager) Find(dir byte, filter findby, cursor int64, n int) ([]*Article
 			}
 
 			more = next != nil
-
-			for _, r := range res {
-				p := &Article{}
-				if bytes.Equal(filter.bkName, bkNotify) {
-					if p.Unmarshal(main.Get(r[1])) == nil {
-						a = append(a, p)
-					}
-				} else {
-					if p.Unmarshal(main.Get(r[0])) == nil {
-						a = append(a, p)
-					}
-				}
-			}
+			a = mget(tx, res)
 			return nil
 		})
 	)
@@ -188,8 +160,6 @@ func (m *Manager) FindReplies(dir byte, parent int64, cursor int64, n int) ([]*A
 		more bool
 		a    []*Article
 		err  = m.db.View(func(tx *bbolt.Tx) error {
-			main := tx.Bucket(bkPost)
-
 			bk := tx.Bucket(bkReply).Bucket(idBytes(parent))
 			if bk == nil {
 				return errNoBucket
@@ -208,12 +178,7 @@ func (m *Manager) FindReplies(dir byte, parent int64, cursor int64, n int) ([]*A
 			}
 
 			more = next != nil
-			for _, r := range res {
-				p := &Article{}
-				if p.Unmarshal(main.Get(r[0])) == nil {
-					a = append(a, p)
-				}
-			}
+			a = mget(tx, res)
 			return nil
 		})
 	)
@@ -232,7 +197,27 @@ func (m *Manager) insertID(tx *bbolt.Tx, filter findby, id int64) error {
 	if err != nil {
 		return err
 	}
-	return bk.Put(idBytes(id), []byte{})
+	return bk.Put(idBytes(id), idBytes(id))
+}
+
+func (m *Manager) insertUserInboxChain(tx *bbolt.Tx, user string, i, id int64) error {
+	bk, err := tx.CreateBucketIfNotExists(bkAuthor)
+	if err != nil {
+		return err
+	}
+	bk, err = bk.CreateBucketIfNotExists([]byte(user))
+	if err != nil {
+		return err
+	}
+	err = bk.Put(idBytes(i), idBytes(id))
+	if err != nil {
+		return err
+	}
+	if bk.Stats().KeyN > config.InboxSize {
+		k, _ := bk.Cursor().First()
+		return bk.Delete(k)
+	}
+	return nil
 }
 
 func (m *Manager) PostArticle(a *Article) error {
@@ -241,10 +226,7 @@ func (m *Manager) PostArticle(a *Article) error {
 		if err := tx.Bucket(bkPost).Put(idbuf, a.Marshal()); err != nil {
 			return err
 		}
-		if err := m.insertID(tx, ByAuthor(a.Author), a.ID); err != nil {
-			return err
-		}
-		if err := m.insertID(tx, ByIP(a.IP), a.ID); err != nil {
+		if err := m.insertUserInboxChain(tx, a.Author, a.ID, a.ID); err != nil {
 			return err
 		}
 		for _, tag := range a.Tags {
@@ -288,26 +270,14 @@ func (m *Manager) PostReply(parent int64, a *Article) error {
 		if err := tx.Bucket(bkPost).Put(idBytes(p.ID), p.Marshal()); err != nil {
 			return err
 		}
-		if err := m.insertID(tx, ByAuthor(a.Author), a.ID); err != nil {
-			return err
-		}
-		if err := m.insertID(tx, ByIP(a.IP), a.ID); err != nil {
+		if err := m.insertUserInboxChain(tx, a.Author, a.ID, a.ID); err != nil {
 			return err
 		}
 		if err := m.insertID(tx, findby{bkName: bkReply, bkName2: idBytes(p.ID)}, a.ID); err != nil {
 			return err
 		}
-		// Insert the notify of this reply to parent's author's inbox
-		bk, err := tx.Bucket(bkNotify).CreateBucketIfNotExists([]byte(p.Author))
-		if err != nil {
-			return err
-		}
-		if err := bk.Put(idBytes(newID()), idBytes(a.ID)); err != nil {
-			return err
-		}
-		if bk.Stats().KeyN > config.InboxSize {
-			k, _ := bk.Cursor().First()
-			return bk.Delete(k)
+		if a.Author != p.Author { // Insert the notify of this reply to parent's author's inbox
+			return m.insertUserInboxChain(tx, p.Author, newID(), a.ID)
 		}
 		return nil
 	})
@@ -338,12 +308,6 @@ func (m *Manager) UpdateArticle(a *Article, oldtags []string, del bool) error {
 			if err := mustget(bkAuthor, []byte(a.Author)).Delete(idbuf); err != nil {
 				return err
 			}
-			if err := mustget(bkIP, []byte(a.IP)).Delete(idbuf); err != nil {
-				return err
-			}
-			if err := mustget(bkNotify, []byte(a.Author)).Delete(idbuf); err != nil {
-				return err
-			}
 			if err := mustget(bkReply, idBytes(a.Parent)).Delete(idbuf); err != nil {
 				return err
 			}
@@ -353,8 +317,7 @@ func (m *Manager) UpdateArticle(a *Article, oldtags []string, del bool) error {
 				}
 			}
 		} else {
-			newtags := make([]string, len(a.Tags))
-			copy(newtags, a.Tags)
+			newtags := append([]string{}, a.Tags...)
 
 		DIFF:
 			for i := len(oldtags) - 1; i > 0; i-- {

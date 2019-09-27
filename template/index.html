@@ -23,8 +23,7 @@
                 </td>
                 <td class=nowrap><span>{{.Replies}}/{{.Views}}</span></td>
                 <td class=nowrap>
-                    <a href="/id/{{.Author}}">{{.Author}}</a>
-                    {{if $.ShowIP}} / <a href="/ip/{{.IP}}">{{.IP}}</a>{{end}}
+                    <a href="/id/{{.Author}}">{{.Author}}</a>{{if $.ShowIP}} / {{.IP}}{{end}}
                 </td>
                 <td class="nowrap date"><span>{{.CreateTimeString true}}</span></td>
                 </td>
@@ -32,8 +31,24 @@
             <tr class=dark>
                 <td colspan=4><div class=reply><pre>{{.ContentHTML}}</pre></div></td>
             </tr>
-        </table>
         {{end}}
+
+        {{if len .Articles}}
+            {{range .Articles}}
+            <tr class="row">
+                <td><b>{{.Index}}</b>. <a href="/p/{{.DisplayID}}">{{.Title}}</a></td>
+                <td class=nowrap>{{.Replies}}/{{.Views}}</td> 
+                <td class=nowrap><a href="/id/{{.Author}}">{{.Author}}</a>{{if $.ShowIP}} / {{.IP}}{{end}}</td>
+                <td class="nowrap date">{{.CreateTimeString true}}</td>
+            </tr>
+            <tr class="dark">
+                <td colspan=4><div class=reply><pre>{{.ContentHTML}}</pre></div></td>
+            </tr>
+            {{end}}
+        {{else}}
+            <tr><td colspan=4>无回复</td></tr>
+        {{end}}
+        </table>
 
         <table class="articles">
         <tr>
@@ -78,49 +93,22 @@
                         </table>
                     </form>
                 </div>
+                <div class="bg"></div>
                 {{end}}
                 <a style="float:right" class="pure-material-button-outlined" href="/edit/{{.ParentArticle.DisplayID}}">删除</a>
             </td>
         </tr>
         </table>
 
-        <table class="articles small">
-        {{if len .Articles}}
-            {{range .Articles}}
-            <tr class="row">
-                <td><b>{{.Index}}</b>. <a href="/p/{{.DisplayID}}">{{.Title}}</a></td>
-                <td class=nowrap>{{.Replies}}/{{.Views}}</td> 
-                <td class=nowrap><a href="/id/{{.Author}}">{{.Author}}</a>{{if $.ShowIP}} / <a href="/ip/{{.IP}}">{{.IP}}</a>{{end}}</td>
-                <td class="nowrap date">{{.CreateTimeString true}}</td>
-            </tr>
-            <tr class="dark">
-                <td colspan=4><div class=reply><pre>{{.ContentHTML}}</pre></div></td>
-            </tr>
-            {{end}}
-        {{else}}
-            <tr><td colspan=4>无回复</td></tr>
-        {{end}}
-        </table>
-
     {{else}}
 
         <table class="articles small">
             <tr>
-                {{if eq .Type "inbox"}}
-                <title>{{.SearchTerm}}的提醒 {{.Title}}</title>
+                {{if eq .Type "id"}}
+                <title>{{.SearchTerm}}的相关发言 {{.Title}}</title>
                 <th>
-                    {{.SearchTerm}}的收件箱 ({{.TotalCount}})
-                    <a href="/id/{{.SearchTerm}}">发言</a>
+                    {{.SearchTerm}}的相关发言 ({{.TotalCount}})
                 </th>
-                {{else if eq .Type "id"}}
-                <title>{{.SearchTerm}}的发言 {{.Title}}</title>
-                <th>
-                    {{.SearchTerm}}的发言 ({{.TotalCount}})
-                    <a href="/inbox/{{.SearchTerm}}">收件箱</a>
-                </th>
-                {{else if eq .Type "ip"}}
-                <title>IP: {{.SearchTerm}}的发言 {{.Title}}</title>
-                <th>IP: {{.SearchTerm}}的发言 ({{.TotalCount}})</th>
                 {{else if eq .Type "tag"}}
                 <title>标签: {{.SearchTerm}} {{.Title}}</title>
                 <th>标签 ({{.TotalCount}})</th>
