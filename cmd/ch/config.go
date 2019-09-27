@@ -28,7 +28,7 @@ var (
 		MinContent    int64                  `yaml:"MinContent"`
 		MaxTags       int64                  `yaml:"MaxTags"`
 		AdminName     string                 `yaml:"AdminName"`
-		PostsPerPage  int64                  `yaml:"PostsPerPage"`
+		PostsPerPage  int                    `yaml:"PostsPerPage"`
 		Tags          []string               `yaml:"Tags"`
 		Domain        string                 `yaml:"Domain"`
 		ImageDomain   string                 `yaml:"ImageDomain"`
@@ -52,7 +52,7 @@ var (
 		MaxContent:   4096,
 		MinContent:   8,
 		MaxTags:      4,
-		PostsPerPage: 30,
+		PostsPerPage: 3,
 		Tags:         []string{},
 		InboxSize:    100,
 		Cooldown:     10,

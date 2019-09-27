@@ -7,19 +7,11 @@ import (
 )
 
 var (
-	db         *bbolt.DB
-	bkPost     = []byte("post")
-	bkTimeline = []byte("timeline")
-	bkTag      = []byte("tag")
-	bkReply    = []byte("reply")
-	bkAuthor   = []byte("author")
-	bkNames    = [][]byte{
-		bkPost,
-		bkTimeline,
-		bkTag,
-		bkReply,
-		bkAuthor,
-	}
+	db       *bbolt.DB
+	bkPost   = []byte("post")
+	bkTag    = []byte("tag")
+	bkAuthor = []byte("author")
+	bkNames  = [][]byte{bkPost, bkTag, bkAuthor}
 )
 
 func ScanBucketAsc(bk *bbolt.Bucket, cursor []byte, n int, reverse bool) (keyvalues [][2][]byte, next []byte) {

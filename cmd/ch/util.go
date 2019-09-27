@@ -153,3 +153,17 @@ func parseCursor(p string) (int64, string) {
 	v, _ := strconv.ParseInt(p, 10, 64)
 	return v, a
 }
+
+func intmin(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func intmax(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}

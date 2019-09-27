@@ -332,6 +332,10 @@ button.none {
     text-decoration: none;
 }
 
+span.mobile {
+    display: none;
+}
+
 @media only screen and (max-width: 540px) {
     .articles.small tr {
         display: block;
@@ -359,5 +363,9 @@ button.none {
 
     .reply-view {
         width: 100%;
+    }
+
+    span.mobile {
+        display: inherit;
     }
 }

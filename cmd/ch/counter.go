@@ -61,9 +61,9 @@ func writeCounterToDB() {
 		a := &Article{}
 
 		for id, hits := range counter.m {
-			if err := a.Unmarshal(bk.Get(idBytes(id))); err == nil {
+			if err := a.unmarshal(bk.Get(idBytes(id))); err == nil {
 				a.Views += int64(len(hits))
-				bk.Put(idBytes(id), a.Marshal())
+				bk.Put(idBytes(id), a.marshal())
 			}
 			delete(counter.m, id)
 		}

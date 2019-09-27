@@ -96,11 +96,40 @@ func hashIP(g *gin.Context) string {
 	return ip.String()
 }
 
+func checkTokenAndCaptcha(g *gin.Context, author string) string {
+	var (
+		answer            = softTrunc(g.PostForm("answer"), 6)
+		uuid              = softTrunc(g.PostForm("uuid"), 32)
+		tokenbuf, tokenok = extractCSRFToken(g, uuid)
+		challengePassed   bool
+	)
+	if !g.GetBool("ip-ok") {
+		return fmt.Sprintf("guard/cooling-down/%v", g.GetFloat64("ip-ok-remain"))
+	}
+	if !isAdmin(author) {
+		if len(answer) == 6 {
+			challengePassed = true
+			for i := range answer {
+				if answer[i]-'0' != tokenbuf[i]%10 {
+					challengePassed = false
+					break
+				}
+			}
+		}
+		if !challengePassed {
+			log.Println(g.MustGet("ip"), "challenge failed")
+			return "guard/failed-captcha"
+		}
+	}
+	if !tokenok {
+		return "guard/token-expired"
+	}
+	return ""
+}
+
 func handleNewPostAction(g *gin.Context) {
 	var (
 		ip       = hashIP(g)
-		answer   = softTrunc(g.PostForm("answer"), 6)
-		uuid     = softTrunc(g.PostForm("uuid"), 32)
 		content  = softTrunc(g.PostForm("content"), int(config.MaxContent))
 		title    = softTrunc(g.PostForm("title"), 100)
 		author   = getAuthor(g)
@@ -117,34 +146,8 @@ func handleNewPostAction(g *gin.Context) {
 		return
 	}
 
-	if !g.GetBool("ip-ok") {
-		redir("error", fmt.Sprintf("guard/cooling-down/%v", g.GetFloat64("ip-ok-remain")))
-		return
-	}
-
-	tokenbuf, tokenok := extractCSRFToken(g, uuid)
-
-	if !isAdmin(author) {
-		challengePassed := false
-		if len(answer) == 6 {
-			challengePassed = true
-			for i := range answer {
-				if answer[i]-'0' != tokenbuf[i]%10 {
-					challengePassed = false
-					break
-				}
-			}
-		}
-
-		if !challengePassed {
-			log.Println(g.MustGet("ip"), "challenge failed")
-			redir("error", "guard/failed-captcha")
-			return
-		}
-	}
-
-	if !tokenok {
-		redir("error", "guard/token-expired")
+	if ret := checkTokenAndCaptcha(g, author); ret != "" {
+		redir("error", ret)
 		return
 	}
 
@@ -158,13 +161,13 @@ func handleNewPostAction(g *gin.Context) {
 		return
 	}
 
-	a := m.NewArticle(title, content, authorNameToHash(author), ip, "", tags)
+	a := m.NewPost(title, content, authorNameToHash(author), ip, tags)
 	if isAdmin(author) && announce {
 		a.Announce = true
 		a.ID = newBigID()
 	}
 
-	if err := m.PostArticle(a); err != nil {
+	if err := m.PostPost(a); err != nil {
 		redir("error", "internal/error: "+err.Error())
 		return
 	}
@@ -176,12 +179,10 @@ func handleNewReplyAction(g *gin.Context) {
 	var (
 		reply   = displayIDToObejctID(g.PostForm("reply"))
 		ip      = hashIP(g)
-		answer  = softTrunc(g.PostForm("answer"), 6)
-		uuid    = softTrunc(g.PostForm("uuid"), 32)
 		content = softTrunc(g.PostForm("content"), int(config.MaxContent))
 		author  = getAuthor(g)
 		redir   = func(a, b string) {
-			g.Redirect(302, "/p/"+objectIDToDisplayID(reply)+"?n=-0&"+encodeQuery(a, b, "author", author, "content", content)+"#paging")
+			g.Redirect(302, "/p/"+objectIDToDisplayID(reply)+"?p=-1&"+encodeQuery(a, b, "author", author, "content", content)+"#paging")
 		}
 	)
 
@@ -190,34 +191,8 @@ func handleNewReplyAction(g *gin.Context) {
 		return
 	}
 
-	if !g.GetBool("ip-ok") {
-		redir("error", fmt.Sprintf("guard/cooling-down/%v", g.GetFloat64("ip-ok-remain")))
-		return
-	}
-
-	tokenbuf, tokenok := extractCSRFToken(g, uuid)
-
-	if !isAdmin(author) {
-		challengePassed := false
-		if len(answer) == 6 {
-			challengePassed = true
-			for i := range answer {
-				if answer[i]-'0' != tokenbuf[i]%10 {
-					challengePassed = false
-					break
-				}
-			}
-		}
-
-		if !challengePassed {
-			log.Println(g.MustGet("ip"), "challenge failed")
-			redir("error", "guard/failed-captcha")
-			return
-		}
-	}
-
-	if !tokenok {
-		redir("error", "guard/token-expired")
+	if ret := checkTokenAndCaptcha(g, author); ret != "" {
+		redir("error", ret)
 		return
 	}
 
@@ -226,11 +201,12 @@ func handleNewReplyAction(g *gin.Context) {
 		return
 	}
 
-	if err := m.PostReply(reply, m.NewArticle("", content, authorNameToHash(author), ip, "", nil)); err != nil {
+	if err := m.PostReply(reply, m.NewReply(content, authorNameToHash(author), ip)); err != nil {
 		log.Println(err)
 		redir("error", "internal/error")
 		return
 	}
 
+	content, author = "", ""
 	redir("", "")
 }

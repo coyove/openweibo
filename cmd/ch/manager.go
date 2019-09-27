@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"html/template"
@@ -76,11 +77,11 @@ func ByAuthor(a string) findby {
 
 func ByTimeline() findby {
 	return findby{
-		bkName: bkTimeline,
+		bkName: bkPost,
 	}
 }
 
-func (m *Manager) Find(dir byte, filter findby, cursor int64, n int) ([]*Article, bool, int, error) {
+func (m *Manager) FindPosts(dir byte, filter findby, cursor int64, n int) ([]*Article, bool, int, error) {
 	var (
 		more  bool
 		a     []*Article
@@ -109,7 +110,15 @@ func (m *Manager) Find(dir byte, filter findby, cursor int64, n int) ([]*Article
 			}
 
 			more = next != nil
-			a = mget(tx, res)
+			a = mget(tx, bytes.Equal(filter.bkName, bkPost), res)
+
+			if bytes.Equal(filter.bkName, bkPost) {
+				for i := len(a) - 1; i >= 0; i-- {
+					if a[i].Parent != 0 {
+						a = append(a[:i], a[i+1:]...)
+					}
+				}
+			}
 			return nil
 		})
 	)
@@ -155,52 +164,35 @@ func (m *Manager) FindTags(cursor string, n int) ([]Tag, int) {
 	return a, n
 }
 
-func (m *Manager) FindReplies(dir byte, parent int64, cursor int64, n int) ([]*Article, bool, error) {
-	var (
-		more bool
-		a    []*Article
-		err  = m.db.View(func(tx *bbolt.Tx) error {
-			bk := tx.Bucket(bkReply).Bucket(idBytes(parent))
-			if bk == nil {
-				return errNoBucket
-			}
-
-			var res [][2][]byte
-			var next []byte
-
-			if dir == 'a' {
-				res, next = ScanBucketAsc(bk, idBytes(cursor), n, false)
-			} else {
-				if cursor == -1 {
-					cursor = 0
-				}
-				res, next = ScanBucketDesc(bk, idBytes(cursor), n, true)
-			}
-
-			more = next != nil
-			a = mget(tx, res)
-			return nil
-		})
-	)
-	if err == errNoBucket {
-		err = nil
+func (m *Manager) updateTags(tx *bbolt.Tx, id int64, tags ...string) error {
+	bk := tx.Bucket(bkTag)
+	for _, tag := range tags {
+		bk, err := bk.CreateBucketIfNotExists([]byte(tag))
+		if err != nil {
+			return err
+		}
+		if err := bk.Put(idBytes(id), idBytes(id)); err != nil {
+			return err
+		}
 	}
-	return a, more, err
+	return nil
 }
 
-func (m *Manager) insertID(tx *bbolt.Tx, filter findby, id int64) error {
-	var err error
-	bk := tx.Bucket(filter.bkName)
-	if filter.bkName2 != nil {
-		bk, err = bk.CreateBucketIfNotExists(filter.bkName2)
+func (m *Manager) deleteTags(tx *bbolt.Tx, id int64, tags ...string) error {
+	bk := tx.Bucket(bkTag)
+	for _, tag := range tags {
+		bk2 := bk.Bucket([]byte(tag))
+		if bk2 == nil {
+			continue
+		}
+		if err := bk2.Delete(idBytes(id)); err != nil {
+			return err
+		}
 	}
-	if err != nil {
-		return err
-	}
-	return bk.Put(idBytes(id), idBytes(id))
+	return nil
 }
 
-func (m *Manager) insertUserInboxChain(tx *bbolt.Tx, user string, i, id int64) error {
+func (m *Manager) appendUserInboxChain(tx *bbolt.Tx, user string, i, id int64) error {
 	bk, err := tx.CreateBucketIfNotExists(bkAuthor)
 	if err != nil {
 		return err
@@ -220,21 +212,20 @@ func (m *Manager) insertUserInboxChain(tx *bbolt.Tx, user string, i, id int64) e
 	return nil
 }
 
-func (m *Manager) PostArticle(a *Article) error {
+func (m *Manager) PostPost(a *Article) error {
 	return m.db.Update(func(tx *bbolt.Tx) error {
 		idbuf := idBytes(a.ID)
-		if err := tx.Bucket(bkPost).Put(idbuf, a.Marshal()); err != nil {
+		bk := tx.Bucket(bkPost)
+
+		a.Index = int64(bk.Stats().KeyN + 1)
+
+		if err := bk.Put(idbuf, a.marshal()); err != nil {
 			return err
 		}
-		if err := m.insertUserInboxChain(tx, a.Author, a.ID, a.ID); err != nil {
+		if err := m.appendUserInboxChain(tx, a.Author, a.ID, a.ID); err != nil {
 			return err
 		}
-		for _, tag := range a.Tags {
-			if err := m.insertID(tx, ByTag(tag), a.ID); err != nil {
-				return err
-			}
-		}
-		if err := m.insertID(tx, ByTimeline(), a.ID); err != nil {
+		if err := m.updateTags(tx, a.ID, a.Tags...); err != nil {
 			return err
 		}
 		return nil
@@ -252,32 +243,32 @@ func (m *Manager) PostReply(parent int64, a *Article) error {
 	if p.Locked {
 		return fmt.Errorf("locked parent")
 	}
+	if len(p.Replies) >= 8192 {
+		return fmt.Errorf("too many replies")
+	}
 	if strings.Count(p.Title, "RE:") > 4 {
 		return fmt.Errorf("too deep")
 	}
 
-	p.ReplyTime = time.Now().UnixNano() / 1e3
-	p.Replies++
+	p.ReplyTime = uint32(time.Now().Unix())
+	p.Replies = append(p.Replies, a.ID)
 	a.Parent = parent
 	a.Tags = nil
 	a.Title = "RE: " + p.Title
-	a.Index = p.Replies
+	a.Index = int64(len(p.Replies))
 
 	return m.db.Update(func(tx *bbolt.Tx) error {
-		if err := tx.Bucket(bkPost).Put(idBytes(a.ID), a.Marshal()); err != nil {
+		if err := tx.Bucket(bkPost).Put(idBytes(a.ID), a.marshal()); err != nil {
 			return err
 		}
-		if err := tx.Bucket(bkPost).Put(idBytes(p.ID), p.Marshal()); err != nil {
+		if err := tx.Bucket(bkPost).Put(idBytes(p.ID), p.marshal()); err != nil {
 			return err
 		}
-		if err := m.insertUserInboxChain(tx, a.Author, a.ID, a.ID); err != nil {
-			return err
-		}
-		if err := m.insertID(tx, findby{bkName: bkReply, bkName2: idBytes(p.ID)}, a.ID); err != nil {
+		if err := m.appendUserInboxChain(tx, a.Author, a.ID, a.ID); err != nil {
 			return err
 		}
 		if a.Author != p.Author { // Insert the notify of this reply to parent's author's inbox
-			return m.insertUserInboxChain(tx, p.Author, newID(), a.ID)
+			return m.appendUserInboxChain(tx, p.Author, newID(), a.ID)
 		}
 		return nil
 	})
@@ -286,7 +277,7 @@ func (m *Manager) PostReply(parent int64, a *Article) error {
 func (m *Manager) GetArticle(id int64) (*Article, error) {
 	a := &Article{}
 	return a, m.db.View(func(tx *bbolt.Tx) error {
-		return a.Unmarshal(tx.Bucket(bkPost).Get(idBytes(id)))
+		return a.unmarshal(tx.Bucket(bkPost).Get(idBytes(id)))
 	})
 }
 
@@ -302,19 +293,11 @@ func (m *Manager) UpdateArticle(a *Article, oldtags []string, del bool) error {
 			if err := tx.Bucket(bkPost).Delete(idbuf); err != nil {
 				return err
 			}
-			if err := tx.Bucket(bkTimeline).Delete(idbuf); err != nil {
-				return err
-			}
 			if err := mustget(bkAuthor, []byte(a.Author)).Delete(idbuf); err != nil {
 				return err
 			}
-			if err := mustget(bkReply, idBytes(a.Parent)).Delete(idbuf); err != nil {
+			if err := m.deleteTags(tx, a.ID, a.Tags...); err != nil {
 				return err
-			}
-			for _, tag := range a.Tags {
-				if err := mustget(bkTag, []byte(tag)).Delete(idbuf); err != nil {
-					return err
-				}
 			}
 		} else {
 			newtags := append([]string{}, a.Tags...)
@@ -330,19 +313,13 @@ func (m *Manager) UpdateArticle(a *Article, oldtags []string, del bool) error {
 				}
 			}
 
-			for _, tag := range oldtags {
-				if err := mustget(bkTag, []byte(tag)).Delete(idbuf); err != nil {
-					return err
-				}
+			if err := m.deleteTags(tx, a.ID, oldtags...); err != nil {
+				return err
 			}
-
-			for _, tag := range newtags {
-				if err := m.insertID(tx, ByTag(tag), a.ID); err != nil {
-					return err
-				}
+			if err := m.updateTags(tx, a.ID, newtags...); err != nil {
+				return err
 			}
-
-			if err := tx.Bucket(bkPost).Put(idbuf, a.Marshal()); err != nil {
+			if err := tx.Bucket(bkPost).Put(idbuf, a.marshal()); err != nil {
 				return err
 			}
 		}

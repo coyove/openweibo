@@ -5,72 +5,107 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/binary"
-	"encoding/json"
 	"html/template"
 	"math/rand"
 	"strconv"
 	"sync/atomic"
 	"time"
+
+	"github.com/gogo/protobuf/proto"
 )
 
 type ArticlesView struct {
-	Articles       []*Article
-	ParentArticle  *Article
-	Next, Prev     int64
-	TotalCount     int
-	NoNext, NoPrev bool
-	ShowIP         bool
-	Type           string
-	SearchTerm     string
-	Title          string
-	ReplyView      interface{}
+	Articles   []*Article
+	Next, Prev int64
+	TotalCount int
+	NoPrev     bool
+	Type       string
+	SearchTerm string
+	Title      string
+}
+
+type ArticleRepliesView struct {
+	Articles      []*Article
+	ParentArticle *Article
+	CurPage       int
+	TotalPages    int
+	Pages         []int
+	ShowIP        bool
+	Title         string
+	ReplyView     interface{}
 }
 
 type Article struct {
-	ID          int64    `json:"id"`
-	Index       int64    `json:"idx"`
-	Parent      int64    `json:"p"`
-	Replies     int64    `json:"rc"`
-	Locked      bool     `json:"l,omitempty"`
-	Highlighted bool     `json:"h,omitempty"`
-	Announce    bool     `json:"A,omitempty"`
-	Title       string   `json:"T"`
-	Content     string   `json:"C"`
-	Author      string   `json:"a"`
-	IP          string   `json:"ip"`
-	Image       string   `json:"i"`
-	Tags        []string `json:"t"`
-	Views       int64    `json:"v"`
-	CreateTime  int64    `json:"c"`
-	ReplyTime   int64    `json:"r"`
+	ID          int64    `protobuf:"fixed64,1,opt"`
+	Index       int64    `protobuf:"varint,2,opt"`
+	Parent      int64    `protobuf:"fixed64,3,opt"`
+	Replies     []int64  `protobuf:"fixed64,4,rep"`
+	Locked      bool     `protobuf:"varint,5,opt"`
+	Highlighted bool     `protobuf:"varint,6,opt"`
+	Announce    bool     `protobuf:"varint,7,opt"`
+	Title       string   `protobuf:"bytes,8,opt"`
+	Content     string   `protobuf:"bytes,9,opt"`
+	Author      string   `protobuf:"bytes,10,opt"`
+	IP          string   `protobuf:"bytes,11,opt"`
+	Image       string   `protobuf:"bytes,12,opt"`
+	Tags        []string `protobuf:"bytes,13,rep"`
+	Views       int64    `protobuf:"varint,14,opt"`
+	CreateTime  uint32   `protobuf:"fixed32,15,opt"`
+	ReplyTime   uint32   `protobuf:"fixed32,16,opt"`
 
-	SearchTerm string `json:"-"`
+	// Transient
+	SearchTerm string `protobuf:"bytes,17,opt"`
 }
 
+func (a *Article) Reset() { *a = Article{} }
+
+func (a *Article) String() string { return proto.CompactTextString(a) }
+
+func (a *Article) ProtoMessage() {}
+
+// For normal posts
 func newID() int64 {
-	id := uint64(time.Now().Unix()) << 32
-	id |= uint64(atomic.AddInt64(&m.counter, 1)) & 0xffff << 16
-	id |= rand.Uint64() & 0xffff
+	id := uint64(time.Now().Unix()) << 31
+	id |= uint64(atomic.AddInt64(&m.counter, 1)) & 0xffff << 15
+	id |= rand.Uint64() & 0x7fff
+	return int64(id)
+}
+
+// For replies, they have small IDs so they will always be placed after normal posts
+func newSmallID() int64 {
+	id := uint64(time.Now().AddDate(-42, -7, -31).Unix()) << 31
+	id |= uint64(atomic.AddInt64(&m.counter, 1)) & 0xffff << 15
+	id |= rand.Uint64() & 0x7fff
 	return int64(id)
 }
 
 func newBigID() int64 {
 	id := uint64(newID())
-	id |= 0x7fffffff00000000
+	id |= 0x7fffffff80000000
 	return int64(id)
 }
 
-func (m *Manager) NewArticle(title, content, author, ip string, image string, tags []string) *Article {
+func (m *Manager) NewPost(title, content, author, ip string, tags []string) *Article {
 	return &Article{
 		ID:         newID(),
 		Title:      title,
 		Content:    content,
 		Author:     author,
-		Image:      image,
 		Tags:       tags,
 		IP:         ip,
-		CreateTime: time.Now().UnixNano() / 1e3,
-		ReplyTime:  time.Now().UnixNano() / 1e3,
+		CreateTime: uint32(time.Now().Unix()),
+		ReplyTime:  uint32(time.Now().Unix()),
+	}
+}
+
+func (m *Manager) NewReply(content, author, ip string) *Article {
+	return &Article{
+		ID:         newSmallID(),
+		Content:    content,
+		Author:     author,
+		IP:         ip,
+		CreateTime: uint32(time.Now().Unix()),
+		ReplyTime:  uint32(time.Now().Unix()),
 	}
 }
 
@@ -105,17 +140,13 @@ func (a *Article) ImageURL() string {
 	return ""
 }
 
-func (a *Article) String() string {
-	return a.DisplayID() + "-" + a.Title + "-" + strconv.FormatInt(a.ReplyTime, 10) + "-" + a.DisplayParentID()
-}
-
-func (a *Article) Marshal() []byte {
-	b, _ := json.Marshal(a)
+func (a *Article) marshal() []byte {
+	b, _ := proto.Marshal(a)
 	return b
 }
 
-func (a *Article) Unmarshal(b []byte) error {
-	return json.Unmarshal(b, a)
+func (a *Article) unmarshal(b []byte) error {
+	return proto.Unmarshal(b, a)
 }
 
 func authorNameToHash(n string) string {
@@ -174,8 +205,8 @@ func idBytes(id int64) []byte {
 	return b
 }
 
-func formatTime(t int64, sec bool) string {
-	x, now := time.Unix(0, t*1000), time.Now()
+func formatTime(t uint32, sec bool) string {
+	x, now := time.Unix(int64(t), 0), time.Now()
 	if now.YearDay() == x.YearDay() && now.Year() == x.Year() {
 		if !sec {
 			return x.Format("15:04")
