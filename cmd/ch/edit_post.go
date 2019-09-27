@@ -23,17 +23,13 @@ func handleEditPostView(g *gin.Context) {
 	pl.RAuthor, _ = g.Cookie("id")
 	pl.IsAdmin = isAdmin(pl.RAuthor)
 
-	if pl.Reply == "-1" {
-		pl.Article = &Article{Content: string(m.GetHomePage())}
-	} else {
-		a, err := m.GetArticle(displayIDToObejctID(pl.Reply))
-		if err != nil {
-			log.Println(err)
-			g.Redirect(302, "/vec")
-			return
-		}
-		pl.Article = a
+	a, err := m.GetArticle(displayIDToObejctID(pl.Reply))
+	if err != nil {
+		log.Println(err)
+		g.Redirect(302, "/vec")
+		return
 	}
+	pl.Article = a
 
 	g.HTML(200, "editpost.html", pl)
 }
@@ -60,12 +56,6 @@ func handleEditPostAction(g *gin.Context) {
 	)
 
 	if !isAdmin(author) {
-		g.Redirect(302, "/")
-		return
-	}
-
-	if g.PostForm("reply") == "-1" {
-		m.SetHomePage(content)
 		g.Redirect(302, "/")
 		return
 	}

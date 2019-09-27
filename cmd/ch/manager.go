@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"html/template"
 	"math/rand"
 	"strings"
 	"sync"
@@ -330,13 +329,4 @@ func (m *Manager) UpdateArticle(a *Article, oldtags []string, del bool) error {
 func (m *Manager) Close() {
 	m.closed = true
 	m.db.Close()
-}
-
-func (m *Manager) GetHomePage() template.HTML {
-	return template.HTML(m.home)
-}
-
-func (m *Manager) SetHomePage(buf string) {
-	m.db.Update(func(tx *bbolt.Tx) error { return tx.Bucket(bkPost).Put([]byte("home"), []byte(buf)) })
-	m.home = buf
 }

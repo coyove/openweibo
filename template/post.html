@@ -5,23 +5,25 @@
 
 <table class="articles small">
     <tr>
-        <th>查看主题: {{.DisplayID}}</th>
-        <th class=nowrap>回/看</th>
+        <th><b>{{.Index}}</b>.</th>
+        <th class=nowrap>回复</th>
+        <th class=nowrap>浏览</th>
         <th class=nowrap>作者</th>
         <th class=nowrap>日期</th>
     </tr>
     <tr class="row">
-        <td>
+        <td class="row">
             {{if .Parent}}<a href="/p/{{.DisplayParentID}}">上一层</a> /{{end}} 
             {{template "row_tags.html" .}}
         </td>
-        <td class=nowrap><span>{{len .Replies}}/{{.Views}}</span></td>
+        <td class="nowrap" align=center><span>{{len .Replies}}</span><span class=mobile>回复</span></td>
+        <td class="nowrap" align=center><span>{{.Views}}</span><span class=mobile>浏览</span></td>
         <td class=nowrap><a href="/id/{{.Author}}">{{.Author}}</a>{{if $.ShowIP}} / {{.IP}}{{end}}</td>
         <td class="nowrap date"><span>{{.CreateTimeString true}}</span></td>
         </td>
     </tr>
     <tr class=dark>
-        <td colspan=4><div class=reply><pre>{{.ContentHTML}}</pre></div></td>
+        <td colspan=5><div class=reply><pre>{{.ContentHTML}}</pre></div></td>
     </tr>
     {{end}}
 
@@ -29,16 +31,17 @@
     {{range .Articles}}
     <tr class="row">
         <td><b>{{.Index}}</b>. <a href="/p/{{.DisplayID}}">{{.Title}}</a></td>
-        <td class=nowrap>{{len .Replies}}/{{.Views}}</td> 
+        <td class="nowrap" align=center><span>{{len .Replies}}</span><span class=mobile>回复</span></td>
+        <td class="nowrap" align=center><span>{{.Views}}</span><span class=mobile>浏览</span></td>
         <td class=nowrap><a href="/id/{{.Author}}">{{.Author}}</a>{{if $.ShowIP}} / {{.IP}}{{end}}</td>
         <td class="nowrap date">{{.CreateTimeString true}}</td>
     </tr>
     <tr class="dark">
-        <td colspan=4><div class=reply><pre>{{.ContentHTML}}</pre></div></td>
+        <td colspan=5><div class=reply><pre>{{.ContentHTML}}</pre></div></td>
     </tr>
     {{end}}
     {{else}}
-    <tr><td colspan=4>无回复</td></tr>
+    <tr><td colspan=5>无回复</td></tr>
     {{end}}
 </table>
 

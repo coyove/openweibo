@@ -4,36 +4,36 @@
     <tr>
         {{if eq .Type "id"}}
         <title>{{.SearchTerm}}的相关发言 {{.Title}}</title>
-        <th>
-            {{.SearchTerm}}的相关发言 ({{.TotalCount}})
-        </th>
+        <th>{{.SearchTerm}}的相关发言 ({{.TotalCount}})</th>
         {{else if eq .Type "tag"}}
-        <title>标签: {{.SearchTerm}} {{.Title}}</title>
-        <th>标签 ({{.TotalCount}})</th>
+        <title>标签: #{{.SearchTerm}} {{.Title}}</title>
+        <th>标签: #{{.SearchTerm}} ({{.TotalCount}})</th>
         {{else}}
-        <title>时间线 {{.Title}}</title>
+        <title>{{.Title}}</title>
         <th>标题</th>
         {{end}}
-        <th class=nowrap>回/看</th>
+        <th class=nowrap>回复</th>
+        <th class=nowrap>浏览</th>
         <th class=nowrap>作者</th>
         <th class=nowrap>日期</th>
     </tr>
     {{if len .Articles}}
     {{range .Articles}}
     <tr class="row">
-        <td><b>{{.Index}}</b>. {{template "row_tags.html" .}}</td>
-        <td class="nowrap"><span>{{len .Replies}}/{{.Views}}</span></td>
+        <td class="row"><b>{{.Index}}</b>. {{template "row_tags.html" .}}</td>
+        <td class="nowrap" align=center><span>{{len .Replies}}</span><span class=mobile>回复</span></td>
+        <td class="nowrap" align=center><span>{{.Views}}</span><span class=mobile>浏览</span></td>
         <td class=nowrap><a href="/id/{{.Author}}">{{.Author}}</a></td>
         <td class="nowrap date"><span>{{.CreateTimeString false}}</span></td>
     </tr>
     {{if .Parent}}
     <tr class=dark>
-        <td colspan=4><div class=reply><pre>{{.ContentAbstract}}</pre></div></td>
+        <td colspan=5><div class=reply><pre>{{.ContentAbstract}}</pre></div></td>
     </tr>
     {{end}}
     {{end}}
     {{else}}
-    <tr><td colspan=4>无内容</td></tr>
+    <tr><td colspan=5>无内容</td></tr>
     {{end}}
 </table>
 

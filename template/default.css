@@ -57,7 +57,7 @@ hr {
     background: rgba(0,0,0,0.033);
 }
 
-.articles .row a {
+.articles .row .row a {
     color: #233;
 }
 
@@ -242,8 +242,7 @@ button.none {
     box-sizing: border-box;
     border-radius: 4px;
     border: none;
-    padding: 0 16px;
-    min-width: 64px;
+    padding: 0 6px;
     height: 34px;
     vertical-align: middle;
     text-align: center;
