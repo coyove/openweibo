@@ -65,8 +65,8 @@ func main() {
 	}
 
 	os.MkdirAll("tmp/logs", 0700)
-	logf, err := rotatelogs.New("tmp/logs/access_log.%Y%m%d%H%M", rotatelogs.WithLinkName("tmp/logs/access_log"), rotatelogs.WithMaxAge(24*time.Hour))
-	logerrf, err := rotatelogs.New("tmp/logs/error_log.%Y%m%d%H%M", rotatelogs.WithLinkName("tmp/logs/error_log"), rotatelogs.WithMaxAge(24*time.Hour))
+	logf, err := rotatelogs.New("tmp/logs/access_log.%Y%m%d%H%M", rotatelogs.WithLinkName("tmp/logs/access_log"), rotatelogs.WithMaxAge(7*24*time.Hour))
+	logerrf, err := rotatelogs.New("tmp/logs/error_log.%Y%m%d%H%M", rotatelogs.WithLinkName("tmp/logs/error_log"), rotatelogs.WithMaxAge(7*24*time.Hour))
 	if err != nil {
 		panic(err)
 	}
@@ -120,7 +120,7 @@ func main() {
 
 	//var last int64
 	//for i, t := range titles {
-	//	a := m.NewPost(strconv.Itoa(i)+" ---"+t, "ddd", "zzz", "127.0.0.1", []string{"a", "B"})
+	//	a := m.NewPost(strconv.Itoa(i)+" ---"+t, "ddd", "zzz", "127.0.0.1", []string{"标签", "Test"})
 	//	log.Println(m.PostPost(a))
 	//	last = a.ID
 	//}
@@ -209,27 +209,28 @@ func handleCookie(g *gin.Context) {
 
 func makeHandleMainView(t byte) func(g *gin.Context) {
 	return func(g *gin.Context) {
-		var (
-			findby = ByTimeline()
-			pl     ArticlesView
-			err    error
-			more   bool
-		)
+		var bkName, partKey []byte
+		var pl ArticlesView
+		var err error
+		var more bool
 
-		if t == 't' {
+		switch t {
+		case 't':
 			pl.SearchTerm, pl.Type = g.Param("tag"), "tag"
-			findby = ByTag(pl.SearchTerm)
-		} else if t == 'a' {
+			bkName, partKey = bkAuthorTag, []byte("#"+pl.SearchTerm)
+		case 'a':
 			pl.SearchTerm, pl.Type = g.Param("id"), "id"
-			findby = ByAuthor(pl.SearchTerm)
+			bkName, partKey = bkAuthorTag, []byte(pl.SearchTerm)
+		default:
+			bkName = bkPost
 		}
 
 		next, dir := parseCursor(g.Query("n"))
 		if dir == "prev" {
-			pl.Articles, more, pl.TotalCount, err = m.FindPosts('a', findby, next, int(config.PostsPerPage))
+			pl.Articles, more, pl.TotalCount, err = m.FindPosts('a', bkName, partKey, next, int(config.PostsPerPage))
 			pl.NoPrev = !more
 		} else {
-			pl.Articles, more, pl.TotalCount, err = m.FindPosts('d', findby, next, int(config.PostsPerPage))
+			pl.Articles, more, pl.TotalCount, err = m.FindPosts('d', bkName, partKey, next, int(config.PostsPerPage))
 			pl.NoPrev = next == 0
 		}
 

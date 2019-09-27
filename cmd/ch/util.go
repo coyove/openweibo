@@ -23,7 +23,7 @@ var (
 	mgr      ch.Nodes
 	cachemgr *cache.Cache
 	dedup    *lru.Cache
-	rxSan    = regexp.MustCompile(`(<|https?://\S+)`)
+	rxSan    = regexp.MustCompile(`(>.+|<|https?://\S+)`)
 )
 
 func softTrunc(a string, n int) string {
@@ -96,6 +96,9 @@ NEXT:
 			u = u[1:]
 		}
 		u = softTrunc(u, 15)
+		if !config.tagsMap[u] {
+			continue
+		}
 		for _, u2 := range urls {
 			if u2 == u {
 				continue NEXT
@@ -136,6 +139,9 @@ func sanText(in string) string {
 	return rxSan.ReplaceAllStringFunc(in, func(in string) string {
 		if in == "<" {
 			return "&lt;"
+		}
+		if strings.HasPrefix(in, ">") {
+			return "<code>" + strings.TrimSpace(in[1:]) + "</code>"
 		}
 		return "<a href='" + in + "' target=_blank>" + in + "</a>"
 	})

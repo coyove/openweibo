@@ -12,18 +12,18 @@
         <title>{{.Title}}</title>
         <th>标题</th>
         {{end}}
+        <th class=nowrap>作者</th>
         <th class=nowrap>回复</th>
         <th class=nowrap>浏览</th>
-        <th class=nowrap>作者</th>
         <th class=nowrap>日期</th>
     </tr>
     {{if len .Articles}}
     {{range .Articles}}
     <tr class="row">
-        <td class="row"><b>{{.Index}}</b>. {{template "row_tags.html" .}}</td>
+        <td class="row">{{template "row_tags.html" .}}</td>
+        <td class=nowrap><a href="/id/{{.Author}}">{{.Author}}</a></td>
         <td class="nowrap" align=center><span>{{len .Replies}}</span><span class=mobile>回复</span></td>
         <td class="nowrap" align=center><span>{{.Views}}</span><span class=mobile>浏览</span></td>
-        <td class=nowrap><a href="/id/{{.Author}}">{{.Author}}</a></td>
         <td class="nowrap date"><span>{{.CreateTimeString false}}</span></td>
     </tr>
     {{if .Parent}}

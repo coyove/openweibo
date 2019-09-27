@@ -6,6 +6,10 @@
     font-size: 14px;
 }
 
+code {
+    font-family: monospace;
+}
+
 input:focus, select:focus, textarea:focus, button:focus {
     outline: none;
 }
@@ -335,6 +339,12 @@ span.mobile {
     display: none;
 }
 
+div.ip {
+    text-align: center;
+    color: #aaa;
+    font-size: 90%;
+}
+
 @media only screen and (max-width: 540px) {
     .articles.small tr {
         display: block;
@@ -342,6 +352,9 @@ span.mobile {
 
     .articles.small td {
         display: inline-block;
+    }
+
+    .articles.small th.nowrap {
     }
 
     .articles.small td.nowrap {

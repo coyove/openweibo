@@ -6,14 +6,6 @@ import (
 	"github.com/etcd-io/bbolt"
 )
 
-var (
-	db       *bbolt.DB
-	bkPost   = []byte("post")
-	bkTag    = []byte("tag")
-	bkAuthor = []byte("author")
-	bkNames  = [][]byte{bkPost, bkTag, bkAuthor}
-)
-
 func ScanBucketAsc(bk *bbolt.Bucket, cursor []byte, n int, reverse bool) (keyvalues [][2][]byte, next []byte) {
 	var (
 		c    = bk.Cursor()

@@ -6,30 +6,12 @@
 .config li {
     word-break: break-all;
     list-style: none;
+    font-family: monospace;
 }
 </style>
 
 <div style="margin: 1em">
-
-{{range .Nodes}}
-<div class=config>
-    <h3>{{.Name}}</h3>
-    <ul>
-        {{if .Error}}
-        <li>{{.Error}}</li>
-        {{else}}
-        <li>Capacity: {{.Capacity}}</li>
-        <li>Free: {{.Free}}</li>
-        <li>Ping: {{.Ping}}ms</li>
-        <li>Last Update: {{.LastUpdate}}</li>
-        {{end}}
-    </ul>
-</div>
-{{end}}
-
-<h3>配置</h3>
 <pre><ul class=config>{{.Config}}</ul></pre>
-
 </div>
 
 {{template "footer.html" .}}

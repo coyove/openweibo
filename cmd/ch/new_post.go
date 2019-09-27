@@ -39,6 +39,7 @@ func handleNewPostView(g *gin.Context) {
 		Abstract  string
 		Challenge string
 		Tags      []string
+		IsAdmin   bool
 
 		RTitle, RAuthor, RContent, RTags, EError string
 	}{
@@ -48,6 +49,7 @@ func handleNewPostView(g *gin.Context) {
 		RAuthor:  g.Query("author"),
 		EError:   g.Query("error"),
 		Tags:     config.Tags,
+		IsAdmin:  isAdmin(g),
 	}
 
 	var answer [6]byte
@@ -104,7 +106,7 @@ func checkTokenAndCaptcha(g *gin.Context, author string) string {
 		challengePassed   bool
 	)
 	if !g.GetBool("ip-ok") {
-		return fmt.Sprintf("guard/cooling-down/%v", g.GetFloat64("ip-ok-remain"))
+		return fmt.Sprintf("guard/cooling-down/%.1fs", float64(config.Cooldown)-g.GetFloat64("ip-ok-remain"))
 	}
 	if !isAdmin(author) {
 		if len(answer) == 6 {

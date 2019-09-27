@@ -4,26 +4,15 @@
 
 <table class=articles>
     <tr>
-        <th>全部标签 ({{len .Tags}}+{{.Tags2Num}})</th>
+        <th>全部标签 ({{len .Tags}})</th>
         <th class=nowrap>数量</th>
     </tr>
-    {{range .Tags}}
+    {{range $k, $v := .Tags}}
     <tr class=row>
-        <td><a href="/tag/{{.}}">{{.}}</a></td>
-        <td class=nowrap>-</td>
-    </tr>
-    {{end}}
-    {{range .Tags2}}
-    <tr class=row>
-        <td><a href="/tag/{{.Name}}">{{.Name}}</a></td>
-        <td class=nowrap>{{.Count}}</td>
+        <td><a href="/tag/{{$k}}">{{$k}}</a></td>
+        <td class=nowrap>{{$v}}</td>
     </tr>
     {{end}}
 </table>
-
-<div class=paging>
-<a href="/tags?n={{.Next}}">更多标签 &raquo;</a>
-</div>
-
 
 {{template "footer.html" .}}

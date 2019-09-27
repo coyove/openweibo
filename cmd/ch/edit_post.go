@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net"
 
 	"github.com/gin-gonic/gin"
 )
@@ -129,6 +130,7 @@ func handleDeletePostAction(g *gin.Context) {
 	}
 
 	if a.Author != authorNameToHash(author) && !isAdmin(author) {
+		log.Println(g.MustGet("ip").(net.IP), "tried to delete", a.ID)
 		g.Redirect(302, "/p/"+a.DisplayID())
 		return
 	}
