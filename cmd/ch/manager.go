@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -70,7 +71,7 @@ func ByTimeline() findby {
 	return findby{bkName: bkPost}
 }
 
-func (m *Manager) FindPosts(dir byte, bkName, partitionKey []byte, cursor int64, n int) ([]*Article, bool, int, error) {
+func (m *Manager) FindPosts(dir byte, bkName, partitionKey []byte, cursor []byte, n int) ([]*Article, bool, int, error) {
 	var (
 		more  bool
 		a     []*Article
@@ -90,9 +91,6 @@ func (m *Manager) FindPosts(dir byte, bkName, partitionKey []byte, cursor int64,
 			var next []byte
 
 			if dir == 'a' {
-				if cursor == -1 {
-					cursor = 0
-				}
 				res, next = ScanBucketAsc(bk, idBytes(cursor), n, true)
 			} else {
 				res, next = ScanBucketDesc(bk, idBytes(cursor), n, false)
@@ -103,7 +101,7 @@ func (m *Manager) FindPosts(dir byte, bkName, partitionKey []byte, cursor int64,
 			if bytes.Equal(bkName, bkPost) {
 				a = mget(tx, true, res)
 				for i := len(a) - 1; i >= 0; i-- {
-					if a[i].Parent != 0 {
+					if a[i].Parent != nil {
 						a = append(a[:i], a[i+1:]...)
 					}
 				}
@@ -133,7 +131,7 @@ func (m *Manager) TagsCount(tags ...string) map[string]int {
 	return ret
 }
 
-func (m *Manager) insertTags(bk *bbolt.Bucket, id int64, tags ...string) error {
+func (m *Manager) insertTags(bk *bbolt.Bucket, id []byte, tags ...string) error {
 	for _, tag := range tags {
 		if err := m.insertBKV(bk, "#"+tag, id, id, false); err != nil {
 			return err
@@ -142,7 +140,7 @@ func (m *Manager) insertTags(bk *bbolt.Bucket, id int64, tags ...string) error {
 	return nil
 }
 
-func (m *Manager) deleteTags(bk *bbolt.Bucket, id int64, tags ...string) error {
+func (m *Manager) deleteTags(bk *bbolt.Bucket, id []byte, tags ...string) error {
 	for _, tag := range tags {
 		if err := m.deleteBKV(bk, "#"+tag, id); err != nil {
 			return err
@@ -151,7 +149,7 @@ func (m *Manager) deleteTags(bk *bbolt.Bucket, id int64, tags ...string) error {
 	return nil
 }
 
-func (m *Manager) insertBKV(bk *bbolt.Bucket, b string, k, v int64, limitSize bool) error {
+func (m *Manager) insertBKV(bk *bbolt.Bucket, b string, k, v []byte, limitSize bool) error {
 	bk, err := bk.CreateBucketIfNotExists([]byte(b))
 	if err != nil {
 		return err
@@ -166,7 +164,7 @@ func (m *Manager) insertBKV(bk *bbolt.Bucket, b string, k, v int64, limitSize bo
 	return nil
 }
 
-func (m *Manager) deleteBKV(bk *bbolt.Bucket, b string, k int64) error {
+func (m *Manager) deleteBKV(bk *bbolt.Bucket, b string, k []byte) error {
 	bk2 := bk.Bucket([]byte(b))
 	if bk2 == nil {
 		return nil
@@ -178,6 +176,7 @@ func (m *Manager) PostPost(a *Article) error {
 	return m.db.Update(func(tx *bbolt.Tx) error {
 		bk := tx.Bucket(bkPost)
 		a.Index = int64(bk.Stats().KeyN + 1)
+
 		if err := bk.Put(idBytes(a.ID), a.marshal()); err != nil {
 			return err
 		}
@@ -193,7 +192,7 @@ func (m *Manager) PostPost(a *Article) error {
 	})
 }
 
-func (m *Manager) PostReply(parent int64, a *Article) error {
+func (m *Manager) PostReply(parent []byte, a *Article) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -211,12 +210,16 @@ func (m *Manager) PostReply(parent int64, a *Article) error {
 		return fmt.Errorf("too deep")
 	}
 
-	p.ReplyTime = uint32(time.Now().Unix())
-	p.Replies = append(p.Replies, a.ID)
 	a.Parent = parent
 	a.Tags = nil
 	a.Title = "RE: " + p.Title
-	a.Index = int64(len(p.Replies))
+	a.Index = int64(len(p.Replies)) + 1
+	a.ID = make([]byte, 1+len(parent)+2)
+	copy(a.ID[1:], parent)
+	binary.BigEndian.PutUint16(a.ID[len(a.ID)-2:], uint16(a.Index))
+
+	p.ReplyTime = uint32(time.Now().Unix())
+	p.Replies = append(p.Replies, a.Index)
 
 	return m.db.Update(func(tx *bbolt.Tx) error {
 		if err := tx.Bucket(bkPost).Put(idBytes(a.ID), a.marshal()); err != nil {
@@ -235,7 +238,7 @@ func (m *Manager) PostReply(parent int64, a *Article) error {
 	})
 }
 
-func (m *Manager) GetArticle(id int64) (*Article, error) {
+func (m *Manager) GetArticle(id []byte) (*Article, error) {
 	a := &Article{}
 	return a, m.db.View(func(tx *bbolt.Tx) error {
 		return a.unmarshal(tx.Bucket(bkPost).Get(idBytes(id)))
@@ -247,7 +250,23 @@ func (m *Manager) UpdateArticle(a *Article, oldtags []string, del bool) error {
 		bk := tx.Bucket(bkAuthorTag)
 
 		if del {
-			if err := tx.Bucket(bkPost).Delete(idBytes(a.ID)); err != nil {
+			main := tx.Bucket(bkPost)
+			if a.Parent != nil {
+				pa := Article{}
+				pa.unmarshal(main.Get(a.Parent))
+				if bytes.Equal(pa.ID, a.Parent) {
+					for i := len(pa.Replies) - 1; i >= 0; i-- {
+						if pa.Replies[i] == a.Index {
+							pa.Replies = append(pa.Replies[:i], pa.Replies[i+1:]...)
+							break
+						}
+					}
+					if err := main.Put(pa.ID, pa.marshal()); err != nil {
+						return err
+					}
+				}
+			}
+			if err := main.Delete(idBytes(a.ID)); err != nil {
 				return err
 			}
 			if err := m.deleteBKV(bk, a.Author, a.ID); err != nil {

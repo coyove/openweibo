@@ -7,16 +7,16 @@ import (
 	"encoding/binary"
 	"html/template"
 	"math/rand"
-	"strconv"
 	"sync/atomic"
 	"time"
 
 	"github.com/gogo/protobuf/proto"
 )
 
-type ArticlesView struct {
+type ArticlesTimelineView struct {
 	Articles   []*Article
-	Next, Prev int64
+	Next       string
+	Prev       string
 	TotalCount int
 	NoPrev     bool
 	Type       string
@@ -36,10 +36,10 @@ type ArticleRepliesView struct {
 }
 
 type Article struct {
-	ID          int64    `protobuf:"fixed64,1,opt"`
+	ID          []byte   `protobuf:"bytes,1,opt"`
 	Index       int64    `protobuf:"varint,2,opt"`
-	Parent      int64    `protobuf:"fixed64,3,opt"`
-	Replies     []int64  `protobuf:"fixed64,4,rep"`
+	Parent      []byte   `protobuf:"bytes,3,opt"`
+	Replies     []int64  `protobuf:"varint,4,rep"`
 	Locked      bool     `protobuf:"varint,5,opt"`
 	Highlighted bool     `protobuf:"varint,6,opt"`
 	Announce    bool     `protobuf:"varint,7,opt"`
@@ -64,25 +64,18 @@ func (a *Article) String() string { return proto.CompactTextString(a) }
 func (a *Article) ProtoMessage() {}
 
 // For normal posts
-func newID() int64 {
-	id := uint64(time.Now().Unix()) << 31
-	id |= uint64(atomic.AddInt64(&m.counter, 1)) & 0xffff << 15
-	id |= rand.Uint64() & 0x7fff
-	return int64(id)
+func newID() (id []byte) {
+	id = make([]byte, 12)
+	binary.BigEndian.PutUint32(id[:4], uint32(time.Now().Unix()))
+	binary.BigEndian.PutUint32(id[4:], uint32(atomic.AddInt64(&m.counter, 1)))
+	binary.BigEndian.PutUint32(id[8:], rand.Uint32())
+	return
 }
 
-// For replies, they have small IDs so they will always be placed after normal posts
-func newSmallID() int64 {
-	id := uint64(time.Now().AddDate(-42, -7, -31).Unix()) << 31
-	id |= uint64(atomic.AddInt64(&m.counter, 1)) & 0xffff << 15
-	id |= rand.Uint64() & 0x7fff
-	return int64(id)
-}
-
-func newBigID() int64 {
-	id := uint64(newID())
-	id |= 0x7fffffff80000000
-	return int64(id)
+func newBigID() []byte {
+	id := newID()
+	binary.BigEndian.PutUint32(id[:4], 0xffffffff)
+	return id[:]
 }
 
 func (m *Manager) NewPost(title, content, author, ip string, tags []string) *Article {
@@ -100,7 +93,6 @@ func (m *Manager) NewPost(title, content, author, ip string, tags []string) *Art
 
 func (m *Manager) NewReply(content, author, ip string) *Article {
 	return &Article{
-		ID:         newSmallID(),
 		Content:    content,
 		Author:     author,
 		IP:         ip,
@@ -168,41 +160,19 @@ func authorNameToHash(n string) string {
 	return n0 + base64.URLEncoding.EncodeToString(x[:6])
 }
 
-func objectIDToDisplayID(id int64) string {
-	var (
-		sum    uint32 = 0
-		delta  uint32 = 0x9E3779B9
-		v0, v1        = uint32(uint64(id) >> 32), uint32(uint64(id))
-	)
-	for i := 0; i < 64; i++ {
-		v0 += (((v1 << 4) ^ (v1 >> 5)) + v1) ^ sum
-		sum += delta
-		v1 += (((v0 << 4) ^ (v0 >> 5)) + v0) ^ sum
-	}
-	return strconv.FormatUint(uint64(v0)<<32|uint64(v1), 36)
+var idEncoding = base64.NewEncoding("_BCDEFGHIJKLMNOPQRSTUVWXYAabcdefghijklmnopqrstuvwxyz0123456789.,").WithPadding('Z')
+
+func objectIDToDisplayID(id []byte) string {
+	return idEncoding.EncodeToString(id)
 }
 
-func displayIDToObejctID(id string) int64 {
-	xxx, _ := strconv.ParseUint(id, 36, 64)
-
-	var (
-		v0           = uint32(xxx >> 32)
-		v1           = uint32(xxx)
-		delta uint32 = 0x9E3779B9
-		sum   uint32 = delta * 64
-	)
-	for i := 0; i < 64; i++ {
-		v1 -= (((v0 << 4) ^ (v0 >> 5)) + v0) ^ sum
-		sum -= delta
-		v0 -= (((v1 << 4) ^ (v1 >> 5)) + v1) ^ sum
-	}
-	return int64(uint64(v0)<<32 + uint64(v1))
+func displayIDToObejctID(id string) []byte {
+	buf, _ := idEncoding.DecodeString(id)
+	return buf
 }
 
-func idBytes(id int64) []byte {
-	b := make([]byte, 8)
-	binary.BigEndian.PutUint64(b, uint64(id))
-	return b
+func idBytes(id []byte) []byte {
+	return id
 }
 
 func formatTime(t uint32, sec bool) string {

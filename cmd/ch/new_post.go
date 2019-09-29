@@ -63,7 +63,7 @@ func handleNewPostView(g *gin.Context) {
 	g.HTML(200, "newpost.html", pl)
 }
 
-func generateNewReplyView(id int64, g *gin.Context) interface{} {
+func generateNewReplyView(id []byte, g *gin.Context) interface{} {
 	var pl = struct {
 		UUID      string
 		Challenge string

@@ -15,15 +15,17 @@ import (
 
 var counter = struct {
 	mu sync.Mutex
-	m  map[int64]map[uint32]bool
+	m  map[string]map[uint32]bool
 	k  sched.SchedKey
 	rx *regexp.Regexp
 }{
-	m:  map[int64]map[uint32]bool{},
+	m:  map[string]map[uint32]bool{},
 	rx: regexp.MustCompile(`(?i)(bot|googlebot|crawler|spider|robot|crawling)`),
 }
 
-func incrCounter(g *gin.Context, id int64) {
+func incrCounter(g *gin.Context, idbuf []byte) {
+	id := string(idbuf)
+
 	if counter.rx.MatchString(g.Request.UserAgent()) {
 		return
 	}
@@ -61,9 +63,9 @@ func writeCounterToDB() {
 		a := &Article{}
 
 		for id, hits := range counter.m {
-			if err := a.unmarshal(bk.Get(idBytes(id))); err == nil {
+			if err := a.unmarshal(bk.Get([]byte(id))); err == nil {
 				a.Views += int64(len(hits))
-				bk.Put(idBytes(id), a.marshal())
+				bk.Put([]byte(id), a.marshal())
 			}
 			delete(counter.m, id)
 		}

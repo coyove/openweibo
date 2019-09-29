@@ -83,7 +83,7 @@ func handleEditPostAction(g *gin.Context) {
 		return
 	}
 
-	if a.Parent == 0 && len(title) == 0 {
+	if a.Parent == nil && len(title) == 0 {
 		errorPage(400, "title/too-short", g)
 		return
 	}
@@ -96,7 +96,7 @@ func handleEditPostAction(g *gin.Context) {
 	oldtags := a.Tags
 	a.Content, a.Tags = content, tags
 
-	if a.Parent == 0 {
+	if a.Parent == nil {
 		a.Title = title
 	}
 
@@ -141,7 +141,7 @@ func handleDeletePostAction(g *gin.Context) {
 		return
 	}
 
-	if a.Parent != 0 {
+	if a.Parent != nil {
 		g.Redirect(302, "/p/"+a.DisplayParentID())
 	} else {
 		g.Redirect(302, "/vec")
