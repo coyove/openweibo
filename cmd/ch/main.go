@@ -12,6 +12,7 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -25,6 +26,7 @@ var m *Manager
 
 func main() {
 	rand.Seed(time.Now().Unix())
+	runtime.GOMAXPROCS(4)
 
 	var err error
 	loadConfig()
@@ -132,6 +134,8 @@ func main() {
 
 	r.Handle("GET", "/cookie", handleCookie)
 	r.Handle("POST", "/cookie", handleCookie)
+
+	r.Handle("GET", "/loaderio-4d068f605f9b693f6ca28a8ca23435c6", func(g *gin.Context) { g.String(200, ("loaderio-4d068f605f9b693f6ca28a8ca23435c6")) })
 
 	if config.Domain == "" {
 		log.Fatal(r.Run(":5010"))
