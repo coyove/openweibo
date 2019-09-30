@@ -73,17 +73,6 @@ func main() {
 		panic(err)
 	}
 
-	if config.Key != "0123456789abcdef" {
-		log.Println("P R O D U C A T I O N")
-		gin.SetMode(gin.ReleaseMode)
-		mwLoggerOutput, gin.DefaultErrorWriter = logf, logerrf
-	} else {
-		mwLoggerOutput, gin.DefaultErrorWriter = io.MultiWriter(logf, os.Stdout), io.MultiWriter(logerrf, os.Stdout)
-	}
-
-	log.SetOutput(mwLoggerOutput)
-	log.SetFlags(log.Lshortfile | log.Ltime | log.Ldate)
-
 	if os.Getenv("BENCH") == "1" {
 		ids := [][]byte{}
 		randString := func() string { return strconv.Itoa(rand.Int()) }
@@ -105,6 +94,17 @@ func main() {
 			}
 		}
 	}
+
+	if config.Key != "0123456789abcdef" {
+		log.Println("P R O D U C A T I O N")
+		gin.SetMode(gin.ReleaseMode)
+		mwLoggerOutput, gin.DefaultErrorWriter = logf, logerrf
+	} else {
+		mwLoggerOutput, gin.DefaultErrorWriter = io.MultiWriter(logf, os.Stdout), io.MultiWriter(logerrf, os.Stdout)
+	}
+
+	log.SetOutput(mwLoggerOutput)
+	log.SetFlags(log.Lshortfile | log.Ltime | log.Ldate)
 
 	r := gin.New()
 	r.Use(gin.Recovery(), gzip.Gzip(gzip.BestSpeed), mwLogger(), mwRenderPerf, mwIPThrot)

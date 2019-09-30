@@ -50,7 +50,7 @@ tr {
                 <td class=nowrap>分类:</td>
                 <td>
                     <select class=t name=cat>
-                        <option value="">无</option>
+                        <option value="default">default</option>
                         {{range .Tags}}<option value="{{.}}" {{if eq $.Article.Category .}}selected{{end}}>{{.}}</option>{{end}}
                     </select>
                 </td>

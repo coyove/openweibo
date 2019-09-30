@@ -49,7 +49,7 @@ var (
 		MaxContent:   4096,
 		MinContent:   8,
 		MaxTags:      4,
-		PostsPerPage: 7,
+		PostsPerPage: 30,
 		Tags:         []string{},
 		InboxSize:    100,
 		Cooldown:     10,
