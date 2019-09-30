@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	_ "image/png"
+	"log"
 	"math/rand"
 	"net"
 	"net/url"
@@ -22,7 +23,7 @@ var (
 	mgr      ch.Nodes
 	cachemgr *cache.Cache
 	dedup    *lru.Cache
-	rxSan    = regexp.MustCompile(`(^>.+|<|https?://\S+)`)
+	rxSan    = regexp.MustCompile(`(?m)(^>.+|<|https?://\S+)`)
 )
 
 func softTrunc(a string, n int) string {
@@ -120,6 +121,7 @@ func isAdmin(g interface{}) bool {
 
 func sanText(in string) string {
 	return rxSan.ReplaceAllStringFunc(in, func(in string) string {
+		log.Println(in)
 		if in == "<" {
 			return "&lt;"
 		}
