@@ -21,17 +21,19 @@ func mget(tx *bbolt.Tx, noGet bool, res [][2][]byte) (a []*Article) {
 	return
 }
 
-func mgetReplies(pid []byte, ids []int64) (a []*Article) {
+func mgetReplies(pid []byte, start, end int) (a []*Article) {
 	m.db.View(func(tx *bbolt.Tx) error {
 		main := tx.Bucket(bkPost)
 		buf := make([]byte, len(pid)+2)
 
-		for _, id := range ids {
+		for id := start; id < end; id++ {
 			p := &Article{}
 			newReplyID(pid, uint16(id), buf)
-			if p.unmarshal(main.Get(buf)) == nil && p.ID != nil {
-				a = append(a, p)
+			if p.unmarshal(main.Get(buf)) != nil || p.ID == nil {
+				p.NotFound = true
+				p.Index = int64(id)
 			}
+			a = append(a, p)
 		}
 		return nil
 	})

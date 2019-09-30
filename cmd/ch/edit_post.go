@@ -51,7 +51,7 @@ func handleEditPostAction(g *gin.Context) {
 		title       = softTrunc(g.PostForm("title"), 100)
 		content     = softTrunc(g.PostForm("content"), int(config.MaxContent))
 		author      = softTrunc(g.PostForm("author"), 32)
-		tags        = splitTags(g.PostForm("tags"))
+		cat         = checkCategory(g.PostForm("cat"))
 		locked      = g.PostForm("locked") != ""
 		highlighted = g.PostForm("highlighted") != ""
 	)
@@ -71,14 +71,14 @@ func handleEditPostAction(g *gin.Context) {
 
 	if locked != a.Locked {
 		a.Locked = locked
-		m.UpdateArticle(a, a.Tags, false)
+		m.UpdateArticle(a, a.Category, false)
 		g.Redirect(302, redir)
 		return
 	}
 
 	if highlighted != a.Highlighted {
 		a.Highlighted = highlighted
-		m.UpdateArticle(a, a.Tags, false)
+		m.UpdateArticle(a, a.Category, false)
 		g.Redirect(302, redir)
 		return
 	}
@@ -93,8 +93,8 @@ func handleEditPostAction(g *gin.Context) {
 		return
 	}
 
-	oldtags := a.Tags
-	a.Content, a.Tags = content, tags
+	oldtags := a.Category
+	a.Content, a.Category = content, cat
 
 	if a.Parent == nil {
 		a.Title = title
@@ -135,7 +135,7 @@ func handleDeletePostAction(g *gin.Context) {
 		return
 	}
 
-	if err := m.UpdateArticle(a, nil, true); err != nil {
+	if err := m.UpdateArticle(a, "", true); err != nil {
 		log.Println(err)
 		errorPage(500, "internal/error", g)
 		return

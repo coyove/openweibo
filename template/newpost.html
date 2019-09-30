@@ -22,16 +22,13 @@ tr {
         <td></td><td style="font-size:90%">最少10字节</td>
     </tr>
     <tr>
-        <td class=nowrap>标签: </td>
+        <td class=nowrap>分类:</td>
         <td>
-            <input class=t name=tags list=tags value="{{.RTags}}">
-            <datalist id="tags">
-            {{range .Tags}}<option value="{{.}}">{{end}}
-            </datalist>
+            <select class=t name=cat value="{{.RCat}}">
+                <option value="default">default</option>
+                {{range .Tags}}<option value="{{.}}" {{if eq $.RCat .}}selected{{end}}>{{.}}</option>{{end}}
+            </select>
         </td>
-    </tr>
-    <tr>
-        <td></td><td style="font-size:90%">(选填) 以空格分隔</td>
     </tr>
     <tr>
         <td class=nowrap>ID: </td>

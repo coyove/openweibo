@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/binary"
+	"fmt"
 	"html/template"
 	"math/rand"
 	"sync/atomic"
@@ -31,29 +32,29 @@ type ArticleRepliesView struct {
 	TotalPages    int
 	Pages         []int
 	ShowIP        bool
-	Title         string
 	ReplyView     interface{}
 }
 
 type Article struct {
-	ID          []byte   `protobuf:"bytes,1,opt"`
-	Index       int64    `protobuf:"varint,2,opt"`
-	Parent      []byte   `protobuf:"bytes,3,opt"`
-	Replies     []int64  `protobuf:"varint,4,rep"`
-	Locked      bool     `protobuf:"varint,5,opt"`
-	Highlighted bool     `protobuf:"varint,6,opt"`
-	Announce    bool     `protobuf:"varint,7,opt"`
-	Title       string   `protobuf:"bytes,8,opt"`
-	Content     string   `protobuf:"bytes,9,opt"`
-	Author      string   `protobuf:"bytes,10,opt"`
-	IP          string   `protobuf:"bytes,11,opt"`
-	Tags        []string `protobuf:"bytes,13,rep"`
-	Views       int64    `protobuf:"varint,14,opt"`
-	CreateTime  uint32   `protobuf:"fixed32,15,opt"`
-	ReplyTime   uint32   `protobuf:"fixed32,16,opt"`
+	ID          []byte `protobuf:"bytes,1,opt"`
+	Index       int64  `protobuf:"varint,2,opt"`
+	Parent      []byte `protobuf:"bytes,3,opt"`
+	Replies     int64  `protobuf:"varint,4,opt"`
+	Locked      bool   `protobuf:"varint,5,opt"`
+	Highlighted bool   `protobuf:"varint,6,opt"`
+	Announce    bool   `protobuf:"varint,7,opt"`
+	Title       string `protobuf:"bytes,8,opt"`
+	Content     string `protobuf:"bytes,9,opt"`
+	Author      string `protobuf:"bytes,10,opt"`
+	IP          string `protobuf:"bytes,11,opt"`
+	Category    string `protobuf:"bytes,13,opt"`
+	Views       int64  `protobuf:"varint,14,opt"`
+	CreateTime  uint32 `protobuf:"fixed32,15,opt"`
+	ReplyTime   uint32 `protobuf:"fixed32,16,opt"`
 
 	// Transient
-	SearchTerm string `protobuf:"bytes,17,opt"`
+	NotFound  bool `protobuf:"varint,18,opt"`
+	BeReplied bool `protobuf:"varint,19,opt"`
 }
 
 func (a *Article) Reset() { *a = Article{} }
@@ -92,13 +93,20 @@ func newReplyID(parent []byte, index uint16, out []byte) (id []byte) {
 	return
 }
 
-func (m *Manager) NewPost(title, content, author, ip string, tags []string) *Article {
+func getReplyIndex(replyID []byte) uint16 {
+	if len(replyID) < 12 {
+		return 0
+	}
+	return binary.BigEndian.Uint16(replyID[len(replyID)-2:])
+}
+
+func (m *Manager) NewPost(title, content, author, ip string, cat string) *Article {
 	return &Article{
 		ID:         newID(),
 		Title:      title,
 		Content:    content,
 		Author:     author,
-		Tags:       tags,
+		Category:   cat,
 		IP:         ip,
 		CreateTime: uint32(time.Now().Unix()),
 		ReplyTime:  uint32(time.Now().Unix()),
@@ -145,7 +153,11 @@ func (a *Article) marshal() []byte {
 }
 
 func (a *Article) unmarshal(b []byte) error {
-	return proto.Unmarshal(b, a)
+	err := proto.Unmarshal(b, a)
+	if a.ID == nil {
+		return fmt.Errorf("failed to unmarshal")
+	}
+	return err
 }
 
 func authorNameToHash(n string) string {

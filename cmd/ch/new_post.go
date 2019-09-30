@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"strings"
 	"sync"
 
 	"github.com/dchest/captcha"
@@ -41,11 +40,11 @@ func handleNewPostView(g *gin.Context) {
 		Tags      []string
 		IsAdmin   bool
 
-		RTitle, RAuthor, RContent, RTags, EError string
+		RTitle, RAuthor, RContent, RCat, EError string
 	}{
 		RTitle:   g.Query("title"),
 		RContent: g.Query("content"),
-		RTags:    g.Query("tags"),
+		RCat:     g.Query("cat"),
 		RAuthor:  g.Query("author"),
 		EError:   g.Query("error"),
 		Tags:     config.Tags,
@@ -135,10 +134,10 @@ func handleNewPostAction(g *gin.Context) {
 		content  = softTrunc(g.PostForm("content"), int(config.MaxContent))
 		title    = softTrunc(g.PostForm("title"), 100)
 		author   = getAuthor(g)
-		tags     = splitTags(softTrunc(g.PostForm("tags"), 128))
+		cat      = checkCategory(softTrunc(g.PostForm("cat"), 20))
 		announce = g.PostForm("announce") != ""
 		redir    = func(a, b string) {
-			q := encodeQuery(a, b, "author", author, "content", content, "title", title, "tags", strings.Join(tags, " "))
+			q := encodeQuery(a, b, "author", author, "content", content, "title", title, "cat", cat)
 			g.Redirect(302, "/new?"+q)
 		}
 	)
@@ -163,7 +162,7 @@ func handleNewPostAction(g *gin.Context) {
 		return
 	}
 
-	a := m.NewPost(title, content, authorNameToHash(author), ip, tags)
+	a := m.NewPost(title, content, authorNameToHash(author), ip, cat)
 	if isAdmin(author) && announce {
 		a.Announce = true
 		a.ID = newBigID()

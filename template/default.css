@@ -38,9 +38,14 @@ hr {
     border-width: 0 0 1px 0;
 }
 
+.articles tr:first-child {
+    border-top-width: 1px;
+}
+
 .articles th {
+    line-height: 2.2em !important;
     text-align: left;
-    border-top: none !important;
+    background: #f7f8f9;
 }
 
 .articles th, .articles td {
@@ -57,6 +62,12 @@ hr {
     width: 1%;
 }
 
+.articles th.nowrap.state, .articles td.nowrap.state {
+    border: #ccc solid 1px;
+    border-width: 0 0 0 1px;
+    text-align: center;
+}
+
 .articles tr.dark {
     background: rgba(0,0,0,0.033);
 }
@@ -65,7 +76,7 @@ hr {
     color: #233;
 }
 
-input.t, textarea {
+input.t, textarea, select.t {
     width: 100%;
     resize: none;
 }
@@ -83,50 +94,6 @@ pre {
     font: inherit;
     white-space: pre-wrap;
     word-break: break-all;
-}
-
-span.tag {
-    display: inline-block;
-    position: relative;
-    padding: 0 3px 0 4px;
-    margin-right: 0.2em;
-    overflow: hidden;
-    background: rgba(0,0,0,0.07);
-    vertical-align: bottom;
-}
-
-span.tag:before {
-    content: ' ';
-    position: absolute;
-    display: block;
-    width: 0;
-    height: 0;
-    left: 0;
-    top: -6px;
-    border: 6px solid transparent;
-    border-left: 6px solid #6B82D6;
-}
-
-span.tag.solid:before {
-    display: none;
-}
-
-span.tag a {
-    color: #233;
-    margin-left: 2px;
-    text-decoration: none !important;
-}
-
-span.tag.hl {
-    background: #6B82D6;
-}
-
-span.tag.hl:before {
-    border-left: 6px solid rgba(0,0,0,0.3);
-}
-
-span.tag.hl * {
-    color: white !important;
 }
 
 nav {
@@ -355,10 +322,12 @@ div.ip {
     }
 
     .articles.small th.nowrap {
+        display: none;
     }
 
     .articles.small td.nowrap {
         width: inherit;
+        border: none;
     }
 
     .articles.small td.nowrap, .articles.small td.nowrap * {

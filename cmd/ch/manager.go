@@ -15,7 +15,7 @@ import (
 var (
 	errNoBucket = errors.New("")
 	bkPost      = []byte("post")
-	bkAuthorTag = []byte("authortag")
+	bkAuthorTag = []byte("authorcat")
 )
 
 type Manager struct {
@@ -173,7 +173,7 @@ func (m *Manager) PostPost(a *Article) error {
 		if err := m.insertBKV(bk, a.Author, a.ID, a.ID, true); err != nil {
 			return err
 		}
-		if err := m.insertTags(bk, a.ID, a.Tags...); err != nil {
+		if err := m.insertBKV(bk, "#"+a.Category, a.ID, a.ID, false); err != nil {
 			return err
 		}
 		return nil
@@ -191,21 +191,20 @@ func (m *Manager) PostReply(parent []byte, a *Article) error {
 	if p.Locked {
 		return fmt.Errorf("locked parent")
 	}
-	if len(p.Replies) >= 8192 {
+	if p.Replies >= 4096 {
 		return fmt.Errorf("too many replies")
 	}
 	if strings.Count(p.Title, "RE:") > 4 {
 		return fmt.Errorf("too deep")
 	}
 
-	a.Parent = parent
-	a.Tags = nil
-	a.Title = "RE: " + p.Title
-	a.Index = int64(len(p.Replies)) + 1
-	a.ID = newReplyID(parent, uint16(a.Index), nil)
-
 	p.ReplyTime = uint32(time.Now().Unix())
-	p.Replies = append(p.Replies, a.Index)
+	p.Replies++
+	a.Parent = parent
+	a.Category = ""
+	a.Title = "RE: " + p.Title
+	a.Index = p.Replies
+	a.ID = newReplyID(parent, uint16(a.Index), nil)
 
 	return m.db.Update(func(tx *bbolt.Tx) error {
 		if err := tx.Bucket(bkPost).Put(idBytes(a.ID), a.marshal()); err != nil {
@@ -217,10 +216,7 @@ func (m *Manager) PostReply(parent []byte, a *Article) error {
 		if err := m.insertBKV(tx.Bucket(bkAuthorTag), a.Author, a.ID, a.ID, true); err != nil {
 			return err
 		}
-		if a.Author != p.Author { // Insert the notify of this reply to parent's author's inbox
-			return m.insertBKV(tx.Bucket(bkAuthorTag), p.Author, newID(), a.ID, true)
-		}
-		return nil
+		return m.insertBKV(tx.Bucket(bkAuthorTag), p.Author, newID(), a.ID, true)
 	})
 }
 
@@ -231,54 +227,31 @@ func (m *Manager) GetArticle(id []byte) (*Article, error) {
 	})
 }
 
-func (m *Manager) UpdateArticle(a *Article, oldtags []string, del bool) error {
+func (m *Manager) UpdateArticle(a *Article, oldcat string, del bool) error {
 	return m.db.Update(func(tx *bbolt.Tx) error {
 		bk := tx.Bucket(bkAuthorTag)
 
 		if del {
 			main := tx.Bucket(bkPost)
-			if a.Parent != nil {
-				pa := Article{}
-				pa.unmarshal(main.Get(a.Parent))
-				if bytes.Equal(pa.ID, a.Parent) {
-					for i := len(pa.Replies) - 1; i >= 0; i-- {
-						if pa.Replies[i] == a.Index {
-							pa.Replies = append(pa.Replies[:i], pa.Replies[i+1:]...)
-							break
-						}
-					}
-					if err := main.Put(pa.ID, pa.marshal()); err != nil {
-						return err
-					}
-				}
-			}
-			if err := main.Delete(idBytes(a.ID)); err != nil {
+			if err := main.Delete(a.ID); err != nil {
 				return err
 			}
 			if err := m.deleteBKV(bk, a.Author, a.ID); err != nil {
 				return err
 			}
-			if err := m.deleteTags(bk, a.ID, a.Tags...); err != nil {
+			if err := m.deleteBKV(bk, "#"+a.Category, a.ID); err != nil {
 				return err
 			}
 		} else {
-			newtags := append([]string{}, a.Tags...)
-			for i := len(oldtags) - 1; i > 0; i-- {
-				for j, t := range newtags {
-					if t == oldtags[i] {
-						newtags = append(newtags[:j], newtags[j+1:]...)
-						oldtags = append(oldtags[:i], oldtags[i+1:]...)
-						break
-					}
+			if a.Category != oldcat {
+				if err := m.deleteBKV(bk, "#"+oldcat, a.ID); err != nil {
+					return err
+				}
+				if err := m.insertBKV(bk, "#"+a.Category, a.ID, a.ID, false); err != nil {
+					return err
 				}
 			}
-			if err := m.deleteTags(bk, a.ID, oldtags...); err != nil {
-				return err
-			}
-			if err := m.insertTags(bk, a.ID, newtags...); err != nil {
-				return err
-			}
-			if err := tx.Bucket(bkPost).Put(idBytes(a.ID), a.marshal()); err != nil {
+			if err := tx.Bucket(bkPost).Put(a.ID, a.marshal()); err != nil {
 				return err
 			}
 		}

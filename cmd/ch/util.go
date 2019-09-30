@@ -84,30 +84,14 @@ func extractCSRFToken(g *gin.Context, tok string) (r []byte, ok bool) {
 	return
 }
 
-func splitTags(u string) []string {
-	urls := []string{}
-NEXT:
-	for _, u := range regexp.MustCompile(`[\r\n\s\t,]`).Split(u, -1) {
-		if u = strings.TrimSpace(u); len(u) < 3 {
-			continue
-		}
-		if u[0] == '#' {
-			u = u[1:]
-		}
-		u = softTrunc(u, 15)
-		if !config.tagsMap[u] {
-			continue
-		}
-		for _, u2 := range urls {
-			if u2 == u {
-				continue NEXT
-			}
-		}
-		if urls = append(urls, u); len(urls) >= int(config.MaxTags) {
-			break
-		}
+func checkCategory(u string) string {
+	if u == "default" {
+		return u
 	}
-	return urls
+	if !config.tagsMap[u] {
+		return "default"
+	}
+	return u
 }
 
 func encodeQuery(a ...string) string {
