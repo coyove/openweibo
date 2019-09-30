@@ -22,7 +22,7 @@ var (
 	mgr      ch.Nodes
 	cachemgr *cache.Cache
 	dedup    *lru.Cache
-	rxSan    = regexp.MustCompile(`(>.+|<|https?://\S+)`)
+	rxSan    = regexp.MustCompile(`(^>.+|<|https?://\S+)`)
 )
 
 func softTrunc(a string, n int) string {

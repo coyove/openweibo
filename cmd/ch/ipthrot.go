@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net"
 	"strconv"
@@ -29,28 +30,21 @@ func mwRenderPerf(g *gin.Context) {
 		}
 	}
 
-	g.Set("ip", ip)
-
 	start := time.Now()
+	g.Set("ip", ip)
+	g.Set("req-start", start)
 	g.Next()
 	msec := time.Since(start).Nanoseconds() / 1e6
 
-	for {
-		x := atomic.LoadInt64(&survey.render.avg)
-		x2 := atomic.LoadInt64(&survey.render.max)
-		y := (x + msec) / 2
-		y2 := x2
-		if msec > y2 {
-			y2 = msec
-		}
-
-		if atomic.CompareAndSwapInt64(&survey.render.avg, x, y) {
-			survey.render.max = y2
-			break
-		}
+	if msec > survey.max {
+		survey.max = msec
 	}
-
 	atomic.AddInt64(&survey.written, int64(g.Writer.Size()))
+
+	x := g.Writer.Header().Get("Content-Type")
+	if strings.HasPrefix(x, "text/html") {
+		g.Writer.Write([]byte(fmt.Sprintf("Render %dms | Max %dms | Out %.2fG", msec, survey.max, float64(survey.written)/1024/1024/1024)))
+	}
 }
 
 func mwIPThrot(g *gin.Context) {

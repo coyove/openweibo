@@ -110,11 +110,7 @@ func main() {
 
 	r := gin.New()
 	r.Use(gin.Recovery(), gzip.Gzip(gzip.BestSpeed), mwLogger(), mwRenderPerf, mwIPThrot)
-	r.SetFuncMap(template.FuncMap{
-		"RenderPerf": func() string {
-			return fmt.Sprintf("%dms/%dms/%.3fM", survey.render.avg, survey.render.max, float64(survey.written)/1024/1024)
-		},
-	})
+	r.SetFuncMap(template.FuncMap{})
 	r.LoadHTMLGlob("template/*.html")
 	r.Static("/s/", "template")
 	r.Handle("GET", "/", func(g *gin.Context) { g.HTML(200, "home.html", struct{ Home template.HTML }{}) })

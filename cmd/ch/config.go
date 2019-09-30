@@ -56,10 +56,7 @@ var (
 	}
 
 	survey struct {
-		render struct {
-			avg int64
-			max int64
-		}
+		max     int64
 		written int64
 	}
 )
