@@ -22,8 +22,12 @@
     {{range .Articles}}
     <tr class="row">
         <td class="row">{{template "row_tags.html" .}}</td>
-        <td class="nowrap"><span class=mobile>
-                <b>#</b></span>{{if not .Parent}}<a href="/cat/{{.Category}}">{{.Category}}</a>{{else}}{{if .BeReplied}}被{{end}}回复{{end}}
+        <td class="nowrap">
+                {{if .Announce}}
+                <b>公告</b>
+                {{else}}
+                <span class=mobile><b>#</b></span>{{if not .Parent}}<a href="/cat/{{.Category}}">{{.Category}}</a>{{else}}{{if .BeReplied}}被{{end}}回复{{end}}
+            {{end}}
         </td>
         <td class="nowrap"><a href="/id/{{.Author}}">{{.Author}}</a></td>
         <td class="nowrap date"><span>{{.CreateTimeString false}}</span></td>

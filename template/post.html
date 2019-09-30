@@ -96,7 +96,7 @@
                         <input size=10 name="answer" class=s>
                     </td>
                     <td class=nowrap>
-                        <button class="pure-material-button-outlined" type=submit>发布</button>
+                        <button {{if $.ParentArticle.Locked}}disabled{{end}} class="pure-material-button-outlined" type=submit>发布</button>
                         <a class="pure-material-button-outlined" href="/p/{{$.ParentArticle.DisplayID}}">取消</a>
                     </td>
                 </tr> 

@@ -1,5 +1,3 @@
-{{if .Announce}}<span class="tag solid">公告</span>{{end}}
-{{if .Locked}}<span class="tag solid">锁定</span>{{end}}
-{{if .Highlighted}}<span class="tag solid">&#x2605;</span>{{end}}
+{{if .Highlighted}}<span style="color:#2a66d9">&#x2605;</span>{{end}}
 
-<a href="/p/{{.DisplayID}}">{{.Title}}</a>
+<a href="/p/{{.DisplayID}}" {{if .Locked}}style="color: #aaa"{{end}}>{{.Title}}</a>
