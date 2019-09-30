@@ -212,7 +212,6 @@ func makeHandleMainView(t byte) func(g *gin.Context) {
 		var bkName, partKey []byte
 		var pl ArticlesTimelineView
 		var err error
-		var more bool
 
 		switch t {
 		case 't':
@@ -225,14 +224,11 @@ func makeHandleMainView(t byte) func(g *gin.Context) {
 			bkName = bkPost
 		}
 
-		next, dir := parseCursor(g.Query("n"))
-		if dir == "prev" {
-			pl.Articles, more, pl.TotalCount, err = m.FindPosts('a', bkName, partKey, next, int(config.PostsPerPage))
-			pl.NoPrev = !more
-		} else {
-			pl.Articles, more, pl.TotalCount, err = m.FindPosts('d', bkName, partKey, next, int(config.PostsPerPage))
-			pl.NoPrev = next == nil
-		}
+		var next = displayIDToObjectID(g.Query("n"))
+		var prev []byte
+
+		pl.Articles, prev, next, pl.TotalCount, err = m.FindPosts(bkName, partKey, next, int(config.PostsPerPage))
+		pl.NoPrev = prev == nil
 
 		if err != nil {
 			errorPage(500, "INTERNAL: "+err.Error(), g)
@@ -244,8 +240,8 @@ func makeHandleMainView(t byte) func(g *gin.Context) {
 		}
 
 		if len(pl.Articles) > 0 {
-			pl.Next = objectIDToDisplayID(incBytes(pl.Articles[len(pl.Articles)-1].ID, -1))
-			pl.Prev = objectIDToDisplayID(incBytes(pl.Articles[0].ID, 1))
+			pl.Next = objectIDToDisplayID(next)
+			pl.Prev = objectIDToDisplayID(prev)
 			pl.Title = fmt.Sprintf("%s ~ %s", pl.Articles[0].CreateTimeString(true), pl.Articles[len(pl.Articles)-1].CreateTimeString(true))
 		}
 
@@ -257,7 +253,7 @@ func handleRepliesView(g *gin.Context) {
 	var pl = ArticleRepliesView{ShowIP: isAdmin(g)}
 	var err error
 
-	pl.ParentArticle, err = m.GetArticle(displayIDToObejctID(g.Param("parent")))
+	pl.ParentArticle, err = m.GetArticle(displayIDToObjectID(g.Param("parent")))
 	if err != nil || pl.ParentArticle.ID == nil {
 		errorPage(404, "NOT FOUND", g)
 		log.Println(pl.ParentArticle, err)

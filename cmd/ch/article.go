@@ -47,7 +47,6 @@ type Article struct {
 	Content     string   `protobuf:"bytes,9,opt"`
 	Author      string   `protobuf:"bytes,10,opt"`
 	IP          string   `protobuf:"bytes,11,opt"`
-	Image       string   `protobuf:"bytes,12,opt"`
 	Tags        []string `protobuf:"bytes,13,rep"`
 	Views       int64    `protobuf:"varint,14,opt"`
 	CreateTime  uint32   `protobuf:"fixed32,15,opt"`
@@ -65,17 +64,32 @@ func (a *Article) ProtoMessage() {}
 
 // For normal posts
 func newID() (id []byte) {
-	id = make([]byte, 12)
-	binary.BigEndian.PutUint32(id[:4], uint32(time.Now().Unix()))
-	binary.BigEndian.PutUint32(id[4:], uint32(atomic.AddInt64(&m.counter, 1)))
-	binary.BigEndian.PutUint32(id[8:], rand.Uint32())
+	id = make([]byte, 10)
+	ctr := uint32(atomic.AddInt64(&m.counter, 1))
+
+	// 1 + 1 + 33 + 24 + 5
+	v := 1<<63 | uint64(time.Now().Unix())<<29 | uint64(ctr&0xffffff)<<5 | uint64(rand.Uint64()&0x1f)
+	binary.BigEndian.PutUint64(id, v)
+	binary.BigEndian.PutUint16(id[8:], uint16(rand.Uint64()))
 	return
 }
 
 func newBigID() []byte {
 	id := newID()
-	binary.BigEndian.PutUint32(id[:4], 0xffffffff)
-	return id[:]
+	id[0] |= 0x40
+	return id
+}
+
+func newReplyID(parent []byte, index uint16, out []byte) (id []byte) {
+	if out != nil {
+		id = out
+	} else {
+		id = make([]byte, len(parent)+2)
+	}
+	copy(id, parent)
+	binary.BigEndian.PutUint16(id[len(parent):], index)
+	id[0] &= 0x7f
+	return
 }
 
 func (m *Manager) NewPost(title, content, author, ip string, tags []string) *Article {
@@ -125,13 +139,6 @@ func (a *Article) ContentAbstract() string {
 	return softTrunc(a.Content, 64)
 }
 
-func (a *Article) ImageURL() string {
-	if a.Image != "" {
-		return "//" + config.ImageDomain + "/i/" + a.Image
-	}
-	return ""
-}
-
 func (a *Article) marshal() []byte {
 	b, _ := proto.Marshal(a)
 	return b
@@ -160,13 +167,13 @@ func authorNameToHash(n string) string {
 	return n0 + base64.URLEncoding.EncodeToString(x[:6])
 }
 
-var idEncoding = base64.NewEncoding("_BCDEFGHIJKLMNOPQRSTUVWXYAabcdefghijklmnopqrstuvwxyz0123456789.,").WithPadding('Z')
+var idEncoding = base64.NewEncoding("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz~").WithPadding('-')
 
 func objectIDToDisplayID(id []byte) string {
 	return idEncoding.EncodeToString(id)
 }
 
-func displayIDToObejctID(id string) []byte {
+func displayIDToObjectID(id string) []byte {
 	buf, _ := idEncoding.DecodeString(id)
 	return buf
 }

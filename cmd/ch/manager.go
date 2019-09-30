@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/binary"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -71,47 +70,36 @@ func ByTimeline() findby {
 	return findby{bkName: bkPost}
 }
 
-func (m *Manager) FindPosts(dir byte, bkName, partitionKey []byte, cursor []byte, n int) ([]*Article, bool, int, error) {
-	var (
-		more  bool
-		a     []*Article
-		count int
-		err   = m.db.View(func(tx *bbolt.Tx) error {
-			bk := tx.Bucket(bkName)
-			if partitionKey != nil {
-				bk = bk.Bucket(partitionKey)
-			}
-			if bk == nil {
-				return nil
-			}
-
-			count = bk.Stats().KeyN
-
-			var res [][2][]byte
-			var next []byte
-
-			if dir == 'a' {
-				res, next = ScanBucketAsc(bk, idBytes(cursor), n, true)
-			} else {
-				res, next = ScanBucketDesc(bk, idBytes(cursor), n, false)
-			}
-
-			more = next != nil
-
-			if bytes.Equal(bkName, bkPost) {
-				a = mget(tx, true, res)
-				for i := len(a) - 1; i >= 0; i-- {
-					if a[i].Parent != nil {
-						a = append(a[:i], a[i+1:]...)
-					}
-				}
-			} else {
-				a = mget(tx, false, res)
-			}
+func (m *Manager) FindPosts(bkName, partitionKey []byte, cursor []byte, n int) (a []*Article, prev []byte, next []byte, count int, err error) {
+	err = m.db.View(func(tx *bbolt.Tx) error {
+		bk := tx.Bucket(bkName)
+		if partitionKey != nil {
+			bk = bk.Bucket(partitionKey)
+		}
+		if bk == nil {
 			return nil
-		})
-	)
-	return a, more, count, err
+		}
+
+		count = bk.Stats().KeyN
+
+		var res [][2][]byte
+
+		res, next = ScanBucketDesc(bk, cursor, n, false)
+		prev = substractCursorN(bk, cursor, n)
+
+		if bytes.Equal(bkName, bkPost) {
+			a = mget(tx, true, res)
+			for i := len(a) - 1; i >= 0; i-- {
+				if a[i].Parent != nil {
+					a = append(a[:i], a[i+1:]...)
+				}
+			}
+		} else {
+			a = mget(tx, false, res)
+		}
+		return nil
+	})
+	return
 }
 
 func (m *Manager) TagsCount(tags ...string) map[string]int {
@@ -214,9 +202,7 @@ func (m *Manager) PostReply(parent []byte, a *Article) error {
 	a.Tags = nil
 	a.Title = "RE: " + p.Title
 	a.Index = int64(len(p.Replies)) + 1
-	a.ID = make([]byte, 1+len(parent)+2)
-	copy(a.ID[1:], parent)
-	binary.BigEndian.PutUint16(a.ID[len(a.ID)-2:], uint16(a.Index))
+	a.ID = newReplyID(parent, uint16(a.Index), nil)
 
 	p.ReplyTime = uint32(time.Now().Unix())
 	p.Replies = append(p.Replies, a.Index)

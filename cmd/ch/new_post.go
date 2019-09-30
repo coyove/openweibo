@@ -179,7 +179,7 @@ func handleNewPostAction(g *gin.Context) {
 
 func handleNewReplyAction(g *gin.Context) {
 	var (
-		reply   = displayIDToObejctID(g.PostForm("reply"))
+		reply   = displayIDToObjectID(g.PostForm("reply"))
 		ip      = hashIP(g)
 		content = softTrunc(g.PostForm("content"), int(config.MaxContent))
 		author  = getAuthor(g)

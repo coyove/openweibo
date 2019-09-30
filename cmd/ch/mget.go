@@ -1,8 +1,6 @@
 package main
 
 import (
-	"encoding/binary"
-
 	"github.com/etcd-io/bbolt"
 )
 
@@ -26,14 +24,12 @@ func mget(tx *bbolt.Tx, noGet bool, res [][2][]byte) (a []*Article) {
 func mgetReplies(pid []byte, ids []int64) (a []*Article) {
 	m.db.View(func(tx *bbolt.Tx) error {
 		main := tx.Bucket(bkPost)
-		buf := make([]byte, 1+len(pid)+2)
-		copy(buf[1:], pid)
+		buf := make([]byte, len(pid)+2)
 
 		for _, id := range ids {
 			p := &Article{}
-			binary.BigEndian.PutUint16(buf[len(buf)-2:], uint16(id))
-
-			if p.unmarshal(main.Get(buf)) == nil {
+			newReplyID(pid, uint16(id), buf)
+			if p.unmarshal(main.Get(buf)) == nil && p.ID != nil {
 				a = append(a, p)
 			}
 		}

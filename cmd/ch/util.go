@@ -150,45 +150,9 @@ func errorPage(code int, msg string, g *gin.Context) {
 	g.HTML(code, "error.html", struct{ Message string }{msg})
 }
 
-func parseCursor(p string) ([]byte, string) {
-	a := "next"
-	if strings.HasPrefix(p, "-") {
-		a, p = "prev", p[1:]
-	}
-	c := displayIDToObejctID(p)
-	if len(c) != 12 {
-		a = "next"
-	}
-	return c, a
-}
-
 func intmin(a, b int) int {
 	if a < b {
 		return a
 	}
 	return b
-}
-
-func intmax(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
-func incBytes(p []byte, v int) []byte {
-	p = append([]byte{}, p...)
-	for i := len(p) - 1; i >= 0; i-- {
-		if v == 1 {
-			if p[i]++; p[i] == 0 {
-				continue
-			}
-		} else {
-			if p[i]--; p[i] == 255 {
-				continue
-			}
-		}
-		break
-	}
-	return p
 }
