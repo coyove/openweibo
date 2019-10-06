@@ -2,12 +2,13 @@
 
 <table class="articles small">
     <tr>
+        {{$authorTag := eq .Type "id"}}
         {{if eq .Type "id"}}
         <title>{{.SearchTerm}}的相关发言 {{.Title}}</title>
-        <th>{{.SearchTerm}}的相关发言 ({{.TotalCount}})</th>
+        <th>{{.SearchTerm}}的相关发言</th>
         {{else if eq .Type "tag"}}
         <title>{{.SearchTerm}} {{.Title}}</title>
-        <th>#{{.SearchTerm}} ({{.TotalCount}})</th>
+        <th>#{{.SearchTerm}}</th>
         {{else}}
         <title>{{.Title}}</title>
         <th>标题</th>
@@ -34,7 +35,7 @@
         <td class="nowrap state">{{if .Replies}}<span>{{.Replies}}</span><span class=mobile>回复</span>{{end}}</td>
         <td class="nowrap state">{{if .Views}}<span>{{.Views}}</span><span class=mobile>浏览</span>{{end}}</td>
     </tr>
-    {{if .Parent}}
+    {{if or $authorTag .Parent}}
     <tr class=dark>
         <td colspan=6><div class=reply><pre>{{.ContentAbstract}}</pre></div></td>
     </tr>

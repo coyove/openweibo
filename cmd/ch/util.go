@@ -13,16 +13,12 @@ import (
 	"time"
 
 	"github.com/coyove/common/lru"
-	ch "github.com/coyove/iis"
-	"github.com/coyove/iis/cache"
 	"github.com/gin-gonic/gin"
 )
 
 var (
-	mgr      ch.Nodes
-	cachemgr *cache.Cache
-	dedup    *lru.Cache
-	rxSan    = regexp.MustCompile(`(?m)(^>.+|<|https?://\S+)`)
+	dedup *lru.Cache
+	rxSan = regexp.MustCompile(`(?m)(^>.+|<|https?://\S+)`)
 )
 
 func softTrunc(a string, n int) string {

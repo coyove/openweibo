@@ -1,21 +1,19 @@
 package main
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"math/rand"
-	"strings"
 	"sync"
 	"time"
 
+	"github.com/coyove/iis/cmd/ch/id"
 	"github.com/etcd-io/bbolt"
 )
 
 var (
 	errNoBucket = errors.New("")
 	bkPost      = []byte("post")
-	bkAuthorTag = []byte("authorcat")
 )
 
 type Manager struct {
@@ -39,13 +37,8 @@ func NewManager(path string) (*Manager, error) {
 	}
 
 	if err := db.Update(func(tx *bbolt.Tx) error {
-		if _, err = tx.CreateBucketIfNotExists(bkPost); err != nil {
-			return err
-		}
-		if _, err = tx.CreateBucketIfNotExists(bkAuthorTag); err != nil {
-			return err
-		}
-		return nil
+		_, err := tx.CreateBucketIfNotExists(bkPost)
+		return err
 	}); err != nil {
 		return nil, err
 	}
@@ -53,41 +46,17 @@ func NewManager(path string) (*Manager, error) {
 	return m, nil
 }
 
-type findby struct {
-	bkName  []byte
-	bkName2 []byte
-}
-
-func ByTag(tag string) findby {
-	return findby{bkName: bkAuthorTag, bkName2: []byte("#" + tag)}
-}
-
-func ByAuthor(a string) findby {
-	return findby{bkName: bkAuthorTag, bkName2: []byte(a)}
-}
-
-func ByTimeline() findby {
-	return findby{bkName: bkPost}
-}
-
-func (m *Manager) FindPosts(bkName, partitionKey []byte, cursor []byte, n int) (a []*Article, prev []byte, next []byte, count int, err error) {
+func (m *Manager) FindPosts(tag string, cursor []byte, n int) (a []*Article, prev []byte, next []byte, count int, err error) {
 	err = m.db.View(func(tx *bbolt.Tx) error {
-		bk := tx.Bucket(bkName)
-		if partitionKey != nil {
-			bk = bk.Bucket(partitionKey)
-		}
-		if bk == nil {
-			return nil
-		}
-
+		bk := tx.Bucket(bkPost)
 		count = bk.Stats().KeyN
 
 		var res [][2][]byte
 
-		res, next = ScanBucketDesc(bk, cursor, n, false)
-		prev = substractCursorN(bk, cursor, n)
+		res, next = scanBucketDesc(bk, tag, cursor, n)
+		prev = substractCursorN(bk, tag, cursor, n)
 
-		if bytes.Equal(bkName, bkPost) {
+		if tag == "" {
 			a = mget(tx, true, res)
 			for i := len(a) - 1; i >= 0; i-- {
 				if a[i].Parent != nil {
@@ -102,62 +71,18 @@ func (m *Manager) FindPosts(bkName, partitionKey []byte, cursor []byte, n int) (
 	return
 }
 
-func (m *Manager) TagsCount(tags ...string) map[string]int {
-	ret := map[string]int{}
-	m.db.View(func(tx *bbolt.Tx) error {
-		bk := tx.Bucket(bkAuthorTag)
-		for _, tag := range tags {
-			bk := bk.Bucket([]byte("#" + tag))
-			if bk == nil {
-				ret[tag] = 0
-				continue
-			}
-			ret[tag] = bk.Stats().KeyN
-		}
-		return nil
-	})
-	return ret
-}
-
-func (m *Manager) insertTags(bk *bbolt.Bucket, id []byte, tags ...string) error {
-	for _, tag := range tags {
-		if err := m.insertBKV(bk, "#"+tag, id, id, false); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (m *Manager) deleteTags(bk *bbolt.Bucket, id []byte, tags ...string) error {
-	for _, tag := range tags {
-		if err := m.deleteBKV(bk, "#"+tag, id); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (m *Manager) insertBKV(bk *bbolt.Bucket, b string, k, v []byte, limitSize bool) error {
-	bk, err := bk.CreateBucketIfNotExists([]byte(b))
-	if err != nil {
-		return err
-	}
-	if err = bk.Put(idBytes(k), idBytes(v)); err != nil {
-		return err
-	}
-	if bk.Stats().KeyN > config.InboxSize && limitSize {
-		k, _ := bk.Cursor().First()
-		return bk.Delete(k)
-	}
-	return nil
+	kid := id.ParseID(k)
+	kid.SetTag(b)
+	kid.SetHeader(id.HeaderAuthorTag)
+	return bk.Put(kid.Marshal(), v)
 }
 
 func (m *Manager) deleteBKV(bk *bbolt.Bucket, b string, k []byte) error {
-	bk2 := bk.Bucket([]byte(b))
-	if bk2 == nil {
-		return nil
-	}
-	return bk2.Delete(idBytes(k))
+	kid := id.ParseID(k)
+	kid.SetTag(b)
+	kid.SetHeader(id.HeaderAuthorTag)
+	return bk.Delete(kid.Marshal())
 }
 
 func (m *Manager) PostPost(a *Article) error {
@@ -165,12 +90,10 @@ func (m *Manager) PostPost(a *Article) error {
 		bk := tx.Bucket(bkPost)
 		a.Index = int64(bk.Stats().KeyN + 1)
 
-		if err := bk.Put(idBytes(a.ID), a.marshal()); err != nil {
+		if err := bk.Put(a.ID, a.marshal()); err != nil {
 			return err
 		}
-
-		bk = tx.Bucket(bkAuthorTag)
-		if err := m.insertBKV(bk, a.Author, a.ID, a.ID, true); err != nil {
+		if err := m.insertBKV(bk, a.Author, a.ID, a.ID, false); err != nil {
 			return err
 		}
 		if err := m.insertBKV(bk, "#"+a.Category, a.ID, a.ID, false); err != nil {
@@ -194,64 +117,72 @@ func (m *Manager) PostReply(parent []byte, a *Article) error {
 	if p.Replies >= 4096 {
 		return fmt.Errorf("too many replies")
 	}
-	if strings.Count(p.Title, "RE:") > 4 {
+
+	pid := id.ParseID(parent)
+	if pid.RIndexLen() == 4 {
 		return fmt.Errorf("too deep")
 	}
 
 	p.ReplyTime = uint32(time.Now().Unix())
 	p.Replies++
+
 	a.Parent = parent
 	a.Category = ""
 	a.Title = "RE: " + p.Title
 	a.Index = p.Replies
-	a.ID = newReplyID(parent, uint16(a.Index), nil)
+
+	pid.RIndexAppend(int16(p.Replies))
+	pid.SetHeader(id.HeaderReply)
+	a.ID = pid.Marshal()
 
 	return m.db.Update(func(tx *bbolt.Tx) error {
-		if err := tx.Bucket(bkPost).Put(idBytes(a.ID), a.marshal()); err != nil {
+		main := tx.Bucket(bkPost)
+		if err := main.Put(a.ID, a.marshal()); err != nil {
 			return err
 		}
-		if err := tx.Bucket(bkPost).Put(idBytes(p.ID), p.marshal()); err != nil {
+		if err := main.Put(p.ID, p.marshal()); err != nil {
 			return err
 		}
-		if err := m.insertBKV(tx.Bucket(bkAuthorTag), a.Author, a.ID, a.ID, true); err != nil {
+		if err := m.insertBKV(main, a.Author, a.ID, a.ID, true); err != nil {
 			return err
 		}
-		return m.insertBKV(tx.Bucket(bkAuthorTag), p.Author, newID(), a.ID, true)
+		if p.Author != a.Author {
+			return m.insertBKV(main, p.Author, id.NewID(id.HeaderAuthorTag, "").Marshal(), a.ID, true)
+		}
+		return nil
 	})
 }
 
 func (m *Manager) GetArticle(id []byte) (*Article, error) {
 	a := &Article{}
 	return a, m.db.View(func(tx *bbolt.Tx) error {
-		return a.unmarshal(tx.Bucket(bkPost).Get(idBytes(id)))
+		return a.unmarshal(tx.Bucket(bkPost).Get(id))
 	})
 }
 
 func (m *Manager) UpdateArticle(a *Article, oldcat string, del bool) error {
 	return m.db.Update(func(tx *bbolt.Tx) error {
-		bk := tx.Bucket(bkAuthorTag)
-
+		main := tx.Bucket(bkPost)
 		if del {
-			main := tx.Bucket(bkPost)
 			if err := main.Delete(a.ID); err != nil {
 				return err
 			}
-			if err := m.deleteBKV(bk, a.Author, a.ID); err != nil {
+			if err := m.deleteBKV(main, a.Author, a.ID); err != nil {
 				return err
 			}
-			if err := m.deleteBKV(bk, "#"+a.Category, a.ID); err != nil {
+			if err := m.deleteBKV(main, "#"+a.Category, a.ID); err != nil {
 				return err
 			}
 		} else {
 			if a.Category != oldcat {
-				if err := m.deleteBKV(bk, "#"+oldcat, a.ID); err != nil {
+				if err := m.deleteBKV(main, "#"+oldcat, a.ID); err != nil {
 					return err
 				}
-				if err := m.insertBKV(bk, "#"+a.Category, a.ID, a.ID, false); err != nil {
+				if err := m.insertBKV(main, "#"+a.Category, a.ID, a.ID, false); err != nil {
 					return err
 				}
 			}
-			if err := tx.Bucket(bkPost).Put(a.ID, a.marshal()); err != nil {
+			if err := main.Put(a.ID, a.marshal()); err != nil {
 				return err
 			}
 		}

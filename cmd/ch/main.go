@@ -16,6 +16,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/coyove/common/sched"
+	"github.com/coyove/iis/cmd/ch/id"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"
@@ -27,6 +29,7 @@ var m *Manager
 func main() {
 	rand.Seed(time.Now().Unix())
 	runtime.GOMAXPROCS(4)
+	sched.Verbose = false
 
 	var err error
 	loadConfig()
@@ -77,12 +80,12 @@ func main() {
 
 	if os.Getenv("BENCH") == "1" {
 		ids := [][]byte{}
-		randString := func() string { return strconv.Itoa(rand.Int()) }
+		randString := func() string { return strconv.Itoa(rand.Int())[:12] }
 		names := []string{randString(), randString(), randString(), randString()}
 
 		for i := 0; i < 1000; i++ {
 			if rand.Intn(100) > 96 || len(ids) == 0 {
-				a := m.NewPost("BENCH "+strconv.Itoa(i)+" post", strconv.Itoa(i), names[rand.Intn(len(names))], "127.0.0.0", "")
+				a := m.NewPost("BENCH "+strconv.Itoa(i)+" post", strconv.Itoa(i), names[rand.Intn(len(names))], "127.0.0.0", "default")
 				m.PostPost(a)
 				ids = append(ids, a.ID)
 			} else {
@@ -164,25 +167,23 @@ func handleCookie(g *gin.Context) {
 
 func makeHandleMainView(t byte) func(g *gin.Context) {
 	return func(g *gin.Context) {
-		var bkName, partKey []byte
+		var bkName string
 		var pl ArticlesTimelineView
 		var err error
 
 		switch t {
 		case 't':
 			pl.SearchTerm, pl.Type = g.Param("tag"), "tag"
-			bkName, partKey = bkAuthorTag, []byte("#"+pl.SearchTerm)
+			bkName = "#" + pl.SearchTerm
 		case 'a':
 			pl.SearchTerm, pl.Type = g.Param("id"), "id"
-			bkName, partKey = bkAuthorTag, []byte(pl.SearchTerm)
-		default:
-			bkName = bkPost
+			bkName = pl.SearchTerm
 		}
 
-		var next = displayIDToObjectID(g.Query("n"))
+		var next = id.StringBytes(g.Query("n"))
 		var prev []byte
 
-		pl.Articles, prev, next, pl.TotalCount, err = m.FindPosts(bkName, partKey, next, int(config.PostsPerPage))
+		pl.Articles, prev, next, pl.TotalCount, err = m.FindPosts(bkName, next, int(config.PostsPerPage))
 		pl.NoPrev = prev == nil
 
 		if err != nil {
@@ -197,8 +198,8 @@ func makeHandleMainView(t byte) func(g *gin.Context) {
 		}
 
 		if len(pl.Articles) > 0 {
-			pl.Next = objectIDToDisplayID(next)
-			pl.Prev = objectIDToDisplayID(prev)
+			pl.Next = id.BytesString(next)
+			pl.Prev = id.BytesString(prev)
 			pl.Title = fmt.Sprintf("%s ~ %s", pl.Articles[0].CreateTimeString(true), pl.Articles[len(pl.Articles)-1].CreateTimeString(true))
 		}
 
@@ -211,14 +212,14 @@ func handleRepliesView(g *gin.Context) {
 	var err error
 	var pid = g.Param("parent")
 
-	pl.ParentArticle, err = m.GetArticle(displayIDToObjectID(pid))
+	pl.ParentArticle, err = m.GetArticle(id.StringBytes(pid))
 	if err != nil || pl.ParentArticle.ID == nil {
 		errorPage(404, "NOT FOUND", g)
 		log.Println(pl.ParentArticle, err)
 		return
 	}
 
-	if idx := getReplyIndex(displayIDToObjectID(g.Query("j"))); idx > 0 && int64(idx) <= pl.ParentArticle.Replies {
+	if idx := id.ParseID(g.Query("j")).RIndex(); idx > 0 && int64(idx) <= pl.ParentArticle.Replies {
 		p := int(math.Ceil(float64(idx) / float64(config.PostsPerPage)))
 		g.Redirect(302, "/p/"+pid+"?p="+strconv.Itoa(p)+"#p"+g.Query("j"))
 		return

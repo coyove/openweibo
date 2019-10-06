@@ -5,12 +5,10 @@
 <table class=articles>
     <tr>
         <th>全部分类 ({{len .Tags}})</th>
-        <th class=nowrap>数量</th>
     </tr>
-    {{range $k, $v := .Tags}}
+    {{range .Tags}}
     <tr class=row>
-        <td><a href="/cat/{{$k}}">{{$k}}</a></td>
-        <td class=nowrap>{{$v}}</td>
+        <td><a href="/cat/{{.}}">{{.}}</a></td>
     </tr>
     {{end}}
 </table>

@@ -102,5 +102,5 @@ func handleCurrentStat(g *gin.Context) {
 }
 
 func handleTags(g *gin.Context) {
-	g.HTML(200, "tags.html", struct{ Tags map[string]int }{m.TagsCount(config.Tags...)})
+	g.HTML(200, "tags.html", struct{ Tags []string }{config.Tags})
 }

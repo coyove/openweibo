@@ -8,6 +8,7 @@ import (
 	"net"
 	"sync"
 
+	"github.com/coyove/iis/cmd/ch/id"
 	"github.com/dchest/captcha"
 	"github.com/gin-gonic/gin"
 )
@@ -165,7 +166,7 @@ func handleNewPostAction(g *gin.Context) {
 	a := m.NewPost(title, content, authorNameToHash(author), ip, cat)
 	if isAdmin(author) && announce {
 		a.Announce = true
-		a.ID = newBigID()
+		a.ID = id.NewID(id.HeaderAnnounce|id.HeaderPost, "").Marshal()
 	}
 
 	if err := m.PostPost(a); err != nil {
@@ -178,12 +179,12 @@ func handleNewPostAction(g *gin.Context) {
 
 func handleNewReplyAction(g *gin.Context) {
 	var (
-		reply   = displayIDToObjectID(g.PostForm("reply"))
+		reply   = id.StringBytes(g.PostForm("reply"))
 		ip      = hashIP(g)
 		content = softTrunc(g.PostForm("content"), int(config.MaxContent))
 		author  = getAuthor(g)
 		redir   = func(a, b string) {
-			g.Redirect(302, "/p/"+objectIDToDisplayID(reply)+"?p=-1&"+encodeQuery(a, b, "author", author, "content", content)+"#paging")
+			g.Redirect(302, "/p/"+id.BytesString(reply)+"?p=-1&"+encodeQuery(a, b, "author", author, "content", content)+"#paging")
 		}
 	)
 

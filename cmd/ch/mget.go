@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/coyove/iis/cmd/ch/id"
 	"github.com/etcd-io/bbolt"
 )
 
@@ -21,17 +22,19 @@ func mget(tx *bbolt.Tx, noGet bool, res [][2][]byte) (a []*Article) {
 	return
 }
 
-func mgetReplies(pid []byte, start, end int) (a []*Article) {
+func mgetReplies(parent []byte, start, end int) (a []*Article) {
 	m.db.View(func(tx *bbolt.Tx) error {
 		main := tx.Bucket(bkPost)
-		buf := make([]byte, len(pid)+2)
 
-		for id := start; id < end; id++ {
+		for i := start; i < end; i++ {
+			pid := id.ParseID(parent)
+			pid.RIndexAppend(int16(i))
+			pid.SetHeader(id.HeaderReply)
+
 			p := &Article{}
-			newReplyID(pid, uint16(id), buf)
-			if p.unmarshal(main.Get(buf)) != nil || p.ID == nil {
+			if p.unmarshal(main.Get(pid.Marshal())) != nil || p.ID == nil {
 				p.NotFound = true
-				p.Index = int64(id)
+				p.Index = int64(i)
 			}
 			a = append(a, p)
 		}

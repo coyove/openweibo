@@ -4,13 +4,11 @@ import (
 	"crypto/hmac"
 	"crypto/sha1"
 	"encoding/base64"
-	"encoding/binary"
 	"fmt"
 	"html/template"
-	"math/rand"
-	"sync/atomic"
 	"time"
 
+	"github.com/coyove/iis/cmd/ch/id"
 	"github.com/gogo/protobuf/proto"
 )
 
@@ -63,44 +61,9 @@ func (a *Article) String() string { return proto.CompactTextString(a) }
 
 func (a *Article) ProtoMessage() {}
 
-// For normal posts
-func newID() (id []byte) {
-	id = make([]byte, 10)
-	ctr := uint32(atomic.AddInt64(&m.counter, 1))
-	v := 1<<63 | uint64(time.Now().Unix())<<29 | uint64(ctr&0xffffff)<<5 | uint64(rand.Uint64()&0x1f)
-	binary.BigEndian.PutUint64(id, v)
-	binary.BigEndian.PutUint16(id[8:], uint16(rand.Uint64()))
-	return
-}
-
-func newBigID() []byte {
-	id := newID()
-	id[0] |= 0x40
-	return id
-}
-
-func newReplyID(parent []byte, index uint16, out []byte) (id []byte) {
-	if out != nil {
-		id = out
-	} else {
-		id = make([]byte, len(parent)+2)
-	}
-	copy(id, parent)
-	binary.BigEndian.PutUint16(id[len(parent):], index)
-	id[0] &= 0x7f
-	return
-}
-
-func getReplyIndex(replyID []byte) uint16 {
-	if len(replyID) < 12 {
-		return 0
-	}
-	return binary.BigEndian.Uint16(replyID[len(replyID)-2:])
-}
-
 func (m *Manager) NewPost(title, content, author, ip string, cat string) *Article {
 	return &Article{
-		ID:         newID(),
+		ID:         id.NewID(id.HeaderPost, "").Marshal(),
 		Title:      title,
 		Content:    content,
 		Author:     author,
@@ -122,11 +85,11 @@ func (m *Manager) NewReply(content, author, ip string) *Article {
 }
 
 func (a *Article) DisplayID() string {
-	return objectIDToDisplayID(a.ID)
+	return id.BytesString(a.ID)
 }
 
 func (a *Article) DisplayParentID() string {
-	return objectIDToDisplayID(a.Parent)
+	return id.BytesString(a.Parent)
 }
 
 func (a *Article) CreateTimeString(sec bool) string {
@@ -175,21 +138,6 @@ func authorNameToHash(n string) string {
 	h.Write([]byte(n + config.Key))
 	x := h.Sum(nil)
 	return n0 + base64.URLEncoding.EncodeToString(x[:6])
-}
-
-var idEncoding = base64.NewEncoding("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz~").WithPadding('-')
-
-func objectIDToDisplayID(id []byte) string {
-	return idEncoding.EncodeToString(id)
-}
-
-func displayIDToObjectID(id string) []byte {
-	buf, _ := idEncoding.DecodeString(id)
-	return buf
-}
-
-func idBytes(id []byte) []byte {
-	return id
 }
 
 func formatTime(t uint32, sec bool) string {

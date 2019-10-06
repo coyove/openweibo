@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 
+	"github.com/coyove/iis/cmd/ch/id"
 	"github.com/gin-gonic/gin"
 )
 
@@ -24,7 +25,7 @@ func handleEditPostView(g *gin.Context) {
 	pl.RAuthor, _ = g.Cookie("id")
 	pl.IsAdmin = isAdmin(pl.RAuthor)
 
-	a, err := m.GetArticle(displayIDToObjectID(pl.Reply))
+	a, err := m.GetArticle(id.StringBytes(pl.Reply))
 	if err != nil {
 		log.Println(err)
 		g.Redirect(302, "/vec")
@@ -47,7 +48,7 @@ func handleEditPostAction(g *gin.Context) {
 	}
 
 	var (
-		eid         = displayIDToObjectID(g.PostForm("reply"))
+		eid         = id.StringBytes(g.PostForm("reply"))
 		title       = softTrunc(g.PostForm("title"), 100)
 		content     = softTrunc(g.PostForm("content"), int(config.MaxContent))
 		author      = softTrunc(g.PostForm("author"), 32)
@@ -120,7 +121,7 @@ func handleDeletePostAction(g *gin.Context) {
 		return
 	}
 
-	var eid = displayIDToObjectID(g.PostForm("reply"))
+	var eid = id.StringBytes(g.PostForm("reply"))
 	var author = softTrunc(g.PostForm("author"), 32)
 
 	a, err := m.GetArticle(eid)
