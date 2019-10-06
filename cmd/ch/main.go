@@ -90,7 +90,11 @@ func main() {
 				ids = append(ids, a.ID)
 			} else {
 				a := m.NewReply("BENCH "+strconv.Itoa(i)+" reply", names[rand.Intn(len(names))], "127.0.0.0")
-				m.PostReply(ids[rand.Intn(len(ids))], a)
+				if rand.Intn(2) == 1 {
+					m.PostReply(ids[0], a)
+				} else {
+					m.PostReply(ids[rand.Intn(len(ids))], a)
+				}
 				ids = append(ids, a.ID)
 			}
 
@@ -113,14 +117,14 @@ func main() {
 
 	r := gin.New()
 	r.Use(gin.Recovery(), gzip.Gzip(gzip.BestSpeed), mwLogger(), mwRenderPerf, mwIPThrot)
+	r.NoRoute(func(g *gin.Context) { errorPage(404, "NOT FOUND", g) })
 	r.SetFuncMap(template.FuncMap{})
 	r.LoadHTMLGlob("template/*.html")
 	r.Static("/s/", "template")
-	r.Handle("GET", "/", func(g *gin.Context) { g.HTML(200, "home.html", struct{ Home template.HTML }{}) })
+	r.Handle("GET", "/", func(g *gin.Context) { g.HTML(200, "home.html", struct{ Tags []string }{config.Tags}) })
 	r.Handle("GET", "/vec", makeHandleMainView('v'))
 	r.Handle("GET", "/p/:parent", handleRepliesView)
 	r.Handle("GET", "/cat/:tag", makeHandleMainView('t'))
-	r.Handle("GET", "/cats", handleTags)
 	r.Handle("GET", "/id/:id", makeHandleMainView('a'))
 	r.Handle("GET", "/new", handleNewPostView)
 	r.Handle("GET", "/stat", handleCurrentStat)
@@ -151,7 +155,10 @@ func main() {
 func handleCookie(g *gin.Context) {
 	if g.Request.Method == "GET" {
 		id, _ := g.Cookie("id")
-		g.HTML(200, "cookie.html", struct{ ID string }{id})
+		g.HTML(200, "cookie.html", struct {
+			ID   string
+			Tags []string
+		}{id, config.Tags})
 		return
 	}
 	if id := g.PostForm("id"); g.PostForm("clear") != "" || id == "" {
@@ -185,6 +192,7 @@ func makeHandleMainView(t byte) func(g *gin.Context) {
 
 		pl.Articles, prev, next, pl.TotalCount, err = m.FindPosts(bkName, next, int(config.PostsPerPage))
 		pl.NoPrev = prev == nil
+		pl.Tags = config.Tags
 
 		if err != nil {
 			errorPage(500, "INTERNAL: "+err.Error(), g)
@@ -212,6 +220,7 @@ func handleRepliesView(g *gin.Context) {
 	var err error
 	var pid = g.Param("parent")
 
+	pl.Tags = config.Tags
 	pl.ParentArticle, err = m.GetArticle(id.StringBytes(pid))
 	if err != nil || pl.ParentArticle.ID == nil {
 		errorPage(404, "NOT FOUND", g)

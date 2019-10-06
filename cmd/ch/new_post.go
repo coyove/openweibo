@@ -209,6 +209,6 @@ func handleNewReplyAction(g *gin.Context) {
 		return
 	}
 
-	content, author = "", ""
+	author, content = "", ""
 	redir("", "")
 }

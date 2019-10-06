@@ -94,13 +94,15 @@ func loadConfig() {
 }
 
 func handleCurrentStat(g *gin.Context) {
-	p := struct{ Config template.HTML }{Config: template.HTML(config.publicString)}
+	p := struct {
+		Config template.HTML
+		Tags   []string
+	}{
+		Config: template.HTML(config.publicString),
+		Tags:   config.Tags,
+	}
 	if isAdmin(g) {
 		p.Config = template.HTML(config.privateString)
 	}
 	g.HTML(200, "stat.html", p)
-}
-
-func handleTags(g *gin.Context) {
-	g.HTML(200, "tags.html", struct{ Tags []string }{config.Tags})
 }

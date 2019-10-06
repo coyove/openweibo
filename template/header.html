@@ -9,7 +9,14 @@
     <nav>
         <ul>
             <li><a href="/vec">主页</a></li>
-            <li><a href="/cats">分类</a></li>
+            <li><a>分类</a>
+                <ul>
+                    <li><a href="/cat/default">default</a></li>
+                    {{range .Tags}}
+                    <li><a href="/cat/{{.}}">{{.}}</a></li>
+                    {{end}}
+                </ul>
+            </li>
             <li><a href="/new">新主题</a></li>
             <li><a>管理</a>
             <ul>

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -76,6 +77,21 @@ func mwIPThrot(g *gin.Context) {
 
 	g.Set("ip-ok", false)
 	g.Set("ip-ok-remain", diff)
+	g.Next()
+}
+
+func mwAuthorID(g *gin.Context) {
+	referer := g.Request.Referer()
+	u, _ := url.Parse(referer)
+	if u != nil {
+		id := u.Query().Get("author")
+
+		if g.Request.URL.Query().Get("author") == "" && id != "" {
+			g.Request.URL.Query().Add("author", id)
+			g.Redirect(302, g.Request.URL.String())
+			return
+		}
+	}
 	g.Next()
 }
 

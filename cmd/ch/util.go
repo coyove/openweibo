@@ -127,7 +127,10 @@ func sanText(in string) string {
 }
 
 func errorPage(code int, msg string, g *gin.Context) {
-	g.HTML(code, "error.html", struct{ Message string }{msg})
+	g.HTML(code, "error.html", struct {
+		Tags    []string
+		Message string
+	}{config.Tags, msg})
 }
 
 func intmin(a, b int) int {

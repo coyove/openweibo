@@ -114,7 +114,7 @@ func (m *Manager) PostReply(parent []byte, a *Article) error {
 	if p.Locked {
 		return fmt.Errorf("locked parent")
 	}
-	if p.Replies >= 4096 {
+	if p.Replies >= 4000 {
 		return fmt.Errorf("too many replies")
 	}
 

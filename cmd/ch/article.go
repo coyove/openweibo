@@ -13,6 +13,7 @@ import (
 )
 
 type ArticlesTimelineView struct {
+	Tags       []string
 	Articles   []*Article
 	Next       string
 	Prev       string
@@ -24,6 +25,7 @@ type ArticlesTimelineView struct {
 }
 
 type ArticleRepliesView struct {
+	Tags          []string
 	Articles      []*Article
 	ParentArticle *Article
 	CurPage       int
