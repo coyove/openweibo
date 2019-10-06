@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	_ "image/png"
-	"log"
 	"math/rand"
 	"net"
 	"net/url"
@@ -121,7 +120,6 @@ func isAdmin(g interface{}) bool {
 
 func sanText(in string) string {
 	return rxSan.ReplaceAllStringFunc(in, func(in string) string {
-		log.Println(in)
 		if in == "<" {
 			return "&lt;"
 		}

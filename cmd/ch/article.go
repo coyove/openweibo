@@ -67,8 +67,6 @@ func (a *Article) ProtoMessage() {}
 func newID() (id []byte) {
 	id = make([]byte, 10)
 	ctr := uint32(atomic.AddInt64(&m.counter, 1))
-
-	// 1 + 1 + 33 + 24 + 5
 	v := 1<<63 | uint64(time.Now().Unix())<<29 | uint64(ctr&0xffffff)<<5 | uint64(rand.Uint64()&0x1f)
 	binary.BigEndian.PutUint64(id, v)
 	binary.BigEndian.PutUint16(id[8:], uint16(rand.Uint64()))
