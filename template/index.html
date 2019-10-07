@@ -2,20 +2,16 @@
 
 <table class="articles small">
     <tr>
-        {{$authorTag := eq .Type "id"}}
-        {{if eq .Type "id"}}
-        <title>{{.SearchTerm}}的相关发言 {{.Title}}</title>
-        <th>{{.SearchTerm}}的相关发言</th>
-        {{else if eq .Type "tag"}}
-        <title>{{.SearchTerm}} {{.Title}}</title>
-        <th>#{{.SearchTerm}}</th>
+        {{if .SearchTerm}}
+        <title>{{.SearchTerm}} 的相关发言</title>
+        <th>{{.SearchTerm}} 的相关发言</th>
         {{else}}
-        <title>{{.Title}}</title>
+        <title>全部主题</title>
         <th>标题</th>
         {{end}}
         <th class=nowrap>分类</th>
         <th class=nowrap>作者</th>
-        <th class=nowrap>日期</th>
+        <th class=nowrap>回复</th>
         <th class="nowrap state">RE</th>
         <th class="nowrap state">VE</th>
     </tr>
@@ -30,12 +26,12 @@
                 <span class=mobile><b>#</b></span>{{if not .Parent}}<a href="/cat/{{.Category}}">{{.Category}}</a>{{else}}{{if .BeReplied}}被{{end}}回复{{end}}
             {{end}}
         </td>
-        <td class="nowrap"><a href="/id/{{.Author}}">{{.Author}}</a></td>
-        <td class="nowrap date"><span>{{.CreateTimeString false}}</span></td>
+        <td class="nowrap"><a href="/cat/@{{.Author}}">{{.Author}}</a></td>
+        <td class="nowrap date"><span>{{.ReplyTimeString false}}</span></td>
         <td class="nowrap state">{{if .Replies}}<span>{{.Replies}}</span><span class=mobile>回复</span>{{end}}</td>
         <td class="nowrap state">{{if .Views}}<span>{{.Views}}</span><span class=mobile>浏览</span>{{end}}</td>
     </tr>
-    {{if or $authorTag .Parent}}
+    {{if $.ShowAbstract}}
     <tr class=dark>
         <td colspan=6><div class=reply><pre>{{.ContentAbstract}}</pre></div></td>
     </tr>
@@ -48,7 +44,7 @@
 
 
 <div class="paging" id="paging">
-    {{if not .NoPrev}}
+    {{if .Prev}}
     <a href="?n={{.Prev}}">&laquo; 上页</a>
     <a href="?n=0">首页</a>
     {{end}}

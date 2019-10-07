@@ -21,8 +21,8 @@ const (
 
 type ID struct {
 	hdr    headerType
+	rIndex [6]byte
 	tag    string
-	rIndex [4]int16
 	ts     int64
 	ctr    uint32
 	rand   uint32
@@ -80,9 +80,7 @@ func (id ID) Marshal() []byte {
 		binary.BigEndian.PutUint16(buf[22:], uint16(id.rand>>4))
 	}
 	{
-		tmp := [8]byte{}
-		binary.BigEndian.PutUint64(tmp[:], uint64(id.rIndex[0])*4096*4096*4096+uint64(id.rIndex[1])*4096*4096+uint64(id.rIndex[2])*4096+uint64(id.rIndex[3]))
-		copy(buf[24:], tmp[2:])
+		copy(buf[24:], id.rIndex[:])
 	}
 
 	return buf[:]
@@ -110,38 +108,81 @@ func (id *ID) Unmarshal(p []byte) bool {
 		id.rand = uint32(tmp2)<<4 | uint32(tmp&0xf)
 	}
 	{
-		tmp := binary.BigEndian.Uint64(p[22:]) & 0xffffffffffff
-		id.rIndex[0] = int16(tmp>>36) & 0xfff
-		id.rIndex[1] = int16(tmp>>24) & 0xfff
-		id.rIndex[2] = int16(tmp>>12) & 0xfff
-		id.rIndex[3] = int16(tmp) & 0xfff
+		copy(id.rIndex[:], p[24:])
 	}
 	return true
 }
 
-func (id ID) RIndex() int16 {
-	i := id.RIndexLen()
-	if i == 0 {
-		return 0
+func (id ID) RIndex() (v int16) {
+	for i := 0; i < len(id.rIndex); i++ {
+		r := id.rIndex[i]
+		if r > 0 && r < 128 {
+			v = int16(r)
+			continue
+		}
+		if r >= 128 {
+			if i == len(id.rIndex)-1 {
+				// shouldn't happen
+				return
+			}
+			v = int16(r&0x7f)<<8 | int16(id.rIndex[i+1])
+			i++
+			continue
+		}
+		break
 	}
-	return id.rIndex[i-1]
+	return
 }
 
 func (id ID) RIndexLen() int {
-	for i, r := range id.rIndex {
-		if r == 0 {
-			return i
+	var ln int
+	for i := 0; i < len(id.rIndex); i++ {
+		r := id.rIndex[i]
+		if r > 0 && r < 128 {
+			ln++
+			continue
 		}
+		if r >= 128 {
+			if i == len(id.rIndex)-1 {
+				// shouldn't happen
+				return 0
+			}
+			ln++
+			i++
+			continue
+		}
+		break
 	}
-	return 4
+	return ln
 }
 
-func (id *ID) RIndexAppend(i int16) {
-	x := id.RIndexLen()
-	if x == 4 {
-		panic("check")
+func (id *ID) RIndexAppend(v int16) bool {
+	if v == 0 || v >= 128*128 {
+		panic(v)
 	}
-	id.rIndex[x] = i & 0xfff
+
+	for i := 0; i < len(id.rIndex); i++ {
+		r := id.rIndex[i]
+		if r > 0 && r < 128 {
+			continue
+		}
+		if r >= 128 {
+			i++
+			continue
+		}
+		if v > 127 {
+			if i == len(id.rIndex)-1 {
+				return false
+			}
+			id.rIndex[i] = byte(v>>8) | 0x80
+			id.rIndex[i+1] = byte(v)
+		} else {
+			id.rIndex[i] = byte(v)
+		}
+		return true
+	}
+
+	return false
 }
 
 func (id *ID) SetHeader(h headerType) {

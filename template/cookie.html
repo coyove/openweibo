@@ -18,6 +18,17 @@
 
 <div style="margin: 1em">
 本站不需要Cookie即可实现所有功能，但你也可以将ID保存进Cookie里避免反复输入同样的字符串。
+
+<style>
+.config li {
+    word-break: break-all;
+    list-style: none;
+    font-family: monospace;
+}
+</style>
+
+<pre><ul class=config>{{.Config}}</ul></pre>
+
 </div>
 
 {{template "footer.html" .}}

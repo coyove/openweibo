@@ -9,11 +9,11 @@ import (
 	_ "image/png"
 	"io"
 	"log"
-	"math"
 	"math/rand"
 	"os"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/coyove/common/sched"
@@ -33,6 +33,7 @@ func main() {
 
 	var err error
 	loadConfig()
+	loadTrafficCounter()
 
 	if os.Getenv("IIS_NAME") != "" {
 		s := make([]byte, 8)
@@ -90,7 +91,7 @@ func main() {
 				ids = append(ids, a.ID)
 			} else {
 				a := m.NewReply("BENCH "+strconv.Itoa(i)+" reply", names[rand.Intn(len(names))], "127.0.0.0")
-				if rand.Intn(2) == 1 {
+				if rand.Intn(4) == 1 {
 					m.PostReply(ids[0], a)
 				} else {
 					m.PostReply(ids[rand.Intn(len(ids))], a)
@@ -121,13 +122,12 @@ func main() {
 	r.SetFuncMap(template.FuncMap{})
 	r.LoadHTMLGlob("template/*.html")
 	r.Static("/s/", "template")
+
 	r.Handle("GET", "/", func(g *gin.Context) { g.HTML(200, "home.html", struct{ Tags []string }{config.Tags}) })
-	r.Handle("GET", "/vec", makeHandleMainView('v'))
 	r.Handle("GET", "/p/:parent", handleRepliesView)
-	r.Handle("GET", "/cat/:tag", makeHandleMainView('t'))
-	r.Handle("GET", "/id/:id", makeHandleMainView('a'))
+	r.Handle("GET", "/cat", handleIndex)
+	r.Handle("GET", "/cat/:tag", handleIndex)
 	r.Handle("GET", "/new", handleNewPostView)
-	r.Handle("GET", "/stat", handleCurrentStat)
 	r.Handle("GET", "/edit/:id", handleEditPostView)
 
 	r.Handle("POST", "/new", handleNewPostAction)
@@ -152,67 +152,39 @@ func main() {
 	}
 }
 
-func handleCookie(g *gin.Context) {
-	if g.Request.Method == "GET" {
-		id, _ := g.Cookie("id")
-		g.HTML(200, "cookie.html", struct {
-			ID   string
-			Tags []string
-		}{id, config.Tags})
+func handleIndex(g *gin.Context) {
+	var pl = ArticlesTimelineView{
+		SearchTerm: g.Param("tag"),
+		Tags:       config.Tags,
+	}
+
+	tag := ""
+	if strings.HasPrefix(pl.SearchTerm, "@") {
+		tag = pl.SearchTerm[1:]
+		pl.ShowAbstract = true
+	} else if pl.SearchTerm != "" {
+		pl.SearchTerm = "#" + pl.SearchTerm
+		tag = pl.SearchTerm
+	}
+
+	a, prev, next, err := m.FindPosts(tag, id.StringBytes(g.Query("n")), int(config.PostsPerPage))
+	if err != nil {
+		errorPage(500, "INTERNAL: "+err.Error(), g)
 		return
 	}
-	if id := g.PostForm("id"); g.PostForm("clear") != "" || id == "" {
-		g.SetCookie("id", "", -1, "", "", false, false)
-	} else if g.PostForm("notify") != "" {
-		g.Redirect(302, "/inbox/"+id)
-		return
-	} else {
-		g.SetCookie("id", id, 86400*365, "", "", false, false)
+
+	pl.Articles = a
+
+	for i, a := range pl.Articles {
+		pl.Articles[i].BeReplied = a.Author != tag
 	}
-	g.Redirect(302, "/vec")
-}
 
-func makeHandleMainView(t byte) func(g *gin.Context) {
-	return func(g *gin.Context) {
-		var bkName string
-		var pl ArticlesTimelineView
-		var err error
-
-		switch t {
-		case 't':
-			pl.SearchTerm, pl.Type = g.Param("tag"), "tag"
-			bkName = "#" + pl.SearchTerm
-		case 'a':
-			pl.SearchTerm, pl.Type = g.Param("id"), "id"
-			bkName = pl.SearchTerm
-		}
-
-		var next = id.StringBytes(g.Query("n"))
-		var prev []byte
-
-		pl.Articles, prev, next, pl.TotalCount, err = m.FindPosts(bkName, next, int(config.PostsPerPage))
-		pl.NoPrev = prev == nil
-		pl.Tags = config.Tags
-
-		if err != nil {
-			errorPage(500, "INTERNAL: "+err.Error(), g)
-			return
-		}
-
-		if t == 'a' {
-			for i, a := range pl.Articles {
-				pl.Articles[i].BeReplied = a.Author != pl.SearchTerm
-			}
-		}
-
-		if len(pl.Articles) > 0 {
-			pl.Next = id.BytesString(next)
-			pl.Prev = id.BytesString(prev)
-			pl.Title = fmt.Sprintf("%s ~ %s", pl.Articles[0].CreateTimeString(true), pl.Articles[len(pl.Articles)-1].CreateTimeString(true))
-		}
-
-		g.HTML(200, "index.html", pl)
+	if len(pl.Articles) > 0 {
+		pl.Next = id.BytesString(next)
+		pl.Prev = id.BytesString(prev)
 	}
+
+	g.HTML(200, "index.html", pl)
 }
 
 func handleRepliesView(g *gin.Context) {
@@ -229,24 +201,23 @@ func handleRepliesView(g *gin.Context) {
 	}
 
 	if idx := id.ParseID(g.Query("j")).RIndex(); idx > 0 && int64(idx) <= pl.ParentArticle.Replies {
-		p := int(math.Ceil(float64(idx) / float64(config.PostsPerPage)))
+		p := intdivceil(int(idx), config.PostsPerPage)
 		g.Redirect(302, "/p/"+pid+"?p="+strconv.Itoa(p)+"#p"+g.Query("j"))
 		return
 	}
 
 	pl.ReplyView = generateNewReplyView(pl.ParentArticle.ID, g)
 	pl.CurPage, _ = strconv.Atoi(g.Query("p"))
-	pl.TotalPages = int(math.Ceil(float64(pl.ParentArticle.Replies) / float64(config.PostsPerPage)))
+	pl.TotalPages = intdivceil(int(pl.ParentArticle.Replies), config.PostsPerPage)
 
 	incrCounter(g, pl.ParentArticle.ID)
 
-	switch pl.CurPage {
-	case 0:
+	if pl.CurPage == 0 {
 		pl.CurPage = 1
-	case -1:
+	}
+	pl.CurPage = intmin(pl.CurPage, pl.TotalPages)
+	if pl.CurPage < 0 {
 		pl.CurPage = pl.TotalPages
-	default:
-		pl.CurPage = intmin(pl.CurPage, pl.TotalPages)
 	}
 
 	if pl.TotalPages > 0 {

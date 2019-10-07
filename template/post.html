@@ -9,7 +9,7 @@
             {{if .Parent}}
             <a href="/p/{{.DisplayParentID}}?j={{.DisplayID}}">上一层</a>
             {{else}}
-            <a href="/vec?n={{.DisplayID}}">首页</a>
+            <a href="/cat?n={{.DisplayID}}">首页</a>
             {{end}}
         </th>
         <th class=nowrap>分类</th>
@@ -23,7 +23,7 @@
             {{template "row_tags.html" .}}
         </td>
         <td class="nowrap"><span class=mobile><b>#</b></span>{{if not .Parent}}<a href="/cat/{{.Category}}">{{.Category}}</a>{{else}}回复{{end}}</td>
-        <td class=nowrap><a href="/id/{{.Author}}">{{.Author}}</a></td>
+        <td class=nowrap><a href="/cat/@{{.Author}}">{{.Author}}</a></td>
         <td class="nowrap date"><span>{{.CreateTimeString true}}</span></td>
         <td class="nowrap state"><span>{{.Replies}}</span><span class=mobile>回复</span></td>
         <td class="nowrap state"><span>{{.Views}}</span><span class=mobile>浏览</span></td>
@@ -42,7 +42,7 @@
         {{else}}
         <td><b>{{.Index}}</b>. <a href="/p/{{.DisplayID}}">{{.Title}}</a></td>
         <td class=nowrap></td>
-        <td class=nowrap><a href="/id/{{.Author}}">{{.Author}}</a></td>
+        <td class=nowrap><a href="/cat/@{{.Author}}">{{.Author}}</a></td>
         <td class="nowrap date">{{.CreateTimeString true}}</td>
         <td class="nowrap state">
             {{if .Replies}}

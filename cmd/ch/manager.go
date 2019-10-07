@@ -46,13 +46,11 @@ func NewManager(path string) (*Manager, error) {
 	return m, nil
 }
 
-func (m *Manager) FindPosts(tag string, cursor []byte, n int) (a []*Article, prev []byte, next []byte, count int, err error) {
+func (m *Manager) FindPosts(tag string, cursor []byte, n int) (a []*Article, prev []byte, next []byte, err error) {
 	err = m.db.View(func(tx *bbolt.Tx) error {
 		bk := tx.Bucket(bkPost)
-		count = bk.Stats().KeyN
 
 		var res [][2][]byte
-
 		res, next = scanBucketDesc(bk, tag, cursor, n)
 		prev = substractCursorN(bk, tag, cursor, n)
 
@@ -63,9 +61,15 @@ func (m *Manager) FindPosts(tag string, cursor []byte, n int) (a []*Article, pre
 					a = append(a[:i], a[i+1:]...)
 				}
 			}
+
 		} else {
 			a = mget(tx, false, res)
 		}
+
+		if id.ParseID(next).Tag() != tag {
+			next = nil
+		}
+
 		return nil
 	})
 	return
@@ -114,14 +118,11 @@ func (m *Manager) PostReply(parent []byte, a *Article) error {
 	if p.Locked {
 		return fmt.Errorf("locked parent")
 	}
-	if p.Replies >= 4000 {
+	if p.Replies >= 16000 {
 		return fmt.Errorf("too many replies")
 	}
 
 	pid := id.ParseID(parent)
-	if pid.RIndexLen() == 4 {
-		return fmt.Errorf("too deep")
-	}
 
 	p.ReplyTime = uint32(time.Now().Unix())
 	p.Replies++
@@ -131,7 +132,10 @@ func (m *Manager) PostReply(parent []byte, a *Article) error {
 	a.Title = "RE: " + p.Title
 	a.Index = p.Replies
 
-	pid.RIndexAppend(int16(p.Replies))
+	if !pid.RIndexAppend(int16(p.Replies)) {
+		return fmt.Errorf("too deep")
+	}
+
 	pid.SetHeader(id.HeaderReply)
 	a.ID = pid.Marshal()
 

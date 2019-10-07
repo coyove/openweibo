@@ -28,7 +28,7 @@ func handleEditPostView(g *gin.Context) {
 	a, err := m.GetArticle(id.StringBytes(pl.Reply))
 	if err != nil {
 		log.Println(err)
-		g.Redirect(302, "/vec")
+		g.Redirect(302, "/cat")
 		return
 	}
 	pl.Article = a
@@ -64,7 +64,7 @@ func handleEditPostAction(g *gin.Context) {
 
 	a, err := m.GetArticle(eid)
 	if err != nil {
-		g.Redirect(302, "/vec")
+		g.Redirect(302, "/cat")
 		return
 	}
 
@@ -126,7 +126,7 @@ func handleDeletePostAction(g *gin.Context) {
 
 	a, err := m.GetArticle(eid)
 	if err != nil {
-		g.Redirect(302, "/vec")
+		g.Redirect(302, "/cat")
 		return
 	}
 
@@ -145,6 +145,6 @@ func handleDeletePostAction(g *gin.Context) {
 	if a.Parent != nil {
 		g.Redirect(302, "/p/"+a.DisplayParentID())
 	} else {
-		g.Redirect(302, "/vec")
+		g.Redirect(302, "/cat")
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	_ "image/png"
+	"math"
 	"math/rand"
 	"net"
 	"net/url"
@@ -134,8 +135,9 @@ func errorPage(code int, msg string, g *gin.Context) {
 }
 
 func intmin(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
+	return int(math.Min(float64(a), float64(b)))
+}
+
+func intdivceil(a, b int) int {
+	return int(math.Ceil(float64(a) / float64(b)))
 }

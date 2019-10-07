@@ -93,16 +93,33 @@ func loadConfig() {
 	config.publicString = "<li>" + string(buf)
 }
 
-func handleCurrentStat(g *gin.Context) {
-	p := struct {
-		Config template.HTML
-		Tags   []string
-	}{
-		Config: template.HTML(config.publicString),
-		Tags:   config.Tags,
+func handleCookie(g *gin.Context) {
+	if g.Request.Method == "GET" {
+		id, _ := g.Cookie("id")
+
+		var p = struct {
+			ID     string
+			Config template.HTML
+			Tags   []string
+		}{
+			id,
+			template.HTML(config.publicString),
+			config.Tags,
+		}
+
+		if isAdmin(g) {
+			p.Config = template.HTML(config.privateString)
+		}
+
+		g.HTML(200, "cookie.html", p)
+		return
 	}
-	if isAdmin(g) {
-		p.Config = template.HTML(config.privateString)
+
+	if id := g.PostForm("id"); g.PostForm("clear") != "" || id == "" {
+		g.SetCookie("id", "", -1, "", "", false, false)
+	} else {
+		g.SetCookie("id", id, 86400*365, "", "", false, false)
 	}
-	g.HTML(200, "stat.html", p)
+
+	g.Redirect(302, "/cookie")
 }

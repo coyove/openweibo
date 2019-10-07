@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"html/template"
+	"strings"
 	"time"
 
 	"github.com/coyove/iis/cmd/ch/id"
@@ -13,15 +14,12 @@ import (
 )
 
 type ArticlesTimelineView struct {
-	Tags       []string
-	Articles   []*Article
-	Next       string
-	Prev       string
-	TotalCount int
-	NoPrev     bool
-	Type       string
-	SearchTerm string
-	Title      string
+	Tags         []string
+	Articles     []*Article
+	Next         string
+	Prev         string
+	SearchTerm   string
+	ShowAbstract bool
 }
 
 type ArticleRepliesView struct {
@@ -126,7 +124,7 @@ func (a *Article) unmarshal(b []byte) error {
 func authorNameToHash(n string) string {
 	var n0 string
 	if len(n) >= 4 {
-		n0 = n[:4]
+		n0 = strings.TrimLeft(n[:4], "#")
 		for i := 0; i < len(n0); i++ {
 			if n0[i] > 127 {
 				n0 = n0[:i]

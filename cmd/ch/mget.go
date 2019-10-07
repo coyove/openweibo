@@ -10,7 +10,7 @@ func mget(tx *bbolt.Tx, noGet bool, res [][2][]byte) (a []*Article) {
 	for _, r := range res {
 		p := &Article{}
 		if noGet {
-			if p.unmarshal(r[1]) == nil {
+			if len(r[1]) > 30 && p.unmarshal(r[1]) == nil {
 				a = append(a, p)
 			}
 		} else {
