@@ -1,12 +1,6 @@
 package main
 
 import (
-	"crypto/hmac"
-	"crypto/sha1"
-	"encoding/base64"
-	"fmt"
-	"html/template"
-	_ "image/png"
 	"io"
 	"log"
 	"math/rand"
@@ -34,38 +28,6 @@ func main() {
 	var err error
 	loadConfig()
 	loadTrafficCounter()
-
-	if os.Getenv("IIS_NAME") != "" {
-		s := make([]byte, 8)
-
-		keybuf := []byte(config.Key)
-		for i := 0; ; i++ {
-			rand.Read(s)
-			for i := range s {
-				s[i] = "abcdefghijklmnopqrstuvwxyz0123456789"[s[i]%36]
-			}
-
-			h := hmac.New(sha1.New, keybuf)
-			h.Write(s)
-			h.Write(keybuf)
-
-			x := h.Sum(nil)
-
-			y := base64.URLEncoding.EncodeToString(x[:4])[:5]
-			if (y[0] == 'y' || y[0] == 'Y') &&
-				(y[1] == 'm' || y[1] == 'M') &&
-				(y[2] == 'o' || y[2] == 'O' || y[2] == '0') &&
-				(y[3] == 'u' || y[3] == 'U') &&
-				(y[4] == 's' || y[4] == 'S' || y[4] == '5') {
-				fmt.Println("\nresult:", string(s))
-				break
-			}
-
-			if i%1e3 == 0 {
-				fmt.Printf("\rprogress: %dk", i/1e3)
-			}
-		}
-	}
 
 	m, err = NewManager("iis.db")
 	if err != nil {
@@ -119,14 +81,13 @@ func main() {
 	r := gin.New()
 	r.Use(gin.Recovery(), gzip.Gzip(gzip.BestSpeed), mwLogger(), mwRenderPerf, mwIPThrot)
 	r.NoRoute(func(g *gin.Context) { errorPage(404, "NOT FOUND", g) })
-	r.SetFuncMap(template.FuncMap{})
 	r.LoadHTMLGlob("template/*.html")
 	r.Static("/s/", "template")
 
 	r.Handle("GET", "/", func(g *gin.Context) { g.HTML(200, "home.html", struct{ Tags []string }{config.Tags}) })
 	r.Handle("GET", "/p/:parent", handleRepliesView)
-	r.Handle("GET", "/cat", handleIndex)
-	r.Handle("GET", "/cat/:tag", handleIndex)
+	r.Handle("GET", "/cat", handleIndexView)
+	r.Handle("GET", "/cat/:tag", handleIndexView)
 	r.Handle("GET", "/new", handleNewPostView)
 	r.Handle("GET", "/edit/:id", handleEditPostView)
 
@@ -152,22 +113,20 @@ func main() {
 	}
 }
 
-func handleIndex(g *gin.Context) {
+func handleIndexView(g *gin.Context) {
 	var pl = ArticlesTimelineView{
 		SearchTerm: g.Param("tag"),
 		Tags:       config.Tags,
 	}
 
-	tag := ""
 	if strings.HasPrefix(pl.SearchTerm, "@") {
-		tag = pl.SearchTerm[1:]
+		pl.SearchTerm = pl.SearchTerm[1:]
 		pl.ShowAbstract = true
 	} else if pl.SearchTerm != "" {
 		pl.SearchTerm = "#" + pl.SearchTerm
-		tag = pl.SearchTerm
 	}
 
-	a, prev, next, err := m.FindPosts(tag, id.StringBytes(g.Query("n")), int(config.PostsPerPage))
+	a, prev, next, err := m.FindPosts(pl.SearchTerm, id.StringBytes(g.Query("n")), int(config.PostsPerPage))
 	if err != nil {
 		errorPage(500, "INTERNAL: "+err.Error(), g)
 		return
@@ -176,23 +135,24 @@ func handleIndex(g *gin.Context) {
 	pl.Articles = a
 
 	for i, a := range pl.Articles {
-		pl.Articles[i].BeReplied = a.Author != tag
+		pl.Articles[i].BeReplied = a.Author != pl.SearchTerm
 	}
 
-	if len(pl.Articles) > 0 {
-		pl.Next = id.BytesString(next)
-		pl.Prev = id.BytesString(prev)
+	if len(a) > 0 {
+		pl.Next, pl.Prev = id.BytesString(next), id.BytesString(prev)
 	}
 
 	g.HTML(200, "index.html", pl)
 }
 
 func handleRepliesView(g *gin.Context) {
-	var pl = ArticleRepliesView{ShowIP: isAdmin(g)}
+	var pl = ArticleRepliesView{
+		ShowIP: isAdmin(g),
+		Tags:   config.Tags,
+	}
 	var err error
 	var pid = g.Param("parent")
 
-	pl.Tags = config.Tags
 	pl.ParentArticle, err = m.GetArticle(id.StringBytes(pid))
 	if err != nil || pl.ParentArticle.ID == nil {
 		errorPage(404, "NOT FOUND", g)
@@ -224,29 +184,18 @@ func handleRepliesView(g *gin.Context) {
 		start := intmin(int(pl.ParentArticle.Replies), (pl.CurPage-1)*config.PostsPerPage)
 		end := intmin(int(pl.ParentArticle.Replies), pl.CurPage*config.PostsPerPage)
 
-		pl.Articles = mgetReplies(pl.ParentArticle.ID, start+1, end+1)
-		pl.Pages = make([]int, 0, pl.TotalPages)
+		pl.Articles = m.mgetReplies(pl.ParentArticle.ID, start+1, end+1)
 
-		for i := pl.CurPage - 3; i <= pl.CurPage+3; i++ {
-			if i > 0 && i <= pl.TotalPages {
-				pl.Pages = append(pl.Pages, i)
-			}
+		// Fill in at most 7 page numbers for display
+		pl.Pages = make([]int, 0, 8)
+		for i := pl.CurPage - 3; i <= pl.CurPage+3 && i <= pl.TotalPages && i > 0; i++ {
+			pl.Pages = append(pl.Pages, i)
 		}
-
-		for len(pl.Pages) < 7 {
-			if last := pl.Pages[len(pl.Pages)-1]; last+1 <= pl.TotalPages {
-				pl.Pages = append(pl.Pages, last+1)
-			} else {
-				break
-			}
+		for last := pl.Pages[len(pl.Pages)-1]; len(pl.Pages) < 7 && last+1 <= pl.TotalPages; last = pl.Pages[len(pl.Pages)-1] {
+			pl.Pages = append(pl.Pages, last+1)
 		}
-
-		for len(pl.Pages) < 7 {
-			if first := pl.Pages[0]; first-1 > 0 {
-				pl.Pages = append([]int{first - 1}, pl.Pages...)
-			} else {
-				break
-			}
+		for first := pl.Pages[0]; len(pl.Pages) < 7 && first-1 > 0; first = pl.Pages[0] {
+			pl.Pages = append([]int{first - 1}, pl.Pages...)
 		}
 	}
 

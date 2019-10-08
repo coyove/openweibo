@@ -51,7 +51,7 @@ func handleEditPostAction(g *gin.Context) {
 		eid         = id.StringBytes(g.PostForm("reply"))
 		title       = softTrunc(g.PostForm("title"), 100)
 		content     = softTrunc(g.PostForm("content"), int(config.MaxContent))
-		author      = softTrunc(g.PostForm("author"), 32)
+		author      = getAuthor(g)
 		cat         = checkCategory(g.PostForm("cat"))
 		locked      = g.PostForm("locked") != ""
 		highlighted = g.PostForm("highlighted") != ""
@@ -70,16 +70,9 @@ func handleEditPostAction(g *gin.Context) {
 
 	redir := "/p/" + a.DisplayID()
 
-	if locked != a.Locked {
-		a.Locked = locked
-		m.UpdateArticle(a, a.Category, false)
-		g.Redirect(302, redir)
-		return
-	}
-
-	if highlighted != a.Highlighted {
-		a.Highlighted = highlighted
-		m.UpdateArticle(a, a.Category, false)
+	if locked != a.Locked || highlighted != a.Highlighted {
+		a.Locked, a.Highlighted = locked, highlighted
+		m.UpdateArticle(a, a.Category)
 		g.Redirect(302, redir)
 		return
 	}
@@ -94,14 +87,14 @@ func handleEditPostAction(g *gin.Context) {
 		return
 	}
 
-	oldtags := a.Category
+	oldcat := a.Category
 	a.Content, a.Category = content, cat
 
 	if a.Parent == nil {
 		a.Title = title
 	}
 
-	if err := m.UpdateArticle(a, oldtags, false); err != nil {
+	if err := m.UpdateArticle(a, oldcat); err != nil {
 		log.Println(err)
 		errorPage(500, "internal/error", g)
 		return
@@ -136,7 +129,7 @@ func handleDeletePostAction(g *gin.Context) {
 		return
 	}
 
-	if err := m.UpdateArticle(a, "", true); err != nil {
+	if err := m.DeleteArticle(a); err != nil {
 		log.Println(err)
 		errorPage(500, "internal/error", g)
 		return

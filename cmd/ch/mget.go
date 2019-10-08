@@ -5,7 +5,7 @@ import (
 	"github.com/etcd-io/bbolt"
 )
 
-func mget(tx *bbolt.Tx, noGet bool, res [][2][]byte) (a []*Article) {
+func (m *Manager) mget(tx *bbolt.Tx, noGet bool, res [][2][]byte) (a []*Article) {
 	main := tx.Bucket(bkPost)
 	for _, r := range res {
 		p := &Article{}
@@ -22,11 +22,15 @@ func mget(tx *bbolt.Tx, noGet bool, res [][2][]byte) (a []*Article) {
 	return
 }
 
-func mgetReplies(parent []byte, start, end int) (a []*Article) {
+func (m *Manager) mgetReplies(parent []byte, start, end int) (a []*Article) {
 	m.db.View(func(tx *bbolt.Tx) error {
 		main := tx.Bucket(bkPost)
 
 		for i := start; i < end; i++ {
+			if i <= 0 {
+				continue
+			}
+
 			pid := id.ParseID(parent)
 			pid.RIndexAppend(int16(i))
 			pid.SetHeader(id.HeaderReply)
