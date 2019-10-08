@@ -176,7 +176,7 @@ func handleRepliesView(g *gin.Context) {
 		pl.CurPage = 1
 	}
 	pl.CurPage = intmin(pl.CurPage, pl.TotalPages)
-	if pl.CurPage < 0 {
+	if pl.CurPage <= 0 {
 		pl.CurPage = pl.TotalPages
 	}
 
@@ -188,8 +188,10 @@ func handleRepliesView(g *gin.Context) {
 
 		// Fill in at most 7 page numbers for display
 		pl.Pages = make([]int, 0, 8)
-		for i := pl.CurPage - 3; i <= pl.CurPage+3 && i <= pl.TotalPages && i > 0; i++ {
-			pl.Pages = append(pl.Pages, i)
+		for i := pl.CurPage - 3; i <= pl.CurPage+3 && i <= pl.TotalPages; i++ {
+			if i > 0 {
+				pl.Pages = append(pl.Pages, i)
+			}
 		}
 		for last := pl.Pages[len(pl.Pages)-1]; len(pl.Pages) < 7 && last+1 <= pl.TotalPages; last = pl.Pages[len(pl.Pages)-1] {
 			pl.Pages = append(pl.Pages, last+1)

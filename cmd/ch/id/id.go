@@ -11,11 +11,14 @@ import (
 
 type headerType byte
 
+const IDLen = 30
+
 const (
 	HeaderInvalid   headerType = 0
 	HeaderReply                = 0x01
 	HeaderAuthorTag            = 0x04
 	HeaderPost                 = 0x80
+	HeaderTimeline             = 0xf0
 	HeaderAnnounce             = 0xff
 )
 
@@ -69,7 +72,7 @@ func (id ID) String() string {
 func (id ID) Marshal() []byte {
 	//  8 + 8x13 + 33 + 27 + 20 + 12x4 = 30
 	// hdr  tag    ts  ctr  rand  ridx
-	buf := [30]byte{}
+	buf := [IDLen]byte{}
 	{
 		buf[0] = byte(id.hdr)
 		copy(buf[1:14], id.tag)
@@ -87,7 +90,7 @@ func (id ID) Marshal() []byte {
 }
 
 func (id *ID) Unmarshal(p []byte) bool {
-	if len(p) != 30 {
+	if len(p) != IDLen {
 		return false
 	}
 

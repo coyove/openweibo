@@ -35,6 +35,7 @@ type ArticleRepliesView struct {
 
 type Article struct {
 	ID          []byte `protobuf:"bytes,1,opt"`
+	Timeline    []byte `protobuf:"bytes,12,opt"`
 	Index       int64  `protobuf:"varint,2,opt"`
 	Parent      []byte `protobuf:"bytes,3,opt"`
 	Replies     int64  `protobuf:"varint,4,opt"`
@@ -63,7 +64,6 @@ func (a *Article) ProtoMessage() {}
 
 func (m *Manager) NewPost(title, content, author, ip string, cat string) *Article {
 	return &Article{
-		ID:         id.NewID(id.HeaderPost, "").Marshal(),
 		Title:      title,
 		Content:    content,
 		Author:     author,
@@ -86,6 +86,10 @@ func (m *Manager) NewReply(content, author, ip string) *Article {
 
 func (a *Article) DisplayID() string {
 	return id.BytesString(a.ID)
+}
+
+func (a *Article) DisplayTimeline() string {
+	return id.BytesString(a.Timeline)
 }
 
 func (a *Article) DisplayParentID() string {

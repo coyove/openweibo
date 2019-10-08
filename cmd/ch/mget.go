@@ -5,18 +5,37 @@ import (
 	"github.com/etcd-io/bbolt"
 )
 
-func (m *Manager) mget(tx *bbolt.Tx, noGet bool, res [][2][]byte) (a []*Article) {
-	main := tx.Bucket(bkPost)
+func (m *Manager) get(main *bbolt.Bucket, id []byte) (a *Article) {
+	sid := string(id)
+	if v, ok := m.cache.Get(sid); ok {
+		return v.(*Article)
+	}
+
+	a = &Article{}
+	a.unmarshal(main.Get(id))
+
+	if a.ID != nil {
+		m.cache.Add(sid, a)
+	}
+	return a
+}
+
+func (m *Manager) mget(main *bbolt.Bucket, tl bool, res [][2][]byte) (a []*Article) {
 	for _, r := range res {
-		p := &Article{}
-		if noGet {
-			if len(r[1]) > 30 && p.unmarshal(r[1]) == nil {
-				a = append(a, p)
+		if hdr := r[0][0]; tl {
+			// If in timeline mode, we accept two headers:
+			if hdr != id.HeaderTimeline && hdr != id.HeaderAnnounce {
+				continue
 			}
 		} else {
-			if p.unmarshal(main.Get(r[1])) == nil {
-				a = append(a, p)
+			// If in author-tag mode, we accept one header:
+			if hdr != id.HeaderAuthorTag {
+				continue
 			}
+		}
+
+		if p := m.get(main, r[1]); p.ID != nil {
+			a = append(a, p)
 		}
 	}
 	return
@@ -27,7 +46,7 @@ func (m *Manager) mgetReplies(parent []byte, start, end int) (a []*Article) {
 		main := tx.Bucket(bkPost)
 
 		for i := start; i < end; i++ {
-			if i <= 0 {
+			if i <= 0 || i >= 128*128 {
 				continue
 			}
 
@@ -35,8 +54,8 @@ func (m *Manager) mgetReplies(parent []byte, start, end int) (a []*Article) {
 			pid.RIndexAppend(int16(i))
 			pid.SetHeader(id.HeaderReply)
 
-			p := &Article{}
-			if p.unmarshal(main.Get(pid.Marshal())) != nil || p.ID == nil {
+			p := m.get(main, pid.Marshal())
+			if p.ID == nil {
 				p.NotFound = true
 				p.Index = int64(i)
 			}

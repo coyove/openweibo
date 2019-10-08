@@ -166,7 +166,6 @@ func handleNewPostAction(g *gin.Context) {
 	a := m.NewPost(title, content, authorNameToHash(author), ip, cat)
 	if isAdmin(author) && announce {
 		a.Announce = true
-		a.ID = id.NewID(id.HeaderAnnounce|id.HeaderPost, "").Marshal()
 	}
 
 	if err := m.PostPost(a); err != nil {
