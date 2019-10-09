@@ -1,0 +1,14 @@
+{{if eq . "guard/failed-captcha"}}
+验证码错误
+{{else if eq . "guard/token-expired"}}
+Token过期，请重试
+{{else if eq . "content/too-short"}}
+正文过短
+{{else if eq . "title/too-short"}}
+标题过短
+{{else if eq . "error/can-not-reply"}}
+无法回复
+{{else}}
+{{.}}
+{{end}}
+

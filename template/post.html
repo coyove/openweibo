@@ -108,7 +108,7 @@
                 </tr> 
                 {{if .EError}}
                 <tr>
-                    <td colspan=3>错误: {{.EError}}</td>
+                    <td colspan=3>错误: {{template "error_i18n.html" .EError}}</td>
                 </tr>
                 {{end}}
             </table>

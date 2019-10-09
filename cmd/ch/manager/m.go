@@ -1,13 +1,16 @@
-package main
+package manager
 
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"sync"
 	"time"
 
 	"github.com/coyove/common/lru"
+	"github.com/coyove/common/sched"
 	"github.com/coyove/iis/cmd/ch/id"
+	mv "github.com/coyove/iis/cmd/ch/modelview"
 	"github.com/etcd-io/bbolt"
 )
 
@@ -17,12 +20,17 @@ var (
 )
 
 type Manager struct {
-	db    *bbolt.DB
-	cache *lru.Cache
-	mu    sync.Mutex
+	db      *bbolt.DB
+	cache   *lru.Cache
+	mu      sync.Mutex
+	counter struct {
+		m  map[string]map[uint32]bool
+		k  sched.SchedKey
+		rx *regexp.Regexp
+	}
 }
 
-func NewManager(path string) (*Manager, error) {
+func New(path string) (*Manager, error) {
 	db, err := bbolt.Open(path, 0700, &bbolt.Options{
 		FreelistType: bbolt.FreelistMapType,
 	})
@@ -34,24 +42,48 @@ func NewManager(path string) (*Manager, error) {
 		db:    db,
 		cache: lru.NewCache(128),
 	}
+	m.counter.m = map[string]map[uint32]bool{}
+	m.counter.rx = regexp.MustCompile(`(?i)(bot|googlebot|crawler|spider|robot|crawling)`)
 
-	if err := db.Update(func(tx *bbolt.Tx) error {
+	err = db.Update(func(tx *bbolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists(bkPost)
 		return err
-	}); err != nil {
+	})
+	if err != nil {
 		return nil, err
 	}
 
 	return m, nil
 }
 
-func (m *Manager) FindPosts(tag string, cursor []byte, n int) (a []*Article, prev []byte, next []byte, err error) {
+func (m *Manager) NewPost(title, content, author, ip string, cat string) *mv.Article {
+	return &mv.Article{
+		Title:      title,
+		Content:    content,
+		Author:     author,
+		Category:   cat,
+		IP:         ip,
+		CreateTime: uint32(time.Now().Unix()),
+		ReplyTime:  uint32(time.Now().Unix()),
+	}
+}
+
+func (m *Manager) NewReply(content, author, ip string) *mv.Article {
+	return &mv.Article{
+		Content:    content,
+		Author:     author,
+		IP:         ip,
+		CreateTime: uint32(time.Now().Unix()),
+		ReplyTime:  uint32(time.Now().Unix()),
+	}
+}
+
+func (m *Manager) Walk(tag string, cursor []byte, n int) (a []*mv.Article, prev []byte, next []byte, err error) {
 	err = m.db.View(func(tx *bbolt.Tx) error {
 		bk := tx.Bucket(bkPost)
 
 		var res [][2][]byte
-		res, next = scanBucketDesc(bk, tag, cursor, n)
-		prev = substractCursorN(bk, tag, cursor, n)
+		res, prev, next = scanBucketDesc(bk, tag, cursor, n)
 
 		a = m.mget(bk, tag == "", res)
 
@@ -81,8 +113,8 @@ func (m *Manager) deleteTags(bk *bbolt.Bucket, k []byte, tags ...string) (err er
 	return
 }
 
-func (m *Manager) PostPost(a *Article) error {
-	return m.db.Update(func(tx *bbolt.Tx) error {
+func (m *Manager) PostPost(a *mv.Article) ([]byte, error) {
+	err := m.db.Update(func(tx *bbolt.Tx) error {
 		bk := tx.Bucket(bkPost)
 
 		a.ID = id.NewID(id.HeaderPost, "\x80").Marshal()
@@ -92,7 +124,7 @@ func (m *Manager) PostPost(a *Article) error {
 			a.Timeline = id.NewID(id.HeaderTimeline, "").Marshal()
 		}
 
-		if err := bk.Put(a.ID, a.marshal()); err != nil {
+		if err := bk.Put(a.ID, a.MarshalA()); err != nil {
 			return err
 		}
 		if err := bk.Put(a.Timeline, a.ID); err != nil {
@@ -107,21 +139,22 @@ func (m *Manager) PostPost(a *Article) error {
 
 		return nil
 	})
+	return a.ID, err
 }
 
-func (m *Manager) PostReply(parent []byte, a *Article) error {
+func (m *Manager) PostReply(parent []byte, a *mv.Article) ([]byte, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	p, err := m.GetArticle(parent)
+	p, err := m.Get(parent)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if p.Locked {
-		return fmt.Errorf("locked parent")
+		return nil, fmt.Errorf("locked parent")
 	}
 	if p.Replies >= 16000 {
-		return fmt.Errorf("too many replies")
+		return nil, fmt.Errorf("too many replies")
 	}
 
 	pid := id.ParseID(parent)
@@ -135,19 +168,19 @@ func (m *Manager) PostReply(parent []byte, a *Article) error {
 	a.Index = p.Replies
 
 	if !pid.RIndexAppend(int16(p.Replies)) {
-		return fmt.Errorf("too deep")
+		return nil, fmt.Errorf("too deep")
 	}
 
 	pid.SetHeader(id.HeaderReply)
 	a.ID = pid.Marshal()
 
 	m.cache.Remove(string(parent))
-	return m.db.Update(func(tx *bbolt.Tx) error {
+	return a.ID, m.db.Update(func(tx *bbolt.Tx) error {
 		main := tx.Bucket(bkPost)
-		if err := main.Put(a.ID, a.marshal()); err != nil {
+		if err := main.Put(a.ID, a.MarshalA()); err != nil {
 			return err
 		}
-		if err := main.Put(p.ID, p.marshal()); err != nil {
+		if err := main.Put(p.ID, p.MarshalA()); err != nil {
 			return err
 		}
 		if err := m.insertTag(main, a.Author, a.ID, a.ID); err != nil {
@@ -160,7 +193,7 @@ func (m *Manager) PostReply(parent []byte, a *Article) error {
 	})
 }
 
-func (m *Manager) GetArticle(id []byte) (a *Article, err error) {
+func (m *Manager) Get(id []byte) (a *mv.Article, err error) {
 	m.db.View(func(tx *bbolt.Tx) error {
 		a = m.get(tx.Bucket(bkPost), id)
 		return nil
@@ -171,7 +204,7 @@ func (m *Manager) GetArticle(id []byte) (a *Article, err error) {
 	return
 }
 
-func (m *Manager) UpdateArticle(a *Article, oldcat string) error {
+func (m *Manager) Update(a *mv.Article, oldcat string) error {
 	m.cache.Remove(string(a.ID))
 	return m.db.Update(func(tx *bbolt.Tx) error {
 		main := tx.Bucket(bkPost)
@@ -185,11 +218,11 @@ func (m *Manager) UpdateArticle(a *Article, oldcat string) error {
 			}
 		}
 
-		return main.Put(a.ID, a.marshal())
+		return main.Put(a.ID, a.MarshalA())
 	})
 }
 
-func (m *Manager) DeleteArticle(a *Article) error {
+func (m *Manager) Delete(a *mv.Article) error {
 	m.cache.Remove(string(a.ID))
 	return m.db.Update(func(tx *bbolt.Tx) error {
 		main := tx.Bucket(bkPost)

@@ -1,35 +1,23 @@
 package main
 
 import (
-	"bytes"
-	"encoding/base64"
 	"fmt"
 	"log"
 	"net"
-	"sync"
 
+	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/id"
-	"github.com/dchest/captcha"
+	mv "github.com/coyove/iis/cmd/ch/modelview"
+	"github.com/coyove/iis/cmd/ch/token"
 	"github.com/gin-gonic/gin"
 )
 
-var bytesPool = sync.Pool{New: func() interface{} { return &bytes.Buffer{} }}
-
 func getAuthor(g *gin.Context) string {
-	a := softTrunc(g.PostForm("author"), 32)
+	a := mv.SoftTrunc(g.PostForm("author"), 32)
 	if a == "" {
 		a = "user/" + g.MustGet("ip").(net.IP).String()
 	}
 	return a
-}
-
-func captchaBase64(buf [6]byte) string {
-	b := bytesPool.Get().(*bytes.Buffer)
-	captcha.NewImage(config.Key, buf[:6], 180, 60).WriteTo(b)
-	ret := base64.StdEncoding.EncodeToString(b.Bytes())
-	b.Reset()
-	bytesPool.Put(b)
-	return ret
 }
 
 func handleNewPostView(g *gin.Context) {
@@ -48,44 +36,19 @@ func handleNewPostView(g *gin.Context) {
 		RCat:     g.Query("cat"),
 		RAuthor:  g.Query("author"),
 		EError:   g.Query("error"),
-		Tags:     config.Tags,
-		IsAdmin:  isAdmin(g),
+		Tags:     config.Cfg.Tags,
+		IsAdmin:  token.IsAdmin(g),
 	}
 
 	var answer [6]byte
-	pl.UUID, answer = makeCSRFToken(g)
-	pl.Challenge = captchaBase64(answer)
+	pl.UUID, answer = token.Make(g)
+	pl.Challenge = token.GenerateCaptcha(answer)
 
 	if pl.RAuthor == "" {
 		pl.RAuthor, _ = g.Cookie("id")
 	}
 
 	g.HTML(200, "newpost.html", pl)
-}
-
-func generateNewReplyView(id []byte, g *gin.Context) interface{} {
-	var pl = struct {
-		UUID      string
-		Challenge string
-		ShowReply bool
-		RAuthor   string
-		RContent  string
-		EError    string
-	}{}
-
-	pl.RContent = g.Query("content")
-	pl.RAuthor = g.Query("author")
-	pl.EError = g.Query("error")
-	pl.ShowReply = g.Query("refresh") == "1" || pl.EError != ""
-
-	if pl.RAuthor == "" {
-		pl.RAuthor, _ = g.Cookie("id")
-	}
-
-	var answer [6]byte
-	pl.UUID, answer = makeCSRFToken(g)
-	pl.Challenge = captchaBase64(answer)
-	return pl
 }
 
 func hashIP(g *gin.Context) string {
@@ -100,15 +63,15 @@ func hashIP(g *gin.Context) string {
 
 func checkTokenAndCaptcha(g *gin.Context, author string) string {
 	var (
-		answer            = softTrunc(g.PostForm("answer"), 6)
-		uuid              = softTrunc(g.PostForm("uuid"), 32)
-		tokenbuf, tokenok = extractCSRFToken(g, uuid)
+		answer            = mv.SoftTrunc(g.PostForm("answer"), 6)
+		uuid              = mv.SoftTrunc(g.PostForm("uuid"), 32)
+		tokenbuf, tokenok = token.Parse(g, uuid)
 		challengePassed   bool
 	)
 	if !g.GetBool("ip-ok") {
-		return fmt.Sprintf("guard/cooling-down/%.1fs", float64(config.Cooldown)-g.GetFloat64("ip-ok-remain"))
+		return fmt.Sprintf("guard/cooling-down/%.1fs", float64(config.Cfg.Cooldown)-g.GetFloat64("ip-ok-remain"))
 	}
-	if !isAdmin(author) {
+	if !token.IsAdmin(author) {
 		if len(answer) == 6 {
 			challengePassed = true
 			for i := range answer {
@@ -132,10 +95,10 @@ func checkTokenAndCaptcha(g *gin.Context, author string) string {
 func handleNewPostAction(g *gin.Context) {
 	var (
 		ip       = hashIP(g)
-		content  = softTrunc(g.PostForm("content"), int(config.MaxContent))
-		title    = softTrunc(g.PostForm("title"), 100)
+		content  = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
+		title    = mv.SoftTrunc(g.PostForm("title"), 100)
 		author   = getAuthor(g)
-		cat      = checkCategory(softTrunc(g.PostForm("cat"), 20))
+		cat      = checkCategory(mv.SoftTrunc(g.PostForm("cat"), 20))
 		announce = g.PostForm("announce") != ""
 		redir    = func(a, b string) {
 			q := encodeQuery(a, b, "author", author, "content", content, "title", title, "cat", cat)
@@ -153,23 +116,24 @@ func handleNewPostAction(g *gin.Context) {
 		return
 	}
 
-	if len(content) < int(config.MinContent) {
+	if len(content) < int(config.Cfg.MinContent) {
 		redir("error", "content/too-short")
 		return
 	}
 
-	if len(title) < int(config.MinContent) {
+	if len(title) < int(config.Cfg.MinContent) {
 		redir("error", "title/too-short")
 		return
 	}
 
-	a := m.NewPost(title, content, authorNameToHash(author), ip, cat)
-	if isAdmin(author) && announce {
+	a := m.NewPost(title, content, config.HashName(author), ip, cat)
+	if token.IsAdmin(author) && announce {
 		a.Announce = true
 	}
 
-	if err := m.PostPost(a); err != nil {
-		redir("error", "internal/error: "+err.Error())
+	if _, err := m.PostPost(a); err != nil {
+		log.Println(err)
+		redir("error", "internal/error")
 		return
 	}
 
@@ -180,7 +144,7 @@ func handleNewReplyAction(g *gin.Context) {
 	var (
 		reply   = id.StringBytes(g.PostForm("reply"))
 		ip      = hashIP(g)
-		content = softTrunc(g.PostForm("content"), int(config.MaxContent))
+		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		author  = getAuthor(g)
 		redir   = func(a, b string) {
 			g.Redirect(302, "/p/"+id.BytesString(reply)+"?p=-1&"+encodeQuery(a, b, "author", author, "content", content)+"#paging")
@@ -197,14 +161,14 @@ func handleNewReplyAction(g *gin.Context) {
 		return
 	}
 
-	if len(content) < int(config.MinContent) {
+	if len(content) < int(config.Cfg.MinContent) {
 		redir("error", "content/too-short")
 		return
 	}
 
-	if err := m.PostReply(reply, m.NewReply(content, authorNameToHash(author), ip)); err != nil {
+	if _, err := m.PostReply(reply, m.NewReply(content, config.HashName(author), ip)); err != nil {
 		log.Println(err)
-		redir("error", "internal/error")
+		redir("error", "error/can-not-reply")
 		return
 	}
 

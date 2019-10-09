@@ -4,7 +4,10 @@ import (
 	"log"
 	"net"
 
+	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/id"
+	mv "github.com/coyove/iis/cmd/ch/modelview"
+	"github.com/coyove/iis/cmd/ch/token"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,17 +18,17 @@ func handleEditPostView(g *gin.Context) {
 		Tags    []string
 		RAuthor string
 		IsAdmin bool
-		Article *Article
+		Article *mv.Article
 	}{
 		Reply: g.Param("id"),
-		Tags:  config.Tags,
+		Tags:  config.Cfg.Tags,
 	}
 
-	pl.UUID, _ = makeCSRFToken(g)
+	pl.UUID, _ = token.Make(g)
 	pl.RAuthor, _ = g.Cookie("id")
-	pl.IsAdmin = isAdmin(pl.RAuthor)
+	pl.IsAdmin = token.IsAdmin(pl.RAuthor)
 
-	a, err := m.GetArticle(id.StringBytes(pl.Reply))
+	a, err := m.Get(id.StringBytes(pl.Reply))
 	if err != nil {
 		log.Println(err)
 		g.Redirect(302, "/cat")
@@ -42,27 +45,27 @@ func handleEditPostAction(g *gin.Context) {
 		return
 	}
 
-	if _, ok := extractCSRFToken(g, g.PostForm("uuid")); !ok {
+	if _, ok := token.Parse(g, g.PostForm("uuid")); !ok {
 		errorPage(400, "guard/token-expired", g)
 		return
 	}
 
 	var (
 		eid         = id.StringBytes(g.PostForm("reply"))
-		title       = softTrunc(g.PostForm("title"), 100)
-		content     = softTrunc(g.PostForm("content"), int(config.MaxContent))
+		title       = mv.SoftTrunc(g.PostForm("title"), 100)
+		content     = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		author      = getAuthor(g)
 		cat         = checkCategory(g.PostForm("cat"))
 		locked      = g.PostForm("locked") != ""
 		highlighted = g.PostForm("highlighted") != ""
 	)
 
-	if !isAdmin(author) {
+	if !token.IsAdmin(author) {
 		g.Redirect(302, "/")
 		return
 	}
 
-	a, err := m.GetArticle(eid)
+	a, err := m.Get(eid)
 	if err != nil {
 		g.Redirect(302, "/cat")
 		return
@@ -72,7 +75,7 @@ func handleEditPostAction(g *gin.Context) {
 
 	if locked != a.Locked || highlighted != a.Highlighted {
 		a.Locked, a.Highlighted = locked, highlighted
-		m.UpdateArticle(a, a.Category)
+		m.Update(a, a.Category)
 		g.Redirect(302, redir)
 		return
 	}
@@ -94,7 +97,7 @@ func handleEditPostAction(g *gin.Context) {
 		a.Title = title
 	}
 
-	if err := m.UpdateArticle(a, oldcat); err != nil {
+	if err := m.Update(a, oldcat); err != nil {
 		log.Println(err)
 		errorPage(500, "internal/error", g)
 		return
@@ -109,27 +112,27 @@ func handleDeletePostAction(g *gin.Context) {
 		return
 	}
 
-	if _, ok := extractCSRFToken(g, g.PostForm("uuid")); !ok {
+	if _, ok := token.Parse(g, g.PostForm("uuid")); !ok {
 		errorPage(400, "guard/token-expired", g)
 		return
 	}
 
 	var eid = id.StringBytes(g.PostForm("reply"))
-	var author = softTrunc(g.PostForm("author"), 32)
+	var author = getAuthor(g)
 
-	a, err := m.GetArticle(eid)
+	a, err := m.Get(eid)
 	if err != nil {
 		g.Redirect(302, "/cat")
 		return
 	}
 
-	if a.Author != authorNameToHash(author) && !isAdmin(author) {
+	if a.Author != config.HashName(author) && !token.IsAdmin(author) {
 		log.Println(g.MustGet("ip").(net.IP), "tried to delete", a.ID)
 		g.Redirect(302, "/p/"+a.DisplayID())
 		return
 	}
 
-	if err := m.DeleteArticle(a); err != nil {
+	if err := m.Delete(a); err != nil {
 		log.Println(err)
 		errorPage(500, "internal/error", g)
 		return

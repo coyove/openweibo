@@ -1,13 +1,8 @@
-package main
+package mv
 
 import (
-	"crypto/hmac"
-	"crypto/sha1"
-	"encoding/base64"
 	"fmt"
 	"html/template"
-	"strings"
-	"time"
 
 	"github.com/coyove/iis/cmd/ch/id"
 	"github.com/gogo/protobuf/proto"
@@ -30,7 +25,14 @@ type ArticleRepliesView struct {
 	TotalPages    int
 	Pages         []int
 	ShowIP        bool
-	ReplyView     interface{}
+	ReplyView     struct {
+		UUID      string
+		Challenge string
+		ShowReply bool
+		RAuthor   string
+		RContent  string
+		EError    string
+	}
 }
 
 type Article struct {
@@ -62,28 +64,6 @@ func (a *Article) String() string { return proto.CompactTextString(a) }
 
 func (a *Article) ProtoMessage() {}
 
-func (m *Manager) NewPost(title, content, author, ip string, cat string) *Article {
-	return &Article{
-		Title:      title,
-		Content:    content,
-		Author:     author,
-		Category:   cat,
-		IP:         ip,
-		CreateTime: uint32(time.Now().Unix()),
-		ReplyTime:  uint32(time.Now().Unix()),
-	}
-}
-
-func (m *Manager) NewReply(content, author, ip string) *Article {
-	return &Article{
-		Content:    content,
-		Author:     author,
-		IP:         ip,
-		CreateTime: uint32(time.Now().Unix()),
-		ReplyTime:  uint32(time.Now().Unix()),
-	}
-}
-
 func (a *Article) DisplayID() string {
 	return id.BytesString(a.ID)
 }
@@ -97,11 +77,11 @@ func (a *Article) DisplayParentID() string {
 }
 
 func (a *Article) CreateTimeString(sec bool) string {
-	return formatTime(a.CreateTime, sec)
+	return FormatTime(a.CreateTime, sec)
 }
 
 func (a *Article) ReplyTimeString(sec bool) string {
-	return formatTime(a.ReplyTime, sec)
+	return FormatTime(a.ReplyTime, sec)
 }
 
 func (a *Article) ContentHTML() template.HTML {
@@ -109,57 +89,18 @@ func (a *Article) ContentHTML() template.HTML {
 }
 
 func (a *Article) ContentAbstract() string {
-	return softTrunc(a.Content, 64)
+	return SoftTrunc(a.Content, 64)
 }
 
-func (a *Article) marshal() []byte {
+func (a *Article) MarshalA() []byte {
 	b, _ := proto.Marshal(a)
 	return b
 }
 
-func (a *Article) unmarshal(b []byte) error {
+func (a *Article) UnmarshalA(b []byte) error {
 	err := proto.Unmarshal(b, a)
 	if a.ID == nil {
 		return fmt.Errorf("failed to unmarshal")
 	}
 	return err
-}
-
-func authorNameToHash(n string) string {
-	var n0 string
-	if len(n) >= 4 {
-		n0 = strings.TrimLeft(n[:4], "#")
-		for i := 0; i < len(n0); i++ {
-			if n0[i] > 127 {
-				n0 = n0[:i]
-				break
-			}
-		}
-		n = n[4:]
-	}
-
-	h := hmac.New(sha1.New, []byte(config.Key))
-	h.Write([]byte(n + config.Key))
-	x := h.Sum(nil)
-	return n0 + base64.URLEncoding.EncodeToString(x[:6])
-}
-
-func formatTime(t uint32, sec bool) string {
-	x, now := time.Unix(int64(t), 0), time.Now()
-	if now.YearDay() == x.YearDay() && now.Year() == x.Year() {
-		if !sec {
-			return x.Format("15:04")
-		}
-		return x.Format("15:04:05")
-	}
-	if now.Year() == x.Year() {
-		if !sec {
-			return x.Format("Jan 02")
-		}
-		return x.Format("Jan 02 15:04")
-	}
-	if !sec {
-		return x.Format("Jan 02, 2006")
-	}
-	return x.Format("Jan 02, 2006 15:04")
 }

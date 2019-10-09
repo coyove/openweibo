@@ -1,4 +1,4 @@
-package main
+package manager
 
 import (
 	"bytes"
@@ -23,8 +23,7 @@ func cursorMoveToLast(c *bbolt.Cursor, tag string) (k, v []byte) {
 	return
 }
 
-func substractCursorN(bk *bbolt.Bucket, tag string, cursor []byte, n int) (newCursor []byte) {
-	c := bk.Cursor()
+func substractCursorN(c *bbolt.Cursor, tag string, cursor []byte, n int) (newCursor []byte) {
 
 	if cursor == nil || len(bytes.Trim(cursor, "\x00")) == 0 {
 		cursor, _ = cursorMoveToLast(c, tag)
@@ -68,7 +67,7 @@ func substractCursorN(bk *bbolt.Bucket, tag string, cursor []byte, n int) (newCu
 	return
 }
 
-func scanBucketDesc(bk *bbolt.Bucket, tag string, cursor []byte, n int) (keyvalues [][2][]byte, next []byte) {
+func scanBucketDesc(bk *bbolt.Bucket, tag string, cursor []byte, n int) (keyvalues [][2][]byte, prev, next []byte) {
 	var (
 		c    = bk.Cursor()
 		k, v []byte
@@ -98,5 +97,6 @@ func scanBucketDesc(bk *bbolt.Bucket, tag string, cursor []byte, n int) (keyvalu
 		keyvalues = keyvalues[:len(keyvalues)-1]
 	}
 
+	prev = substractCursorN(c, tag, cursor, n)
 	return
 }

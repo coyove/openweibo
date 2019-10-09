@@ -1,18 +1,19 @@
-package main
+package manager
 
 import (
 	"github.com/coyove/iis/cmd/ch/id"
+	mv "github.com/coyove/iis/cmd/ch/modelview"
 	"github.com/etcd-io/bbolt"
 )
 
-func (m *Manager) get(main *bbolt.Bucket, id []byte) (a *Article) {
+func (m *Manager) get(main *bbolt.Bucket, id []byte) (a *mv.Article) {
 	sid := string(id)
 	if v, ok := m.cache.Get(sid); ok {
-		return v.(*Article)
+		return v.(*mv.Article)
 	}
 
-	a = &Article{}
-	a.unmarshal(main.Get(id))
+	a = &mv.Article{}
+	a.UnmarshalA(main.Get(id))
 
 	if a.ID != nil {
 		m.cache.Add(sid, a)
@@ -20,7 +21,7 @@ func (m *Manager) get(main *bbolt.Bucket, id []byte) (a *Article) {
 	return a
 }
 
-func (m *Manager) mget(main *bbolt.Bucket, tl bool, res [][2][]byte) (a []*Article) {
+func (m *Manager) mget(main *bbolt.Bucket, tl bool, res [][2][]byte) (a []*mv.Article) {
 	for _, r := range res {
 		if hdr := r[0][0]; tl {
 			// If in timeline mode, we accept two headers:
@@ -41,7 +42,7 @@ func (m *Manager) mget(main *bbolt.Bucket, tl bool, res [][2][]byte) (a []*Artic
 	return
 }
 
-func (m *Manager) mgetReplies(parent []byte, start, end int) (a []*Article) {
+func (m *Manager) GetReplies(parent []byte, start, end int) (a []*mv.Article) {
 	m.db.View(func(tx *bbolt.Tx) error {
 		main := tx.Bucket(bkPost)
 

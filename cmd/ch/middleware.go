@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"net/url"
 	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
 
+	"github.com/coyove/iis/cmd/ch/config"
+	"github.com/coyove/iis/cmd/ch/token"
 	"github.com/gin-gonic/gin"
 )
 
@@ -24,7 +25,7 @@ func mwRenderPerf(g *gin.Context) {
 		ip = ip.To4()
 	}
 
-	for _, subnet := range config.ipblacklist {
+	for _, subnet := range config.Cfg.IPBlacklistParsed {
 		if subnet.Contains(ip) {
 			g.AbortWithStatus(403)
 			return
@@ -49,17 +50,17 @@ func mwRenderPerf(g *gin.Context) {
 }
 
 func mwIPThrot(g *gin.Context) {
-	if isAdmin(g) {
+	if token.IsAdmin(g) {
 		g.Set("ip-ok", true)
 		g.Next()
 		return
 	}
 
 	ip := g.MustGet("ip").(net.IP).String()
-	lastaccess, ok := dedup.Get(ip)
+	lastaccess, ok := token.Dedup.Get(ip)
 
 	if !ok {
-		dedup.Add(ip, time.Now())
+		token.Dedup.Add(ip, time.Now())
 		g.Set("ip-ok", true)
 		g.Next()
 		return
@@ -68,8 +69,8 @@ func mwIPThrot(g *gin.Context) {
 	t, _ := lastaccess.(time.Time)
 	diff := time.Since(t).Seconds()
 
-	if diff > float64(config.Cooldown) {
-		dedup.Add(ip, time.Now())
+	if diff > float64(config.Cfg.Cooldown) {
+		token.Dedup.Add(ip, time.Now())
 		g.Set("ip-ok", true)
 		g.Next()
 		return
@@ -77,21 +78,6 @@ func mwIPThrot(g *gin.Context) {
 
 	g.Set("ip-ok", false)
 	g.Set("ip-ok-remain", diff)
-	g.Next()
-}
-
-func mwAuthorID(g *gin.Context) {
-	referer := g.Request.Referer()
-	u, _ := url.Parse(referer)
-	if u != nil {
-		id := u.Query().Get("author")
-
-		if g.Request.URL.Query().Get("author") == "" && id != "" {
-			g.Request.URL.Query().Add("author", id)
-			g.Redirect(302, g.Request.URL.String())
-			return
-		}
-	}
 	g.Next()
 }
 

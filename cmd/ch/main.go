@@ -1,6 +1,7 @@
 package main
 
 import (
+	"html/template"
 	"io"
 	"log"
 	"math/rand"
@@ -11,25 +12,28 @@ import (
 	"time"
 
 	"github.com/coyove/common/sched"
+	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/id"
+	"github.com/coyove/iis/cmd/ch/manager"
+	mv "github.com/coyove/iis/cmd/ch/modelview"
+	"github.com/coyove/iis/cmd/ch/token"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 )
 
-var m *Manager
+var m *manager.Manager
 
 func main() {
 	rand.Seed(time.Now().Unix())
 	runtime.GOMAXPROCS(4)
 	sched.Verbose = false
-
-	var err error
-	loadConfig()
+	config.MustLoad()
 	loadTrafficCounter()
 
-	m, err = NewManager("iis.db")
+	var err error
+	m, err = manager.New("iis.db")
 	if err != nil {
 		panic(err)
 	}
@@ -67,7 +71,7 @@ func main() {
 		}
 	}
 
-	if config.Key != "0123456789abcdef" {
+	if config.Cfg.Key != "0123456789abcdef" {
 		log.Println("P R O D U C A T I O N")
 		gin.SetMode(gin.ReleaseMode)
 		mwLoggerOutput, gin.DefaultErrorWriter = logf, logerrf
@@ -84,7 +88,7 @@ func main() {
 	r.LoadHTMLGlob("template/*.html")
 	r.Static("/s/", "template")
 
-	r.Handle("GET", "/", func(g *gin.Context) { g.HTML(200, "home.html", struct{ Tags []string }{config.Tags}) })
+	r.Handle("GET", "/", func(g *gin.Context) { g.HTML(200, "home.html", struct{ Tags []string }{config.Cfg.Tags}) })
 	r.Handle("GET", "/p/:parent", handleRepliesView)
 	r.Handle("GET", "/cat", handleIndexView)
 	r.Handle("GET", "/cat/:tag", handleIndexView)
@@ -101,7 +105,7 @@ func main() {
 
 	r.Handle("GET", "/loaderio-4d068f605f9b693f6ca28a8ca23435c6", func(g *gin.Context) { g.String(200, ("loaderio-4d068f605f9b693f6ca28a8ca23435c6")) })
 
-	if config.Domain == "" {
+	if config.Cfg.Domain == "" {
 		log.Fatal(r.Run(":5010"))
 	} else {
 		go func() {
@@ -109,14 +113,14 @@ func main() {
 			log.Println("plain server started on :80")
 			log.Fatal(r.Run(":80"))
 		}()
-		log.Fatal(autotls.Run(r, config.Domain))
+		log.Fatal(autotls.Run(r, config.Cfg.Domain))
 	}
 }
 
 func handleIndexView(g *gin.Context) {
-	var pl = ArticlesTimelineView{
+	var pl = mv.ArticlesTimelineView{
 		SearchTerm: g.Param("tag"),
-		Tags:       config.Tags,
+		Tags:       config.Cfg.Tags,
 	}
 
 	if strings.HasPrefix(pl.SearchTerm, "@") {
@@ -126,7 +130,7 @@ func handleIndexView(g *gin.Context) {
 		pl.SearchTerm = "#" + pl.SearchTerm
 	}
 
-	a, prev, next, err := m.FindPosts(pl.SearchTerm, id.StringBytes(g.Query("n")), int(config.PostsPerPage))
+	a, prev, next, err := m.Walk(pl.SearchTerm, id.StringBytes(g.Query("n")), int(config.Cfg.PostsPerPage))
 	if err != nil {
 		errorPage(500, "INTERNAL: "+err.Error(), g)
 		return
@@ -146,31 +150,43 @@ func handleIndexView(g *gin.Context) {
 }
 
 func handleRepliesView(g *gin.Context) {
-	var pl = ArticleRepliesView{
-		ShowIP: isAdmin(g),
-		Tags:   config.Tags,
+	var pl = mv.ArticleRepliesView{
+		ShowIP: token.IsAdmin(g),
+		Tags:   config.Cfg.Tags,
 	}
 	var err error
 	var pid = g.Param("parent")
 
-	pl.ParentArticle, err = m.GetArticle(id.StringBytes(pid))
+	pl.ParentArticle, err = m.Get(id.StringBytes(pid))
 	if err != nil || pl.ParentArticle.ID == nil {
 		errorPage(404, "NOT FOUND", g)
-		log.Println(pl.ParentArticle, err)
+		log.Println(pid, err)
 		return
 	}
 
 	if idx := id.ParseID(g.Query("j")).RIndex(); idx > 0 && int64(idx) <= pl.ParentArticle.Replies {
-		p := intdivceil(int(idx), config.PostsPerPage)
+		p := intdivceil(int(idx), config.Cfg.PostsPerPage)
 		g.Redirect(302, "/p/"+pid+"?p="+strconv.Itoa(p)+"#p"+g.Query("j"))
 		return
 	}
 
-	pl.ReplyView = generateNewReplyView(pl.ParentArticle.ID, g)
-	pl.CurPage, _ = strconv.Atoi(g.Query("p"))
-	pl.TotalPages = intdivceil(int(pl.ParentArticle.Replies), config.PostsPerPage)
+	{
+		pl.ReplyView.RContent = g.Query("content")
+		pl.ReplyView.RAuthor = g.Query("author")
+		pl.ReplyView.EError = g.Query("error")
+		pl.ReplyView.ShowReply = g.Query("refresh") == "1" || pl.ReplyView.EError != ""
+		if pl.ReplyView.RAuthor == "" {
+			pl.ReplyView.RAuthor, _ = g.Cookie("id")
+		}
+		var answer [6]byte
+		pl.ReplyView.UUID, answer = token.Make(g)
+		pl.ReplyView.Challenge = token.GenerateCaptcha(answer)
+	}
 
-	incrCounter(g, pl.ParentArticle.ID)
+	pl.CurPage, _ = strconv.Atoi(g.Query("p"))
+	pl.TotalPages = intdivceil(int(pl.ParentArticle.Replies), config.Cfg.PostsPerPage)
+
+	m.IncrCounter(g, pl.ParentArticle.ID)
 
 	if pl.CurPage == 0 {
 		pl.CurPage = 1
@@ -181,10 +197,10 @@ func handleRepliesView(g *gin.Context) {
 	}
 
 	if pl.TotalPages > 0 {
-		start := intmin(int(pl.ParentArticle.Replies), (pl.CurPage-1)*config.PostsPerPage)
-		end := intmin(int(pl.ParentArticle.Replies), pl.CurPage*config.PostsPerPage)
+		start := intmin(int(pl.ParentArticle.Replies), (pl.CurPage-1)*config.Cfg.PostsPerPage)
+		end := intmin(int(pl.ParentArticle.Replies), pl.CurPage*config.Cfg.PostsPerPage)
 
-		pl.Articles = m.mgetReplies(pl.ParentArticle.ID, start+1, end+1)
+		pl.Articles = m.GetReplies(pl.ParentArticle.ID, start+1, end+1)
 
 		// Fill in at most 7 page numbers for display
 		pl.Pages = make([]int, 0, 8)
@@ -202,4 +218,35 @@ func handleRepliesView(g *gin.Context) {
 	}
 
 	g.HTML(200, "post.html", pl)
+}
+
+func handleCookie(g *gin.Context) {
+	if g.Request.Method == "GET" {
+		id, _ := g.Cookie("id")
+
+		var p = struct {
+			ID     string
+			Config template.HTML
+			Tags   []string
+		}{
+			id,
+			template.HTML(config.Cfg.PublicString),
+			config.Cfg.Tags,
+		}
+
+		if token.IsAdmin(g) {
+			p.Config = template.HTML(config.Cfg.PrivateString)
+		}
+
+		g.HTML(200, "cookie.html", p)
+		return
+	}
+
+	if id := g.PostForm("id"); g.PostForm("clear") != "" || id == "" {
+		g.SetCookie("id", "", -1, "", "", false, false)
+	} else {
+		g.SetCookie("id", id, 86400*365, "", "", false, false)
+	}
+
+	g.Redirect(302, "/cookie")
 }

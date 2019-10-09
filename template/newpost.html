@@ -64,7 +64,7 @@ tr {
     {{end}}
     {{if .EError}}
     <tr>
-        <td></td> <td> <div>错误: {{.EError}}</div></td>
+        <td></td> <td> <div>错误: {{template "error_i18n.html" .EError}}</div></td>
     </tr>
     {{end}}
     <tr>
