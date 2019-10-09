@@ -12,7 +12,6 @@ type Article struct {
 	ID          []byte `protobuf:"bytes,1,opt"`
 	Timeline    []byte `protobuf:"bytes,12,opt"`
 	Index       int64  `protobuf:"varint,2,opt"`
-	Parent      []byte `protobuf:"bytes,3,opt"`
 	Replies     int64  `protobuf:"varint,4,opt"`
 	Locked      bool   `protobuf:"varint,5,opt"`
 	Highlighted bool   `protobuf:"varint,6,opt"`
@@ -46,8 +45,13 @@ func (a *Article) DisplayTimeline() string {
 	return ident.BytesString(a.Timeline)
 }
 
+func (a *Article) Parent() []byte {
+	i := ident.ParseID(a.ID).RIndexParent()
+	return i.Marshal()
+}
+
 func (a *Article) DisplayParentID() string {
-	return ident.BytesString(a.Parent)
+	return ident.BytesString(a.Parent())
 }
 
 func (a *Article) CreateTimeString(sec bool) string {

@@ -117,7 +117,7 @@ func (m *Manager) PostPost(a *mv.Article) ([]byte, error) {
 	err := m.db.Update(func(tx *bbolt.Tx) error {
 		bk := tx.Bucket(bkPost)
 
-		a.ID = ident.NewID(ident.HeaderPost, "\x80").Marshal()
+		a.ID = ident.NewID(ident.HeaderArticle, "\x80").Marshal()
 		if a.Announce {
 			a.Timeline = ident.NewID(ident.HeaderAnnounce, "").Marshal()
 		} else {
@@ -162,7 +162,6 @@ func (m *Manager) PostReply(parent []byte, a *mv.Article) ([]byte, error) {
 	p.ReplyTime = uint32(time.Now().Unix())
 	p.Replies++
 
-	a.Parent = parent
 	a.Category = ""
 	a.Title = "RE: " + p.Title
 	a.Index = p.Replies
@@ -171,7 +170,6 @@ func (m *Manager) PostReply(parent []byte, a *mv.Article) ([]byte, error) {
 		return nil, fmt.Errorf("too deep")
 	}
 
-	pid.SetHeader(ident.HeaderReply)
 	a.ID = pid.Marshal()
 
 	m.cache.Remove(string(parent))
@@ -182,6 +180,7 @@ func (m *Manager) PostReply(parent []byte, a *mv.Article) ([]byte, error) {
 		}
 
 		if p.Timeline != nil && !p.Announce && !p.Saged {
+			// Move the parent post to the front of the timeline
 			if err := main.Delete(p.Timeline); err != nil {
 				return err
 			}

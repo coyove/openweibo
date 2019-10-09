@@ -15,9 +15,8 @@ const IDLen = 30
 
 const (
 	HeaderInvalid   headerType = 0
-	HeaderReply                = 0x01
+	HeaderArticle              = 0x01
 	HeaderAuthorTag            = 0x04
-	HeaderPost                 = 0x80
 	HeaderTimeline             = 0xf0
 	HeaderAnnounce             = 0xff
 )
@@ -70,6 +69,9 @@ func (id ID) String() string {
 }
 
 func (id ID) Marshal() []byte {
+	if id.hdr == HeaderInvalid {
+		return nil
+	}
 	//  8 + 8x13 + 33 + 27 + 20 + 12x4 = 30
 	// hdr  tag    ts  ctr  rand  ridx
 	buf := [IDLen]byte{}
@@ -90,30 +92,27 @@ func (id ID) Marshal() []byte {
 }
 
 func (id *ID) Unmarshal(p []byte) bool {
+	id.hdr = HeaderInvalid
+
 	if len(p) != IDLen {
 		return false
 	}
+	id.hdr = headerType(p[0])
+	end := bytes.IndexByte(p[1:14], 0)
+	if end == -1 {
+		end = 13
+	}
+	id.tag = string(p[1 : end+1])
+	tmp := binary.BigEndian.Uint64(p[14:])
+	tmp2 := binary.BigEndian.Uint16(p[22:])
 
-	{
-		id.hdr = headerType(p[0])
-		end := bytes.IndexByte(p[1:14], 0)
-		if end == -1 {
-			end = 13
-		}
-		id.tag = string(p[1 : end+1])
-	}
-	{
-		tmp := binary.BigEndian.Uint64(p[14:])
-		tmp2 := binary.BigEndian.Uint16(p[22:])
+	id.ts = int64(tmp >> 31)
+	id.ctr = uint32(tmp>>4) & 0x7ffffff
+	id.rand = uint32(tmp2)<<4 | uint32(tmp&0xf)
 
-		id.ts = int64(tmp >> 31)
-		id.ctr = uint32(tmp>>4) & 0x7ffffff
-		id.rand = uint32(tmp2)<<4 | uint32(tmp&0xf)
-	}
-	{
-		copy(id.rIndex[:], p[24:])
-	}
-	return true
+	copy(id.rIndex[:], p[24:])
+
+	return id.hdr != HeaderInvalid
 }
 
 func (id ID) RIndex() (v int16) {
@@ -137,9 +136,25 @@ func (id ID) RIndex() (v int16) {
 	return
 }
 
-func (id ID) RIndexLen() int {
+func (id ID) RIndexParent() ID {
+	pos := make([]int, 0, 6)
+	id.RIndexLen(&pos)
+	if len(pos) == 0 {
+		return ID{}
+	}
+	for i := pos[len(pos)-1]; i < len(id.rIndex); i++ {
+		id.rIndex[i] = 0
+	}
+	return id
+}
+
+func (id ID) RIndexLen(pos *[]int) int {
 	var ln int
 	for i := 0; i < len(id.rIndex); i++ {
+		if pos != nil {
+			*pos = append(*pos, i)
+		}
+
 		r := id.rIndex[i]
 		if r > 0 && r < 128 {
 			ln++
@@ -153,6 +168,10 @@ func (id ID) RIndexLen() int {
 			ln++
 			i++
 			continue
+		}
+
+		if pos != nil {
+			*pos = (*pos)[:len(*pos)-1]
 		}
 		break
 	}

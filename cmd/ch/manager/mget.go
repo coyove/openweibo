@@ -53,7 +53,6 @@ func (m *Manager) GetReplies(parent []byte, start, end int) (a []*mv.Article) {
 
 			pid := ident.ParseID(parent)
 			pid.RIndexAppend(int16(i))
-			pid.SetHeader(ident.HeaderReply)
 
 			p := m.get(main, pid.Marshal())
 			if p.ID == nil {
