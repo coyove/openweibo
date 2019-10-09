@@ -55,6 +55,10 @@ func checkTokenAndCaptcha(g *gin.Context, author string) string {
 			log.Println(g.MustGet("ip"), "challenge failed")
 			return "guard/failed-captcha"
 		}
+
+		if config.Cfg.NeedID && !m.UserExisted(config.HashName(author)) {
+			return "guard/id-not-existed"
+		}
 	}
 
 	// Admin still needs token verification

@@ -25,6 +25,7 @@ var Cfg = struct {
 	InboxSize    int      `yaml:"InboxSize"`
 	IPBlacklist  []string `yaml:"IPBlacklist"`
 	Cooldown     int      `yaml:"Cooldown"`
+	NeedID       bool     `yaml:"NeedID"`
 
 	// inited after config being read
 	Blk               cipher.Block

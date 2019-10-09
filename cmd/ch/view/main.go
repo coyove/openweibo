@@ -61,7 +61,10 @@ func Index(g *gin.Context) {
 		Tags:       config.Cfg.Tags,
 	}
 
-	if strings.HasPrefix(pl.SearchTerm, "@") {
+	if strings.HasPrefix(pl.SearchTerm, "@@") {
+		pl.SearchTerm = config.HashName(pl.SearchTerm[2:])
+		pl.ShowAbstract = true
+	} else if strings.HasPrefix(pl.SearchTerm, "@") {
 		pl.SearchTerm = pl.SearchTerm[1:]
 		pl.ShowAbstract = true
 	} else if pl.SearchTerm != "" {

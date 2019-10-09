@@ -60,7 +60,7 @@ func Edit(g *gin.Context) {
 		return
 	}
 
-	if a.Parent == nil && len(title) == 0 {
+	if a.Parent() == nil && len(title) == 0 {
 		view.Error(400, "title/too-short", g)
 		return
 	}
@@ -73,7 +73,7 @@ func Edit(g *gin.Context) {
 	oldcat := a.Category
 	a.Content, a.Category = content, cat
 
-	if a.Parent == nil {
+	if a.Parent() == nil {
 		a.Title = title
 	}
 
@@ -118,7 +118,7 @@ func Delete(g *gin.Context) {
 		return
 	}
 
-	if a.Parent != nil {
+	if a.Parent() != nil {
 		g.Redirect(302, "/p/"+a.DisplayParentID())
 	} else {
 		g.Redirect(302, "/cat")
@@ -128,6 +128,9 @@ func Delete(g *gin.Context) {
 func Cookie(g *gin.Context) {
 	if id := g.PostForm("id"); g.PostForm("clear") != "" || id == "" {
 		g.SetCookie("id", "", -1, "", "", false, false)
+	} else if g.PostForm("view") != "" {
+		g.Redirect(302, "/cat/@@"+id)
+		return
 	} else {
 		g.SetCookie("id", id, 86400*365, "", "", false, false)
 	}

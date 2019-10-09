@@ -2,6 +2,7 @@ package manager
 
 import (
 	"bytes"
+	"log"
 
 	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/etcd-io/bbolt"
@@ -98,5 +99,23 @@ func scanBucketDesc(bk *bbolt.Bucket, tag string, cursor []byte, n int) (keyvalu
 	}
 
 	prev = substractCursorN(c, tag, cursor, n)
+	return
+}
+
+func (m *Manager) UserExisted(id string) (ok bool) {
+	m.db.View(func(tx *bbolt.Tx) error {
+		c := tx.Bucket(bkPost).Cursor()
+		k, _ := cursorMoveToLast(c, id)
+
+		if k == nil {
+			return nil
+		}
+
+		kid := ident.ParseID(k)
+		log.Println(kid.Tag(), id)
+
+		ok = kid.Header() == ident.HeaderAuthorTag && kid.Tag() == id
+		return nil
+	})
 	return
 }

@@ -367,7 +367,7 @@ div.ip {
     }
 
     .articles.small td.nowrap, .articles.small td.nowrap * {
-        font-size: 90%;
+        font-size: 12px;
     }
 
     .articles.small .date {

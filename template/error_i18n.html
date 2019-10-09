@@ -10,6 +10,8 @@ Token过期，请重试
 无法回复
 {{else if eq . "internal/error"}}
 服务端异常
+{{else if eq . "guard/id-not-existed"}}
+ID不存在
 {{else}}
 {{.}}
 {{end}}
