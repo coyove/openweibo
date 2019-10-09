@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"html/template"
 
-	"github.com/coyove/iis/cmd/ch/id"
+	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/gogo/protobuf/proto"
 )
 
@@ -65,15 +65,15 @@ func (a *Article) String() string { return proto.CompactTextString(a) }
 func (a *Article) ProtoMessage() {}
 
 func (a *Article) DisplayID() string {
-	return id.BytesString(a.ID)
+	return ident.BytesString(a.ID)
 }
 
 func (a *Article) DisplayTimeline() string {
-	return id.BytesString(a.Timeline)
+	return ident.BytesString(a.Timeline)
 }
 
 func (a *Article) DisplayParentID() string {
-	return id.BytesString(a.Parent)
+	return ident.BytesString(a.Parent)
 }
 
 func (a *Article) CreateTimeString(sec bool) string {

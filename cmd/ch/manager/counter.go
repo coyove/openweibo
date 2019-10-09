@@ -6,7 +6,7 @@ import (
 	"net"
 	"time"
 
-	mv "github.com/coyove/iis/cmd/ch/modelview"
+	mv "github.com/coyove/iis/cmd/ch/model"
 	"github.com/etcd-io/bbolt"
 	"github.com/gin-gonic/gin"
 )

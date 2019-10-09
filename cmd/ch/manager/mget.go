@@ -1,8 +1,8 @@
 package manager
 
 import (
-	"github.com/coyove/iis/cmd/ch/id"
-	mv "github.com/coyove/iis/cmd/ch/modelview"
+	"github.com/coyove/iis/cmd/ch/ident"
+	mv "github.com/coyove/iis/cmd/ch/model"
 	"github.com/etcd-io/bbolt"
 )
 
@@ -25,12 +25,12 @@ func (m *Manager) mget(main *bbolt.Bucket, tl bool, res [][2][]byte) (a []*mv.Ar
 	for _, r := range res {
 		if hdr := r[0][0]; tl {
 			// If in timeline mode, we accept two headers:
-			if hdr != id.HeaderTimeline && hdr != id.HeaderAnnounce {
+			if hdr != ident.HeaderTimeline && hdr != ident.HeaderAnnounce {
 				continue
 			}
 		} else {
 			// If in author-tag mode, we accept one header:
-			if hdr != id.HeaderAuthorTag {
+			if hdr != ident.HeaderAuthorTag {
 				continue
 			}
 		}
@@ -51,9 +51,9 @@ func (m *Manager) GetReplies(parent []byte, start, end int) (a []*mv.Article) {
 				continue
 			}
 
-			pid := id.ParseID(parent)
+			pid := ident.ParseID(parent)
 			pid.RIndexAppend(int16(i))
-			pid.SetHeader(id.HeaderReply)
+			pid.SetHeader(ident.HeaderReply)
 
 			p := m.get(main, pid.Marshal())
 			if p.ID == nil {

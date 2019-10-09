@@ -1,4 +1,4 @@
-package main
+package action
 
 import (
 	"fmt"
@@ -6,8 +6,8 @@ import (
 	"net"
 
 	"github.com/coyove/iis/cmd/ch/config"
-	"github.com/coyove/iis/cmd/ch/id"
-	mv "github.com/coyove/iis/cmd/ch/modelview"
+	"github.com/coyove/iis/cmd/ch/ident"
+	mv "github.com/coyove/iis/cmd/ch/model"
 	"github.com/coyove/iis/cmd/ch/token"
 	"github.com/gin-gonic/gin"
 )
@@ -18,37 +18,6 @@ func getAuthor(g *gin.Context) string {
 		a = "user/" + g.MustGet("ip").(net.IP).String()
 	}
 	return a
-}
-
-func handleNewPostView(g *gin.Context) {
-	var pl = struct {
-		UUID      string
-		Reply     string
-		Abstract  string
-		Challenge string
-		Tags      []string
-		IsAdmin   bool
-
-		RTitle, RAuthor, RContent, RCat, EError string
-	}{
-		RTitle:   g.Query("title"),
-		RContent: g.Query("content"),
-		RCat:     g.Query("cat"),
-		RAuthor:  g.Query("author"),
-		EError:   g.Query("error"),
-		Tags:     config.Cfg.Tags,
-		IsAdmin:  token.IsAdmin(g),
-	}
-
-	var answer [6]byte
-	pl.UUID, answer = token.Make(g)
-	pl.Challenge = token.GenerateCaptcha(answer)
-
-	if pl.RAuthor == "" {
-		pl.RAuthor, _ = g.Cookie("id")
-	}
-
-	g.HTML(200, "newpost.html", pl)
 }
 
 func hashIP(g *gin.Context) string {
@@ -92,7 +61,7 @@ func checkTokenAndCaptcha(g *gin.Context, author string) string {
 	return ""
 }
 
-func handleNewPostAction(g *gin.Context) {
+func New(g *gin.Context) {
 	var (
 		ip       = hashIP(g)
 		content  = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
@@ -140,14 +109,14 @@ func handleNewPostAction(g *gin.Context) {
 	g.Redirect(302, "/p/"+a.DisplayID())
 }
 
-func handleNewReplyAction(g *gin.Context) {
+func Reply(g *gin.Context) {
 	var (
-		reply   = id.StringBytes(g.PostForm("reply"))
+		reply   = ident.StringBytes(g.PostForm("reply"))
 		ip      = hashIP(g)
 		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		author  = getAuthor(g)
 		redir   = func(a, b string) {
-			g.Redirect(302, "/p/"+id.BytesString(reply)+"?p=-1&"+encodeQuery(a, b, "author", author, "content", content)+"#paging")
+			g.Redirect(302, "/p/"+ident.BytesString(reply)+"?p=-1&"+encodeQuery(a, b, "author", author, "content", content)+"#paging")
 		}
 	)
 

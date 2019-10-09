@@ -3,7 +3,7 @@ package manager
 import (
 	"bytes"
 
-	"github.com/coyove/iis/cmd/ch/id"
+	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/etcd-io/bbolt"
 )
 
@@ -11,11 +11,11 @@ func cursorMoveToLast(c *bbolt.Cursor, tag string) (k, v []byte) {
 	if tag == "" {
 		k, v = c.Last()
 	} else {
-		kid := id.NewID(id.HeaderAuthorTag, tag)
+		kid := ident.NewID(ident.HeaderAuthorTag, tag)
 		kid.Maximize()
 		c.Seek(kid.Marshal())
 		k, v = c.Prev()
-		if id.ParseID(k).Tag() == tag {
+		if ident.ParseID(k).Tag() == tag {
 			return
 		}
 		return nil, nil
@@ -34,8 +34,8 @@ func substractCursorN(c *bbolt.Cursor, tag string, cursor []byte, n int) (newCur
 			return false
 		}
 		if tag != "" {
-			kid := id.ParseID(k)
-			return kid.Header() == id.HeaderAuthorTag && kid.Tag() == tag
+			kid := ident.ParseID(k)
+			return kid.Header() == ident.HeaderAuthorTag && kid.Tag() == tag
 		}
 		return true
 	}
@@ -81,7 +81,7 @@ func scanBucketDesc(bk *bbolt.Bucket, tag string, cursor []byte, n int) (keyvalu
 
 	for ; k != nil; k, v = c.Prev() {
 		if tag != "" {
-			if kid := id.ParseID(k); kid.Header() != id.HeaderAuthorTag || kid.Tag() != tag {
+			if kid := ident.ParseID(k); kid.Header() != ident.HeaderAuthorTag || kid.Tag() != tag {
 				break
 			}
 		}

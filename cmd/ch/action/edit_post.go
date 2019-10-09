@@ -1,57 +1,37 @@
-package main
+package action
 
 import (
 	"log"
 	"net"
 
 	"github.com/coyove/iis/cmd/ch/config"
-	"github.com/coyove/iis/cmd/ch/id"
-	mv "github.com/coyove/iis/cmd/ch/modelview"
+	"github.com/coyove/iis/cmd/ch/ident"
+	"github.com/coyove/iis/cmd/ch/manager"
+	mv "github.com/coyove/iis/cmd/ch/model"
 	"github.com/coyove/iis/cmd/ch/token"
+	"github.com/coyove/iis/cmd/ch/view"
 	"github.com/gin-gonic/gin"
 )
 
-func handleEditPostView(g *gin.Context) {
-	var pl = struct {
-		UUID    string
-		Reply   string
-		Tags    []string
-		RAuthor string
-		IsAdmin bool
-		Article *mv.Article
-	}{
-		Reply: g.Param("id"),
-		Tags:  config.Cfg.Tags,
-	}
+var m *manager.Manager
 
-	pl.UUID, _ = token.Make(g)
-	pl.RAuthor, _ = g.Cookie("id")
-	pl.IsAdmin = token.IsAdmin(pl.RAuthor)
-
-	a, err := m.Get(id.StringBytes(pl.Reply))
-	if err != nil {
-		log.Println(err)
-		g.Redirect(302, "/cat")
-		return
-	}
-	pl.Article = a
-
-	g.HTML(200, "editpost.html", pl)
+func SetManager(mgr *manager.Manager) {
+	m = mgr
 }
 
-func handleEditPostAction(g *gin.Context) {
+func Edit(g *gin.Context) {
 	if !g.GetBool("ip-ok") {
-		errorPage(400, "guard/cooling-down", g)
+		view.Error(400, "guard/cooling-down", g)
 		return
 	}
 
 	if _, ok := token.Parse(g, g.PostForm("uuid")); !ok {
-		errorPage(400, "guard/token-expired", g)
+		view.Error(400, "guard/token-expired", g)
 		return
 	}
 
 	var (
-		eid         = id.StringBytes(g.PostForm("reply"))
+		eid         = ident.StringBytes(g.PostForm("reply"))
 		title       = mv.SoftTrunc(g.PostForm("title"), 100)
 		content     = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		author      = getAuthor(g)
@@ -81,12 +61,12 @@ func handleEditPostAction(g *gin.Context) {
 	}
 
 	if a.Parent == nil && len(title) == 0 {
-		errorPage(400, "title/too-short", g)
+		view.Error(400, "title/too-short", g)
 		return
 	}
 
 	if len(content) == 0 {
-		errorPage(400, "content/too-short", g)
+		view.Error(400, "content/too-short", g)
 		return
 	}
 
@@ -99,25 +79,25 @@ func handleEditPostAction(g *gin.Context) {
 
 	if err := m.Update(a, oldcat); err != nil {
 		log.Println(err)
-		errorPage(500, "internal/error", g)
+		view.Error(500, "internal/error", g)
 		return
 	}
 
 	g.Redirect(302, "/p/"+a.DisplayID())
 }
 
-func handleDeletePostAction(g *gin.Context) {
+func Delete(g *gin.Context) {
 	if !g.GetBool("ip-ok") {
-		errorPage(400, "guard/cooling-down", g)
+		view.Error(400, "guard/cooling-down", g)
 		return
 	}
 
 	if _, ok := token.Parse(g, g.PostForm("uuid")); !ok {
-		errorPage(400, "guard/token-expired", g)
+		view.Error(400, "guard/token-expired", g)
 		return
 	}
 
-	var eid = id.StringBytes(g.PostForm("reply"))
+	var eid = ident.StringBytes(g.PostForm("reply"))
 	var author = getAuthor(g)
 
 	a, err := m.Get(eid)
@@ -134,7 +114,7 @@ func handleDeletePostAction(g *gin.Context) {
 
 	if err := m.Delete(a); err != nil {
 		log.Println(err)
-		errorPage(500, "internal/error", g)
+		view.Error(500, "internal/error", g)
 		return
 	}
 
@@ -143,4 +123,13 @@ func handleDeletePostAction(g *gin.Context) {
 	} else {
 		g.Redirect(302, "/cat")
 	}
+}
+
+func Cookie(g *gin.Context) {
+	if id := g.PostForm("id"); g.PostForm("clear") != "" || id == "" {
+		g.SetCookie("id", "", -1, "", "", false, false)
+	} else {
+		g.SetCookie("id", id, 86400*365, "", "", false, false)
+	}
+	g.Redirect(302, "/cookie")
 }

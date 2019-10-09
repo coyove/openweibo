@@ -9,8 +9,8 @@ import (
 
 	"github.com/coyove/common/lru"
 	"github.com/coyove/common/sched"
-	"github.com/coyove/iis/cmd/ch/id"
-	mv "github.com/coyove/iis/cmd/ch/modelview"
+	"github.com/coyove/iis/cmd/ch/ident"
+	mv "github.com/coyove/iis/cmd/ch/model"
 	"github.com/etcd-io/bbolt"
 )
 
@@ -87,7 +87,7 @@ func (m *Manager) Walk(tag string, cursor []byte, n int) (a []*mv.Article, prev 
 
 		a = m.mget(bk, tag == "", res)
 
-		if id.ParseID(next).Tag() != tag {
+		if ident.ParseID(next).Tag() != tag {
 			next = nil
 		}
 
@@ -97,15 +97,15 @@ func (m *Manager) Walk(tag string, cursor []byte, n int) (a []*mv.Article, prev 
 }
 
 func (m *Manager) insertTag(bk *bbolt.Bucket, b string, k, v []byte) error {
-	kid := id.ParseID(k)
+	kid := ident.ParseID(k)
 	kid.SetTag(b)
-	kid.SetHeader(id.HeaderAuthorTag)
+	kid.SetHeader(ident.HeaderAuthorTag)
 	return bk.Put(kid.Marshal(), v)
 }
 
 func (m *Manager) deleteTags(bk *bbolt.Bucket, k []byte, tags ...string) (err error) {
-	kid := id.ParseID(k)
-	kid.SetHeader(id.HeaderAuthorTag)
+	kid := ident.ParseID(k)
+	kid.SetHeader(ident.HeaderAuthorTag)
 	for _, tag := range tags {
 		kid.SetTag(tag)
 		err = bk.Delete(kid.Marshal())
@@ -117,11 +117,11 @@ func (m *Manager) PostPost(a *mv.Article) ([]byte, error) {
 	err := m.db.Update(func(tx *bbolt.Tx) error {
 		bk := tx.Bucket(bkPost)
 
-		a.ID = id.NewID(id.HeaderPost, "\x80").Marshal()
+		a.ID = ident.NewID(ident.HeaderPost, "\x80").Marshal()
 		if a.Announce {
-			a.Timeline = id.NewID(id.HeaderAnnounce, "").Marshal()
+			a.Timeline = ident.NewID(ident.HeaderAnnounce, "").Marshal()
 		} else {
-			a.Timeline = id.NewID(id.HeaderTimeline, "").Marshal()
+			a.Timeline = ident.NewID(ident.HeaderTimeline, "").Marshal()
 		}
 
 		if err := bk.Put(a.ID, a.MarshalA()); err != nil {
@@ -157,7 +157,7 @@ func (m *Manager) PostReply(parent []byte, a *mv.Article) ([]byte, error) {
 		return nil, fmt.Errorf("too many replies")
 	}
 
-	pid := id.ParseID(parent)
+	pid := ident.ParseID(parent)
 
 	p.ReplyTime = uint32(time.Now().Unix())
 	p.Replies++
@@ -171,7 +171,7 @@ func (m *Manager) PostReply(parent []byte, a *mv.Article) ([]byte, error) {
 		return nil, fmt.Errorf("too deep")
 	}
 
-	pid.SetHeader(id.HeaderReply)
+	pid.SetHeader(ident.HeaderReply)
 	a.ID = pid.Marshal()
 
 	m.cache.Remove(string(parent))
@@ -187,7 +187,7 @@ func (m *Manager) PostReply(parent []byte, a *mv.Article) ([]byte, error) {
 			return err
 		}
 		if p.Author != a.Author {
-			return m.insertTag(main, p.Author, id.NewID(id.HeaderAuthorTag, "").Marshal(), a.ID)
+			return m.insertTag(main, p.Author, ident.NewID(ident.HeaderAuthorTag, "").Marshal(), a.ID)
 		}
 		return nil
 	})

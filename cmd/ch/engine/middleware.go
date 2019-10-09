@@ -1,9 +1,11 @@
-package main
+package engine
 
 import (
 	"fmt"
 	"io"
+	"log"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -11,7 +13,9 @@ import (
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/token"
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
+	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 )
 
 func mwRenderPerf(g *gin.Context) {
@@ -137,4 +141,29 @@ func mwLogger() gin.HandlerFunc {
 			return buf.String()
 		},
 	})
+}
+
+func New(prod bool) *gin.Engine {
+	os.MkdirAll("tmp/logs", 0700)
+	logf, err := rotatelogs.New("tmp/logs/access_log.%Y%m%d%H%M", rotatelogs.WithLinkName("tmp/logs/access_log"), rotatelogs.WithMaxAge(7*24*time.Hour))
+	logerrf, err := rotatelogs.New("tmp/logs/error_log.%Y%m%d%H%M", rotatelogs.WithLinkName("tmp/logs/error_log"), rotatelogs.WithMaxAge(7*24*time.Hour))
+	if err != nil {
+		panic(err)
+	}
+
+	if prod {
+		gin.SetMode(gin.ReleaseMode)
+		mwLoggerOutput, gin.DefaultErrorWriter = logf, logerrf
+	} else {
+		mwLoggerOutput, gin.DefaultErrorWriter = io.MultiWriter(logf, os.Stdout), io.MultiWriter(logerrf, os.Stdout)
+	}
+
+	log.SetOutput(mwLoggerOutput)
+	log.SetFlags(log.Lshortfile | log.Ltime | log.Ldate)
+
+	r := gin.New()
+	r.Use(gin.Recovery(), gzip.Gzip(gzip.BestSpeed), mwLogger(), mwRenderPerf, mwIPThrot)
+
+	loadTrafficCounter()
+	return r
 }
