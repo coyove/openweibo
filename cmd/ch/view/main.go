@@ -7,14 +7,41 @@ import (
 	"strings"
 
 	"github.com/coyove/iis/cmd/ch/config"
+	"github.com/coyove/iis/cmd/ch/ident"
 	id "github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/manager"
 	mv "github.com/coyove/iis/cmd/ch/model"
-	"github.com/coyove/iis/cmd/ch/token"
 	"github.com/gin-gonic/gin"
 )
 
 var m *manager.Manager
+
+type ArticlesTimelineView struct {
+	Tags         []string
+	Articles     []*mv.Article
+	Next         string
+	Prev         string
+	SearchTerm   string
+	ShowAbstract bool
+}
+
+type ArticleRepliesView struct {
+	Tags          []string
+	Articles      []*mv.Article
+	ParentArticle *mv.Article
+	CurPage       int
+	TotalPages    int
+	Pages         []int
+	ShowIP        bool
+	ReplyView     struct {
+		UUID      string
+		Challenge string
+		ShowReply bool
+		RAuthor   string
+		RContent  string
+		EError    string
+	}
+}
 
 func SetManager(mgr *manager.Manager) {
 	m = mgr
@@ -29,7 +56,7 @@ func Home(g *gin.Context) {
 }
 
 func Index(g *gin.Context) {
-	var pl = mv.ArticlesTimelineView{
+	var pl = ArticlesTimelineView{
 		SearchTerm: g.Param("tag"),
 		Tags:       config.Cfg.Tags,
 	}
@@ -61,8 +88,8 @@ func Index(g *gin.Context) {
 }
 
 func Replies(g *gin.Context) {
-	var pl = mv.ArticleRepliesView{
-		ShowIP: token.IsAdmin(g),
+	var pl = ArticleRepliesView{
+		ShowIP: ident.IsAdmin(g),
 		Tags:   config.Cfg.Tags,
 	}
 	var err error
@@ -90,8 +117,8 @@ func Replies(g *gin.Context) {
 			pl.ReplyView.RAuthor, _ = g.Cookie("id")
 		}
 		var answer [6]byte
-		pl.ReplyView.UUID, answer = token.Make(g)
-		pl.ReplyView.Challenge = token.GenerateCaptcha(answer)
+		pl.ReplyView.UUID, answer = ident.MakeToken(g)
+		pl.ReplyView.Challenge = ident.GenerateCaptcha(answer)
 	}
 
 	pl.CurPage, _ = strconv.Atoi(g.Query("p"))
@@ -144,13 +171,9 @@ func Cookie(g *gin.Context) {
 		config.Cfg.Tags,
 	}
 
-	if token.IsAdmin(g) {
+	if ident.IsAdmin(g) {
 		p.Config = template.HTML(config.Cfg.PrivateString)
 	}
 
 	g.HTML(200, "cookie.html", p)
-}
-
-func NotFound(g *gin.Context) {
-	Error(404, "NOT FOUND", g)
 }

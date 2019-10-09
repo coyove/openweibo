@@ -114,18 +114,6 @@ func WriteImage(w io.Writer, id string, width, height int) error {
 	return err
 }
 
-// WriteAudio writes WAV-encoded audio representation of the captcha with the
-// given id and the given language. If there are no sounds for the given
-// language, English is used.
-func WriteAudio(w io.Writer, id string, lang string) error {
-	d := globalStore.Get(id, false)
-	if d == nil {
-		return ErrNotFound
-	}
-	_, err := NewAudio(id, d, lang).WriteTo(w)
-	return err
-}
-
 // Verify returns true if the given digits are the ones that were used to
 // create the given captcha id.
 //

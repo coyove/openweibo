@@ -14,6 +14,10 @@ func Error(code int, msg string, g *gin.Context) {
 	}{config.Cfg.Tags, msg})
 }
 
+func NotFound(g *gin.Context) {
+	Error(404, "NOT FOUND", g)
+}
+
 func intmin(a, b int) int {
 	return int(math.Min(float64(a), float64(b)))
 }

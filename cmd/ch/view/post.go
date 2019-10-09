@@ -6,7 +6,6 @@ import (
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
 	mv "github.com/coyove/iis/cmd/ch/model"
-	"github.com/coyove/iis/cmd/ch/token"
 	"github.com/gin-gonic/gin"
 )
 
@@ -27,12 +26,12 @@ func New(g *gin.Context) {
 		RAuthor:  g.Query("author"),
 		EError:   g.Query("error"),
 		Tags:     config.Cfg.Tags,
-		IsAdmin:  token.IsAdmin(g),
+		IsAdmin:  ident.IsAdmin(g),
 	}
 
 	var answer [6]byte
-	pl.UUID, answer = token.Make(g)
-	pl.Challenge = token.GenerateCaptcha(answer)
+	pl.UUID, answer = ident.MakeToken(g)
+	pl.Challenge = ident.GenerateCaptcha(answer)
 
 	if pl.RAuthor == "" {
 		pl.RAuthor, _ = g.Cookie("id")
@@ -54,9 +53,9 @@ func Edit(g *gin.Context) {
 		Tags:  config.Cfg.Tags,
 	}
 
-	pl.UUID, _ = token.Make(g)
+	pl.UUID, _ = ident.MakeToken(g)
 	pl.RAuthor, _ = g.Cookie("id")
-	pl.IsAdmin = token.IsAdmin(pl.RAuthor)
+	pl.IsAdmin = ident.IsAdmin(pl.RAuthor)
 
 	a, err := m.Get(ident.StringBytes(pl.Reply))
 	if err != nil {

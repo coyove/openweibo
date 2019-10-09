@@ -8,33 +8,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-type ArticlesTimelineView struct {
-	Tags         []string
-	Articles     []*Article
-	Next         string
-	Prev         string
-	SearchTerm   string
-	ShowAbstract bool
-}
-
-type ArticleRepliesView struct {
-	Tags          []string
-	Articles      []*Article
-	ParentArticle *Article
-	CurPage       int
-	TotalPages    int
-	Pages         []int
-	ShowIP        bool
-	ReplyView     struct {
-		UUID      string
-		Challenge string
-		ShowReply bool
-		RAuthor   string
-		RContent  string
-		EError    string
-	}
-}
-
 type Article struct {
 	ID          []byte `protobuf:"bytes,1,opt"`
 	Timeline    []byte `protobuf:"bytes,12,opt"`
@@ -43,6 +16,7 @@ type Article struct {
 	Replies     int64  `protobuf:"varint,4,opt"`
 	Locked      bool   `protobuf:"varint,5,opt"`
 	Highlighted bool   `protobuf:"varint,6,opt"`
+	Saged       bool   `protobuf:"varint,100,opt"`
 	Announce    bool   `protobuf:"varint,7,opt"`
 	Title       string `protobuf:"bytes,8,opt"`
 	Content     string `protobuf:"bytes,9,opt"`

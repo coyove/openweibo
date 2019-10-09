@@ -180,6 +180,16 @@ func (m *Manager) PostReply(parent []byte, a *mv.Article) ([]byte, error) {
 		if err := main.Put(a.ID, a.MarshalA()); err != nil {
 			return err
 		}
+
+		if p.Timeline != nil && !p.Announce && !p.Saged {
+			if err := main.Delete(p.Timeline); err != nil {
+				return err
+			}
+			p.Timeline = ident.NewID(ident.HeaderTimeline, "").Marshal()
+			if err := main.Put(p.Timeline, p.ID); err != nil {
+				return err
+			}
+		}
 		if err := main.Put(p.ID, p.MarshalA()); err != nil {
 			return err
 		}

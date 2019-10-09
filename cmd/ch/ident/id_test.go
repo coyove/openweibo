@@ -16,7 +16,7 @@ func TestID(t *testing.T) {
 		id.ctr = uint32(i)
 
 		for {
-			v := int16(rand.Uint64())&0xff + 1
+			v := int16(rand.Uint64())&0x1ff + 1
 			if !id.RIndexAppend(v) {
 				break
 			}

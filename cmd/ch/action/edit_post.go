@@ -8,7 +8,6 @@ import (
 	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/manager"
 	mv "github.com/coyove/iis/cmd/ch/model"
-	"github.com/coyove/iis/cmd/ch/token"
 	"github.com/coyove/iis/cmd/ch/view"
 	"github.com/gin-gonic/gin"
 )
@@ -25,7 +24,7 @@ func Edit(g *gin.Context) {
 		return
 	}
 
-	if _, ok := token.Parse(g, g.PostForm("uuid")); !ok {
+	if _, ok := ident.ParseToken(g, g.PostForm("uuid")); !ok {
 		view.Error(400, "guard/token-expired", g)
 		return
 	}
@@ -38,9 +37,10 @@ func Edit(g *gin.Context) {
 		cat         = checkCategory(g.PostForm("cat"))
 		locked      = g.PostForm("locked") != ""
 		highlighted = g.PostForm("highlighted") != ""
+		saged       = g.PostForm("saged") != ""
 	)
 
-	if !token.IsAdmin(author) {
+	if !ident.IsAdmin(author) {
 		g.Redirect(302, "/")
 		return
 	}
@@ -53,8 +53,8 @@ func Edit(g *gin.Context) {
 
 	redir := "/p/" + a.DisplayID()
 
-	if locked != a.Locked || highlighted != a.Highlighted {
-		a.Locked, a.Highlighted = locked, highlighted
+	if locked != a.Locked || highlighted != a.Highlighted || saged != a.Saged {
+		a.Locked, a.Highlighted, a.Saged = locked, highlighted, saged
 		m.Update(a, a.Category)
 		g.Redirect(302, redir)
 		return
@@ -92,7 +92,7 @@ func Delete(g *gin.Context) {
 		return
 	}
 
-	if _, ok := token.Parse(g, g.PostForm("uuid")); !ok {
+	if _, ok := ident.ParseToken(g, g.PostForm("uuid")); !ok {
 		view.Error(400, "guard/token-expired", g)
 		return
 	}
@@ -106,7 +106,7 @@ func Delete(g *gin.Context) {
 		return
 	}
 
-	if a.Author != config.HashName(author) && !token.IsAdmin(author) {
+	if a.Author != config.HashName(author) && !ident.IsAdmin(author) {
 		log.Println(g.MustGet("ip").(net.IP), "tried to delete", a.ID)
 		g.Redirect(302, "/p/"+a.DisplayID())
 		return

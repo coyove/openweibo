@@ -1,5 +1,5 @@
 {{if eq . "guard/failed-captcha"}}
-验证码错误
+无效验证码
 {{else if eq . "guard/token-expired"}}
 Token过期，请重试
 {{else if eq . "content/too-short"}}
@@ -8,6 +8,8 @@ Token过期，请重试
 标题过短
 {{else if eq . "error/can-not-reply"}}
 无法回复
+{{else if eq . "internal/error"}}
+服务端异常
 {{else}}
 {{.}}
 {{end}}

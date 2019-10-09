@@ -8,14 +8,13 @@ import (
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
 	mv "github.com/coyove/iis/cmd/ch/model"
-	"github.com/coyove/iis/cmd/ch/token"
 	"github.com/gin-gonic/gin"
 )
 
 func getAuthor(g *gin.Context) string {
 	a := mv.SoftTrunc(g.PostForm("author"), 32)
 	if a == "" {
-		a = "user/" + g.MustGet("ip").(net.IP).String()
+		a = "user/" + hashIP(g)
 	}
 	return a
 }
@@ -23,9 +22,9 @@ func getAuthor(g *gin.Context) string {
 func hashIP(g *gin.Context) string {
 	ip := append(net.IP{}, g.MustGet("ip").(net.IP)...)
 	if len(ip) == net.IPv4len {
-		ip[3] = 0
+		ip[3] = 0 // \24
 	} else if len(ip) == net.IPv6len {
-		copy(ip[8:], "\x00\x00\x00\x00\x00\x00\x00\x00")
+		copy(ip[8:], "\x00\x00\x00\x00\x00\x00\x00\x00") // \64
 	}
 	return ip.String()
 }
@@ -34,13 +33,15 @@ func checkTokenAndCaptcha(g *gin.Context, author string) string {
 	var (
 		answer            = mv.SoftTrunc(g.PostForm("answer"), 6)
 		uuid              = mv.SoftTrunc(g.PostForm("uuid"), 32)
-		tokenbuf, tokenok = token.Parse(g, uuid)
+		tokenbuf, tokenok = ident.ParseToken(g, uuid)
 		challengePassed   bool
 	)
+
 	if !g.GetBool("ip-ok") {
 		return fmt.Sprintf("guard/cooling-down/%.1fs", float64(config.Cfg.Cooldown)-g.GetFloat64("ip-ok-remain"))
 	}
-	if !token.IsAdmin(author) {
+
+	if !ident.IsAdmin(author) {
 		if len(answer) == 6 {
 			challengePassed = true
 			for i := range answer {
@@ -55,9 +56,12 @@ func checkTokenAndCaptcha(g *gin.Context, author string) string {
 			return "guard/failed-captcha"
 		}
 	}
+
+	// Admin still needs token verification
 	if !tokenok {
 		return "guard/token-expired"
 	}
+
 	return ""
 }
 
@@ -96,9 +100,7 @@ func New(g *gin.Context) {
 	}
 
 	a := m.NewPost(title, content, config.HashName(author), ip, cat)
-	if token.IsAdmin(author) && announce {
-		a.Announce = true
-	}
+	a.Announce = ident.IsAdmin(author) && announce
 
 	if _, err := m.PostPost(a); err != nil {
 		log.Println(err)

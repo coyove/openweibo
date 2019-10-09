@@ -1,12 +1,12 @@
-package token
+package ident
 
 import (
 	"bytes"
 	"encoding/base64"
 	"sync"
 
+	"github.com/coyove/iis/cmd/ch/captcha"
 	"github.com/coyove/iis/cmd/ch/config"
-	"github.com/dchest/captcha"
 )
 
 var bytesPool = sync.Pool{

@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/coyove/iis/cmd/ch/config"
-	"github.com/coyove/iis/cmd/ch/token"
+	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
@@ -21,7 +21,7 @@ import (
 func mwRenderPerf(g *gin.Context) {
 	ip := net.ParseIP(g.ClientIP())
 	if ip == nil {
-		g.String(403, "Invalid IP: "+g.ClientIP())
+		g.String(403, "Invalid IP: ["+g.ClientIP()+"]")
 		return
 	}
 
@@ -49,22 +49,24 @@ func mwRenderPerf(g *gin.Context) {
 
 	x := g.Writer.Header().Get("Content-Type")
 	if strings.HasPrefix(x, "text/html") {
-		g.Writer.Write([]byte(fmt.Sprintf("Render %dms | Max %dms | Out %.2fG", msec, survey.max, float64(survey.written)/1024/1024/1024)))
+		g.Writer.Write([]byte(fmt.Sprintf(
+			"Render %dms | Max %dms | Out %.2fG | <a href='https://github.com/coyove/iis'>IIS</a>",
+			msec, survey.max, float64(survey.written)/1024/1024/1024)))
 	}
 }
 
 func mwIPThrot(g *gin.Context) {
-	if token.IsAdmin(g) {
+	if ident.IsAdmin(g) {
 		g.Set("ip-ok", true)
 		g.Next()
 		return
 	}
 
 	ip := g.MustGet("ip").(net.IP).String()
-	lastaccess, ok := token.Dedup.Get(ip)
+	lastaccess, ok := ident.Dedup.Get(ip)
 
 	if !ok {
-		token.Dedup.Add(ip, time.Now())
+		ident.Dedup.Add(ip, time.Now())
 		g.Set("ip-ok", true)
 		g.Next()
 		return
@@ -74,7 +76,7 @@ func mwIPThrot(g *gin.Context) {
 	diff := time.Since(t).Seconds()
 
 	if diff > float64(config.Cfg.Cooldown) {
-		token.Dedup.Add(ip, time.Now())
+		ident.Dedup.Add(ip, time.Now())
 		g.Set("ip-ok", true)
 		g.Next()
 		return

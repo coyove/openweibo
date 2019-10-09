@@ -1,4 +1,4 @@
-package token
+package ident
 
 import (
 	"bytes"
@@ -15,7 +15,7 @@ import (
 
 var Dedup = lru.NewCache(1024)
 
-func Make(g *gin.Context) (string, [6]byte) {
+func MakeToken(g *gin.Context) (string, [6]byte) {
 	var p [16]byte
 	exp := time.Now().Add(time.Minute * time.Duration(config.Cfg.TokenTTL)).Unix()
 	binary.BigEndian.PutUint32(p[:], uint32(exp))
@@ -29,7 +29,7 @@ func Make(g *gin.Context) (string, [6]byte) {
 	return hex.EncodeToString(p[:]), x
 }
 
-func Parse(g *gin.Context, tok string) (r []byte, ok bool) {
+func ParseToken(g *gin.Context, tok string) (r []byte, ok bool) {
 	if IsAdmin(tok) {
 		return []byte{0, 0, 0, 0, 0, 0}, true
 	}
