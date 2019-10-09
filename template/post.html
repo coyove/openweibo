@@ -7,7 +7,8 @@
     <tr>
         <th>
             {{if .Parent}}
-            <a href="/p/{{.DisplayParentID}}?j={{.DisplayID}}">上一层</a>
+            <a href="/p/{{.DisplayParentID}}?j={{.DisplayID}}">上一层</a>&emsp;
+            <a href="/p/{{.DisplayTopParentID}}">顶层</a>
             {{else}}
             <a href="/cat?n={{.DisplayTimeline}}">首页</a>
             {{end}}

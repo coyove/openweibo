@@ -13,9 +13,9 @@ import (
 
 func getAuthor(g *gin.Context) string {
 	a := mv.SoftTrunc(g.PostForm("author"), 32)
-	if a == "" {
-		a = "user/" + hashIP(g)
-	}
+	//if a == "" {
+	//	a = "user/" + hashIP(g)
+	//}
 	return a
 }
 

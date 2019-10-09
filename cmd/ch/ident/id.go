@@ -136,16 +136,21 @@ func (id ID) RIndex() (v int16) {
 	return
 }
 
-func (id ID) RIndexParent() ID {
+func (id ID) RIndexParent() (parent, topParent ID) {
 	pos := make([]int, 0, 6)
 	id.RIndexLen(&pos)
 	if len(pos) == 0 {
-		return ID{}
+		return
 	}
+
 	for i := pos[len(pos)-1]; i < len(id.rIndex); i++ {
 		id.rIndex[i] = 0
 	}
-	return id
+
+	top := id
+	top.rIndex = [6]byte{}
+
+	return id, top
 }
 
 func (id ID) RIndexLen(pos *[]int) int {

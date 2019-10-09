@@ -28,6 +28,7 @@ var Cfg = struct {
 
 	// inited after config being read
 	Blk               cipher.Block
+	KeyBytes          []byte
 	IPBlacklistParsed []*net.IPNet
 	TagsMap           map[string]bool
 	PublicString      string
@@ -56,6 +57,7 @@ func MustLoad() {
 	}
 
 	Cfg.Blk, _ = aes.NewCipher([]byte(Cfg.Key))
+	Cfg.KeyBytes = []byte(Cfg.Key)
 	Cfg.TagsMap = map[string]bool{}
 
 	for _, tag := range Cfg.Tags {

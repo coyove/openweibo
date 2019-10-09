@@ -158,19 +158,19 @@ func (m *Manager) PostReply(parent []byte, a *mv.Article) ([]byte, error) {
 	}
 
 	pid := ident.ParseID(parent)
-
-	p.ReplyTime = uint32(time.Now().Unix())
-	p.Replies++
+	nextIndex := p.Replies + 1
 
 	a.Category = ""
 	a.Title = "RE: " + p.Title
-	a.Index = p.Replies
+	a.Index = nextIndex
 
-	if !pid.RIndexAppend(int16(p.Replies)) {
+	if !pid.RIndexAppend(int16(nextIndex)) {
 		return nil, fmt.Errorf("too deep")
 	}
-
 	a.ID = pid.Marshal()
+
+	p.ReplyTime = uint32(time.Now().Unix())
+	p.Replies = nextIndex
 
 	m.cache.Remove(string(parent))
 	return a.ID, m.db.Update(func(tx *bbolt.Tx) error {
@@ -180,7 +180,7 @@ func (m *Manager) PostReply(parent []byte, a *mv.Article) ([]byte, error) {
 		}
 
 		if p.Timeline != nil && !p.Announce && !p.Saged {
-			// Move the parent post to the front of the timeline
+			// Move the topmost parent post to the front of the timeline
 			if err := main.Delete(p.Timeline); err != nil {
 				return err
 			}

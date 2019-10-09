@@ -46,12 +46,21 @@ func (a *Article) DisplayTimeline() string {
 }
 
 func (a *Article) Parent() []byte {
-	i := ident.ParseID(a.ID).RIndexParent()
+	i, _ := ident.ParseID(a.ID).RIndexParent()
+	return i.Marshal()
+}
+
+func (a *Article) TopParent() []byte {
+	_, i := ident.ParseID(a.ID).RIndexParent()
 	return i.Marshal()
 }
 
 func (a *Article) DisplayParentID() string {
 	return ident.BytesString(a.Parent())
+}
+
+func (a *Article) DisplayTopParentID() string {
+	return ident.BytesString(a.TopParent())
 }
 
 func (a *Article) CreateTimeString(sec bool) string {

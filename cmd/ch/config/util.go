@@ -2,26 +2,37 @@ package config
 
 import (
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha1"
 	"encoding/base64"
-	"strings"
+	"unicode"
 )
 
 func HashName(n string) string {
-	var n0 string
-	if len(n) >= 4 {
-		n0 = strings.TrimLeft(n[:4], "#")
-		for i := 0; i < len(n0); i++ {
-			if n0[i] > 127 {
-				n0 = n0[:i]
-				break
-			}
+	n0 := make([]byte, 11)
+	copy(n0, "com")
+
+	for i := 0; i < len(n) && i < len(n0); i++ {
+		if !unicode.IsLetter(rune(n[i])) && !unicode.IsDigit(rune(n[i])) {
+			break
 		}
-		n = n[4:]
+		n0[i] = n[i]
 	}
 
-	h := hmac.New(sha1.New, []byte(Cfg.Key))
-	h.Write([]byte(n + Cfg.Key))
+	n0[3] = '.'
+
+	h := hmac.New(sha1.New, Cfg.KeyBytes)
+	if len(n) == 0 {
+		copy(n0, "nan.")
+		rand.Read(n0[4:8])
+		h.Write(n0[4:8])
+	} else {
+		h.Write([]byte(n))
+	}
+	h.Write(Cfg.KeyBytes)
 	x := h.Sum(nil)
-	return n0 + base64.URLEncoding.EncodeToString(x[:6])
+
+	base64.URLEncoding.Encode(n0[4:], x[:3])
+	base64.URLEncoding.Encode(n0[7:], x[3:6])
+	return string(n0)
 }
