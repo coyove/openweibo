@@ -53,15 +53,17 @@ tr {
         <td class=nowrap>验证码:</td>
         <td><input size=10 name="answer" class=s></td>
     </tr> 
-    {{if .IsAdmin}}
     <tr>
-        <td class=nowrap>管理员:</td>
+        <td class=nowrap></td>
         <td>
+    {{if .IsAdmin}}
             <input name=announce type=checkbox id=announce>
-            <label for=announce>设为公告，设置后无法取消只能删除</label>
+            <label for=announce>设为公告</label>&emsp;
+    {{end}}
+            <input id=saged name=saged type=checkbox>
+            <label for=saged >SAGE自沉</label>&emsp;
         </td>
     </tr>
-    {{end}}
     {{if .EError}}
     <tr>
         <td></td> <td> <div>错误: {{template "error_i18n.html" .EError}}</div></td>

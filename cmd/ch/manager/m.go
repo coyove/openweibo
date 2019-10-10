@@ -172,7 +172,7 @@ func (m *Manager) PostReply(parent []byte, a *mv.Article) ([]byte, error) {
 	p.ReplyTime = uint32(time.Now().Unix())
 	p.Replies = nextIndex
 
-	m.cache.Remove(string(parent))
+	defer m.cache.Remove(string(parent))
 	return a.ID, m.db.Update(func(tx *bbolt.Tx) error {
 		main := tx.Bucket(bkPost)
 		if err := main.Put(a.ID, a.MarshalA()); err != nil {
@@ -214,7 +214,7 @@ func (m *Manager) Get(id []byte) (a *mv.Article, err error) {
 }
 
 func (m *Manager) Update(a *mv.Article, oldcat string) error {
-	m.cache.Remove(string(a.ID))
+	defer m.cache.Remove(string(a.ID))
 	return m.db.Update(func(tx *bbolt.Tx) error {
 		main := tx.Bucket(bkPost)
 
@@ -232,7 +232,7 @@ func (m *Manager) Update(a *mv.Article, oldcat string) error {
 }
 
 func (m *Manager) Delete(a *mv.Article) error {
-	m.cache.Remove(string(a.ID))
+	defer m.cache.Remove(string(a.ID))
 	return m.db.Update(func(tx *bbolt.Tx) error {
 		main := tx.Bucket(bkPost)
 		if err := main.Delete(a.ID); err != nil {

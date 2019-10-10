@@ -71,13 +71,12 @@ func checkTokenAndCaptcha(g *gin.Context, author string) string {
 
 func New(g *gin.Context) {
 	var (
-		ip       = hashIP(g)
-		content  = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
-		title    = mv.SoftTrunc(g.PostForm("title"), 100)
-		author   = getAuthor(g)
-		cat      = checkCategory(mv.SoftTrunc(g.PostForm("cat"), 20))
-		announce = g.PostForm("announce") != ""
-		redir    = func(a, b string) {
+		ip      = hashIP(g)
+		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
+		title   = mv.SoftTrunc(g.PostForm("title"), 100)
+		author  = getAuthor(g)
+		cat     = checkCategory(mv.SoftTrunc(g.PostForm("cat"), 20))
+		redir   = func(a, b string) {
 			q := encodeQuery(a, b, "author", author, "content", content, "title", title, "cat", cat)
 			g.Redirect(302, "/new?"+q)
 		}
@@ -104,7 +103,8 @@ func New(g *gin.Context) {
 	}
 
 	a := m.NewPost(title, content, config.HashName(author), ip, cat)
-	a.Announce = ident.IsAdmin(author) && announce
+	a.Announce = ident.IsAdmin(author) && g.PostForm("announce") != ""
+	a.Saged = g.PostForm("saged") != ""
 
 	if _, err := m.PostPost(a); err != nil {
 		log.Println(err)
