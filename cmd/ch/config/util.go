@@ -9,8 +9,8 @@ import (
 )
 
 func HashName(n string) string {
-	n0 := make([]byte, 11)
-	copy(n0, "com")
+	n0 := make([]byte, 12)
+	copy(n0, "com.")
 
 	for i := 0; i < len(n) && i < len(n0); i++ {
 		if !unicode.IsLetter(rune(n[i])) && !unicode.IsDigit(rune(n[i])) {
@@ -21,18 +21,15 @@ func HashName(n string) string {
 
 	n0[3] = '.'
 
-	h := hmac.New(sha1.New, Cfg.KeyBytes)
-	if len(n) == 0 {
-		copy(n0, "nan.")
-		rand.Read(n0[4:8])
-		h.Write(n0[4:8])
-	} else {
-		h.Write([]byte(n))
+	if len(n) < 6 {
+		rand.Read(n0[:])
+		return base64.URLEncoding.EncodeToString(n0[:6])
 	}
-	h.Write(Cfg.KeyBytes)
+
+	h := hmac.New(sha1.New, Cfg.KeyBytes)
+	h.Write([]byte(n))
 	x := h.Sum(nil)
 
-	base64.URLEncoding.Encode(n0[4:], x[:3])
-	base64.URLEncoding.Encode(n0[7:], x[3:6])
+	base64.URLEncoding.Encode(n0[4:], x[:6])
 	return string(n0)
 }

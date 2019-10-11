@@ -84,13 +84,14 @@ func Index(g *gin.Context) {
 	}
 
 	if len(a) > 0 {
-		pl.Next, pl.Prev = id.BytesString(next), id.BytesString(prev)
+		pl.Next, pl.Prev = id.BytesPlainString(next), id.BytesPlainString(prev)
 	}
 
 	g.HTML(200, "index.html", pl)
 }
 
 func Replies(g *gin.Context) {
+	ident.DecryptQuery(g)
 	var pl = ArticleRepliesView{
 		ShowIP: ident.IsAdmin(g),
 		Tags:   config.Cfg.Tags,

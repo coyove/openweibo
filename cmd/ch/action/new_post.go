@@ -77,8 +77,8 @@ func New(g *gin.Context) {
 		author  = getAuthor(g)
 		cat     = checkCategory(mv.SoftTrunc(g.PostForm("cat"), 20))
 		redir   = func(a, b string) {
-			q := encodeQuery(a, b, "author", author, "content", content, "title", title, "cat", cat)
-			g.Redirect(302, "/new?"+q)
+			q := ident.EncryptQuery(a, b, "author", author, "content", content, "title", title, "cat", cat)
+			g.Redirect(302, "/new"+q)
 		}
 	)
 
@@ -107,7 +107,7 @@ func New(g *gin.Context) {
 	a.Saged = g.PostForm("saged") != ""
 
 	if _, err := m.PostPost(a); err != nil {
-		log.Println(err)
+		log.Println(a, err)
 		redir("error", "internal/error")
 		return
 	}
@@ -122,7 +122,7 @@ func Reply(g *gin.Context) {
 		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		author  = getAuthor(g)
 		redir   = func(a, b string) {
-			g.Redirect(302, "/p/"+ident.BytesString(reply)+"?p=-1&"+encodeQuery(a, b, "author", author, "content", content)+"#paging")
+			g.Redirect(302, "/p/"+ident.BytesString(reply)+ident.EncryptQuery(a, b, "author", author, "content", content)+"&p=-1#paging")
 		}
 	)
 

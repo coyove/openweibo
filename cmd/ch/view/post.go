@@ -10,6 +10,7 @@ import (
 )
 
 func New(g *gin.Context) {
+	ident.DecryptQuery(g)
 	var pl = struct {
 		UUID      string
 		Reply     string
@@ -42,12 +43,13 @@ func New(g *gin.Context) {
 
 func Edit(g *gin.Context) {
 	var pl = struct {
-		UUID    string
-		Reply   string
-		Tags    []string
-		RAuthor string
-		IsAdmin bool
-		Article *mv.Article
+		UUID           string
+		Reply          string
+		Tags           []string
+		RAuthor        string
+		IsAdmin        bool
+		IsAuthorBanned bool
+		Article        *mv.Article
 	}{
 		Reply: g.Param("id"),
 		Tags:  config.Cfg.Tags,
@@ -63,7 +65,9 @@ func Edit(g *gin.Context) {
 		g.Redirect(302, "/cat")
 		return
 	}
+
 	pl.Article = a
+	pl.IsAuthorBanned = m.IsBanned(nil, a.Author)
 
 	g.HTML(200, "editpost.html", pl)
 }

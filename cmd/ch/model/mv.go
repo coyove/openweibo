@@ -41,6 +41,10 @@ func (a *Article) DisplayID() string {
 	return ident.BytesString(a.ID)
 }
 
+func (a *Article) DisplayPlainID() string {
+	return ident.BytesPlainString(a.ID)
+}
+
 func (a *Article) DisplayTimeline() string {
 	return ident.BytesString(a.Timeline)
 }

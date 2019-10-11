@@ -38,6 +38,7 @@ func Edit(g *gin.Context) {
 		locked      = g.PostForm("locked") != ""
 		highlighted = g.PostForm("highlighted") != ""
 		saged       = g.PostForm("saged") != ""
+		banID       = g.PostForm("banned") != ""
 	)
 
 	if !ident.IsAdmin(author) {
@@ -52,6 +53,20 @@ func Edit(g *gin.Context) {
 	}
 
 	redir := "/p/" + a.DisplayID()
+
+	if isBan := m.IsBanned(nil, a.Author); isBan != banID {
+		if isBan {
+			err = m.Unban(a.Author)
+		} else {
+			err = m.Ban(a.Author)
+		}
+		if err != nil {
+			view.Error(400, err.Error(), g)
+		} else {
+			g.Redirect(302, redir)
+		}
+		return
+	}
 
 	if locked != a.Locked || highlighted != a.Highlighted || saged != a.Saged {
 		a.Locked, a.Highlighted, a.Saged = locked, highlighted, saged

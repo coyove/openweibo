@@ -16,6 +16,7 @@ var Cfg = struct {
 	CacheSize    int64    `yaml:"CacheSize"`
 	Key          string   `yaml:"Key"`
 	TokenTTL     int64    `yaml:"TokenTTL"`
+	IDTokenTTL   int64    `yaml:"IDTokenTTL"`
 	MaxContent   int64    `yaml:"MaxContent"`
 	MinContent   int64    `yaml:"MinContent"`
 	AdminName    string   `yaml:"AdminName"`
@@ -37,6 +38,7 @@ var Cfg = struct {
 }{
 	CacheSize:    1,
 	TokenTTL:     1,
+	IDTokenTTL:   60,
 	Key:          "0123456789abcdef",
 	AdminName:    "zzz",
 	MaxContent:   4096,

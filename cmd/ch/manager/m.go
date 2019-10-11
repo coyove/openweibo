@@ -117,6 +117,10 @@ func (m *Manager) PostPost(a *mv.Article) ([]byte, error) {
 	err := m.db.Update(func(tx *bbolt.Tx) error {
 		bk := tx.Bucket(bkPost)
 
+		if m.IsBanned(bk, a.Author) {
+			return fmt.Errorf("banned ID")
+		}
+
 		a.ID = ident.NewID(ident.HeaderArticle, "\x80").Marshal()
 		if a.Announce {
 			a.Timeline = ident.NewID(ident.HeaderAnnounce, "").Marshal()
@@ -175,6 +179,11 @@ func (m *Manager) PostReply(parent []byte, a *mv.Article) ([]byte, error) {
 	defer m.cache.Remove(string(parent))
 	return a.ID, m.db.Update(func(tx *bbolt.Tx) error {
 		main := tx.Bucket(bkPost)
+
+		if m.IsBanned(main, a.Author) {
+			return fmt.Errorf("banned ID")
+		}
+
 		if err := main.Put(a.ID, a.MarshalA()); err != nil {
 			return err
 		}
@@ -218,7 +227,7 @@ func (m *Manager) Update(a *mv.Article, oldcat string) error {
 	return m.db.Update(func(tx *bbolt.Tx) error {
 		main := tx.Bucket(bkPost)
 
-		if a.Category != oldcat {
+		if a.Category != oldcat && a.Parent() == nil {
 			if err := m.deleteTags(main, a.ID, "#"+oldcat); err != nil {
 				return err
 			}

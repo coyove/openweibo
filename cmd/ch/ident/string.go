@@ -8,8 +8,13 @@ const (
 )
 
 func BytesString(p []byte) string {
+	x := EncryptArticleID(p)
+	return strings.Replace(x, prefix, ".", 1)
+}
+
+func BytesPlainString(p []byte) string {
 	x := idEncoding.EncodeToString(p)
-	return strings.Replace(strings.TrimRight(x, "0"), prefix, ".", 1)
+	return strings.Replace(x, prefix, ".", 1)
 }
 
 func StringBytes(s string) []byte {
@@ -17,9 +22,5 @@ func StringBytes(s string) []byte {
 		return nil
 	}
 	s = strings.Replace(s, ".", prefix, 1)
-	if len(s) < 40 {
-		s = s + zeros[:40-len(s)]
-	}
-	b, _ := idEncoding.DecodeString(s)
-	return b
+	return DecryptArticleID(s)
 }

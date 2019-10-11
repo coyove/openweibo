@@ -1,10 +1,14 @@
 package ident
 
 import (
+	"bytes"
+	"crypto/aes"
 	"math/rand"
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/coyove/iis/cmd/ch/config"
 )
 
 func TestID(t *testing.T) {
@@ -26,7 +30,7 @@ func TestID(t *testing.T) {
 		}
 
 		x := id.String()
-		ln += id.RIndexLen()
+		ln += id.RIndexLen(nil)
 
 		id2 := ParseID(x)
 
@@ -36,4 +40,32 @@ func TestID(t *testing.T) {
 	}
 
 	t.Log(ln/1e6, ln)
+}
+
+func init() {
+	rand.Seed(time.Now().Unix())
+	config.Cfg.Blk, _ = aes.NewCipher([]byte("0123456789abcdef"))
+	config.Cfg.IDTokenTTL = 10
+}
+
+func BenchmarkTempToken(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		id := strconv.Itoa(rand.Int())
+		xid := MakeTempToken(id)
+		id2 := ParseTempToken(xid)
+		if id != id2 {
+			b.Fatal(id, "[", id2, "]")
+		}
+	}
+}
+
+func BenchmarkTempTokenAID(b *testing.B) {
+	id := make([]byte, 30)
+	for i := 0; i < b.N; i++ {
+		xid := EncryptArticleID(id[:])
+		id2 := DecryptArticleID(xid)
+		if !bytes.Equal(id[:], id2) {
+			b.Fatal(id, id2)
+		}
+	}
 }
