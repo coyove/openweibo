@@ -38,7 +38,7 @@ var Cfg = struct {
 }{
 	CacheSize:    1,
 	TokenTTL:     1,
-	IDTokenTTL:   60,
+	IDTokenTTL:   600,
 	Key:          "0123456789abcdef",
 	AdminName:    "zzz",
 	MaxContent:   4096,

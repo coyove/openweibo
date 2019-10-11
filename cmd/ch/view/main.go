@@ -23,6 +23,7 @@ type ArticlesTimelineView struct {
 	Prev         string
 	SearchTerm   string
 	ShowAbstract bool
+	IsCrawler    bool
 }
 
 type ArticleRepliesView struct {
@@ -33,6 +34,7 @@ type ArticleRepliesView struct {
 	TotalPages    int
 	Pages         []int
 	ShowIP        bool
+	IsCrawler     bool
 	ReplyView     struct {
 		UUID      string
 		Challenge string
@@ -59,6 +61,7 @@ func Index(g *gin.Context) {
 	var pl = ArticlesTimelineView{
 		SearchTerm: g.Param("tag"),
 		Tags:       config.Cfg.Tags,
+		IsCrawler:  manager.IsCrawler(g),
 	}
 
 	if strings.HasPrefix(pl.SearchTerm, "@@") {
@@ -79,10 +82,6 @@ func Index(g *gin.Context) {
 
 	pl.Articles = a
 
-	for i, a := range pl.Articles {
-		pl.Articles[i].BeReplied = a.Author != pl.SearchTerm
-	}
-
 	if len(a) > 0 {
 		pl.Next, pl.Prev = id.BytesPlainString(next), id.BytesPlainString(prev)
 	}
@@ -93,11 +92,17 @@ func Index(g *gin.Context) {
 func Replies(g *gin.Context) {
 	ident.DecryptQuery(g)
 	var pl = ArticleRepliesView{
-		ShowIP: ident.IsAdmin(g),
-		Tags:   config.Cfg.Tags,
+		ShowIP:    ident.IsAdmin(g),
+		Tags:      config.Cfg.Tags,
+		IsCrawler: manager.IsCrawler(g),
 	}
 	var err error
 	var pid = g.Param("parent")
+
+	if pl.ShowIP {
+		ident.SetDecryptArticleIDCheckExp(false)
+		defer ident.SetDecryptArticleIDCheckExp(true)
+	}
 
 	pl.ParentArticle, err = m.Get(id.StringBytes(pid))
 	if err != nil || pl.ParentArticle.ID == nil {
@@ -106,9 +111,10 @@ func Replies(g *gin.Context) {
 		return
 	}
 
-	if idx := id.ParseID(g.Query("j")).RIndex(); idx > 0 && int64(idx) <= pl.ParentArticle.Replies {
+	j := id.ParseID(g.Query("j"))
+	if idx := j.RIndex(); idx > 0 && int64(idx) <= pl.ParentArticle.Replies {
 		p := intdivceil(int(idx), config.Cfg.PostsPerPage)
-		g.Redirect(302, "/p/"+pid+"?p="+strconv.Itoa(p)+"#p"+g.Query("j"))
+		g.Redirect(302, "/p/"+pid+"?p="+strconv.Itoa(p)+"#r"+strconv.Itoa(int(j.RIndex())))
 		return
 	}
 

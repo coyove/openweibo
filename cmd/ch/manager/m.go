@@ -17,6 +17,7 @@ import (
 var (
 	errNoBucket = errors.New("")
 	bkPost      = []byte("post")
+	rxCrawler   = regexp.MustCompile(`(?i)(bot|googlebot|crawler|spider|robot|crawling)`)
 )
 
 type Manager struct {
@@ -24,9 +25,8 @@ type Manager struct {
 	cache   *lru.Cache
 	mu      sync.Mutex
 	counter struct {
-		m  map[string]map[uint32]bool
-		k  sched.SchedKey
-		rx *regexp.Regexp
+		m map[string]map[uint32]bool
+		k sched.SchedKey
 	}
 }
 
@@ -43,7 +43,6 @@ func New(path string) (*Manager, error) {
 		cache: lru.NewCache(128),
 	}
 	m.counter.m = map[string]map[uint32]bool{}
-	m.counter.rx = regexp.MustCompile(`(?i)(bot|googlebot|crawler|spider|robot|crawling)`)
 
 	err = db.Update(func(tx *bbolt.Tx) error {
 		_, err := tx.CreateBucketIfNotExists(bkPost)

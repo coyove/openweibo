@@ -11,13 +11,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (m *Manager) IncrCounter(g *gin.Context, idbuf []byte) {
-	id := string(idbuf)
+func IsCrawler(g *gin.Context) bool {
+	return rxCrawler.MatchString(g.Request.UserAgent())
+}
 
-	if m.counter.rx.MatchString(g.Request.UserAgent()) {
+func (m *Manager) IncrCounter(g *gin.Context, idbuf []byte) {
+	if IsCrawler(g) {
 		return
 	}
 
+	id := string(idbuf)
 	ip := [4]byte{}
 	copy(ip[:], g.MustGet("ip").(net.IP))
 	ip32 := binary.BigEndian.Uint32(ip[:])

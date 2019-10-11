@@ -1,5 +1,7 @@
 {{template "header.html" .}}
 
+{{if .IsCrawler}} <style> .crawler { display: initial; } .non-crawler { display: none } </style> {{end}}
+
 <table class="articles small">
     <tr>
         {{if .SearchTerm}}
@@ -23,7 +25,7 @@
                 {{if .Announce}}
                 <b>公告</b>
                 {{else}}
-                <span class=mobile><b>#</b></span>{{if not .Parent}}<a href="/cat/{{.Category}}">{{.Category}}</a>{{else}}{{if .BeReplied}}被{{end}}回复{{end}}
+                <span class=mobile><b>#</b></span>{{if not .Parent}}<a href="/cat/{{.Category}}">{{.Category}}</a>{{else}}{{if eq .Author $.SearchTerm}}回复{{else}}被回复{{end}}{{end}}
             {{end}}
         </td>
         <td class="nowrap"><a href="/cat/@{{.Author}}">{{.Author}}</a></td>
@@ -46,7 +48,7 @@
 <div class="paging" id="paging">
     {{if .Prev}}
     <a href="?n={{.Prev}}">&laquo; 上页</a>
-    <a href="?n=0">首页</a>
+    <a href="?n=">首页</a>
     {{end}}
     <a href="?n={{.Next}}">下页 &raquo;</a>
 </div>

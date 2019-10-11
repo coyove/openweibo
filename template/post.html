@@ -1,5 +1,7 @@
 {{template "header.html" .}}
 
+{{if .IsCrawler}} <style> .crawler { display: initial; } .non-crawler { display: none } </style> {{end}}
+
 {{with .ParentArticle}}
 <title>{{.Title}} - 第{{$.CurPage}}页</title>
 
@@ -37,11 +39,11 @@
 
     {{if len .Articles}}
     {{range .Articles}}
-    <tr class="row" id="p{{.DisplayID}}">
+    <tr class="row" id="r{{.Index}}">
         {{if .NotFound}}
         <td colspan=6><b>{{.Index}}</b>. NOT FOUND</td>
         {{else}}
-        <td><b>{{.Index}}</b>. <a href="/p/{{.DisplayID}}">{{.Title}}</a></td>
+        <td><b>{{.Index}}</b>. {{template "row_tags.html" .}}</td>
         <td class=nowrap></td>
         <td class=nowrap>
             {{if eq .Author $.ParentArticle.Author}}

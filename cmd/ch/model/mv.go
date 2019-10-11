@@ -26,9 +26,7 @@ type Article struct {
 	CreateTime  uint32 `protobuf:"fixed32,15,opt"`
 	ReplyTime   uint32 `protobuf:"fixed32,16,opt"`
 
-	// Transient
-	NotFound  bool `protobuf:"varint,18,opt"`
-	BeReplied bool `protobuf:"varint,19,opt"`
+	NotFound bool `protobuf:"varint,18,opt"` // Transient flag, whose Article will be created every time
 }
 
 func (a *Article) Reset() { *a = Article{} }

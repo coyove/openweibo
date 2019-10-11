@@ -132,6 +132,12 @@ func EncryptArticleID(id []byte) string {
 	return idEncoding.EncodeToString(buf)
 }
 
+var decryptArticleIDCheckExp = true
+
+func SetDecryptArticleIDCheckExp(f bool) {
+	decryptArticleIDCheckExp = f
+}
+
 func DecryptArticleID(tok string) []byte {
 	buf, _ := idEncoding.DecodeString(tok)
 	if len(buf) != 42 {
@@ -142,7 +148,7 @@ func DecryptArticleID(tok string) []byte {
 	config.Cfg.Blk.Decrypt(buf[26:], buf[26:])
 
 	exp := time.Unix(int64(binary.BigEndian.Uint32(buf[30:])), 0)
-	if time.Now().After(exp) {
+	if time.Now().After(exp) && decryptArticleIDCheckExp {
 		return nil
 	}
 	return buf[:30]
