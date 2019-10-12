@@ -3,7 +3,7 @@
 {{if .IsCrawler}} <style> .crawler { display: initial; } .non-crawler { display: none } </style> {{end}}
 
 {{with .ParentArticle}}
-<title>{{.Title}} - 第{{$.CurPage}}页</title>
+<title>第{{$.CurPage}}页 - {{.DisplayID}}</title>
 
 <table class="articles small">
     <tr>
@@ -40,7 +40,7 @@
     {{if len .Articles}}
     {{range .Articles}}
     <tr class="row" id="r{{.Index}}">
-        {{if .NotFound}}
+        {{if not .ID}}
         <td colspan=6><b>{{.Index}}</b>. NOT FOUND</td>
         {{else}}
         <td><b>{{.Index}}</b>. {{template "row_tags.html" .}}</td>
@@ -65,7 +65,7 @@
         </td>
         {{end}}
     </tr>
-    {{if not .NotFound}}
+    {{if .ID}}
     <tr class="dark">
         <td colspan=6><div class=reply><pre>{{.ContentHTML}}</pre>{{if $.ShowIP}}<div class="ip">{{.IP}}</div>{{end}}</div></td>
     </tr>

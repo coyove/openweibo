@@ -58,7 +58,6 @@ func (m *Manager) GetReplies(parent []byte, start, end int) (a []*mv.Article) {
 
 			p := m.get(main, pid.Marshal())
 			if p.ID == nil {
-				p.NotFound = true
 				p.Index = int64(i)
 			}
 			a = append(a, p)
