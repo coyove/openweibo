@@ -29,7 +29,7 @@ func New(g *gin.Context) {
 		IsAdmin:  ident.IsAdmin(g),
 	}
 
-	var answer [6]byte
+	var answer [4]byte
 	pl.UUID, answer = ident.MakeToken(g)
 	pl.Challenge = ident.GenerateCaptcha(answer)
 

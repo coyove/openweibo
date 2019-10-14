@@ -131,7 +131,7 @@ func Replies(g *gin.Context) {
 		if pl.ReplyView.RAuthor == "" {
 			pl.ReplyView.RAuthor, _ = g.Cookie("id")
 		}
-		var answer [6]byte
+		var answer [4]byte
 		pl.ReplyView.UUID, answer = ident.MakeToken(g)
 		pl.ReplyView.Challenge = ident.GenerateCaptcha(answer)
 	}

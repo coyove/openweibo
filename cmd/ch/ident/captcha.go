@@ -15,9 +15,9 @@ var bytesPool = sync.Pool{
 	},
 }
 
-func GenerateCaptcha(buf [6]byte) string {
+func GenerateCaptcha(buf [4]byte) string {
 	b := bytesPool.Get().(*bytes.Buffer)
-	captcha.NewImage(config.Cfg.Key, buf[:6], 180, 60).WriteTo(b)
+	captcha.NewImage(config.Cfg.Key, buf[:], 120, 60).WriteTo(b)
 	ret := base64.StdEncoding.EncodeToString(b.Bytes())
 	b.Reset()
 	bytesPool.Put(b)

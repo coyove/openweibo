@@ -18,14 +18,14 @@ import (
 
 var Dedup = lru.NewCache(1024)
 
-func MakeToken(g *gin.Context) (string, [6]byte) {
+func MakeToken(g *gin.Context) (string, [4]byte) {
 	var p [16]byte
 	exp := time.Now().Add(time.Minute * time.Duration(config.Cfg.TokenTTL)).Unix()
 	binary.BigEndian.PutUint32(p[:], uint32(exp))
 	copy(p[4:10], g.MustGet("ip").(net.IP))
 	rand.Read(p[10:])
 
-	var x [6]byte
+	var x [4]byte
 	copy(x[:], p[10:])
 
 	config.Cfg.Blk.Encrypt(p[:], p[:])

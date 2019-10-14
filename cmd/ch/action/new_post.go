@@ -42,10 +42,10 @@ func checkTokenAndCaptcha(g *gin.Context, author string) string {
 	}
 
 	if !ident.IsAdmin(author) {
-		if len(answer) == 6 {
+		if len(answer) == 4 {
 			challengePassed = true
 			for i := range answer {
-				if answer[i]-'0' != tokenbuf[i]%10 {
+				if answer[i] != "0123456789acefhijklmnpqrtuvwxyz"[tokenbuf[i]%31] {
 					challengePassed = false
 					break
 				}

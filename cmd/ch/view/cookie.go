@@ -15,11 +15,13 @@ func Cookie(g *gin.Context) {
 	var p = struct {
 		ID        string
 		IsCrawler bool
+		IsAdmin   bool
 		Config    template.HTML
 		Tags      []string
 	}{
 		id,
 		manager.IsCrawler(g),
+		ident.IsAdmin(g),
 		template.HTML(config.Cfg.PublicString),
 		config.Cfg.Tags,
 	}

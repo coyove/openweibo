@@ -23,7 +23,6 @@ var Cfg = struct {
 	PostsPerPage int      `yaml:"PostsPerPage"`
 	Tags         []string `yaml:"Tags"`
 	Domain       string   `yaml:"Domain"`
-	InboxSize    int      `yaml:"InboxSize"`
 	IPBlacklist  []string `yaml:"IPBlacklist"`
 	Cooldown     int      `yaml:"Cooldown"`
 	NeedID       bool     `yaml:"NeedID"`
@@ -40,12 +39,11 @@ var Cfg = struct {
 	TokenTTL:     1,
 	IDTokenTTL:   600,
 	Key:          "0123456789abcdef",
-	AdminName:    "zzz",
+	AdminName:    "zzzz",
 	MaxContent:   4096,
 	MinContent:   8,
 	PostsPerPage: 30,
 	Tags:         []string{},
-	InboxSize:    100,
 	Cooldown:     10,
 }
 
@@ -72,10 +70,19 @@ func MustLoad() {
 		Cfg.IPBlacklistParsed = append(Cfg.IPBlacklistParsed, subnet)
 	}
 
-	buf, _ = json.MarshalIndent(Cfg, "<li>", "    ")
-	Cfg.PrivateString = "<li>" + string(buf)
+	RegenConfigString()
+}
+
+func RegenConfigString() {
+	Cfg.PrivateString = ""
+	Cfg.PublicString = ""
+
+	buf, _ := json.MarshalIndent(Cfg, "", "")
+	buf = buf[1 : len(buf)-1]
+	Cfg.PrivateString = string(buf)
+
 	buf = regexp.MustCompile(`(?i)".*(token|key|admin).+`).ReplaceAllFunc(buf, func(in []byte) []byte {
 		return bytes.Repeat([]byte("\u2588"), len(in)/2+1)
 	})
-	Cfg.PublicString = "<li>" + string(buf)
+	Cfg.PublicString = string(buf)
 }

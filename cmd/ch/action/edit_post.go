@@ -139,21 +139,3 @@ func Delete(g *gin.Context) {
 		g.Redirect(302, "/cat")
 	}
 }
-
-func Cookie(g *gin.Context) {
-	if g.PostForm("noobfs") != "" {
-		if manager.IsCrawler(g) {
-			g.SetCookie("crawler", "", -1, "", "", false, false)
-		} else {
-			g.SetCookie("crawler", "1", 86400*365, "", "", false, false)
-		}
-	} else if id := g.PostForm("id"); g.PostForm("clear") != "" || id == "" {
-		g.SetCookie("id", "", -1, "", "", false, false)
-	} else if g.PostForm("view") != "" {
-		g.Redirect(302, "/cat/@@"+id)
-		return
-	} else {
-		g.SetCookie("id", id, 86400*365, "", "", false, false)
-	}
-	g.Redirect(302, "/cookie")
-}
