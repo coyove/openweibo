@@ -35,15 +35,15 @@
             <div>
                 {{with .ReplyView}}
                 <input class="reply-toggle" style="display:none" type=checkbox id="reply" {{if .ShowReply}}checked{{end}}>
-                <label class="pure-material-button-outlined" for=reply><b>回复该主题</b></label>
+                <label class="pure-material-button-outlined" for=reply><b>回复主题</b></label>
                 <div class="reply-view">
                     <form method="POST" action="/reply">
                         <table class="articles">
                             <input type=hidden name=uuid value="{{.UUID}}">
                             <input type=hidden name=reply value="{{$.ParentArticle.ID}}">
                             <tr>
-                                <td style="color:#888" class=nowrap>ID (选填)</td>
-                                <td colspan=2><input style="border: none" class=t name=author value="{{.RAuthor}}"></td>
+                                <td style="color:#888" class=nowrap><label for=author>ID</label></td>
+                                <td colspan=2><input style="border: none" id=author placeholder="(选填)" class=t name=author value="{{.RAuthor}}"></td>
                             </tr>
                             <tr>
                                 <td colspan=3>

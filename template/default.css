@@ -349,7 +349,7 @@ div.ip {
 }
 
 @media only screen and (max-width: 540px) {
-    .articles.small  > tbody >tr, .articles.small  > tbody >th {
+    .articles.small  > tbody >tr, .articles.small  > tbody>tr >th {
         display: block;
     }
 

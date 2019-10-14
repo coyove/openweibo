@@ -124,8 +124,9 @@ func EncryptArticleID(id []byte, key [4]byte) string {
 	copy(buf[:30], id)
 	exp := time.Now().Add(time.Second * time.Duration(config.Cfg.IDTokenTTL)).Unix()
 	binary.BigEndian.PutUint32(buf[30:], uint32(exp))
-	copy(buf[34:], key[:])
-	rand.Read(buf[38:])
+
+	copy(buf[34:], key[:2]) // use 2 bytes
+	rand.Read(buf[36:])
 
 	config.Cfg.Blk.Encrypt(buf[26:], buf[26:])
 	config.Cfg.Blk.Encrypt(buf[14:], buf[14:])
@@ -135,9 +136,7 @@ func EncryptArticleID(id []byte, key [4]byte) string {
 
 var decryptArticleIDCheckExp = true
 
-func SetDecryptArticleIDCheckExp(f bool) {
-	decryptArticleIDCheckExp = f
-}
+func SetDecryptArticleIDCheckExp(f bool) { decryptArticleIDCheckExp = f }
 
 func DecryptArticleID(tok string, key [4]byte) []byte {
 	buf, _ := idEncoding.DecodeString(tok)
@@ -157,7 +156,7 @@ func DecryptArticleID(tok string, key [4]byte) []byte {
 		return nil
 	}
 
-	if !bytes.Equal(buf[34:38], key[:]) {
+	if buf[34] != key[0] || buf[35] != key[1] {
 		return nil
 	}
 
@@ -166,12 +165,13 @@ func DecryptArticleID(tok string, key [4]byte) []byte {
 
 func DecryptQuery(g *gin.Context) {
 	kv := ParseTempToken(g.Query("enc"))
-	if kv != "" {
-		if g.Request.URL.RawQuery != "" {
-			kv += "&" + g.Request.URL.RawQuery
-		}
-		g.Request.URL.RawQuery = kv
+	if kv == "" {
+		return
 	}
+	if g.Request.URL.RawQuery != "" {
+		kv += "&" + g.Request.URL.RawQuery
+	}
+	g.Request.URL.RawQuery = kv
 }
 
 func EncryptQuery(a ...string) string {

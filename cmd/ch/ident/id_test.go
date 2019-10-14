@@ -29,10 +29,9 @@ func TestID(t *testing.T) {
 			}
 		}
 
-		x := id.String()
 		ln += id.RIndexLen(nil)
 
-		id2 := ParseID(x)
+		id2 := ParseID(id.Marshal())
 
 		if id2 != id {
 			t.Fatal(id, id2)
@@ -61,9 +60,10 @@ func BenchmarkTempToken(b *testing.B) {
 
 func BenchmarkTempTokenAID(b *testing.B) {
 	id := make([]byte, 30)
+	key := [4]byte{byte(rand.Int()), byte(rand.Int()), byte(rand.Int()), byte(rand.Int())}
 	for i := 0; i < b.N; i++ {
-		xid := EncryptArticleID(id[:])
-		id2 := DecryptArticleID(xid)
+		xid := EncryptArticleID(id[:], key)
+		id2 := DecryptArticleID(xid, key)
 		if !bytes.Equal(id[:], id2) {
 			b.Fatal(id, id2)
 		}
