@@ -1,7 +1,6 @@
 package view
 
 import (
-	"html/template"
 	"log"
 	"strconv"
 	"strings"
@@ -10,26 +9,23 @@ import (
 	"github.com/coyove/iis/cmd/ch/ident"
 	id "github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/manager"
-	mv "github.com/coyove/iis/cmd/ch/model"
 	"github.com/gin-gonic/gin"
 )
 
 var m *manager.Manager
 
 type ArticlesTimelineView struct {
-	Tags         []string
-	Articles     []*mv.Article
-	Next         string
-	Prev         string
-	SearchTerm   string
-	ShowAbstract bool
-	IsCrawler    bool
+	Tags       []string
+	Articles   []ArticleView
+	Next       string
+	Prev       string
+	SearchTerm string
 }
 
 type ArticleRepliesView struct {
 	Tags          []string
-	Articles      []*mv.Article
-	ParentArticle *mv.Article
+	Articles      []ArticleView
+	ParentArticle ArticleView
 	CurPage       int
 	TotalPages    int
 	Pages         []int
@@ -61,26 +57,30 @@ func Index(g *gin.Context) {
 	var pl = ArticlesTimelineView{
 		SearchTerm: g.Param("tag"),
 		Tags:       config.Cfg.Tags,
-		IsCrawler:  manager.IsCrawler(g),
+	}
+
+	opt := _obfs
+	if manager.IsCrawler(g) {
+		opt = 0
 	}
 
 	if strings.HasPrefix(pl.SearchTerm, "@@") {
 		pl.SearchTerm = config.HashName(pl.SearchTerm[2:])
-		pl.ShowAbstract = true
+		opt |= _abstract
 	} else if strings.HasPrefix(pl.SearchTerm, "@") {
 		pl.SearchTerm = pl.SearchTerm[1:]
-		pl.ShowAbstract = true
+		opt |= _abstract
 	} else if pl.SearchTerm != "" {
 		pl.SearchTerm = "#" + pl.SearchTerm
 	}
 
-	a, prev, next, err := m.Walk(pl.SearchTerm, id.StringBytes(g.Query("n")), int(config.Cfg.PostsPerPage))
+	a, prev, next, err := m.Walk(pl.SearchTerm, id.StringBytes(g, g.Query("n")), int(config.Cfg.PostsPerPage))
 	if err != nil {
 		Error(500, "INTERNAL: "+err.Error(), g)
 		return
 	}
 
-	pl.Articles = a
+	fromMultiple(&pl.Articles, a, opt, g)
 
 	if len(a) > 0 {
 		pl.Next, pl.Prev = id.BytesPlainString(next), id.BytesPlainString(prev)
@@ -92,27 +92,32 @@ func Index(g *gin.Context) {
 func Replies(g *gin.Context) {
 	ident.DecryptQuery(g)
 	var pl = ArticleRepliesView{
-		ShowIP:    ident.IsAdmin(g),
-		Tags:      config.Cfg.Tags,
-		IsCrawler: manager.IsCrawler(g),
+		ShowIP: ident.IsAdmin(g),
+		Tags:   config.Cfg.Tags,
 	}
-	var err error
 	var pid = g.Param("parent")
+	var opt = _richtime | _showcontent
+
+	if !manager.IsCrawler(g) {
+		opt |= _obfs
+	}
 
 	if pl.ShowIP {
 		ident.SetDecryptArticleIDCheckExp(false)
 		defer ident.SetDecryptArticleIDCheckExp(true)
 	}
 
-	pl.ParentArticle, err = m.Get(id.StringBytes(pid))
-	if err != nil || pl.ParentArticle.ID == nil {
+	parent, err := m.Get(id.StringBytes(g, pid))
+	if err != nil || parent.ID == nil {
 		Error(404, "NOT FOUND", g)
 		log.Println(pid, err)
 		return
 	}
 
-	j := id.ParseID(g.Query("j"))
-	if idx := j.RIndex(); idx > 0 && int64(idx) <= pl.ParentArticle.Replies {
+	pl.ParentArticle.from(parent, opt, g)
+
+	j := id.ParseIDString(g, g.Query("j"))
+	if idx := j.RIndex(); idx > 0 && int64(idx) <= parent.Replies {
 		p := intdivceil(int(idx), config.Cfg.PostsPerPage)
 		g.Redirect(302, "/p/"+pid+"?p="+strconv.Itoa(p)+"#r"+strconv.Itoa(int(j.RIndex())))
 		return
@@ -134,7 +139,7 @@ func Replies(g *gin.Context) {
 	pl.CurPage, _ = strconv.Atoi(g.Query("p"))
 	pl.TotalPages = intdivceil(int(pl.ParentArticle.Replies), config.Cfg.PostsPerPage)
 
-	m.IncrCounter(g, pl.ParentArticle.ID)
+	m.IncrCounter(g, parent.ID)
 
 	if pl.CurPage == 0 {
 		pl.CurPage = 1
@@ -148,7 +153,7 @@ func Replies(g *gin.Context) {
 		start := intmin(int(pl.ParentArticle.Replies), (pl.CurPage-1)*config.Cfg.PostsPerPage)
 		end := intmin(int(pl.ParentArticle.Replies), pl.CurPage*config.Cfg.PostsPerPage)
 
-		pl.Articles = m.GetReplies(pl.ParentArticle.ID, start+1, end+1)
+		fromMultiple(&pl.Articles, m.GetReplies(parent.ID, start+1, end+1), opt, g)
 
 		// Fill in at most 7 page numbers for display
 		pl.Pages = make([]int, 0, 8)
@@ -166,24 +171,4 @@ func Replies(g *gin.Context) {
 	}
 
 	g.HTML(200, "post.html", pl)
-}
-
-func Cookie(g *gin.Context) {
-	id, _ := g.Cookie("id")
-
-	var p = struct {
-		ID     string
-		Config template.HTML
-		Tags   []string
-	}{
-		id,
-		template.HTML(config.Cfg.PublicString),
-		config.Cfg.Tags,
-	}
-
-	if ident.IsAdmin(g) {
-		p.Config = template.HTML(config.Cfg.PrivateString)
-	}
-
-	g.HTML(200, "cookie.html", p)
 }

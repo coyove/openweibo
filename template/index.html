@@ -1,7 +1,5 @@
 {{template "header.html" .}}
 
-{{if .IsCrawler}} <style> .crawler { display: initial; } .non-crawler { display: none } </style> {{end}}
-
 <table class="articles small">
     <tr>
         {{if .SearchTerm}}
@@ -29,13 +27,13 @@
             {{end}}
         </td>
         <td class="nowrap"><a href="/cat/@{{.Author}}">{{.Author}}</a></td>
-        <td class="nowrap date"><span>{{.ReplyTimeString false}}</span></td>
+        <td class="nowrap date"><span>{{.ReplyTime}}</span></td>
         <td class="nowrap state">{{if .Replies}}<span>{{.Replies}}</span><span class=mobile>回复</span>{{end}}</td>
         <td class="nowrap state">{{if .Views}}<span>{{.Views}}</span><span class=mobile>浏览</span>{{end}}</td>
     </tr>
-    {{if $.ShowAbstract}}
+    {{if .Content}}
     <tr class=dark>
-        <td colspan=6><div class=reply><pre>{{.ContentAbstract}}</pre></div></td>
+        <td colspan=6><div class=reply><pre>{{.Content}}</pre></div></td>
     </tr>
     {{end}}
     {{end}}

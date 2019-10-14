@@ -1,5 +1,4 @@
 {{if .Highlighted}}<span style="color:#2a66d9">&#x2605;</span>{{end}}
 {{if .Saged}}<span style="color:red;font-weight:bold">&#x00d7;</span>{{end}}
 
-<a href="/p/{{.DisplayID}}" class="non-crawler" {{if .Locked}}style="color: #aaa"{{end}}>{{.Title}}</a>
-<a href="/p/{{.DisplayPlainID}}" class="crawler" {{if .Locked}}style="color: #aaa"{{end}}>{{.Title}}</a>
+<a href="/p/{{.ID}}" {{if .Locked}}style="color: #aaa"{{end}}>{{.Title}}</a>

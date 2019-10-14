@@ -30,7 +30,7 @@ func Edit(g *gin.Context) {
 	}
 
 	var (
-		eid         = ident.StringBytes(g.PostForm("reply"))
+		eid         = ident.StringBytes(g, g.PostForm("reply"))
 		title       = mv.SoftTrunc(g.PostForm("title"), 100)
 		content     = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		author      = getAuthor(g)
@@ -52,7 +52,7 @@ func Edit(g *gin.Context) {
 		return
 	}
 
-	redir := "/p/" + a.DisplayID()
+	redir := "/p/" + ident.BytesString(g, a.ID)
 
 	if isBan := m.IsBanned(nil, a.Author); isBan != banID {
 		if isBan {
@@ -98,7 +98,7 @@ func Edit(g *gin.Context) {
 		return
 	}
 
-	g.Redirect(302, "/p/"+a.DisplayID())
+	g.Redirect(302, redir)
 }
 
 func Delete(g *gin.Context) {
@@ -112,7 +112,7 @@ func Delete(g *gin.Context) {
 		return
 	}
 
-	var eid = ident.StringBytes(g.PostForm("reply"))
+	var eid = ident.StringBytes(g, g.PostForm("reply"))
 	var author = getAuthor(g)
 
 	a, err := m.Get(eid)
@@ -123,7 +123,7 @@ func Delete(g *gin.Context) {
 
 	if a.Author != config.HashName(author) && !ident.IsAdmin(author) {
 		log.Println(g.MustGet("ip").(net.IP), "tried to delete", a.ID)
-		g.Redirect(302, "/p/"+a.DisplayID())
+		g.Redirect(302, "/p/"+ident.BytesString(g, a.ID))
 		return
 	}
 
@@ -134,14 +134,20 @@ func Delete(g *gin.Context) {
 	}
 
 	if a.Parent() != nil {
-		g.Redirect(302, "/p/"+a.DisplayParentID())
+		g.Redirect(302, "/p/"+ident.BytesString(g, a.Parent()))
 	} else {
 		g.Redirect(302, "/cat")
 	}
 }
 
 func Cookie(g *gin.Context) {
-	if id := g.PostForm("id"); g.PostForm("clear") != "" || id == "" {
+	if g.PostForm("noobfs") != "" {
+		if manager.IsCrawler(g) {
+			g.SetCookie("crawler", "", -1, "", "", false, false)
+		} else {
+			g.SetCookie("crawler", "1", 86400*365, "", "", false, false)
+		}
+	} else if id := g.PostForm("id"); g.PostForm("clear") != "" || id == "" {
 		g.SetCookie("id", "", -1, "", "", false, false)
 	} else if g.PostForm("view") != "" {
 		g.Redirect(302, "/cat/@@"+id)

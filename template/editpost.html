@@ -37,9 +37,9 @@ tr {
          <input type=hidden name=author value="{{.RAuthor}}">
          <input type=hidden name=uuid value="{{.UUID}}">
             <tr>
-                <title>编辑: {{.Article.DisplayID}}</title>
+                <title>编辑: {{.Article.ID}}</title>
                 <td class=nowrap>Admin:</td>
-                <td>{{.Article.DisplayID}}<input type=hidden name=reply value="{{.Reply}}"></td>
+                <td>{{.Article.ID}}<input type=hidden name=reply value="{{.Reply}}"></td>
             </tr>
             {{if not .Article.Parent}}
             <tr>

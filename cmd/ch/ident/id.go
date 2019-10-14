@@ -7,6 +7,8 @@ import (
 	"math/rand"
 	"sync/atomic"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type headerType byte
@@ -45,15 +47,14 @@ func NewID(hdr headerType, tag string) ID {
 	return id
 }
 
-func ParseID(s interface{}) ID {
-	var id ID
-	switch s := s.(type) {
-	case string:
-		id.Unmarshal(StringBytes(s))
-	case []byte:
-		id.Unmarshal(s)
-	}
-	return id
+func ParseIDString(g *gin.Context, s string) (id ID) {
+	id.Unmarshal(StringBytes(g, s))
+	return
+}
+
+func ParseID(s []byte) (id ID) {
+	id.Unmarshal(s)
+	return
 }
 
 func (id ID) Header() headerType {
@@ -62,10 +63,6 @@ func (id ID) Header() headerType {
 
 func (id ID) Tag() string {
 	return id.tag
-}
-
-func (id ID) String() string {
-	return BytesString(id.Marshal())
 }
 
 func (id ID) Marshal() []byte {

@@ -3,18 +3,11 @@
 {{if .IsCrawler}} <style> .crawler { display: initial; } .non-crawler { display: none } </style> {{end}}
 
 {{with .ParentArticle}}
-<title>第{{$.CurPage}}页 - {{.DisplayID}}</title>
+<title>第{{$.CurPage}}页</title>
 
 <table class="articles small">
     <tr>
-        <th>
-            {{if .Parent}}
-            <a href="/p/{{.DisplayParentID}}?j={{.DisplayID}}">上一层</a>&emsp;
-            <a href="/p/{{.DisplayTopParentID}}">顶层</a>
-            {{else}}
-            <a href="/cat?n={{.DisplayTimeline}}">首页</a>
-            {{end}}
-        </th>
+        <th>标题</th>
         <th class=nowrap>分类</th>
         <th class=nowrap>作者</th>
         <th class=nowrap>日期</th>
@@ -27,7 +20,7 @@
         </td>
         <td class="nowrap"><span class=mobile><b>#</b></span>{{if not .Parent}}<a href="/cat/{{.Category}}">{{.Category}}</a>{{else}}回复{{end}}</td>
         <td class=nowrap><a href="/cat/@{{.Author}}">{{.Author}}</a></td>
-        <td class="nowrap date"><span>{{.CreateTimeString true}}</span></td>
+        <td class="nowrap date"><span>{{.CreateTime}}</span></td>
         <td class="nowrap state"><span>{{.Replies}}</span><span class=mobile>回复</span></td>
         <td class="nowrap state"><span>{{.Views}}</span><span class=mobile>浏览</span></td>
         </td>
@@ -36,6 +29,62 @@
         <td colspan=6><div class=reply><pre>{{.ContentHTML}}</pre>{{if $.ShowIP}}<div class="ip">{{.IP}}</div>{{end}}</div></td>
     </tr>
     {{end}}
+
+    <tr>
+        <td colspan=6>
+            <div>
+                {{with .ReplyView}}
+                <input class="reply-toggle" style="display:none" type=checkbox id="reply" {{if .ShowReply}}checked{{end}}>
+                <label class="pure-material-button-outlined" for=reply><b>回复该主题</b></label>
+                <div class="reply-view">
+                    <form method="POST" action="/reply">
+                        <table class="articles">
+                            <input type=hidden name=uuid value="{{.UUID}}">
+                            <input type=hidden name=reply value="{{$.ParentArticle.ID}}">
+                            <tr>
+                                <td style="color:#888" class=nowrap>ID (选填)</td>
+                                <td colspan=2><input style="border: none" class=t name=author value="{{.RAuthor}}"></td>
+                            </tr>
+                            <tr>
+                                <td colspan=3>
+                                    <textarea maxlength=4000 placeholder="内容" style="border:none;padding:0" rows=10 name="content">{{.RContent}}</textarea>
+                                </td>
+                            </tr>
+                            <tr style="border:none">
+                                <td colspan=3>
+                                    <button name=refresh value=1 type=submit class="none"><img src="data:image/png;base64,{{.Challenge}}"></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="color:#888" class=nowrap>验证码</td>
+                                <td>
+                                    <input size=10 name="answer" class=s>
+                                </td>
+                                <td class=nowrap>
+                                    <button {{if $.ParentArticle.Locked}}disabled{{end}} class="pure-material-button-outlined" type=submit>回复</button>
+                                    <a class="pure-material-button-outlined" href="/p/{{$.ParentArticle.ID}}">取消</a>
+                                </td>
+                            </tr> 
+                            {{if .EError}}
+                            <tr>
+                                <td colspan=3>错误: {{template "error_i18n.html" .EError}}</td>
+                            </tr>
+                            {{end}}
+                        </table>
+                    </form>
+                </div>
+                <div class="bg"></div>
+                {{end}}
+                {{if .ParentArticle.Parent}}
+                <a class="pure-material-button-outlined" href="/p/{{.ParentArticle.Parent}}?j={{.ParentArticle.ID}}">上一层</a>
+                <a class="pure-material-button-outlined" href="/p/{{.ParentArticle.TopParent}}">顶层</a>
+                {{else}}
+                <a class="pure-material-button-outlined" href="/cat?n={{.ParentArticle.Timeline}}">返回时间线</a>
+                {{end}}
+                <a style="float:right" class="pure-material-button-outlined" href="/edit/{{.ParentArticle.ID}}">删除</a>
+            </div>
+        </td>
+    </tr>
 
     {{if len .Articles}}
     {{range .Articles}}
@@ -52,7 +101,7 @@
             <a href="/cat/@{{.Author}}">{{.Author}}</a>
             {{end}}
         </td>
-        <td class="nowrap date">{{.CreateTimeString true}}</td>
+        <td class="nowrap date">{{.CreateTime}}</td>
         <td class="nowrap state">
             {{if .Replies}}
             <span>{{.Replies}}</span><span class=mobile>回复</span>
@@ -75,53 +124,6 @@
     <tr><td colspan=6>无回复</td></tr>
     {{end}}
 </table>
-
-<div style="padding: 0.4em; border-bottom: solid #ccc 1px">
-    {{with .ReplyView}}
-    <input class="reply-toggle" style="display:none" type=checkbox id="reply" {{if .ShowReply}}checked{{end}}>
-    <label class="pure-material-button-outlined" for=reply><b>回复该主题</b></label>
-    <div class="reply-view">
-        <form method="POST" action="/reply">
-            <table class="articles">
-                <input type=hidden name=uuid value="{{.UUID}}">
-                <input type=hidden name=reply value="{{$.ParentArticle.DisplayID}}">
-                <tr>
-                    <td style="color:#888" class=nowrap>ID (选填)</td>
-                    <td colspan=2><input style="border: none" class=t name=author value="{{.RAuthor}}"></td>
-                </tr>
-                <tr>
-                    <td colspan=3>
-                        <textarea maxlength=4000 placeholder="内容" style="border:none;padding:0" rows=10 name="content">{{.RContent}}</textarea>
-                    </td>
-                </tr>
-                <tr style="border:none">
-                    <td colspan=3>
-                        <button name=refresh value=1 type=submit class="none"><img src="data:image/png;base64,{{.Challenge}}"></button>
-                    </td>
-                </tr>
-                <tr>
-                    <td style="color:#888" class=nowrap>验证码</td>
-                    <td>
-                        <input size=10 name="answer" class=s>
-                    </td>
-                    <td class=nowrap>
-                        <button {{if $.ParentArticle.Locked}}disabled{{end}} class="pure-material-button-outlined" type=submit>回复</button>
-                        <a class="pure-material-button-outlined" href="/p/{{$.ParentArticle.DisplayID}}">取消</a>
-                    </td>
-                </tr> 
-                {{if .EError}}
-                <tr>
-                    <td colspan=3>错误: {{template "error_i18n.html" .EError}}</td>
-                </tr>
-                {{end}}
-            </table>
-        </form>
-    </div>
-    <div class="bg"></div>
-    {{end}}
-    <a style="float:right" class="pure-material-button-outlined" href="/edit/{{.ParentArticle.DisplayID}}">删除</a>
-    <a style="float:right" class="pure-material-button-outlined" href="/p/{{.ParentArticle.DisplayPlainID}}">原始链接</a>
-</div>
 
 <div class="paging" id="paging">
     <a href="?p=0">&laquo; 首页</a>

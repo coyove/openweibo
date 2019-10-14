@@ -12,7 +12,11 @@ import (
 )
 
 func IsCrawler(g *gin.Context) bool {
-	return rxCrawler.MatchString(g.Request.UserAgent())
+	if rxCrawler.MatchString(g.Request.UserAgent()) {
+		return true
+	}
+	v, _ := g.Cookie("crawler")
+	return v == "1"
 }
 
 func (m *Manager) IncrCounter(g *gin.Context, idbuf []byte) {

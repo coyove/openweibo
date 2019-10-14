@@ -348,29 +348,25 @@ div.ip {
     font-size: 90%;
 }
 
-.crawler {
-    display: none;
-}
-
 @media only screen and (max-width: 540px) {
-    .articles.small tr, .articles.small th {
+    .articles.small  > tbody >tr, .articles.small  > tbody >th {
         display: block;
     }
 
-    .articles.small td {
+    .articles.small  > tbody >tr>td {
         display: inline-block;
     }
 
-    .articles.small th.nowrap {
+    .articles.small  > tbody >tr>th.nowrap {
         display: none;
     }
 
-    .articles.small td.nowrap {
+    .articles.small  > tbody >tr>td.nowrap {
         width: inherit;
         border: none;
     }
 
-    .articles.small td.nowrap, .articles.small td.nowrap * {
+    .articles.small  > tbody >tr>td.nowrap, .articles.small  > tbody >tr> td.nowrap * {
         font-size: 12px;
     }
 
@@ -378,7 +374,7 @@ div.ip {
         float: right;
     }
 
-    .articles.small td:first-child {
+    .articles.small > tbody >tr> td:first-child {
         width: 100%;
     }
 

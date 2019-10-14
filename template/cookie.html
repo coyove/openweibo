@@ -14,7 +14,7 @@
                 <button class="pure-material-button-outlined" type=submit name=view value=1>查看ID发言</button>
             </td>
         </tr>
-</table>
+    </table>
 </form>
 
 <div style="margin: 1em">
@@ -30,6 +30,25 @@
 
 <pre><ul class=config>{{.Config}}</ul></pre>
 
+</div>
+<form method="POST">
+    <table class=articles>
+        <tr>
+            <td>
+                <button class="pure-material-button-outlined" type=submit name=noobfs value=1>
+                    {{if not .IsCrawler}}
+                    停止链接混淆
+                    {{else}}
+                    开启链接混淆
+                    {{end}}
+                </button>
+            </td>
+        </tr>
+    </table>
+</form>
+
+<div style="margin: 1em">
+    本站内的发言链接为动态生成，默认有效期10分钟，过期链接即变为404失效。这样设计是为了防止浏览器历史记录泄露信息。如果你觉得不便，可以点击上面的按钮关闭/打开混淆。
 </div>
 
 {{template "footer.html" .}}

@@ -115,7 +115,7 @@ func ParseTempToken(tok string) string {
 	return string(p)
 }
 
-func EncryptArticleID(id []byte) string {
+func EncryptArticleID(id []byte, key [4]byte) string {
 	if len(id) != 30 {
 		return ""
 	}
@@ -124,7 +124,8 @@ func EncryptArticleID(id []byte) string {
 	copy(buf[:30], id)
 	exp := time.Now().Add(time.Second * time.Duration(config.Cfg.IDTokenTTL)).Unix()
 	binary.BigEndian.PutUint32(buf[30:], uint32(exp))
-	rand.Read(buf[34:])
+	copy(buf[34:], key[:])
+	rand.Read(buf[38:])
 
 	config.Cfg.Blk.Encrypt(buf[26:], buf[26:])
 	config.Cfg.Blk.Encrypt(buf[14:], buf[14:])
@@ -138,7 +139,7 @@ func SetDecryptArticleIDCheckExp(f bool) {
 	decryptArticleIDCheckExp = f
 }
 
-func DecryptArticleID(tok string) []byte {
+func DecryptArticleID(tok string, key [4]byte) []byte {
 	buf, _ := idEncoding.DecodeString(tok)
 	if len(buf) != 42 {
 		return buf
@@ -147,10 +148,19 @@ func DecryptArticleID(tok string) []byte {
 	config.Cfg.Blk.Decrypt(buf[14:], buf[14:])
 	config.Cfg.Blk.Decrypt(buf[26:], buf[26:])
 
+	if !decryptArticleIDCheckExp {
+		return buf[:30]
+	}
+
 	exp := time.Unix(int64(binary.BigEndian.Uint32(buf[30:])), 0)
-	if time.Now().After(exp) && decryptArticleIDCheckExp {
+	if time.Now().After(exp) {
 		return nil
 	}
+
+	if !bytes.Equal(buf[34:38], key[:]) {
+		return nil
+	}
+
 	return buf[:30]
 }
 

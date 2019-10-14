@@ -5,7 +5,6 @@ import (
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
-	mv "github.com/coyove/iis/cmd/ch/model"
 	"github.com/gin-gonic/gin"
 )
 
@@ -49,7 +48,7 @@ func Edit(g *gin.Context) {
 		RAuthor        string
 		IsAdmin        bool
 		IsAuthorBanned bool
-		Article        *mv.Article
+		Article        ArticleView
 	}{
 		Reply: g.Param("id"),
 		Tags:  config.Cfg.Tags,
@@ -59,14 +58,14 @@ func Edit(g *gin.Context) {
 	pl.RAuthor, _ = g.Cookie("id")
 	pl.IsAdmin = ident.IsAdmin(pl.RAuthor)
 
-	a, err := m.Get(ident.StringBytes(pl.Reply))
+	a, err := m.Get(ident.StringBytes(g, pl.Reply))
 	if err != nil {
 		log.Println(err)
 		g.Redirect(302, "/cat")
 		return
 	}
 
-	pl.Article = a
+	pl.Article.from(a, _showcontent, g)
 	pl.IsAuthorBanned = m.IsBanned(nil, a.Author)
 
 	g.HTML(200, "editpost.html", pl)
