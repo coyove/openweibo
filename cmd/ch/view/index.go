@@ -153,7 +153,7 @@ func Replies(g *gin.Context) {
 		start := intmin(int(pl.ParentArticle.Replies), (pl.CurPage-1)*config.Cfg.PostsPerPage)
 		end := intmin(int(pl.ParentArticle.Replies), pl.CurPage*config.Cfg.PostsPerPage)
 
-		fromMultiple(&pl.Articles, m.GetReplies(parent.ID, start+1, end+1), opt, g)
+		fromMultiple(&pl.Articles, m.GetReplies(parent.ID, start+1, end+1), opt|_abstracttitle, g)
 
 		// Fill in at most 7 page numbers for display
 		pl.Pages = make([]int, 0, 8)

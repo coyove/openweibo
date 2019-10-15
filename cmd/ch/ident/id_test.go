@@ -69,3 +69,10 @@ func BenchmarkTempTokenAID(b *testing.B) {
 		}
 	}
 }
+
+func BenchmarkPNGCaptchaBae64(b *testing.B) {
+	id := [4]byte{}
+	for i := 0; i < b.N; i++ {
+		GenerateCaptcha(id)
+	}
+}

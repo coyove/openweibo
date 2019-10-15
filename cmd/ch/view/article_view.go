@@ -33,6 +33,7 @@ type ArticleView struct {
 const (
 	_obfs byte = 1 << iota
 	_abstract
+	_abstracttitle
 	_showcontent
 	_richtime
 )
@@ -51,11 +52,16 @@ func (a *ArticleView) from(a2 *mv.Article, opt byte, g *gin.Context) {
 	a.Category = a2.Category
 	a.CreateTime = mv.FormatTime(a2.CreateTime, opt&_richtime > 0)
 	a.ReplyTime = mv.FormatTime(a2.ReplyTime, opt&_richtime > 0)
+
 	if opt&_abstract > 0 {
 		a.Content = mv.SoftTrunc(a2.Content, 64)
 	} else if opt&_showcontent > 0 {
 		a.ContentHTML = a2.ContentHTML()
 		a.Content = a2.Content
+	}
+
+	if opt&_abstracttitle > 0 {
+		a.Title = mv.SoftTrunc(a2.Title, 20)
 	}
 
 	parent, topparent := ident.ParseID(a2.ID).RIndexParent()

@@ -6,6 +6,7 @@ package captcha
 
 import (
 	"bytes"
+	"encoding/base64"
 	"image"
 	"image/color"
 	"image/png"
@@ -94,6 +95,17 @@ func (m *Image) encodedPNG() []byte {
 		panic(err.Error())
 	}
 	return buf.Bytes()
+}
+
+func (m *Image) PNGBase64() string {
+	buf := bytes.Buffer{}
+
+	w := base64.NewEncoder(base64.StdEncoding, &buf)
+	enc := &png.Encoder{CompressionLevel: png.BestSpeed}
+	enc.Encode(w, m.Paletted)
+	w.Close()
+
+	return buf.String()
 }
 
 // WriteTo writes captcha image in PNG format into the given writer.
