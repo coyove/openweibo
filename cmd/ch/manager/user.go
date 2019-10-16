@@ -34,7 +34,8 @@ func (m *Manager) Unban(id string) error {
 }
 
 func (m *Manager) IsBanned(id string) bool {
-	return len(m.kvMustGet("\x00ban"+id)) == 1
+	x := m.kvMustGet("\x00ban" + id)
+	return len(x) == 1 && x[0] == 1
 }
 
 func (m *Manager) UserExisted(id string) (ok bool) {

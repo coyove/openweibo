@@ -62,13 +62,14 @@ func (a *ArticleView) from(a2 *mv.Article, opt byte, g *gin.Context) {
 		a.Title = mv.SoftTrunc(a2.Title, 20)
 	}
 
-	parent, topparent := ident.ParseIDString(nil, a2.ID).RIndexParent()
+	a2id := ident.ParseID(a2.ID)
+	parent, topparent := a2id.RIndexParent()
 
 	if opt&_obfs > 0 {
-		a.ID = ident.GEncryptString(g, ident.ParseIDString(nil, a2.ID))
-		a.Timeline = ident.GEncryptString(g, ident.ParseIDString(nil, a2.TimelineID))
-		a.Parent = ident.GEncryptString(g, parent)
-		a.TopParent = ident.GEncryptString(g, topparent)
+		a.ID = a2id.DynamicString(g)
+		a.Timeline = ident.ParseID(a2.TimelineID).DynamicString(g)
+		a.Parent = parent.DynamicString(g)
+		a.TopParent = topparent.DynamicString(g)
 	} else {
 		a.ID = a2.ID
 		a.Timeline = a2.TimelineID

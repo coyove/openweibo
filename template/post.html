@@ -79,7 +79,7 @@
                 <a class="pure-material-button-outlined" href="/p/{{.ParentArticle.Parent}}?j={{.ParentArticle.ID}}">上一层</a>
                 <a class="pure-material-button-outlined" href="/p/{{.ParentArticle.TopParent}}">顶层</a>
                 {{else}}
-                <a class="pure-material-button-outlined" href="/cat?n={{.ParentArticle.Timeline}}">返回时间线</a>
+                <a class="pure-material-button-outlined" href="/cat?n={{.ParentArticle.Timeline}}">下一个主题</a>
                 {{end}}
                 <a style="float:right" class="pure-material-button-outlined" href="/edit/{{.ParentArticle.ID}}">删除</a>
             </div>

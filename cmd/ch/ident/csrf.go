@@ -115,7 +115,7 @@ func ParseTempToken(tok string) string {
 	return string(p)
 }
 
-func (id ID) Encrypt(key [4]byte) string {
+func (id ID) encrypt(key [4]byte) string {
 	if !id.Valid() {
 		return ""
 	}
@@ -126,7 +126,7 @@ func (id ID) Encrypt(key [4]byte) string {
 		time.Duration(config.Cfg.IDTokenTTL)).Unix())
 
 	buf := dst[8:]                            // last 24 bytes
-	id.Marshal(buf[:15])                      // inited with 15 bytes id
+	id.marshal(buf[:15])                      // inited with 15 bytes id
 	binary.BigEndian.PutUint32(buf[15:], exp) // followed by 4 bytes ts
 	copy(buf[19:], key[:2])                   // followed by 2 bytes key
 	rand.Read(buf[21:])                       // ended with 3 bytes randomness
@@ -142,7 +142,7 @@ var decryptArticleIDCheckExp = true
 
 func SetDecryptArticleIDCheckExp(f bool) { decryptArticleIDCheckExp = f }
 
-func (id *ID) Decrypt(tok string, key [4]byte) *ID {
+func (id *ID) decrypt(tok string, key [4]byte) *ID {
 	id.Invalidate()
 
 	buf, _ := idEncoding.DecodeString(tok)

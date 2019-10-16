@@ -40,7 +40,7 @@ func main() {
 		names := []string{randString(), randString(), randString(), randString()}
 
 		wg := sync.WaitGroup{}
-		for i := 0; i < 12; i++ {
+		for i := 0; i < 40; i++ {
 			wg.Add(1)
 			go func(i int) {
 				a := m.NewPost("BENCH "+strconv.Itoa(i)+" post", strconv.Itoa(i), names[rand.Intn(len(names))], "127.0.0.0", "default")

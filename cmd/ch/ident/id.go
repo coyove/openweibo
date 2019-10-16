@@ -39,22 +39,7 @@ func NewTagID(tag string) ID {
 	return id
 }
 
-func ParseID(s []byte) (id ID) {
-	id.Unmarshal(s)
-	return
-}
-
-func (id ID) String() string {
-	if !id.Valid() {
-		return ""
-	}
-	buf := make([]byte, 20)
-	id.Marshal(buf[5:])
-	idEncoding.Encode(buf, buf[5:])
-	return string(buf)
-}
-
-func (id ID) Marshal(buf []byte) []byte {
+func (id ID) marshal(buf []byte) []byte {
 	if !id.Valid() {
 		return nil
 	}

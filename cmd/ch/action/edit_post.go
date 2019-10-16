@@ -30,7 +30,7 @@ func Edit(g *gin.Context) {
 	}
 
 	var (
-		eid         = ident.GDecryptString(g, g.PostForm("reply")).String()
+		eid         = ident.ParseDynamicID(g, g.PostForm("reply")).String()
 		title       = mv.SoftTrunc(g.PostForm("title"), 100)
 		content     = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		author      = getAuthor(g)
@@ -52,7 +52,7 @@ func Edit(g *gin.Context) {
 		return
 	}
 
-	redir := "/p/" + ident.GDecryptString(g, a.ID).String()
+	redir := "/p/" + ident.ParseDynamicID(g, a.ID).String()
 
 	if isBan := m.IsBanned(a.Author); isBan != banID {
 		if isBan {
@@ -111,7 +111,7 @@ func Delete(g *gin.Context) {
 		return
 	}
 
-	var eid = ident.GDecryptString(g, g.PostForm("reply")).String()
+	var eid = ident.ParseDynamicID(g, g.PostForm("reply")).String()
 	var author = getAuthor(g)
 
 	a, err := m.Get(eid)
@@ -122,7 +122,7 @@ func Delete(g *gin.Context) {
 
 	if a.Author != config.HashName(author) && !ident.IsAdmin(author) {
 		log.Println(g.MustGet("ip").(net.IP), "tried to delete", a.ID)
-		g.Redirect(302, "/p/"+ident.GDecryptString(g, a.ID).String())
+		g.Redirect(302, "/p/"+ident.ParseDynamicID(g, a.ID).String())
 		return
 	}
 
@@ -133,7 +133,7 @@ func Delete(g *gin.Context) {
 	}
 
 	if a.Parent() != "" {
-		g.Redirect(302, "/p/"+ident.GEncryptString(g, ident.ParseIDString(nil, a.Parent())))
+		g.Redirect(302, "/p/"+ident.ParseID(a.Parent()).DynamicString(g))
 	} else {
 		g.Redirect(302, "/cat")
 	}

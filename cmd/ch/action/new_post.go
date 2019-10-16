@@ -117,17 +117,17 @@ func New(g *gin.Context) {
 		return
 	}
 
-	g.Redirect(302, "/p/"+ident.GEncryptString(g, ident.ParseIDString(nil, a.ID)))
+	g.Redirect(302, "/p/"+ident.ParseID(a.ID).DynamicString(g))
 }
 
 func Reply(g *gin.Context) {
 	var (
-		reply   = ident.ParseIDString(g, g.PostForm("reply"))
+		reply   = ident.ParseDynamicID(g, g.PostForm("reply"))
 		ip      = hashIP(g)
 		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		author  = getAuthor(g)
 		redir   = func(a, b string) {
-			g.Redirect(302, "/p/"+ident.GEncryptString(g, reply)+ident.EncryptQuery(a, b, "author", author, "content", content)+"&p=-1#paging")
+			g.Redirect(302, "/p/"+reply.DynamicString(g)+ident.EncryptQuery(a, b, "author", author, "content", content)+"&p=-1#paging")
 		}
 	)
 

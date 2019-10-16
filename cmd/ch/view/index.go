@@ -2,6 +2,7 @@ package view
 
 import (
 	"log"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -18,7 +19,7 @@ type ArticlesTimelineView struct {
 	Tags       []string
 	Articles   []ArticleView
 	Next       string
-	Index      bool
+	Prev       string
 	SearchTerm string
 }
 
@@ -74,7 +75,7 @@ func Index(g *gin.Context) {
 		pl.SearchTerm = "#" + pl.SearchTerm
 	}
 
-	cursor := id.ParseIDString(g, g.Query("n")).String()
+	cursor := id.ParseDynamicID(g, g.Query("n")).String()
 	a, next, err := m.Walk(pl.SearchTerm, cursor, int(config.Cfg.PostsPerPage))
 	if err != nil {
 		Error(500, "INTERNAL: "+err.Error(), g)
@@ -84,7 +85,13 @@ func Index(g *gin.Context) {
 	fromMultiple(&pl.Articles, a, opt, g)
 
 	pl.Next = next
-	pl.Index = cursor == ""
+
+	if u, _ := url.Parse(g.Request.Referer()); u != nil {
+		pl.Prev = u.Query().Get("n")
+		if pl.Prev <= pl.Next {
+			pl.Prev = ""
+		}
+	}
 
 	g.HTML(200, "index.html", pl)
 }
@@ -107,7 +114,7 @@ func Replies(g *gin.Context) {
 		defer ident.SetDecryptArticleIDCheckExp(true)
 	}
 
-	parent, err := m.Get(id.GDecryptString(g, pid).String())
+	parent, err := m.Get(id.ParseDynamicID(g, pid).String())
 	if err != nil || parent.ID == "" {
 		Error(404, "NOT FOUND", g)
 		log.Println(pid, err)
@@ -116,7 +123,7 @@ func Replies(g *gin.Context) {
 
 	pl.ParentArticle.from(parent, opt, g)
 
-	j := id.ParseIDString(g, g.Query("j"))
+	j := id.ParseDynamicID(g, g.Query("j"))
 	if idx := j.RIndex(); idx > 0 && int(idx) <= parent.Replies {
 		p := intdivceil(int(idx), config.Cfg.PostsPerPage)
 		g.Redirect(302, "/p/"+pid+"?p="+strconv.Itoa(p)+"#r"+strconv.Itoa(int(j.RIndex())))

@@ -3,6 +3,12 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "tkydIK3NrJTeEYkceei9YHgLcBM=",
+			"path": "github.com/aws/aws-sdk-go",
+			"revision": "764be984efa8527f234b5f4c108d017b5e70af3d",
+			"revisionTime": "2019-05-08T18:32:34Z"
+		},
+		{
 			"checksumSHA1": "v5fnAwXMz00AwYMW+K5cRUTUsnk=",
 			"path": "github.com/coyove/common/lru",
 			"revision": "3b064b385f252d869851ba0572770462a85a32ad",

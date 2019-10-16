@@ -32,7 +32,7 @@ func TestID(t *testing.T) {
 
 		ln += id.RIndexLen(nil)
 
-		id2 := ParseID(id.Marshal(nil))
+		id2 := ParseID(id.String())
 
 		if id2 != id {
 			t.Fatal(id, id2)
@@ -74,7 +74,7 @@ func BenchmarkTempTokenAID(b *testing.B) {
 		id.RIndexAppend(int16(rand.Intn(128*128-1) + 1))
 
 		var id2 ID
-		id2.Decrypt(id.Encrypt(key), key)
+		id2.decrypt(id.encrypt(key), key)
 
 		if id != id2 {
 			b.Fatal(id, id2)

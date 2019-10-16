@@ -1,7 +1,6 @@
 package manager
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -10,20 +9,20 @@ import (
 	"time"
 
 	"github.com/coyove/common/sched"
+	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
+	"github.com/coyove/iis/cmd/ch/manager/kv"
 	mv "github.com/coyove/iis/cmd/ch/model"
 )
 
 var (
-	errNoBucket = errors.New("")
-	bkPost      = []byte("post")
-	rxCrawler   = regexp.MustCompile(`(?i)(bot|googlebot|crawler|spider|robot|crawling)`)
+	rxCrawler = regexp.MustCompile(`(?i)(bot|googlebot|crawler|spider|robot|crawling)`)
 )
 
 type KeyValueOp interface {
 	Lock(string)
 	Unlock(string)
-	Get(...string) (map[string][]byte, error)
+	Get(string) ([]byte, error)
 	Set(string, []byte) error
 	Delete(string) error
 }
@@ -39,7 +38,8 @@ type Manager struct {
 
 func New(path string) (*Manager, error) {
 	m := &Manager{
-		db: NewBoltKV(path),
+		//db: kv.NewBoltKV(path),
+		db: kv.NewDynamoKV(config.Cfg.DyRegion, config.Cfg.DyAccessKey, config.Cfg.DySecretKey),
 	}
 	m.counter.m = map[string]map[uint32]bool{}
 	return m, nil
@@ -66,7 +66,7 @@ func (m *Manager) kvMustGet(id string) []byte {
 	if err != nil {
 		return []byte("#ERR: " + err.Error())
 	}
-	return p[id]
+	return p
 }
 
 func (m *Manager) Walk(tag string, cursor string, n int) (a []*mv.Article, nextID string, err error) {
@@ -81,7 +81,9 @@ func (m *Manager) Walk(tag string, cursor string, n int) (a []*mv.Article, nextI
 		return
 	}
 
-	for holes := 0; len(a) < n && root.Next != ""; {
+	holes := 0
+
+	for len(a) < n && root.Next != "" {
 		next, err := mv.UnmarshalTimeline(m.kvMustGet(root.Next))
 		if err != nil {
 			return nil, "", err
@@ -90,12 +92,12 @@ func (m *Manager) Walk(tag string, cursor string, n int) (a []*mv.Article, nextI
 		p, err := mv.UnmarshalArticle(m.kvMustGet(next.Ptr))
 		if err == nil {
 			if strings.HasPrefix(tag, "#") && p.Category != tag[1:] {
-				log.Println("[mgr.Walk] Stale tag pointer:", next, "expect:", tag, "actual:", p.Category)
+				log.Println("[mgr.Walk] Stale tag ptr:", next, "expect:", tag, "actual:", p.Category)
 				goto HOLE
 			}
 
 			if tag == "" && next.ID != p.TimelineID {
-				log.Println("[mgr.Walk] Stale timeline pointer:", next, "actual:", p.TimelineID)
+				log.Println("[mgr.Walk] Stale timeline ptr:", next, "actual:", p.TimelineID)
 				goto HOLE
 			}
 
@@ -236,7 +238,7 @@ func (m *Manager) PostReply(parent string, a *mv.Article) (string, error) {
 		return "", fmt.Errorf("too many replies")
 	}
 
-	pid := ident.ParseIDString(nil, parent)
+	pid := ident.ParseID(parent)
 
 	nextIndex := p.Replies + 1
 	if !pid.RIndexAppend(int16(nextIndex)) {
@@ -255,7 +257,7 @@ func (m *Manager) PostReply(parent string, a *mv.Article) (string, error) {
 	p.ReplyTime = time.Now()
 	p.Replies = nextIndex
 
-	if p.TimelineID != "" {
+	if p.TimelineID != "" && !p.Saged {
 		// Move parent to the front
 		p.TimelineID = ident.NewID().String()
 		if err := m.insertTag(p, "", p.TimelineID); err != nil {
@@ -296,4 +298,24 @@ func (m *Manager) Delete(a *mv.Article) error {
 	m.db.Lock(a.ID)
 	defer m.db.Unlock(a.ID)
 	return m.db.Delete(a.ID)
+}
+
+func (m *Manager) GetReplies(parent string, start, end int) (a []*mv.Article) {
+	for i := start; i < end; i++ {
+		if i <= 0 || i >= 128*128 {
+			continue
+		}
+
+		pid := ident.ParseID(parent)
+		if !pid.RIndexAppend(int16(i)) {
+			break
+		}
+
+		p, _ := m.Get(pid.String())
+		if p == nil {
+			p = &mv.Article{ID: pid.String()}
+		}
+		a = append(a, p)
+	}
+	return
 }

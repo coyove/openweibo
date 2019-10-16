@@ -26,6 +26,9 @@ var Cfg = struct {
 	IPBlacklist  []string `yaml:"IPBlacklist"`
 	Cooldown     int      `yaml:"Cooldown"`
 	NeedID       bool     `yaml:"NeedID"`
+	DyRegion     string   `yaml:"DyRegion"`
+	DyAccessKey  string   `yaml:"DyAccessKey"`
+	DySecretKey  string   `yaml:"DySecretKey"`
 
 	// inited after config being read
 	Blk               cipher.Block

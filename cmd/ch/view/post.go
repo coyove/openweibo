@@ -58,7 +58,7 @@ func Edit(g *gin.Context) {
 	pl.RAuthor, _ = g.Cookie("id")
 	pl.IsAdmin = ident.IsAdmin(pl.RAuthor)
 
-	a, err := m.Get(ident.GDecryptString(g, pl.Reply).String())
+	a, err := m.Get(ident.ParseDynamicID(g, pl.Reply).String())
 	if err != nil {
 		log.Println(err)
 		g.Redirect(302, "/cat")
