@@ -19,7 +19,6 @@ type ArticleView struct {
 	Locked      bool
 	Highlighted bool
 	Saged       bool
-	Announce    bool
 	Title       string
 	Content     string
 	ContentHTML template.HTML
@@ -39,13 +38,12 @@ const (
 )
 
 func (a *ArticleView) from(a2 *mv.Article, opt byte, g *gin.Context) {
-	a.Index = uint32(a2.Index)
+	a.Index = uint32(a2.Index())
 	a.Replies = uint32(a2.Replies)
 	a.Views = uint32(a2.Views)
 	a.Locked = a2.Locked
 	a.Highlighted = a2.Highlighted
 	a.Saged = a2.Saged
-	a.Announce = a2.Announce
 	a.Title = a2.Title
 	a.Author = a2.Author
 	a.IP = a2.IP
@@ -64,18 +62,18 @@ func (a *ArticleView) from(a2 *mv.Article, opt byte, g *gin.Context) {
 		a.Title = mv.SoftTrunc(a2.Title, 20)
 	}
 
-	parent, topparent := ident.ParseID(a2.ID).RIndexParent()
+	parent, topparent := ident.ParseIDString(nil, a2.ID).RIndexParent()
 
 	if opt&_obfs > 0 {
-		a.ID = ident.BytesString(g, a2.ID)
-		a.Timeline = ident.BytesString(g, a2.Timeline)
-		a.Parent = ident.BytesString(g, parent.Marshal())
-		a.TopParent = ident.BytesString(g, topparent.Marshal())
+		a.ID = ident.GEncryptString(g, ident.ParseIDString(nil, a2.ID))
+		a.Timeline = ident.GEncryptString(g, ident.ParseIDString(nil, a2.TimelineID))
+		a.Parent = ident.GEncryptString(g, parent)
+		a.TopParent = ident.GEncryptString(g, topparent)
 	} else {
-		a.ID = ident.BytesPlainString(a2.ID)
-		a.Timeline = ident.BytesPlainString(a2.Timeline)
-		a.Parent = ident.BytesPlainString(parent.Marshal())
-		a.TopParent = ident.BytesPlainString(topparent.Marshal())
+		a.ID = a2.ID
+		a.Timeline = a2.TimelineID
+		a.Parent = parent.String()
+		a.TopParent = topparent.String()
 	}
 }
 

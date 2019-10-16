@@ -30,7 +30,7 @@ func Edit(g *gin.Context) {
 	}
 
 	var (
-		eid         = ident.StringBytes(g, g.PostForm("reply"))
+		eid         = ident.GDecryptString(g, g.PostForm("reply")).String()
 		title       = mv.SoftTrunc(g.PostForm("title"), 100)
 		content     = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		author      = getAuthor(g)
@@ -52,9 +52,9 @@ func Edit(g *gin.Context) {
 		return
 	}
 
-	redir := "/p/" + ident.BytesString(g, a.ID)
+	redir := "/p/" + ident.GDecryptString(g, a.ID).String()
 
-	if isBan := m.IsBanned(nil, a.Author); isBan != banID {
+	if isBan := m.IsBanned(a.Author); isBan != banID {
 		if isBan {
 			err = m.Unban(a.Author)
 		} else {
@@ -70,12 +70,12 @@ func Edit(g *gin.Context) {
 
 	if locked != a.Locked || highlighted != a.Highlighted || saged != a.Saged {
 		a.Locked, a.Highlighted, a.Saged = locked, highlighted, saged
-		m.Update(a, a.Category)
+		m.Update(a)
 		g.Redirect(302, redir)
 		return
 	}
 
-	if a.Parent() == nil && len(title) == 0 {
+	if a.Parent() == "" && len(title) == 0 {
 		view.Error(400, "title/too-short", g)
 		return
 	}
@@ -85,14 +85,13 @@ func Edit(g *gin.Context) {
 		return
 	}
 
-	oldcat := a.Category
 	a.Content, a.Category = content, cat
 
-	if a.Parent() == nil {
+	if a.Parent() == "" {
 		a.Title = title
 	}
 
-	if err := m.Update(a, oldcat); err != nil {
+	if err := m.Update(a); err != nil {
 		log.Println(err)
 		view.Error(500, "internal/error", g)
 		return
@@ -112,7 +111,7 @@ func Delete(g *gin.Context) {
 		return
 	}
 
-	var eid = ident.StringBytes(g, g.PostForm("reply"))
+	var eid = ident.GDecryptString(g, g.PostForm("reply")).String()
 	var author = getAuthor(g)
 
 	a, err := m.Get(eid)
@@ -123,7 +122,7 @@ func Delete(g *gin.Context) {
 
 	if a.Author != config.HashName(author) && !ident.IsAdmin(author) {
 		log.Println(g.MustGet("ip").(net.IP), "tried to delete", a.ID)
-		g.Redirect(302, "/p/"+ident.BytesString(g, a.ID))
+		g.Redirect(302, "/p/"+ident.GDecryptString(g, a.ID).String())
 		return
 	}
 
@@ -133,8 +132,8 @@ func Delete(g *gin.Context) {
 		return
 	}
 
-	if a.Parent() != nil {
-		g.Redirect(302, "/p/"+ident.BytesString(g, a.Parent()))
+	if a.Parent() != "" {
+		g.Redirect(302, "/p/"+ident.GEncryptString(g, ident.ParseIDString(nil, a.Parent())))
 	} else {
 		g.Redirect(302, "/cat")
 	}

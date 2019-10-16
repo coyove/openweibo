@@ -1,7 +1,6 @@
 package ident
 
 import (
-	"bytes"
 	"crypto/aes"
 	"math/rand"
 	"strconv"
@@ -16,9 +15,10 @@ func TestID(t *testing.T) {
 	ln := 0
 
 	for i := 0; i < 1e6; i++ {
-		id := NewID(HeaderAnnounce, strconv.Itoa(i))
-		id.ctr = uint32(i)
+		id := NewID()
+		id.ctr = uint16(i)
 
+		vs := []int16{}
 		for {
 			v := int16(rand.Uint64())&0x1ff + 1
 			if !id.RIndexAppend(v) {
@@ -27,13 +27,18 @@ func TestID(t *testing.T) {
 			if id.RIndex() != v {
 				t.Fatal(id.rIndex, id.RIndex(), v)
 			}
+			vs = append(vs, v)
 		}
 
 		ln += id.RIndexLen(nil)
 
-		id2 := ParseID(id.Marshal())
+		id2 := ParseID(id.Marshal(nil))
 
 		if id2 != id {
+			t.Fatal(id, id2)
+		}
+
+		if id2.RIndex() != vs[len(vs)-1] {
 			t.Fatal(id, id2)
 		}
 	}
@@ -59,18 +64,25 @@ func BenchmarkTempToken(b *testing.B) {
 }
 
 func BenchmarkTempTokenAID(b *testing.B) {
-	id := make([]byte, 30)
 	key := [4]byte{byte(rand.Int()), byte(rand.Int()), byte(rand.Int()), byte(rand.Int())}
+
 	for i := 0; i < b.N; i++ {
-		xid := EncryptArticleID(id[:], key)
-		id2 := DecryptArticleID(xid, key)
-		if !bytes.Equal(id[:], id2) {
+		id := NewID()
+		id.RIndexAppend(int16(rand.Intn(128*128-1) + 1))
+		id.RIndexAppend(int16(rand.Intn(128*128-1) + 1))
+		id.RIndexAppend(int16(rand.Intn(128*128-1) + 1))
+		id.RIndexAppend(int16(rand.Intn(128*128-1) + 1))
+
+		var id2 ID
+		id2.Decrypt(id.Encrypt(key), key)
+
+		if id != id2 {
 			b.Fatal(id, id2)
 		}
 	}
 }
 
-func BenchmarkPNGCaptchaBae64(b *testing.B) {
+func BenchmarkPNGCaptchaBase64(b *testing.B) {
 	id := [4]byte{}
 	for i := 0; i < b.N; i++ {
 		GenerateCaptcha(id)

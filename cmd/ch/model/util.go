@@ -8,8 +8,8 @@ import (
 
 var rxSan = regexp.MustCompile(`(?m)(^>.+|<|https?://\S+)`)
 
-func FormatTime(t uint32, sec bool) string {
-	x, now := time.Unix(int64(t), 0), time.Now()
+func FormatTime(x time.Time, sec bool) string {
+	now := time.Now()
 	if now.YearDay() == x.YearDay() && now.Year() == x.Year() {
 		if !sec {
 			return x.Format("15:04")

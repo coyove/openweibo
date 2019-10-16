@@ -109,26 +109,25 @@ func New(g *gin.Context) {
 	}
 
 	a := m.NewPost(title, content, config.HashName(author), ip, cat)
-	a.Announce = ident.IsAdmin(author) && g.PostForm("announce") != ""
 	a.Saged = g.PostForm("saged") != ""
 
-	if _, err := m.PostPost(a); err != nil {
+	if _, err := m.Post(a); err != nil {
 		log.Println(a, err)
 		redir("error", "internal/error")
 		return
 	}
 
-	g.Redirect(302, "/p/"+ident.BytesString(g, a.ID))
+	g.Redirect(302, "/p/"+ident.GEncryptString(g, ident.ParseIDString(nil, a.ID)))
 }
 
 func Reply(g *gin.Context) {
 	var (
-		reply   = ident.StringBytes(g, g.PostForm("reply"))
+		reply   = ident.ParseIDString(g, g.PostForm("reply"))
 		ip      = hashIP(g)
 		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		author  = getAuthor(g)
 		redir   = func(a, b string) {
-			g.Redirect(302, "/p/"+ident.BytesString(g, reply)+ident.EncryptQuery(a, b, "author", author, "content", content)+"&p=-1#paging")
+			g.Redirect(302, "/p/"+ident.GEncryptString(g, reply)+ident.EncryptQuery(a, b, "author", author, "content", content)+"&p=-1#paging")
 		}
 	)
 
@@ -147,7 +146,7 @@ func Reply(g *gin.Context) {
 		return
 	}
 
-	if _, err := m.PostReply(reply, m.NewReply(content, config.HashName(author), ip)); err != nil {
+	if _, err := m.PostReply(reply.String(), m.NewReply(content, config.HashName(author), ip)); err != nil {
 		log.Println(err)
 		redir("error", "error/can-not-reply")
 		return

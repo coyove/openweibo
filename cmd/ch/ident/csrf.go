@@ -115,52 +115,61 @@ func ParseTempToken(tok string) string {
 	return string(p)
 }
 
-func EncryptArticleID(id []byte, key [4]byte) string {
-	if len(id) != 30 {
+func (id ID) Encrypt(key [4]byte) string {
+	if !id.Valid() {
 		return ""
 	}
-	buf := make([]byte, 30+4+8)
 
-	copy(buf[:30], id)
-	exp := time.Now().Add(time.Second * time.Duration(config.Cfg.IDTokenTTL)).Unix()
-	binary.BigEndian.PutUint32(buf[30:], uint32(exp))
+	dst := make([]byte, 8+15+4+2+3) // 8+24 bytes, 8 used as base64 buffer
 
-	copy(buf[34:], key[:2]) // use 2 bytes
-	rand.Read(buf[36:])
+	exp := uint32(time.Now().Add(time.Second *
+		time.Duration(config.Cfg.IDTokenTTL)).Unix())
 
-	config.Cfg.Blk.Encrypt(buf[26:], buf[26:])
-	config.Cfg.Blk.Encrypt(buf[14:], buf[14:])
+	buf := dst[8:]                            // last 24 bytes
+	id.Marshal(buf[:15])                      // inited with 15 bytes id
+	binary.BigEndian.PutUint32(buf[15:], exp) // followed by 4 bytes ts
+	copy(buf[19:], key[:2])                   // followed by 2 bytes key
+	rand.Read(buf[21:])                       // ended with 3 bytes randomness
 
-	return idEncoding.EncodeToString(buf)
+	config.Cfg.Blk.Encrypt(buf[8:], buf[8:])
+	config.Cfg.Blk.Encrypt(buf[:16], buf[:16])
+
+	idEncoding.Encode(dst[:32], buf)
+	return string(dst[:32])
 }
 
 var decryptArticleIDCheckExp = true
 
 func SetDecryptArticleIDCheckExp(f bool) { decryptArticleIDCheckExp = f }
 
-func DecryptArticleID(tok string, key [4]byte) []byte {
+func (id *ID) Decrypt(tok string, key [4]byte) *ID {
+	id.Invalidate()
+
 	buf, _ := idEncoding.DecodeString(tok)
-	if len(buf) != 42 {
-		return buf
+	if len(buf) != 24 {
+		if len(buf) == IDLen {
+			id.Unmarshal(buf)
+		}
+		return id
 	}
 
-	config.Cfg.Blk.Decrypt(buf[14:], buf[14:])
-	config.Cfg.Blk.Decrypt(buf[26:], buf[26:])
+	config.Cfg.Blk.Decrypt(buf[:16], buf[:16])
+	config.Cfg.Blk.Decrypt(buf[8:], buf[8:])
 
-	if !decryptArticleIDCheckExp {
-		return buf[:30]
+	if decryptArticleIDCheckExp {
+
+		exp := time.Unix(int64(binary.BigEndian.Uint32(buf[15:])), 0)
+		if time.Now().After(exp) {
+			return id
+		}
+
+		if buf[19] != key[0] || buf[20] != key[1] {
+			return id
+		}
 	}
 
-	exp := time.Unix(int64(binary.BigEndian.Uint32(buf[30:])), 0)
-	if time.Now().After(exp) {
-		return nil
-	}
-
-	if buf[34] != key[0] || buf[35] != key[1] {
-		return nil
-	}
-
-	return buf[:30]
+	id.Unmarshal(buf[:15])
+	return id
 }
 
 func DecryptQuery(g *gin.Context) {

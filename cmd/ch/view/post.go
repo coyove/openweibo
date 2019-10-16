@@ -58,7 +58,7 @@ func Edit(g *gin.Context) {
 	pl.RAuthor, _ = g.Cookie("id")
 	pl.IsAdmin = ident.IsAdmin(pl.RAuthor)
 
-	a, err := m.Get(ident.StringBytes(g, pl.Reply))
+	a, err := m.Get(ident.GDecryptString(g, pl.Reply).String())
 	if err != nil {
 		log.Println(err)
 		g.Redirect(302, "/cat")
@@ -66,7 +66,7 @@ func Edit(g *gin.Context) {
 	}
 
 	pl.Article.from(a, _showcontent, g)
-	pl.IsAuthorBanned = m.IsBanned(nil, a.Author)
+	pl.IsAuthorBanned = m.IsBanned(a.Author)
 
 	g.HTML(200, "editpost.html", pl)
 }

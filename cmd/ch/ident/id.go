@@ -1,34 +1,20 @@
 package ident
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/binary"
 	"math/rand"
 	"sync/atomic"
 	"time"
-
-	"github.com/gin-gonic/gin"
+	"unsafe"
 )
 
-type headerType byte
-
-const IDLen = 30
-
-const (
-	HeaderInvalid   headerType = 0
-	HeaderArticle              = 0x01
-	HeaderAuthorTag            = 0x04
-	HeaderTimeline             = 0xf0
-	HeaderAnnounce             = 0xff
-)
+const IDLen = 15
 
 type ID struct {
-	hdr    headerType
 	rIndex [6]byte
-	tag    string
-	ts     int64
-	ctr    uint32
+	ts     uint32
+	ctr    uint16
 	rand   uint32
 }
 
@@ -37,19 +23,20 @@ var (
 	idEncoding = base64.NewEncoding("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz~").WithPadding('-')
 )
 
-func NewID(hdr headerType, tag string) ID {
+func NewID() ID {
 	id := ID{}
-	id.hdr = hdr
-	id.tag = tag
-	id.ts = time.Now().Unix()
-	id.ctr = atomic.AddUint32(&idCounter, 1) & 0x7ffffff
-	id.rand = rand.Uint32() & 0xfffff
+	id.ts = uint32(time.Now().Unix() - 1e9)
+	id.ctr = uint16(atomic.AddUint32(&idCounter, 1))
+	id.rand = rand.Uint32() & 0xffffff
 	return id
 }
 
-func ParseIDString(g *gin.Context, s string) (id ID) {
-	id.Unmarshal(StringBytes(g, s))
-	return
+func NewTagID(tag string) ID {
+	id := ID{}
+	x := (*[IDLen]byte)(unsafe.Pointer(&id))
+	(*x)[0] = 0xff
+	copy((*x)[1:], tag)
+	return id
 }
 
 func ParseID(s []byte) (id ID) {
@@ -57,59 +44,51 @@ func ParseID(s []byte) (id ID) {
 	return
 }
 
-func (id ID) Header() headerType {
-	return id.hdr
+func (id ID) String() string {
+	if !id.Valid() {
+		return ""
+	}
+	buf := make([]byte, 20)
+	id.Marshal(buf[5:])
+	idEncoding.Encode(buf, buf[5:])
+	return string(buf)
 }
 
-func (id ID) Tag() string {
-	return id.tag
-}
-
-func (id ID) Marshal() []byte {
-	if id.hdr == HeaderInvalid {
+func (id ID) Marshal(buf []byte) []byte {
+	if !id.Valid() {
 		return nil
 	}
-	//  8 + 8x13 + 33 + 27 + 20 + 12x4 = 30
-	// hdr  tag    ts  ctr  rand  ridx
-	buf := [IDLen]byte{}
-	{
-		buf[0] = byte(id.hdr)
-		copy(buf[1:14], id.tag)
+	if buf == nil {
+		buf = make([]byte, IDLen)
 	}
-	{
-		tmp := uint64(id.ts&0x1ffffffff)<<31 | uint64(id.ctr&0x7ffffff)<<4 | uint64(id.rand&0xf)
-		binary.BigEndian.PutUint64(buf[14:], tmp)
-		binary.BigEndian.PutUint16(buf[22:], uint16(id.rand>>4))
-	}
-	{
-		copy(buf[24:], id.rIndex[:])
-	}
-
-	return buf[:]
+	binary.BigEndian.PutUint32(buf, id.ts)
+	binary.BigEndian.PutUint32(buf[5:], id.rand)
+	binary.BigEndian.PutUint16(buf[4:], id.ctr)
+	copy(buf[9:], id.rIndex[:])
+	return buf
 }
 
-func (id *ID) Unmarshal(p []byte) bool {
-	id.hdr = HeaderInvalid
+func (id *ID) Invalidate() {
+	id.ts = 0xBADC0DE
+}
+
+func (id ID) Valid() bool {
+	return id.ts != 0xBADC0DE // timestamp: 0xBADC0DE + 1e9 is approx. equal to 2007/Nov/15
+}
+
+func (id *ID) Unmarshal(p []byte) *ID {
+	id.Invalidate()
 
 	if len(p) != IDLen {
-		return false
+		return id
 	}
-	id.hdr = headerType(p[0])
-	end := bytes.IndexByte(p[1:14], 0)
-	if end == -1 {
-		end = 13
-	}
-	id.tag = string(p[1 : end+1])
-	tmp := binary.BigEndian.Uint64(p[14:])
-	tmp2 := binary.BigEndian.Uint16(p[22:])
 
-	id.ts = int64(tmp >> 31)
-	id.ctr = uint32(tmp>>4) & 0x7ffffff
-	id.rand = uint32(tmp2)<<4 | uint32(tmp&0xf)
+	id.ts = binary.BigEndian.Uint32(p)
+	id.ctr = binary.BigEndian.Uint16(p[4:])
+	id.rand = binary.BigEndian.Uint32(p[5:]) & 0xffffff
+	copy(id.rIndex[:], p[9:])
 
-	copy(id.rIndex[:], p[24:])
-
-	return id.hdr != HeaderInvalid
+	return id
 }
 
 func (id ID) RIndex() (v int16) {
@@ -136,7 +115,10 @@ func (id ID) RIndex() (v int16) {
 func (id ID) RIndexParent() (parent, topParent ID) {
 	pos := make([]int, 0, 6)
 	id.RIndexLen(&pos)
+
 	if len(pos) == 0 {
+		parent.Invalidate()
+		topParent.Invalidate()
 		return
 	}
 
@@ -207,18 +189,4 @@ func (id *ID) RIndexAppend(v int16) bool {
 	}
 
 	return false
-}
-
-func (id *ID) SetHeader(h headerType) {
-	id.hdr = h
-}
-
-func (id *ID) SetTag(t string) {
-	id.tag = t
-}
-
-func (id *ID) Maximize() {
-	id.ctr = 0xffffffff
-	id.rand = 0xffffffff
-	id.ts = 0x1ffffffff
 }

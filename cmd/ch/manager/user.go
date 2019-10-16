@@ -1,12 +1,5 @@
 package manager
 
-import (
-	"log"
-
-	"github.com/coyove/iis/cmd/ch/ident"
-	"github.com/etcd-io/bbolt"
-)
-
 //type User struct {
 //	ID           string `protobuf:"bytes,1,opt"`
 //	Banned       bool   `protobuf:"varint,7,opt"`
@@ -33,43 +26,17 @@ import (
 //}
 
 func (m *Manager) Ban(id string) error {
-	return m.db.Update(func(tx *bbolt.Tx) error {
-		return tx.Bucket(bkPost).Put([]byte("\x00ban"+id), []byte{1})
-	})
+	return m.db.Set("\x00ban"+id, []byte{1})
 }
 
 func (m *Manager) Unban(id string) error {
-	return m.db.Update(func(tx *bbolt.Tx) error {
-		return tx.Bucket(bkPost).Delete([]byte("\x00ban" + id))
-	})
+	return m.db.Delete("\x00ban" + id)
 }
 
-func (m *Manager) IsBanned(bk *bbolt.Bucket, id string) bool {
-	if bk == nil {
-		r := false
-		m.db.View(func(tx *bbolt.Tx) error {
-			r = m.IsBanned(tx.Bucket(bkPost), id)
-			return nil
-		})
-		return r
-	}
-	return len(bk.Get([]byte("\x00ban"+id))) > 0
+func (m *Manager) IsBanned(id string) bool {
+	return len(m.kvMustGet("\x00ban"+id)) == 1
 }
 
 func (m *Manager) UserExisted(id string) (ok bool) {
-	m.db.View(func(tx *bbolt.Tx) error {
-		c := tx.Bucket(bkPost).Cursor()
-		k, _ := cursorMoveToLast(c, id)
-
-		if k == nil {
-			return nil
-		}
-
-		kid := ident.ParseID(k)
-		log.Println(kid.Tag(), id)
-
-		ok = kid.Header() == ident.HeaderAuthorTag && kid.Tag() == id
-		return nil
-	})
-	return
+	return true
 }

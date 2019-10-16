@@ -20,11 +20,7 @@
     <tr class="row">
         <td class="row">{{template "row_tags.html" .}}</td>
         <td class="nowrap">
-                {{if .Announce}}
-                <b>公告</b>
-                {{else}}
-                <span class=mobile><b>#</b></span>{{if not .Parent}}<a href="/cat/{{.Category}}">{{.Category}}</a>{{else}}{{if eq .Author $.SearchTerm}}回复{{else}}被回复{{end}}{{end}}
-            {{end}}
+            <span class=mobile><b>#</b></span>{{if not .Parent}}<a href="/cat/{{.Category}}">{{.Category}}</a>{{else}}{{if eq .Author $.SearchTerm}}回复{{else}}被回复{{end}}{{end}}
         </td>
         <td class="nowrap"><a href="/cat/@{{.Author}}">{{.Author}}</a></td>
         <td class="nowrap date"><span>{{.ReplyTime}}</span></td>
@@ -44,11 +40,12 @@
 
 
 <div class="paging" id="paging">
-    {{if .Prev}}
-    <a href="?n={{.Prev}}">&laquo; 上页</a>
-    <a href="?n=">首页</a>
+    {{if not .Index}}
+    <a href="?n=">&laquo; 首页</a>
     {{end}}
+    {{if .Next}}
     <a href="?n={{.Next}}">下页 &raquo;</a>
+    {{end}}
 </div>
 
 {{template "footer.html" .}}

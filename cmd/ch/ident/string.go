@@ -12,11 +12,21 @@ const (
 	zeros  = prefix + prefix
 )
 
-func BytesString(g *gin.Context, p []byte) string {
+func ParseIDString(g *gin.Context, s string) (id ID) {
+	if g == nil {
+		p, _ := idEncoding.DecodeString(s)
+		id.Unmarshal(p)
+		return
+	}
+
+	id = GDecryptString(g, s)
+	return
+}
+
+func GEncryptString(g *gin.Context, id ID) string {
 	key := [4]byte{}
 	copy(key[:], g.MustGet("ip").(net.IP))
-	x := EncryptArticleID(p, key)
-	return strings.Replace(x, prefix, ".", 1)
+	return id.Encrypt(key)
 }
 
 func BytesPlainString(p []byte) string {
@@ -24,12 +34,10 @@ func BytesPlainString(p []byte) string {
 	return strings.Replace(x, prefix, ".", 1)
 }
 
-func StringBytes(g *gin.Context, s string) []byte {
-	if len(s) < 10 {
-		return nil
-	}
-	s = strings.Replace(s, ".", prefix, 1)
+func GDecryptString(g *gin.Context, s string) ID {
 	key := [4]byte{}
 	copy(key[:], g.MustGet("ip").(net.IP))
-	return DecryptArticleID(s, key)
+	id := ID{}
+	id.Decrypt(s, key)
+	return id
 }

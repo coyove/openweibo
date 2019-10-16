@@ -6,6 +6,7 @@ import (
 	"os"
 	"runtime"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/coyove/common/sched"
@@ -34,16 +35,25 @@ func main() {
 	action.SetManager(m)
 
 	if os.Getenv("BENCH") == "1" {
-		ids := [][]byte{}
+		ids := []string{}
 		randString := func() string { return strconv.Itoa(rand.Int())[:12] }
 		names := []string{randString(), randString(), randString(), randString()}
 
-		for i := 0; i < 1000; i++ {
-			if rand.Intn(100) > 96 || len(ids) == 0 {
+		wg := sync.WaitGroup{}
+		for i := 0; i < 12; i++ {
+			wg.Add(1)
+			go func(i int) {
 				a := m.NewPost("BENCH "+strconv.Itoa(i)+" post", strconv.Itoa(i), names[rand.Intn(len(names))], "127.0.0.0", "default")
-				m.PostPost(a)
+				m.Post(a)
 				ids = append(ids, a.ID)
-			} else {
+				wg.Done()
+			}(i)
+		}
+		wg.Wait()
+
+		for i := 0; i < 100; i++ {
+			wg.Add(1)
+			go func(i int) {
 				a := m.NewReply("BENCH "+strconv.Itoa(i)+" reply", names[rand.Intn(len(names))], "127.0.0.0")
 				if rand.Intn(4) == 1 {
 					m.PostReply(ids[0], a)
@@ -51,12 +61,14 @@ func main() {
 					m.PostReply(ids[rand.Intn(len(ids))], a)
 				}
 				ids = append(ids, a.ID)
-			}
 
-			if i%100 == 0 {
-				log.Println("Progress", i)
-			}
+				if i%10 == 0 {
+					log.Println("Progress", i)
+				}
+				wg.Done()
+			}(i)
 		}
+		wg.Wait()
 	}
 
 	r := engine.New(config.Cfg.Key != "0123456789abcdef")
