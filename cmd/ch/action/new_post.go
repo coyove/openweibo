@@ -50,7 +50,7 @@ func checkTokenAndCaptcha(g *gin.Context, author string) string {
 					a = a - 'A' + 'a'
 				}
 
-				if a != "0123456789acefhijklmnpqrtuvwxyz"[tokenbuf[i]%31] ||
+				if a != "0123456789acefhijklmnpqrtuvwxyz"[tokenbuf[i]%31] &&
 					a != "oiz3asg7b9acefhijklmnpqrtuvwxyz"[tokenbuf[i]%31] {
 					challengePassed = false
 					break
