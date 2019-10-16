@@ -1,7 +1,9 @@
 package kv
 
 import (
+	"net/http"
 	sync "sync"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -23,6 +25,12 @@ func NewDynamoKV(region, accessKey, secretKey string) *DynamoKV {
 	sess, err := session.NewSession(&aws.Config{
 		Region:      aws.String(region),
 		Credentials: credentials.NewStaticCredentials(accessKey, secretKey, ""),
+		HTTPClient: &http.Client{
+			Timeout: time.Second,
+			Transport: &http.Transport{
+				MaxConnsPerHost: 200,
+			},
+		},
 	})
 	if err != nil {
 		panic(err)

@@ -139,10 +139,17 @@ func (m *Manager) purgeDeleted(tag string, startID string) {
 	}
 
 	var next *mv.Timeline
+	startTime := time.Now()
+
 	for root := start; root.Next != ""; root = next {
 		next, err = mv.UnmarshalTimeline(m.kvMustGet(root.Next))
 		if err != nil {
 			return
+		}
+
+		if time.Since(startTime).Seconds() > 10 {
+			start.Next = next.ID
+			goto SET
 		}
 
 		p, err := mv.UnmarshalArticle(m.kvMustGet(next.Ptr))
