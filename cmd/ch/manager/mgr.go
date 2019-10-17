@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/manager/kv"
 	mv "github.com/coyove/iis/cmd/ch/model"
@@ -16,10 +17,15 @@ type Manager struct {
 }
 
 func New(path string) *Manager {
-	m := &Manager{
-		db: kv.NewBoltKV(path),
-		//db: kv.NewDynamoKV(config.Cfg.DyRegion, config.Cfg.DyAccessKey, config.Cfg.DySecretKey),
+	var db KeyValueOp
+
+	if config.Cfg.DyRegion == "" {
+		db = kv.NewBoltKV(path)
+	} else {
+		db = kv.NewDynamoKV(config.Cfg.DyRegion, config.Cfg.DyAccessKey, config.Cfg.DySecretKey)
 	}
+
+	m := &Manager{db: db}
 	return m
 }
 
