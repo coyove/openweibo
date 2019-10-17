@@ -1,7 +1,5 @@
 {{template "header.html" .}}
 
-{{if .IsCrawler}} <style> .crawler { display: initial; } .non-crawler { display: none } </style> {{end}}
-
 {{with .ParentArticle}}
 <title>第{{$.CurPage}}页</title>
 
@@ -12,7 +10,6 @@
         <th class=nowrap>作者</th>
         <th class=nowrap>日期</th>
         <th class="nowrap state">RE</th>
-        <th class="nowrap state">VE</th>
     </tr>
     <tr class="row">
         <td class="row"> 
@@ -22,16 +19,15 @@
         <td class=nowrap><a href="/cat/@{{.Author}}">{{.Author}}</a></td>
         <td class="nowrap date"><span>{{.CreateTime}}</span></td>
         <td class="nowrap state"><span>{{.Replies}}</span><span class=mobile>回复</span></td>
-        <td class="nowrap state"><span>{{.Views}}</span><span class=mobile>浏览</span></td>
         </td>
     </tr>
     <tr class=dark>
-        <td colspan=6><div class=reply><pre>{{.ContentHTML}}</pre>{{if $.ShowIP}}<div class="ip">{{.IP}}</div>{{end}}</div></td>
+        <td colspan=5><div class=reply><pre>{{.ContentHTML}}</pre>{{if $.ShowIP}}<div class="ip">{{.IP}}</div>{{end}}</div></td>
     </tr>
     {{end}}
 
     <tr>
-        <td colspan=6>
+        <td colspan=5>
             <div>
                 {{with .ReplyView}}
                 <input class="reply-toggle" style="display:none" type=checkbox id="reply" {{if .ShowReply}}checked{{end}}>
@@ -90,7 +86,7 @@
     {{range .Articles}}
     <tr class="row" id="r{{.Index}}">
         {{if not .ID}}
-        <td colspan=6><b>{{.Index}}</b>. NOT FOUND</td>
+        <td colspan=5><b>{{.Index}}</b>. NOT FOUND</td>
         {{else}}
         <td><b>{{.Index}}</b>. {{template "row_tags.html" .}}</td>
         <td class=nowrap></td>
@@ -107,21 +103,16 @@
             <span>{{.Replies}}</span><span class=mobile>回复</span>
             {{end}}
         </td>
-        <td class="nowrap state">
-            {{if .Views}}
-            <span>{{.Views}}</span><span class=mobile>浏览</span>
-            {{end}}
-        </td>
         {{end}}
     </tr>
     {{if .ID}}
     <tr class="dark">
-        <td colspan=6><div class=reply><pre>{{.ContentHTML}}</pre>{{if $.ShowIP}}<div class="ip">{{.IP}}</div>{{end}}</div></td>
+        <td colspan=5><div class=reply><pre>{{.ContentHTML}}</pre>{{if $.ShowIP}}<div class="ip">{{.IP}}</div>{{end}}</div></td>
     </tr>
     {{end}}
     {{end}}
     {{else}}
-    <tr><td colspan=6>无回复</td></tr>
+    <tr><td colspan=5>无回复</td></tr>
     {{end}}
 </table>
 

@@ -84,7 +84,7 @@ func RegenConfigString() {
 	buf = buf[1 : len(buf)-1]
 	Cfg.PrivateString = string(buf)
 
-	buf = regexp.MustCompile(`(?i)".*(token|key|admin).+`).ReplaceAllFunc(buf, func(in []byte) []byte {
+	buf = regexp.MustCompile(`(?i)".*(token|dy|key|admin).+`).ReplaceAllFunc(buf, func(in []byte) []byte {
 		return bytes.Repeat([]byte("\u2588"), len(in)/2+1)
 	})
 	Cfg.PublicString = string(buf)

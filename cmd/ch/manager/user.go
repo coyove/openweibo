@@ -1,5 +1,10 @@
 package manager
 
+import (
+	"github.com/coyove/iis/cmd/ch/ident"
+	mv "github.com/coyove/iis/cmd/ch/model"
+)
+
 //type User struct {
 //	ID           string `protobuf:"bytes,1,opt"`
 //	Banned       bool   `protobuf:"varint,7,opt"`
@@ -26,18 +31,20 @@ package manager
 //}
 
 func (m *Manager) Ban(id string) error {
-	return m.db.Set("\x00ban"+id, []byte{1})
+	return m.db.Set("x-ban-"+id, []byte{1})
 }
 
 func (m *Manager) Unban(id string) error {
-	return m.db.Delete("\x00ban" + id)
+	return m.db.Delete("x-ban-" + id)
 }
 
 func (m *Manager) IsBanned(id string) bool {
-	x := m.kvMustGet("\x00ban" + id)
+	x := m.kvMustGet("x-ban-" + id)
 	return len(x) == 1 && x[0] == 1
 }
 
-func (m *Manager) UserExisted(id string) (ok bool) {
-	return true
+func (m *Manager) UserExisted(tok string) (ok bool) {
+	id := ident.NewTagID(tok).String()
+	tl, _ := mv.UnmarshalTimeline(m.kvMustGet(id))
+	return tl != nil && tl.Next != ""
 }

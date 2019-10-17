@@ -26,11 +26,7 @@ func main() {
 	sched.Verbose = false
 	config.MustLoad()
 
-	m, err := manager.New("iis.db")
-	if err != nil {
-		panic(err)
-	}
-
+	m := manager.New("iis.db")
 	view.SetManager(m)
 	action.SetManager(m)
 
@@ -51,24 +47,26 @@ func main() {
 		}
 		wg.Wait()
 
-		for i := 0; i < 100; i++ {
-			wg.Add(1)
-			go func(i int) {
-				a := m.NewReply("BENCH "+strconv.Itoa(i)+" reply", names[rand.Intn(len(names))], "127.0.0.0")
-				if rand.Intn(4) == 1 {
-					m.PostReply(ids[0], a)
-				} else {
-					m.PostReply(ids[rand.Intn(len(ids))], a)
-				}
-				ids = append(ids, a.ID)
+		for k := 0; k < 2; k++ {
+			for i := 0; i < 50; i++ {
+				wg.Add(1)
+				go func(i int) {
+					a := m.NewReply("BENCH "+strconv.Itoa(i)+" reply", names[rand.Intn(len(names))], "127.0.0.0")
+					if rand.Intn(4) == 1 {
+						m.PostReply(ids[0], a)
+					} else {
+						m.PostReply(ids[rand.Intn(len(ids))], a)
+					}
+					ids = append(ids, a.ID)
 
-				if i%10 == 0 {
-					log.Println("Progress", i)
-				}
-				wg.Done()
-			}(i)
+					if i%10 == 0 {
+						log.Println("Progress", i)
+					}
+					wg.Done()
+				}(i)
+			}
+			wg.Wait()
 		}
-		wg.Wait()
 	}
 
 	r := engine.New(config.Cfg.Key != "0123456789abcdef")

@@ -28,16 +28,16 @@ func UnmarshalTimeline(p []byte) (*Timeline, error) {
 	t := &Timeline{}
 	err := json.Unmarshal(p, t)
 	if t.ID == "" {
-		return nil, fmt.Errorf("failed to unmarshal")
+		return nil, fmt.Errorf("failed to unmarshal: %q", p)
 	}
 	return t, err
 }
 
 type Article struct {
-	ID          string    `json:"id"`
-	TimelineID  string    `json:"tlid"`
-	Replies     int       `json:"rs"`
-	Views       int       `json:"vs"`
+	ID         string `json:"id"`
+	TimelineID string `json:"tlid"`
+	Replies    int    `json:"rs"`
+	//Views       int       `json:"vs"`
 	Locked      bool      `json:"lock,omitempty"`
 	Highlighted bool      `json:"hl,omitempty"`
 	Saged       bool      `json:"sage,omitempty"`
@@ -72,7 +72,7 @@ func UnmarshalArticle(b []byte) (*Article, error) {
 	a := &Article{}
 	err := json.Unmarshal(b, a)
 	if a.ID == "" {
-		return nil, fmt.Errorf("failed to unmarshal")
+		return nil, fmt.Errorf("failed to unmarshal: %q", b)
 	}
 	return a, err
 }

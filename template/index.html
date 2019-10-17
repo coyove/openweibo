@@ -13,7 +13,6 @@
         <th class=nowrap>作者</th>
         <th class=nowrap>回复</th>
         <th class="nowrap state">RE</th>
-        <th class="nowrap state">VE</th>
     </tr>
     {{if len .Articles}}
     {{range .Articles}}
@@ -25,16 +24,15 @@
         <td class="nowrap"><a href="/cat/@{{.Author}}">{{.Author}}</a></td>
         <td class="nowrap date"><span>{{.ReplyTime}}</span></td>
         <td class="nowrap state">{{if .Replies}}<span>{{.Replies}}</span><span class=mobile>回复</span>{{end}}</td>
-        <td class="nowrap state">{{if .Views}}<span>{{.Views}}</span><span class=mobile>浏览</span>{{end}}</td>
     </tr>
     {{if .Content}}
     <tr class=dark>
-        <td colspan=6><div class=reply><pre>{{.Content}}</pre></div></td>
+        <td colspan=5><div class=reply><pre>{{.Content}}</pre></div></td>
     </tr>
     {{end}}
     {{end}}
     {{else}}
-    <tr><td colspan=6>无内容</td></tr>
+    <tr><td colspan=5>无内容</td></tr>
     {{end}}
 </table>
 

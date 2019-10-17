@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"testing"
 	"time"
+	"unsafe"
 
 	"github.com/coyove/iis/cmd/ch/config"
 )
 
 func TestID(t *testing.T) {
-	rand.Seed(time.Now().Unix())
 	ln := 0
 
 	for i := 0; i < 1e6; i++ {
@@ -44,6 +44,21 @@ func TestID(t *testing.T) {
 	}
 
 	t.Log(ln/1e6, ln)
+}
+
+func TestRandomID(t *testing.T) {
+	for i := 0; i < 1e6; i++ {
+		id := NewID()
+		rand.Read((*(*[IDLen]byte)(unsafe.Pointer(&id)))[:])
+
+		ParseID(id.String())
+
+		// Ensure they won't panic
+		id.RIndexLen(nil)
+		id.RIndexAppend(1)
+		id.RIndex()
+		id.RIndexParent()
+	}
 }
 
 func init() {

@@ -9,13 +9,13 @@ import (
 )
 
 type ArticleView struct {
-	ID          string
-	Timeline    string
-	Parent      string
-	TopParent   string
-	Index       uint32
-	Replies     uint32
-	Views       uint32
+	ID        string
+	Timeline  string
+	Parent    string
+	TopParent string
+	Index     uint32
+	Replies   uint32
+	//Views       uint32
 	Locked      bool
 	Highlighted bool
 	Saged       bool
@@ -40,7 +40,7 @@ const (
 func (a *ArticleView) from(a2 *mv.Article, opt byte, g *gin.Context) {
 	a.Index = uint32(a2.Index())
 	a.Replies = uint32(a2.Replies)
-	a.Views = uint32(a2.Views)
+	//a.Views = uint32(a2.Views)
 	a.Locked = a2.Locked
 	a.Highlighted = a2.Highlighted
 	a.Saged = a2.Saged

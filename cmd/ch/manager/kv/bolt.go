@@ -11,7 +11,6 @@ import (
 	//sync "github.com/sasha-s/go-deadlock"
 )
 
-var randomError = 0
 var bkPost = []byte("post")
 
 type BoltKV struct {

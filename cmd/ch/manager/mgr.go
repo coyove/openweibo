@@ -3,46 +3,29 @@ package manager
 import (
 	"fmt"
 	"log"
-	"regexp"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/coyove/common/sched"
-	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/manager/kv"
 	mv "github.com/coyove/iis/cmd/ch/model"
 )
 
-var (
-	rxCrawler = regexp.MustCompile(`(?i)(bot|googlebot|crawler|spider|robot|crawling)`)
-)
-
-type KeyValueOp interface {
-	Lock(string)
-	Unlock(string)
-	Get(string) ([]byte, error)
-	Set(string, []byte) error
-	Delete(string) error
-}
-
 type Manager struct {
-	db      KeyValueOp
-	mu      sync.Mutex
-	counter struct {
-		m map[string]map[uint32]bool
-		k sched.SchedKey
-	}
+	db KeyValueOp
+	//	dbCounter KeyValueOp
+	//	counter   struct {
+	//		m sync.Map
+	//		k sched.SchedKey
+	//	}
 }
 
-func New(path string) (*Manager, error) {
+func New(path string) *Manager {
 	m := &Manager{
-		//db: kv.NewBoltKV(path),
-		db: kv.NewDynamoKV(config.Cfg.DyRegion, config.Cfg.DyAccessKey, config.Cfg.DySecretKey),
+		db: kv.NewBoltKV(path),
+		//db: kv.NewDynamoKV(config.Cfg.DyRegion, config.Cfg.DyAccessKey, config.Cfg.DySecretKey),
 	}
-	m.counter.m = map[string]map[uint32]bool{}
-	return m, nil
+	return m
 }
 
 func (m *Manager) NewPost(title, content, author, ip string, cat string) *mv.Article {
@@ -78,6 +61,9 @@ func (m *Manager) Walk(tag string, cursor string, n int) (a []*mv.Article, nextI
 		root, err = mv.UnmarshalTimeline(m.kvMustGet(cursor))
 	}
 	if err != nil {
+		if !strings.Contains(err.Error(), "#ERR") {
+			err = nil
+		}
 		return
 	}
 
@@ -126,6 +112,7 @@ func (m *Manager) Walk(tag string, cursor string, n int) (a []*mv.Article, nextI
 	if nextID == cursor {
 		nextID = ""
 	}
+
 	return
 }
 
@@ -201,7 +188,11 @@ func (m *Manager) insertTag(a *mv.Article, tag string, tlid string) error {
 	m.db.Lock(rootID)
 	defer m.db.Unlock(rootID)
 
-	root, _ := mv.UnmarshalTimeline(m.kvMustGet(rootID))
+	root, err := mv.UnmarshalTimeline(m.kvMustGet(rootID))
+	if err != nil && strings.Contains(err.Error(), "#ERR") {
+		return err
+	}
+
 	if root == nil {
 		root = &mv.Timeline{
 			ID: rootID,
