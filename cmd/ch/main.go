@@ -34,9 +34,10 @@ func main() {
 		ids := []string{}
 		randString := func() string { return strconv.Itoa(rand.Int())[:12] }
 		names := []string{randString(), randString(), randString(), randString()}
+		N := 40
 
 		wg := sync.WaitGroup{}
-		for i := 0; i < 40; i++ {
+		for i := 0; i < N; i++ {
 			wg.Add(1)
 			go func(i int) {
 				a := m.NewPost("BENCH "+strconv.Itoa(i)+" post", strconv.Itoa(i), names[rand.Intn(len(names))], "127.0.0.0", "default")
@@ -48,6 +49,14 @@ func main() {
 		wg.Wait()
 
 		for k := 0; k < 2; k++ {
+			wg.Add(1)
+			go func() {
+				time.Sleep(time.Second)
+				x := append(names, "", "", "")
+				m.Walk(x[rand.Intn(len(x))], "", rand.Intn(N/2)+N/2)
+				wg.Done()
+			}()
+
 			for i := 0; i < 50; i++ {
 				wg.Add(1)
 				go func(i int) {
@@ -80,7 +89,6 @@ func main() {
 	r.Handle("GET", "/p/:parent", view.Replies)
 	r.Handle("GET", "/new", view.New)
 	r.Handle("GET", "/edit/:id", view.Edit)
-	r.Handle("GET", "/cookie", view.Cookie)
 	r.Handle("POST", "/new", action.New)
 	r.Handle("POST", "/reply", action.Reply)
 	r.Handle("POST", "/edit", action.Edit)

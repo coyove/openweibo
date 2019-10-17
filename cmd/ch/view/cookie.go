@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Cookie(g *gin.Context) {
+func Home(g *gin.Context) {
 	id, _ := g.Cookie("id")
 
 	var p = struct {
@@ -30,5 +30,5 @@ func Cookie(g *gin.Context) {
 		p.Config = template.HTML(config.Cfg.PrivateString)
 	}
 
-	g.HTML(200, "cookie.html", p)
+	g.HTML(200, "home.html", p)
 }

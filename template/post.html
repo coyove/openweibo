@@ -78,6 +78,7 @@
                 <a class="pure-material-button-outlined" href="/cat?n={{.ParentArticle.Timeline}}">下一个主题</a>
                 {{end}}
                 <a style="float:right" class="pure-material-button-outlined" href="/edit/{{.ParentArticle.ID}}">删除</a>
+                <a style="float:right" class="pure-material-button-outlined" href="/p/{{.ParentArticle.PlainID}}">原链接</a>
             </div>
         </td>
     </tr>
@@ -85,7 +86,7 @@
     {{if len .Articles}}
     {{range .Articles}}
     <tr class="row" id="r{{.Index}}">
-        {{if not .ID}}
+        {{if not .Content}}
         <td colspan=5><b>{{.Index}}</b>. NOT FOUND</td>
         {{else}}
         <td><b>{{.Index}}</b>. {{template "row_tags.html" .}}</td>
@@ -105,7 +106,7 @@
         </td>
         {{end}}
     </tr>
-    {{if .ID}}
+    {{if .Content}}
     <tr class="dark">
         <td colspan=5><div class=reply><pre>{{.ContentHTML}}</pre>{{if $.ShowIP}}<div class="ip">{{.IP}}</div>{{end}}</div></td>
     </tr>

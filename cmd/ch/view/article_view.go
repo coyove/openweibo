@@ -10,6 +10,7 @@ import (
 
 type ArticleView struct {
 	ID        string
+	PlainID   string
 	Timeline  string
 	Parent    string
 	TopParent string
@@ -40,13 +41,13 @@ const (
 func (a *ArticleView) from(a2 *mv.Article, opt byte, g *gin.Context) {
 	a.Index = uint32(a2.Index())
 	a.Replies = uint32(a2.Replies)
-	//a.Views = uint32(a2.Views)
 	a.Locked = a2.Locked
 	a.Highlighted = a2.Highlighted
 	a.Saged = a2.Saged
 	a.Title = a2.Title
 	a.Author = a2.Author
 	a.IP = a2.IP
+	a.PlainID = a2.ID
 	a.Category = a2.Category
 	a.CreateTime = mv.FormatTime(a2.CreateTime, opt&_richtime > 0)
 	a.ReplyTime = mv.FormatTime(a2.ReplyTime, opt&_richtime > 0)

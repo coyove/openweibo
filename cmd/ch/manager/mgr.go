@@ -13,11 +13,6 @@ import (
 
 type Manager struct {
 	db KeyValueOp
-	//	dbCounter KeyValueOp
-	//	counter   struct {
-	//		m sync.Map
-	//		k sched.SchedKey
-	//	}
 }
 
 func New(path string) *Manager {
@@ -67,7 +62,7 @@ func (m *Manager) Walk(tag string, cursor string, n int) (a []*mv.Article, nextI
 		return
 	}
 
-	holes := 0
+	holes := map[string]bool{}
 
 	for len(a) < n && root.Next != "" {
 		next, err := mv.UnmarshalTimeline(m.kvMustGet(root.Next))
@@ -97,10 +92,13 @@ func (m *Manager) Walk(tag string, cursor string, n int) (a []*mv.Article, nextI
 		continue
 
 	HOLE:
-		go m.purgeDeleted(tag, root.ID)
+		if !holes[root.Next] {
+			go m.purgeDeleted(tag, root.ID)
+		}
 
-		holes++
-		if holes > 32 {
+		holes[root.Next] = true
+
+		if len(holes) > 32 {
 			log.Println("[mgr.Walk] Too many holes, started from [", cursor, "], now: [", next.ID, "], tag: [", tag, "]")
 			break
 		}
@@ -161,28 +159,25 @@ SET:
 
 func (m *Manager) Post(a *mv.Article) (string, error) {
 	a.ID = ident.NewID().String()
-	a.TimelineID = ident.NewID().String()
 
-	if err := m.db.Set(a.ID, a.Marshal()); err != nil {
+	if err := m.insertRootThenUpdate(a); err != nil {
 		return "", err
 	}
 
-	if err := m.insertTag(a, "", a.TimelineID); err != nil {
+	if err := m.insertTag(a.ID, "#"+a.Category); err != nil {
+		// If failed, the article will be visible in timeline
 		return "", err
 	}
 
-	if err := m.insertTag(a, "#"+a.Category, ""); err != nil {
-		return "", err
-	}
-
-	if err := m.insertTag(a, a.Author, ""); err != nil {
+	if err := m.insertTag(a.ID, a.Author); err != nil {
+		// If failed, the article will be visible in timeline and tagline
 		return "", err
 	}
 
 	return a.ID, nil
 }
 
-func (m *Manager) insertTag(a *mv.Article, tag string, tlid string) error {
+func (m *Manager) insertTag(aid, tag string) error {
 	rootID := ident.NewTagID(tag).String()
 
 	m.db.Lock(rootID)
@@ -200,13 +195,9 @@ func (m *Manager) insertTag(a *mv.Article, tag string, tlid string) error {
 	}
 
 	tl := &mv.Timeline{
-		ID:   tlid,
+		ID:   ident.NewID().String(),
 		Next: root.Next,
-		Ptr:  a.ID,
-	}
-
-	if tl.ID == "" {
-		tl.ID = ident.NewID().String()
+		Ptr:  aid,
 	}
 
 	if err := m.db.Set(tl.ID, tl.Marshal()); err != nil {
@@ -215,6 +206,54 @@ func (m *Manager) insertTag(a *mv.Article, tag string, tlid string) error {
 
 	root.Next = tl.ID
 	if err := m.db.Set(root.ID, root.Marshal()); err != nil {
+		// If failed, the stale timeline marker 'tl' will be left in the database
+		return err
+	}
+
+	return nil
+}
+
+func (m *Manager) insertRootThenUpdate(a *mv.Article) error {
+	rootID := ident.NewTagID("").String()
+
+	m.db.Lock(rootID)
+	defer m.db.Unlock(rootID)
+
+	root, err := mv.UnmarshalTimeline(m.kvMustGet(rootID))
+	if err != nil && strings.Contains(err.Error(), "#ERR") {
+		return err
+	}
+
+	if root == nil {
+		root = &mv.Timeline{
+			ID: rootID,
+		}
+	}
+
+	a.TimelineID = ident.NewID().String()
+
+	tl := &mv.Timeline{
+		ID:   a.TimelineID,
+		Ptr:  a.ID,
+		Next: root.Next,
+	}
+
+	if err := m.db.Set(tl.ID, tl.Marshal()); err != nil {
+		return err
+	}
+
+	root.Next = tl.ID
+	if err := m.db.Set(root.ID, root.Marshal()); err != nil {
+		// If failed, the newly created timeline marker 'tl' will be orphaned in the database forever
+		return err
+	}
+
+	// At this stage, Walk() may find the marker not pointing to a.ID because we haven't updated a.TimelineID yet.
+	// So the marker will be scheduled into purgeDeleted(), but since we are holding the lock of root,
+	// it will not be deleted anyway. When we release the lock, everything should be fine.
+
+	if err := m.db.Set(a.ID, a.Marshal()); err != nil {
+		// If failed, let purgeDeleted do the job
 		return err
 	}
 
@@ -256,23 +295,23 @@ func (m *Manager) PostReply(parent string, a *mv.Article) (string, error) {
 	p.Replies = nextIndex
 
 	if p.TimelineID != "" && !p.Saged {
-		// Move parent to the front
-		p.TimelineID = ident.NewID().String()
-		if err := m.insertTag(p, "", p.TimelineID); err != nil {
+		// Move parent to the front of the timeline
+		if err := m.insertRootThenUpdate(p); err != nil {
+			return "", err
+		}
+
+	} else {
+		// Save parent
+		if err := m.db.Set(p.ID, p.Marshal()); err != nil {
 			return "", err
 		}
 	}
 
-	// Save parent
-	if err := m.db.Set(p.ID, p.Marshal()); err != nil {
+	if err := m.insertTag(a.ID, a.Author); err != nil {
 		return "", err
 	}
 
-	if err := m.insertTag(a, a.Author, ""); err != nil {
-		return "", err
-	}
-
-	if err := m.insertTag(a, p.Author, ""); err != nil {
+	if err := m.insertTag(a.ID, p.Author); err != nil {
 		return "", err
 	}
 
@@ -286,10 +325,15 @@ func (m *Manager) Get(id string) (a *mv.Article, err error) {
 func (m *Manager) Update(a *mv.Article) error {
 	m.db.Lock(a.ID)
 	defer m.db.Unlock(a.ID)
-	if a.Category != "" {
-		m.insertTag(a, "#"+a.Category, "")
+
+	if err := m.db.Set(a.ID, a.Marshal()); err != nil {
+		return err
 	}
-	return m.db.Set(a.ID, a.Marshal())
+
+	if a.Category != "" {
+		m.insertTag(a.ID, "#"+a.Category)
+	}
+	return nil
 }
 
 func (m *Manager) Delete(a *mv.Article) error {

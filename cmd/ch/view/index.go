@@ -44,14 +44,6 @@ func SetManager(mgr *manager.Manager) {
 	m = mgr
 }
 
-func Home(g *gin.Context) {
-	g.HTML(200, "home.html", struct {
-		Tags []string
-	}{
-		config.Cfg.Tags,
-	})
-}
-
 func Index(g *gin.Context) {
 	var pl = ArticlesTimelineView{
 		SearchTerm: g.Param("tag"),

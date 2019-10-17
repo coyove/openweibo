@@ -1,4 +1,5 @@
 {{if .Highlighted}}<span style="color:#2a66d9">&#x2605;</span>{{end}}
-{{if .Saged}}<span style="color:red;font-weight:bold">&#x00d7;</span>{{end}}
+{{if .Locked}}<span style="color:red;font-weight:bold">&#x00d7;</span>{{end}}
+{{if .Saged}}<span style="color:red;font-weight:bold">&darr;</span>{{end}}
 
-<a href="/p/{{.ID}}" {{if .Locked}}style="color: #aaa"{{end}}>{{.Title}}</a>
+<a href="/p/{{.ID}}">{{.Title}}</a>
