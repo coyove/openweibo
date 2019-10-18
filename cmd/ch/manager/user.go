@@ -31,7 +31,7 @@ import (
 //}
 
 func (m *Manager) Ban(id string) error {
-	return m.db.Set("x-ban-"+id, []byte{1})
+	return m.db.Set("x-ban-"+id, []byte("true"))
 }
 
 func (m *Manager) Unban(id string) error {
@@ -40,7 +40,7 @@ func (m *Manager) Unban(id string) error {
 
 func (m *Manager) IsBanned(id string) bool {
 	x := m.kvMustGet("x-ban-" + id)
-	return len(x) == 1 && x[0] == 1
+	return string(x) == "true"
 }
 
 func (m *Manager) UserExisted(tok string) (ok bool) {

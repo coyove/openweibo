@@ -15,6 +15,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 )
 
+const batchLimit = 900 * 1024 // CW limit: 1M, we use 900KB for safety
+
 type entry struct {
 	ts  int64
 	msg string
@@ -35,7 +37,7 @@ func New(region, accessKey, secretKey, group, stream string) *Logger {
 		Region:      aws.String(region),
 		Credentials: credentials.NewStaticCredentials(accessKey, secretKey, ""),
 		HTTPClient: &http.Client{
-			Timeout: time.Second,
+			Timeout: time.Second * 5,
 			Transport: &http.Transport{
 				MaxConnsPerHost: 10,
 			},
@@ -80,7 +82,7 @@ func (l *Logger) worker() {
 
 		l.ch.Lock()
 		for i, e := range l.ch.chain {
-			if totalSize += len(e.msg) + 26; totalSize > 900*1024 { // CW limit: 1M, we use 900KB for safety
+			if totalSize += len(e.msg) + 26; totalSize > batchLimit {
 				l.ch.chain = l.ch.chain[i:]
 				break
 			}
@@ -90,6 +92,11 @@ func (l *Logger) worker() {
 				Message:   aws.String(e.msg),
 			})
 		}
+
+		if totalSize <= batchLimit {
+			l.ch.chain = l.ch.chain[:0]
+		}
+
 		l.ch.Unlock()
 
 		if len(in.LogEvents) == 0 {
@@ -107,6 +114,7 @@ func (l *Logger) worker() {
 
 					l.nextSeqToken, _ = l.getNextSeqToken()
 					if l.nextSeqToken != "" {
+						fmt.Println("Cloudwatch, retry new token:", l.nextSeqToken)
 						goto IMMEDIATE_RETRY
 					}
 				}
@@ -149,7 +157,7 @@ func (l *Logger) getNextSeqToken() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if len(out.LogStreams) == 1 {
+	if len(out.LogStreams) == 1 && out.LogStreams[0].UploadSequenceToken != nil {
 		return *out.LogStreams[0].UploadSequenceToken, nil
 	}
 	return "", nil

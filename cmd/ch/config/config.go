@@ -13,7 +13,6 @@ import (
 )
 
 var Cfg = struct {
-	CacheSize    int64    `yaml:"CacheSize"`
 	Key          string   `yaml:"Key"`
 	TokenTTL     int64    `yaml:"TokenTTL"`
 	IDTokenTTL   int64    `yaml:"IDTokenTTL"`
@@ -39,7 +38,6 @@ var Cfg = struct {
 	PublicString      string
 	PrivateString     string
 }{
-	CacheSize:    1,
 	TokenTTL:     1,
 	IDTokenTTL:   600,
 	Key:          "0123456789abcdef",

@@ -25,5 +25,5 @@ func Cookie(g *gin.Context) {
 	} else if len(id) > 3 {
 		g.SetCookie("id", id, 86400*365, "", "", false, false)
 	}
-	g.Redirect(302, "/cookie")
+	g.Redirect(302, "/")
 }

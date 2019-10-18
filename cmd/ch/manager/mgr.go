@@ -12,6 +12,8 @@ import (
 	mv "github.com/coyove/iis/cmd/ch/model"
 )
 
+var _Root = ident.NewTagID("").String()
+
 type Manager struct {
 	db KeyValueOp
 }
@@ -50,6 +52,9 @@ func (m *Manager) kvMustGet(id string) []byte {
 	if err != nil {
 		return []byte("#ERR: " + err.Error())
 	}
+	if id == _Root {
+		log.Printf("[TOOR] %s\n", string(p))
+	}
 	return p
 }
 
@@ -69,8 +74,15 @@ func (m *Manager) Walk(tag string, cursor string, n int) (a []*mv.Article, nextI
 	}
 
 	holes := map[string]bool{}
+	startTime := time.Now()
 
 	for len(a) < n && root.Next != "" {
+
+		if time.Since(startTime).Seconds() > 1 {
+			log.Println("[mgr.Walk] Break out slow walk from: [", cursor, "], now at: ", root.ID, ", tag: [", tag, "]")
+			break
+		}
+
 		next, err := mv.UnmarshalTimeline(m.kvMustGet(root.Next))
 		if err != nil {
 			return nil, "", err
@@ -98,17 +110,13 @@ func (m *Manager) Walk(tag string, cursor string, n int) (a []*mv.Article, nextI
 		continue
 
 	HOLE:
-		if !holes[root.Next] {
+		// root.Next should be unlinked and root's next will be root.Next.Next, but since root itself will also be deleted
+		// there is no need to schedule it into purgeDeleted()
+		if !holes[root.ID] {
 			go m.purgeDeleted(tag, root.ID)
 		}
 
 		holes[root.Next] = true
-
-		if len(holes) > 32 {
-			log.Println("[mgr.Walk] Too many holes, started from [", cursor, "], now: [", next.ID, "], tag: [", tag, "]")
-			break
-		}
-
 		root = next
 	}
 
@@ -131,6 +139,7 @@ func (m *Manager) purgeDeleted(tag string, startID string) {
 
 	var next *mv.Timeline
 	startTime := time.Now()
+	oldNext := start.Next
 
 	for root := start; root.Next != ""; root = next {
 		next, err = mv.UnmarshalTimeline(m.kvMustGet(root.Next))
@@ -159,7 +168,11 @@ func (m *Manager) purgeDeleted(tag string, startID string) {
 	start.Next = ""
 
 SET:
-	log.Println("[mgr.purgeDeleted] New timeline:", start)
+	if start.Next == oldNext {
+		return
+	}
+
+	log.Println("[mgr.purgeDeleted] New next of", start, ", old:", oldNext)
 	m.db.Set(startID, start.Marshal())
 }
 
