@@ -27,6 +27,7 @@ var Cfg = struct {
 	Cooldown     int      `yaml:"Cooldown"`
 	NeedID       bool     `yaml:"NeedID"`
 	DyRegion     string   `yaml:"DyRegion"`
+	CwRegion     string   `yaml:"CwRegion"`
 	DyAccessKey  string   `yaml:"DyAccessKey"`
 	DySecretKey  string   `yaml:"DySecretKey"`
 

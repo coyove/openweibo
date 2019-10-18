@@ -13,9 +13,9 @@ import (
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
+	"github.com/coyove/iis/cmd/ch/manager/logs"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
-	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 )
 
 func mwRenderPerf(g *gin.Context) {
@@ -121,8 +121,6 @@ func mwLogger() gin.HandlerFunc {
 			buf.WriteByte(':')
 			itoa(params.TimeStamp.Second(), 2)
 			buf.WriteByte(' ')
-			buf.WriteString("gin-stub:1:")
-			buf.WriteByte(' ')
 			buf.WriteString(params.ClientIP)
 			buf.WriteByte(' ')
 			buf.WriteString(params.Method)
@@ -135,8 +133,9 @@ func mwLogger() gin.HandlerFunc {
 			buf.WriteByte(' ')
 			buf.WriteString(params.Path)
 			buf.WriteByte(' ')
+			buf.WriteByte('[')
 			buf.WriteString(strconv.FormatFloat(float64(params.BodySize)/1024, 'f', 3, 64))
-			buf.WriteByte('K')
+			buf.WriteByte(']')
 			buf.WriteByte(' ')
 			buf.WriteString(params.ErrorMessage)
 			buf.WriteByte('\n')
@@ -146,18 +145,19 @@ func mwLogger() gin.HandlerFunc {
 }
 
 func New(prod bool) *gin.Engine {
-	os.MkdirAll("tmp/logs", 0700)
-	logf, err := rotatelogs.New("tmp/logs/access_log.%Y%m%d%H%M", rotatelogs.WithLinkName("tmp/logs/access_log"), rotatelogs.WithMaxAge(7*24*time.Hour))
-	logerrf, err := rotatelogs.New("tmp/logs/error_log.%Y%m%d%H%M", rotatelogs.WithLinkName("tmp/logs/error_log"), rotatelogs.WithMaxAge(7*24*time.Hour))
-	if err != nil {
-		panic(err)
-	}
+	//os.MkdirAll("tmp/logs", 0700)
+	//logf, err := rotatelogs.New("tmp/logs/access_log.%Y%m%d%H%M", rotatelogs.WithLinkName("access_log"), rotatelogs.WithMaxAge(7*24*time.Hour))
+	//logerrf, err := rotatelogs.New("tmp/logs/error_log.%Y%m%d%H%M", rotatelogs.WithLinkName("error_log"), rotatelogs.WithMaxAge(7*24*time.Hour))
+	//if err != nil {
+	//	panic(err)
+	//}
 
 	if prod {
 		gin.SetMode(gin.ReleaseMode)
-		mwLoggerOutput, gin.DefaultErrorWriter = logf, logerrf
+		mwLoggerOutput = logs.New(config.Cfg.CwRegion, config.Cfg.DyAccessKey, config.Cfg.DySecretKey, "iis", "business")
+		gin.DefaultErrorWriter = logs.New(config.Cfg.CwRegion, config.Cfg.DyAccessKey, config.Cfg.DySecretKey, "iis", "gin")
 	} else {
-		mwLoggerOutput, gin.DefaultErrorWriter = io.MultiWriter(logf, os.Stdout), io.MultiWriter(logerrf, os.Stdout)
+		mwLoggerOutput, gin.DefaultErrorWriter = os.Stdout, os.Stdout // io.MultiWriter(logf, os.Stdout, cw), io.MultiWriter(logerrf, os.Stdout, cw)
 	}
 
 	log.SetOutput(mwLoggerOutput)
