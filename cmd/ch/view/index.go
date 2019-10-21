@@ -20,6 +20,7 @@ type ArticlesTimelineView struct {
 	Next       string
 	Prev       string
 	SearchTerm string
+	Index      bool
 }
 
 type ArticleRepliesView struct {
@@ -56,6 +57,10 @@ func Index(g *gin.Context) {
 	}
 
 	if strings.HasPrefix(pl.SearchTerm, "@@") {
+		if !g.GetBool("ip-ok") {
+			Error(500, "NOT FOUND", g)
+			return
+		}
 		pl.SearchTerm = config.HashName(pl.SearchTerm[2:])
 		opt |= _abstract
 	} else if strings.HasPrefix(pl.SearchTerm, "@") {
@@ -75,10 +80,13 @@ func Index(g *gin.Context) {
 	fromMultiple(&pl.Articles, a, opt, g)
 
 	pl.Next = next
+	pl.Index = cursor == ""
 
 	if u, _ := url.Parse(g.Request.Referer()); u != nil {
 		pl.Prev = u.Query().Get("n")
-		if pl.Prev <= pl.Next {
+		if pl.Prev <= pl.Next || pl.Index {
+			// If we are at the front page, or the prev page is smaller than the next page
+			// then we consider the prev page invalid
 			pl.Prev = ""
 		}
 	}
@@ -128,9 +136,7 @@ func Replies(g *gin.Context) {
 		if pl.ReplyView.RAuthor == "" {
 			pl.ReplyView.RAuthor, _ = g.Cookie("id")
 		}
-		var answer [4]byte
-		pl.ReplyView.UUID, answer = ident.MakeToken(g)
-		pl.ReplyView.Challenge = ident.GenerateCaptcha(answer)
+		pl.ReplyView.UUID, pl.ReplyView.Challenge = ident.MakeToken(g)
 	}
 
 	pl.CurPage, _ = strconv.Atoi(g.Query("p"))

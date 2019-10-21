@@ -29,9 +29,7 @@ func New(g *gin.Context) {
 		IsAdmin:  ident.IsAdmin(g),
 	}
 
-	var answer [4]byte
-	pl.UUID, answer = ident.MakeToken(g)
-	pl.Challenge = ident.GenerateCaptcha(answer)
+	pl.UUID, pl.Challenge = ident.MakeToken(g)
 
 	if pl.RAuthor == "" {
 		pl.RAuthor, _ = g.Cookie("id")

@@ -41,7 +41,9 @@
     {{if .Prev}}
     <a href="?n={{.Prev}}">&laquo; 上页</a>
     {{end}}
+    {{if not .Index}}
     <a href="?n=">首页</a>
+    {{end}}
     {{if .Next}}
     <a href="?n={{.Next}}">下页 &raquo;</a>
     {{end}}
