@@ -85,7 +85,7 @@ func (m *DynamoKV) Get(key string) ([]byte, error) {
 	if vi := out.Item["value"]; vi != nil && vi.S != nil {
 		v = []byte(*vi.S)
 		if key == rootID {
-			log.Println("Last rootL:", *vi.S)
+			log.Println("Last [TOOR]:", *vi.S)
 		}
 	}
 

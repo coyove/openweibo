@@ -12,8 +12,6 @@ import (
 	mv "github.com/coyove/iis/cmd/ch/model"
 )
 
-var _Root = ident.NewTagID("").String()
-
 type Manager struct {
 	db KeyValueOp
 }
@@ -48,13 +46,15 @@ func (m *Manager) NewReply(content, author, ip string) *mv.Article {
 }
 
 func (m *Manager) kvMustGet(id string) []byte {
+	if id == "" {
+		return []byte{}
+	}
+
 	p, err := m.db.Get(id)
 	if err != nil {
 		return []byte("#ERR: " + err.Error())
 	}
-	if id == _Root {
-		log.Printf("[TOOR] %s\n", string(p))
-	}
+
 	return p
 }
 

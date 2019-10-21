@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"math/rand"
 	"os"
@@ -20,6 +22,10 @@ import (
 )
 
 func main() {
+	noHTTP := false
+	flag.BoolVar(&noHTTP, "no-http", false, "")
+	flag.Parse()
+
 	rand.Seed(time.Now().Unix())
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
@@ -100,11 +106,14 @@ func main() {
 	if config.Cfg.Domain == "" {
 		log.Fatal(r.Run(":5010"))
 	} else {
-		go func() {
-			time.Sleep(time.Second)
-			log.Println("plain server started on :80")
-			log.Fatal(r.Run(":80"))
-		}()
+		if !noHTTP {
+			go func() {
+				time.Sleep(time.Second)
+				fmt.Println("HTTP server started on :80")
+				log.Fatal(r.Run(":80"))
+			}()
+		}
+		fmt.Println("HTTPS server started on :443")
 		log.Fatal(autotls.Run(r, config.Cfg.Domain))
 	}
 }
