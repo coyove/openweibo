@@ -4,8 +4,8 @@
 
 {{with .ParentArticle}}
 <div style="padding:0.5em;line-height:2em">
-    <b style="font-size:150%;margin-right:1em">{{.Title}}</b>
-    {{if not .Parent}}<a href="/cat/{{.Category}}">#{{.Category}}</a>{{end}}
+    {{if not .Parent}}<a href="/cat/{{.Category}}" style="color:black;margin-right:1em">#{{.Category}}</a>{{end}}
+    <b>{{template "row_tags.html" .}}</b>
 </div>
 {{end}}
 
@@ -15,38 +15,25 @@
     <div class=row style="padding:0.33em">
         {{with .ReplyView}}
         <input class="reply-toggle" style="display:none" type=checkbox id="reply" {{if .ShowReply}}checked{{end}}>
-        <label class="pure-material-button-outlined" for=reply><b>回复主题</b></label>
+        <label class="gbutton" for=reply><b>回复主题</b></label>
         <div class="reply-view">
             <form method="POST" action="/reply">
                 <table class="articles">
                     <input type=hidden name=uuid value="{{.UUID}}">
                     <input type=hidden name=reply value="{{$.ParentArticle.ID}}">
                     <tr>
-                        <td style="color:#888" class=nowrap><label for=author>ID</label></td>
-                        <td colspan=2><input style="border: none" id=author placeholder="(选填)" class=t name=author value="{{.RAuthor}}"></td>
-                    </tr>
-                    <tr>
-                        <td colspan=3>
-                            <textarea maxlength=4000 placeholder="内容" style="border:none;padding:0" rows=10 name="content">{{.RContent}}</textarea>
-                        </td>
-                    </tr>
-                    <tr style="border:none">
-                        <td colspan=3>
-                            <button name=refresh value=1 type=submit class="none"><img src="data:image/png;base64,{{.Challenge}}"></button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="color:#888" class=nowrap>验证码</td>
                         <td>
-                            <input size=10 name="answer" class=s>
+                            <textarea maxlength=4000 placeholder="内容" style="border:none;padding:0" rows=12 name="content">{{.RContent}}</textarea>
                         </td>
-                        <td class=nowrap>
-                            <button {{if $.ParentArticle.Locked}}disabled{{end}} class="pure-material-button-outlined" type=submit>回复</button>
-                            <a class="pure-material-button-outlined" href="/p/{{$.ParentArticle.ID}}">取消</a>
+                    </tr>
+                    <tr style="border-top:solid 1px #ccc;text-align:right">
+                        <td>
+                            <button {{if $.ParentArticle.Locked}}disabled{{end}} class="gbutton" type=submit>回复</button>
+                            <a class="gbutton" href="/p/{{$.ParentArticle.ID}}">取消</a>
                         </td>
                     </tr> 
                     {{if .EError}}
-                    <tr>
+                    <tr style="border-top:solid 1px #ccc">
                         <td colspan=3>错误: {{template "error_i18n.html" .EError}}</td>
                     </tr>
                     {{end}}
@@ -56,12 +43,12 @@
         <div class="bg"></div>
         {{end}}
         {{if .ParentArticle.Parent}}
-        <a class="pure-material-button-outlined" href="/p/{{.ParentArticle.Parent}}?j={{.ParentArticle.ID}}">上一层</a>
-        <a class="pure-material-button-outlined" href="/p/{{.ParentArticle.TopParent}}">顶层</a>
+        <a class="gbutton" href="/p/{{.ParentArticle.Parent}}?j={{.ParentArticle.ID}}">上一层</a>
+        <a class="gbutton" href="/p/{{.ParentArticle.TopParent}}">顶层</a>
         {{else}}
-        <a class="pure-material-button-outlined" href="/cat?n={{.ParentArticle.Timeline}}">下一个主题</a>
+        <a class="gbutton" href="/cat?n={{.ParentArticle.Timeline}}">下一个主题</a>
         {{end}}
-        <a style="float:right" class="pure-material-button-outlined" href="/edit/{{.ParentArticle.ID}}">删除</a>
+        <a style="float:right" class="gbutton" href="/edit/{{.ParentArticle.ID}}">删除</a>
     </div>
 
     {{if len .Articles}}

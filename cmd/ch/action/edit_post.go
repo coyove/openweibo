@@ -55,12 +55,7 @@ func Edit(g *gin.Context) {
 	redir := "/p/" + ident.ParseID(a.ID).String()
 
 	if isBan := m.IsBanned(a.Author); isBan != banID {
-		if isBan {
-			err = m.Unban(a.Author)
-		} else {
-			err = m.Ban(a.Author)
-		}
-		if err != nil {
+		if err := m.BanUser(a.Author, banID); err != nil {
 			view.Error(400, err.Error(), g)
 		} else {
 			g.Redirect(302, redir)

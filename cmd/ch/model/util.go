@@ -9,23 +9,11 @@ import (
 var rxSan = regexp.MustCompile(`(?m)(^>.+|<|https?://\S+)`)
 
 func FormatTime(x time.Time, sec bool) string {
-	now := time.Now()
+	now := time.Now().UTC().Add(8 * time.Hour)
 	if now.YearDay() == x.YearDay() && now.Year() == x.Year() {
-		if !sec {
-			return x.Format("15:04")
-		}
 		return x.Format("15:04:05")
 	}
-	if now.Year() == x.Year() {
-		if !sec {
-			return x.Format("Jan 02")
-		}
-		return x.Format("Jan 02 15:04")
-	}
-	if !sec {
-		return x.Format("Jan 02, 2006")
-	}
-	return x.Format("Jan 02, 2006 15:04")
+	return x.Format("2006-01-02T15:04:05")
 }
 
 func SoftTrunc(a string, n int) string {

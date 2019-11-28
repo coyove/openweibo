@@ -1,10 +1,8 @@
 package action
 
 import (
-	"fmt"
 	"log"
 	"net"
-	"net/url"
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
@@ -30,56 +28,6 @@ func hashIP(g *gin.Context) string {
 	return ip.String()
 }
 
-func checkTokenAndCaptcha(g *gin.Context, author string) string {
-	var (
-		answer            = mv.SoftTrunc(g.PostForm("answer"), 6)
-		uuid              = mv.SoftTrunc(g.PostForm("uuid"), 32)
-		tokenbuf, tokenok = ident.ParseToken(g, uuid)
-		challengePassed   bool
-	)
-
-	if !g.GetBool("ip-ok") {
-		return fmt.Sprintf("guard/cooling-down/%.1fs", float64(config.Cfg.Cooldown)-g.GetFloat64("ip-ok-remain"))
-	}
-
-	if m.IsBanned(config.HashName(author)) {
-		return "guard/id-not-existed"
-	}
-
-	if !ident.IsAdmin(author) {
-		if len(answer) == 4 {
-			challengePassed = true
-			for i := range answer {
-				a := answer[i]
-				if a >= 'A' && a <= 'Z' {
-					a = a - 'A' + 'a'
-				}
-
-				if a != "0123456789acefhijklmnpqrtuvwxyz"[tokenbuf[i]%31] &&
-					a != "oiz3asg7b9acefhijklmnpqrtuvwxyz"[tokenbuf[i]%31] {
-					challengePassed = false
-					break
-				}
-			}
-		}
-		if !challengePassed {
-			log.Println(g.MustGet("ip"), "challenge failed")
-			return "guard/failed-captcha"
-		}
-
-		if config.Cfg.NeedID && !m.UserExisted(config.HashName(author)) {
-			return "guard/id-not-existed"
-		}
-	}
-
-	// Admin still needs token verification
-	if !tokenok {
-		return "guard/token-expired"
-	}
-
-	return ""
-}
-
 func New(g *gin.Context) {
 	var (
 		ip      = hashIP(g)
@@ -98,7 +46,7 @@ func New(g *gin.Context) {
 		return
 	}
 
-	if ret := checkTokenAndCaptcha(g, author); ret != "" {
+	if ret := checkToken(g); ret != "" {
 		redir("error", ret)
 		return
 	}
@@ -141,7 +89,7 @@ func Reply(g *gin.Context) {
 		return
 	}
 
-	if ret := checkTokenAndCaptcha(g, author); ret != "" {
+	if ret := checkToken(g); ret != "" {
 		redir("error", ret)
 		return
 	}
@@ -159,14 +107,4 @@ func Reply(g *gin.Context) {
 
 	author, content = "", ""
 	redir("", "")
-}
-
-func EncodeQuery(a ...string) string {
-	query := url.Values{}
-	for i := 0; i < len(a); i += 2 {
-		if a[i] != "" {
-			query.Add(a[i], a[i+1])
-		}
-	}
-	return "?" + query.Encode()
 }

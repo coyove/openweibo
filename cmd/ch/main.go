@@ -35,6 +35,7 @@ func main() {
 	m := manager.New("iis.db")
 	view.SetManager(m)
 	action.SetManager(m)
+	engine.SetManager(m)
 
 	if os.Getenv("BENCH") == "1" {
 		ids := []string{}
@@ -90,11 +91,13 @@ func main() {
 
 	r.NoRoute(view.NotFound)
 	r.Handle("GET", "/", view.Home)
+	r.Handle("GET", "/user", view.User)
 	r.Handle("GET", "/cat", view.Index)
 	r.Handle("GET", "/cat/:tag", view.Index)
 	r.Handle("GET", "/p/:parent", view.Replies)
 	r.Handle("GET", "/new", view.New)
 	r.Handle("GET", "/edit/:id", view.Edit)
+	r.Handle("POST", "/user", action.User)
 	r.Handle("POST", "/new", action.New)
 	r.Handle("POST", "/reply", action.Reply)
 	r.Handle("POST", "/edit", action.Edit)

@@ -1,0 +1,133 @@
+{{template "header.html" .}}
+
+<style>
+tr {
+    border: none !important;
+}
+            table {
+                max-width:400px;
+            }
+</style>
+
+{{if .User}}
+
+<table class="articles">
+    <tr>
+        <td class=nowrap>用户名:</td>
+        <td><span>{{.User.ID}}</td>
+    </tr>
+    <tr>
+        <td class=nowrap>Email:</td>
+        <td><span>{{.User.Email}}</td>
+    </tr>
+    <tr>
+        <td class=nowrap>封禁:</td>
+        <td><span>{{.User.Banned}}</td>
+    </tr>
+    <tr>
+        <td class=nowrap>登入时间:</td>
+        <td><span>{{.User.Login}}</td>
+    </tr>
+    <tr>
+        <td class=nowrap>登入IP:</td>
+        <td><span>{{.User.LoginIP}}</td>
+    </tr>
+    <tr>
+        <td class=nowrap>注册时间:</td>
+        <td><span>{{.User.Signup}}</td>
+    </tr>
+    <tr>
+        <td class=nowrap>注册IP:</td>
+        <td><span>{{.User.SignupIP}}</td>
+    </tr>
+    <tr>
+        <td></td> <td style="text-align:right">
+<form method="POST" action="/user">
+    <input type=hidden name=uuid value="{{.UUID}}">
+    <input type=hidden name=method value="logout">
+            <button class="gbutton" type=submit>注销</button>
+</form>
+        </td>
+    </tr>
+</table>
+
+
+{{else}}
+
+<title>登入注册</title>
+
+<form method="POST" action="/user">
+<table class="articles">
+    <input type=hidden name=uuid value="{{.UUID}}">
+    <input type=hidden name=method value="login">
+    <tr>
+        <td class=nowrap>用户名:</td>
+        <td><input class=t name=username value="{{.RUsername}}"></td>
+    </tr>
+    <tr>
+        <td class=nowrap>密码: </td>
+        <td><input type=password class=t name=password></td>
+    </tr>
+    {{if .EError}}
+    <tr>
+        <td></td> <td> <div>错误: {{template "error_i18n.html" .EError}}</div></td>
+    </tr>
+    {{end}}
+    <tr>
+        <td></td> <td style="text-align:right">
+            <button class="gbutton" type=submit>登入</button>
+        </td>
+    </tr>
+</table>
+</form>
+
+<form method="POST" action="/user">
+<table class="articles">
+    <input type=hidden name=uuid value="{{.UUID}}">
+    <input type=hidden name=method value="signup">
+    <tr>
+        <td>用户名:</td>
+        <td><input class=t name=username value="{{.RUsername}}"></td>
+    </tr>
+    <tr>
+        <td></td><td style="font-size:90%">3~12字节</td>
+    </tr>
+    <tr>
+        <td class=nowrap>密码: </td>
+        <td><input type=password class=t name=password></td>
+    </tr>
+    <tr>
+        <td class=nowrap>重复密码:</td>
+        <td><input type=password class=t name=password2></td>
+    </tr>
+    <tr>
+        <td>Email:</td>
+        <td><input class=t name=email value="{{.REmail}}"></td>
+    </tr>
+    <tr>
+        <td></td>
+        <td>
+<button name=refresh value=1 type=submit class=none>
+                <img src="data:image/png;base64,{{.Challenge}}">
+            </button>
+        </td>
+    </tr>
+    <tr>
+        <td class=nowrap>验证码:</td>
+        <td><input size=10 name="answer" class=s></td>
+    </tr> 
+    {{if .EError}}
+    <tr>
+        <td></td> <td> <div>错误: {{template "error_i18n.html" .EError}}</div></td>
+    </tr>
+    {{end}}
+    <tr>
+        <td></td> <td style="text-align:right">
+            <button class="gbutton" type=submit>注册</button>
+        </td>
+    </tr>
+</table>
+</form>
+{{end}}
+
+{{template "footer.html" .}}

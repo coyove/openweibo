@@ -1,40 +1,35 @@
 {{template "header.html" .}}
 
-<table class="articles small">
-    <tr>
-        {{if .SearchTerm}}
+<div style="padding:0.5em;line-height:2em">
+{{if .SearchTerm}}
         <title>{{.SearchTerm}} 的相关发言</title>
-        <th>{{.SearchTerm}} 的相关发言</th>
-        {{else}}
+        <span style="font-size:125%">{{.SearchTerm}} 的相关发言</span>
+{{else}}
         <title>全部主题</title>
-        <th>标题</th>
-        {{end}}
-        <th class=nowrap>分类</th>
-        <th class=nowrap>作者</th>
-        <th class=nowrap>回复</th>
-        <th class="nowrap state">RE</th>
-    </tr>
+        <span style="font-size:125%">全部主题</span>
+{{end}}
+</div>
+
+<div class="rows">
     {{if len .Articles}}
     {{range .Articles}}
-    <tr class="row">
-        <td class="row">{{template "row_tags.html" .}}</td>
-        <td class="nowrap">
-            <span class=mobile><b>#</b></span>{{if not .Parent}}<a href="/cat/{{.Category}}">{{.Category}}</a>{{else}}{{if eq .Author $.SearchTerm}}回复{{else}}被回复{{end}}{{end}}
-        </td>
-        <td class="nowrap"><a href="/cat/@{{.Author}}">{{.Author}}</a></td>
-        <td class="nowrap date"><span>{{.ReplyTime}}</span></td>
-        <td class="nowrap state">{{if .Replies}}<span>{{.Replies}}</span><span class=mobile>回复</span>{{end}}</td>
-    </tr>
-    {{if .Content}}
-    <tr class=dark>
-        <td colspan=5><div class=reply><pre>{{.Content}}</pre></div></td>
-    </tr>
-    {{end}}
+        <div class=row style="padding:0.5em;line-height:1em">
+            <span style=";margin-right:1em">
+            {{if not .Parent}}
+            <a style="color:black" href="/cat/{{.Category}}">#{{.Category}}</a>
+            {{else}}
+            {{if ne $.SearchTerm .Author}}被{{.Author}}{{end}}回复
+            {{end}}
+            </span>
+            <b style="font-size:150%"><a href="/p/{{.ID}}">{{template "row_tags.html" .}}</a></b>
+        </div>
+        <div class=row></div>
+        {{template "row_content.html" .}}
     {{end}}
     {{else}}
-    <tr><td colspan=5>无内容</td></tr>
+    <div class=row style="text-align:center;padding:1em">无回复</div>
     {{end}}
-</table>
+</div>
 
 
 <div class="paging" id="paging">

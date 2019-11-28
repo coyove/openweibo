@@ -1,11 +1,13 @@
 package mv
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"html/template"
 	"time"
 
+	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
 )
 
@@ -75,4 +77,46 @@ func UnmarshalArticle(b []byte) (*Article, error) {
 		return nil, fmt.Errorf("failed to unmarshal: %q", b)
 	}
 	return a, err
+}
+
+type User struct {
+	ID           string
+	Session      string
+	Role         string
+	Email        string
+	PasswordHash []byte
+	TotalPosts   int
+	Signup       time.Time
+	SignupIP     string
+	Login        time.Time
+	LoginIP      string
+	Banned       bool
+}
+
+func (u User) Marshal() []byte {
+	b, _ := json.Marshal(u)
+	return b
+}
+
+func UnmarshalUser(b []byte) (*User, error) {
+	a := &User{}
+	err := json.Unmarshal(b, a)
+	if a.ID == "" {
+		return nil, fmt.Errorf("failed to unmarshal: %q", b)
+	}
+	return a, err
+}
+
+func MakeUserToken(u *User) string {
+	if u == nil {
+		return ""
+	}
+	x := make([]byte, len(u.ID)+1+len(u.Session))
+	copy(x, u.ID)
+	copy(x[len(u.ID)+1:], u.Session)
+
+	for i := 0; i < len(x)-16; i += 4 {
+		config.Cfg.Blk.Encrypt(x[i:], x[i:])
+	}
+	return base64.StdEncoding.EncodeToString(x)
 }

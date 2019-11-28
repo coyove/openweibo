@@ -13,11 +13,18 @@ import (
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
+	"github.com/coyove/iis/cmd/ch/manager"
 	"github.com/coyove/iis/cmd/ch/manager/logs"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 )
+
+var m *manager.Manager
+
+func SetManager(mgr *manager.Manager) {
+	m = mgr
+}
 
 func mwRenderPerf(g *gin.Context) {
 	ip := net.ParseIP(g.ClientIP())
@@ -38,6 +45,15 @@ func mwRenderPerf(g *gin.Context) {
 	}
 
 	start := time.Now()
+
+	tok, _ := g.Cookie("id")
+	userid := ""
+	u, _ := m.GetUserByToken(tok)
+	if u != nil {
+		g.Set("user", u)
+		userid = "<a href='/user'>" + u.ID + "</a>"
+	}
+
 	g.Set("ip", ip)
 	g.Set("req-start", start)
 	g.Next()
@@ -51,8 +67,9 @@ func mwRenderPerf(g *gin.Context) {
 	x := g.Writer.Header().Get("Content-Type")
 	if strings.HasPrefix(x, "text/html") {
 		g.Writer.Write([]byte(fmt.Sprintf(
-			"Render %dms | Max %dms | Out %.2fG | <a href='https://github.com/coyove/iis'>IIS</a>",
-			msec, survey.max, float64(survey.written)/1024/1024/1024)))
+			"Render %dms | Max %dms | Out %.2fG | Login[%s] | <a href='https://github.com/coyove/iis'>IIS</a>",
+			msec, survey.max, float64(survey.written)/1024/1024/1024, userid,
+		)))
 	}
 }
 
