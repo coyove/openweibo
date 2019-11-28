@@ -30,7 +30,7 @@ func Edit(g *gin.Context) {
 	}
 
 	var (
-		eid         = ident.ParseDynamicID(g, g.PostForm("reply")).String()
+		eid         = ident.ParseID(g.PostForm("reply")).String()
 		title       = mv.SoftTrunc(g.PostForm("title"), 100)
 		content     = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		author      = getAuthor(g)
@@ -52,7 +52,7 @@ func Edit(g *gin.Context) {
 		return
 	}
 
-	redir := "/p/" + ident.ParseDynamicID(g, a.ID).String()
+	redir := "/p/" + ident.ParseID(a.ID).String()
 
 	if isBan := m.IsBanned(a.Author); isBan != banID {
 		if isBan {
@@ -75,7 +75,7 @@ func Edit(g *gin.Context) {
 		return
 	}
 
-	if a.Parent() == "" && len(title) == 0 {
+	if p, _ := a.Parent(); p == "" && len(title) == 0 {
 		view.Error(400, "title/too-short", g)
 		return
 	}
@@ -87,7 +87,7 @@ func Edit(g *gin.Context) {
 
 	a.Content, a.Category = content, cat
 
-	if a.Parent() == "" {
+	if p, _ := a.Parent(); p == "" {
 		a.Title = title
 	}
 
@@ -111,7 +111,7 @@ func Delete(g *gin.Context) {
 		return
 	}
 
-	var eid = ident.ParseDynamicID(g, g.PostForm("reply")).String()
+	var eid = ident.ParseID(g.PostForm("reply")).String()
 	var author = getAuthor(g)
 
 	a, err := m.Get(eid)
@@ -122,7 +122,7 @@ func Delete(g *gin.Context) {
 
 	if a.Author != config.HashName(author) && !ident.IsAdmin(author) {
 		log.Println(g.MustGet("ip").(net.IP), "tried to delete", a.ID)
-		g.Redirect(302, "/p/"+ident.ParseDynamicID(g, a.ID).String())
+		g.Redirect(302, "/p/"+ident.ParseID(a.ID).String())
 		return
 	}
 
@@ -132,8 +132,8 @@ func Delete(g *gin.Context) {
 		return
 	}
 
-	if a.Parent() != "" {
-		g.Redirect(302, "/p/"+ident.ParseID(a.Parent()).DynamicString(g))
+	if p, _ := a.Parent(); p != "" {
+		g.Redirect(302, "/p/"+p)
 	} else {
 		g.Redirect(302, "/cat")
 	}

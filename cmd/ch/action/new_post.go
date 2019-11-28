@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/url"
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
@@ -87,7 +88,7 @@ func New(g *gin.Context) {
 		author  = getAuthor(g)
 		cat     = checkCategory(mv.SoftTrunc(g.PostForm("cat"), 20))
 		redir   = func(a, b string) {
-			q := ident.EncryptQuery(a, b, "author", author, "content", content, "title", title, "cat", cat)
+			q := EncodeQuery(a, b, "author", author, "content", content, "title", title, "cat", cat)
 			g.Redirect(302, "/new"+q)
 		}
 	)
@@ -121,17 +122,17 @@ func New(g *gin.Context) {
 		return
 	}
 
-	g.Redirect(302, "/p/"+ident.ParseID(a.ID).DynamicString(g))
+	g.Redirect(302, "/p/"+ident.ParseID(a.ID).String())
 }
 
 func Reply(g *gin.Context) {
 	var (
-		reply   = ident.ParseDynamicID(g, g.PostForm("reply"))
+		reply   = ident.ParseID(g.PostForm("reply"))
 		ip      = hashIP(g)
 		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		author  = getAuthor(g)
 		redir   = func(a, b string) {
-			g.Redirect(302, "/p/"+reply.DynamicString(g)+ident.EncryptQuery(a, b, "author", author, "content", content)+"&p=-1#paging")
+			g.Redirect(302, "/p/"+reply.String()+EncodeQuery(a, b, "author", author, "content", content)+"&p=-1#paging")
 		}
 	)
 
@@ -158,4 +159,14 @@ func Reply(g *gin.Context) {
 
 	author, content = "", ""
 	redir("", "")
+}
+
+func EncodeQuery(a ...string) string {
+	query := url.Values{}
+	for i := 0; i < len(a); i += 2 {
+		if a[i] != "" {
+			query.Add(a[i], a[i+1])
+		}
+	}
+	return "?" + query.Encode()
 }

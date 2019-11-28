@@ -1,0 +1,53 @@
+<div id="r{{.Index}}" style="padding:0.5em 0.5em 0 0.5em" class="row">
+    <div class="row-header">
+        {{if .SubIndex}}
+        <b>#{{.SubIndex}}</b>
+        {{else}}
+        <b>#{{.Index}}</b>
+        {{end}}
+
+        {{if not .Content}}
+        <span>NOT FOUND</span>
+    </div>
+        {{else}}
+            {{if eq .Index 0 }}
+
+            {{end}}
+
+            <span>ID: <a href="/cat/@{{.Author}}">{{.Author}}</a></span>
+            <span>日期: {{.CreateTime}}</span>
+
+            {{if eq .Index 0}}
+                    <span>回复: {{.Replies}}</span>
+            {{else}}
+                {{if le .Replies 2}}
+                {{if not .ShowReplies.Hidden}}
+                    <a href="/p/{{.ID}}">回复</a>
+                {{end}}
+                {{end}}
+            {{end}}
+    </div>
+
+    <pre style="padding:0.66em 0">{{.ContentHTML}}</pre>
+
+    {{if .ShowReplies.First}}
+    <div style="margin:0 -0.5em; border-top:dotted 1px #aaa"></div>
+    <div class="subreply">
+        {{template "row_content.html" .ShowReplies.First}}
+    </div>
+    {{end}}
+
+    {{if .ShowReplies.More}}
+    <div style="padding-left:1.5em">
+        <a href="/p/{{.ID}}">查看全部{{.Replies}}条回复...</a>
+    </div>
+    {{end}}
+
+    {{if .ShowReplies.Last}}
+    <div class="subreply">
+        {{template "row_content.html" .ShowReplies.Last}}
+    </div>
+    {{end}}
+
+    {{end}}
+</div>

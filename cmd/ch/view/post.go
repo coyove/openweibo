@@ -9,7 +9,6 @@ import (
 )
 
 func New(g *gin.Context) {
-	ident.DecryptQuery(g)
 	var pl = struct {
 		UUID      string
 		Reply     string
@@ -56,14 +55,14 @@ func Edit(g *gin.Context) {
 	pl.RAuthor, _ = g.Cookie("id")
 	pl.IsAdmin = ident.IsAdmin(pl.RAuthor)
 
-	a, err := m.Get(ident.ParseDynamicID(g, pl.Reply).String())
+	a, err := m.Get(ident.ParseID(pl.Reply).String())
 	if err != nil {
 		log.Println(err)
 		g.Redirect(302, "/cat")
 		return
 	}
 
-	pl.Article.from(a, _showcontent, g)
+	pl.Article.from(a, _showcontent)
 	pl.IsAuthorBanned = m.IsBanned(a.Author)
 
 	g.HTML(200, "editpost.html", pl)

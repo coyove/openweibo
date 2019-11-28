@@ -348,6 +348,19 @@ div.ip {
     font-size: 90%;
 }
 
+div.subreply {
+    padding-left:1.5em;opacity:0.6;
+}
+
+div.rows > .row:nth-child(odd) {
+    background: #f1f2f3;
+}
+
+div.row-header > * {
+    margin-right: 0.33em;
+    display: inline-block;
+}
+
 @media only screen and (max-width: 540px) {
     .articles.small  > tbody >tr, .articles.small  > tbody>tr >th {
         display: block;

@@ -54,9 +54,9 @@ func (a *Article) Index() int {
 	return int(ident.ParseID(a.ID).RIndex())
 }
 
-func (a *Article) Parent() string {
-	i, _ := ident.ParseID(a.ID).RIndexParent()
-	return i.String()
+func (a *Article) Parent() (string, string) {
+	p, tp := ident.ParseID(a.ID).RIndexParent()
+	return p.String(), tp.String()
 }
 
 func (a *Article) ContentHTML() template.HTML {

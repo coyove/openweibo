@@ -50,11 +50,7 @@ func Index(g *gin.Context) {
 		SearchTerm: g.Param("tag"),
 		Tags:       config.Cfg.Tags,
 	}
-
-	opt := _obfs
-	if manager.IsCrawler(g) {
-		opt = 0
-	}
+	var opt uint64
 
 	if strings.HasPrefix(pl.SearchTerm, "@@") {
 		if !g.GetBool("ip-ok") {
@@ -70,14 +66,14 @@ func Index(g *gin.Context) {
 		pl.SearchTerm = "#" + pl.SearchTerm
 	}
 
-	cursor := ident.ParseDynamicID(g, g.Query("n")).String()
+	cursor := ident.ParseID(g.Query("n")).String()
 	a, next, err := m.Walk(pl.SearchTerm, cursor, int(config.Cfg.PostsPerPage))
 	if err != nil {
 		Error(500, "INTERNAL: "+err.Error(), g)
 		return
 	}
 
-	fromMultiple(&pl.Articles, a, opt, g)
+	fromMultiple(&pl.Articles, a, opt)
 
 	pl.Next = next
 	pl.Index = cursor == ""
@@ -95,7 +91,6 @@ func Index(g *gin.Context) {
 }
 
 func Replies(g *gin.Context) {
-	ident.DecryptQuery(g)
 	var pl = ArticleRepliesView{
 		ShowIP: ident.IsAdmin(g),
 		Tags:   config.Cfg.Tags,
@@ -103,25 +98,18 @@ func Replies(g *gin.Context) {
 	var pid = g.Param("parent")
 	var opt = _richtime | _showcontent
 
-	if !manager.IsCrawler(g) {
-		opt |= _obfs
-	}
-
-	if pl.ShowIP {
-		ident.SetDecryptArticleIDCheckExp(false)
-		defer ident.SetDecryptArticleIDCheckExp(true)
-	}
-
-	parent, err := m.Get(ident.ParseDynamicID(g, pid).String())
+	parent, err := m.Get(ident.ParseID(pid).String())
 	if err != nil || parent.ID == "" {
 		Error(404, "NOT FOUND", g)
 		log.Println(pid, err)
 		return
 	}
 
-	pl.ParentArticle.from(parent, opt, g)
+	pl.ParentArticle.from(parent, opt)
+	pl.ParentArticle.Index = 0
+	pl.ParentArticle.SubIndex = ""
 
-	j := ident.ParseDynamicID(g, g.Query("j"))
+	j := ident.ParseID(g.Query("j"))
 	if idx := j.RIndex(); idx > 0 && int(idx) <= parent.Replies {
 		p := intdivceil(int(idx), config.Cfg.PostsPerPage)
 		g.Redirect(302, "/p/"+pid+"?p="+strconv.Itoa(p)+"#r"+strconv.Itoa(int(j.RIndex())))
@@ -156,7 +144,7 @@ func Replies(g *gin.Context) {
 		start := intmin(int(pl.ParentArticle.Replies), (pl.CurPage-1)*config.Cfg.PostsPerPage)
 		end := intmin(int(pl.ParentArticle.Replies), pl.CurPage*config.Cfg.PostsPerPage)
 
-		fromMultiple(&pl.Articles, m.GetReplies(parent.ID, start+1, end+1), opt|_abstracttitle, g)
+		fromMultiple(&pl.Articles, m.GetReplies(parent.ID, start+1, end+1), opt|_abstracttitle|_showsubreplies)
 
 		// Fill in at most 7 page numbers for display
 		pl.Pages = make([]int, 0, 8)
