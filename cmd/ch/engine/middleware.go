@@ -46,12 +46,11 @@ func mwRenderPerf(g *gin.Context) {
 
 	start := time.Now()
 
+	userid := `<a href='/user'><svg class="vcenter" height="24" version="1.1" width="24"><g transform="translate(0 -1028.4)"><path d="m4 1034.4c-1.1046 0-2 0.9-2 2v10c0 1.1 0.8954 2 2 2h16c1.105 0 2-0.9 2-2v-10c0-1.1-0.895-2-2-2h-16z" fill="#95a5a6"/><path d="m4 5c-1.1046 0-2 0.8954-2 2v10c0 1.105 0.8954 2 2 2h16c1.105 0 2-0.895 2-2v-10c0-1.1046-0.895-2-2-2h-16z" fill="#bdc3c7" transform="translate(0 1028.4)"/><rect fill="#ecf0f1" height="10" width="7" x="4" y="1035.4"/><path d="m7.3125 8a2.5 2.5 0 0 0 -2.3125 2.5 2.5 2.5 0 0 0 0.8125 1.844c-0.7184 0.297-1.3395 0.769-1.8125 1.375v2.281 1h7v-1-2.312c-0.474-0.592-1.1053-1.052-1.8125-1.344a2.5 2.5 0 0 0 0.8125 -1.844 2.5 2.5 0 0 0 -2.6875 -2.5z" fill="#2c3e50" transform="translate(0 1028.4)"/><path d="m13 8v1h4v-1h-4zm0 2v1h7v-1h-7zm0 2v1h7v-1h-7z" fill="#7f8c8d" transform="translate(0 1028.4)"/></g></svg></a>`
 	tok, _ := g.Cookie("id")
-	userid := ""
-	u, _ := m.GetUserByToken(tok)
-	if u != nil {
+	if u, _ := m.GetUserByToken(tok); u != nil {
 		g.Set("user", u)
-		userid = "<a href='/user'>" + u.ID + "</a>"
+		userid += "&nbsp;<a class='vcenter' href='/user'>" + u.ID + "</a>"
 	}
 
 	g.Set("ip", ip)
@@ -59,17 +58,24 @@ func mwRenderPerf(g *gin.Context) {
 	g.Next()
 	msec := time.Since(start).Nanoseconds() / 1e6
 
-	if msec > survey.max {
-		survey.max = msec
+	if msec > Survey.Max {
+		Survey.Max = msec
 	}
-	atomic.AddInt64(&survey.written, int64(g.Writer.Size()))
+	atomic.AddInt64(&Survey.Written, int64(g.Writer.Size()))
 
 	x := g.Writer.Header().Get("Content-Type")
 	if strings.HasPrefix(x, "text/html") {
-		g.Writer.Write([]byte(fmt.Sprintf(
-			"Render %dms | Max %dms | Out %.2fG | Login[%s] | <a href='https://github.com/coyove/iis'>IIS</a>",
-			msec, survey.max, float64(survey.written)/1024/1024/1024, userid,
-		)))
+		g.Writer.Write([]byte(userid))
+
+		tag := g.Param("tag")
+		for _, t := range config.Cfg.Tags {
+			if tag == t {
+				g.Writer.Write([]byte(fmt.Sprintf(" / <b class='vcenter'>%v</b>", t)))
+			} else {
+				g.Writer.Write([]byte(fmt.Sprintf(" / <a class='vcenter' href='/cat/%v'>%v</a>", t, t)))
+			}
+		}
+		g.Writer.Write([]byte(fmt.Sprintf("<span class='vcenter' style='float:right'>%dms</span>", msec)))
 	}
 }
 

@@ -33,7 +33,7 @@ func (m *Manager) GetUserByToken(tok string) (*mv.User, error) {
 		return nil, fmt.Errorf("invalid token format")
 	}
 
-	id, session := x[:idx], x[idx+1:]
+	session, id := x[:idx], x[idx+1:]
 	u, err := m.GetUser(string(id))
 	if err != nil {
 		return nil, err

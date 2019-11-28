@@ -48,7 +48,9 @@
         {{else}}
         <a class="gbutton" href="/cat?n={{.ParentArticle.Timeline}}">下一个主题</a>
         {{end}}
-        <a style="float:right" class="gbutton" href="/edit/{{.ParentArticle.ID}}">删除</a>
+        {{if .CanDeleteParent}}
+        <a class="gbutton" href="/edit/{{.ParentArticle.ID}}">删除</a>
+        {{end}}
     </div>
 
     {{if len .Articles}}

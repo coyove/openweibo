@@ -193,6 +193,14 @@ func (m *Manager) Post(a *mv.Article) (string, error) {
 		return "", err
 	}
 
+	go func() {
+		u, _ := m.GetUser(a.Author)
+		if u != nil {
+			u.TotalPosts++
+			m.SetUser(u)
+		}
+	}()
+
 	return a.ID, nil
 }
 
@@ -333,6 +341,14 @@ func (m *Manager) PostReply(parent string, a *mv.Article) (string, error) {
 	if err := m.insertTag(a.ID, p.Author); err != nil {
 		return "", err
 	}
+
+	go func() {
+		u, _ := m.GetUser(a.Author)
+		if u != nil {
+			u.TotalPosts++
+			m.SetUser(u)
+		}
+	}()
 
 	return a.ID, nil
 }

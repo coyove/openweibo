@@ -4,6 +4,9 @@
 {{if .SearchTerm}}
         <title>{{.SearchTerm}} 的相关发言</title>
         <span style="font-size:125%">{{.SearchTerm}} 的相关发言</span>
+        {{if .IsAdmin}}
+        [ <a href="/user?as={{.SearchTerm}}">as {{.SearchTerm}}</a> ]
+        {{end}}
 {{else}}
         <title>全部主题</title>
         <span style="font-size:125%">全部主题</span>
@@ -27,7 +30,7 @@
         {{template "row_content.html" .}}
     {{end}}
     {{else}}
-    <div class=row style="text-align:center;padding:1em">无回复</div>
+    <div class=row style="text-align:center;padding:1em">无内容</div>
     {{end}}
 </div>
 

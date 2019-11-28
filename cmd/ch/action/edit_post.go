@@ -30,10 +30,8 @@ func Edit(g *gin.Context) {
 	}
 
 	var (
-		eid         = ident.ParseID(g.PostForm("reply")).String()
 		title       = mv.SoftTrunc(g.PostForm("title"), 100)
 		content     = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
-		author      = getAuthor(g)
 		cat         = checkCategory(g.PostForm("cat"))
 		locked      = g.PostForm("locked") != ""
 		highlighted = g.PostForm("highlighted") != ""
@@ -41,18 +39,24 @@ func Edit(g *gin.Context) {
 		banID       = g.PostForm("banned") != ""
 	)
 
-	if !ident.IsAdmin(author) {
+	u, ok := g.Get("user")
+	if !ok {
 		g.Redirect(302, "/")
 		return
 	}
 
-	a, err := m.Get(eid)
+	if !u.(*mv.User).IsMod() {
+		g.Redirect(302, "/")
+		return
+	}
+
+	a, err := m.Get(g.PostForm("reply"))
 	if err != nil {
 		g.Redirect(302, "/cat")
 		return
 	}
 
-	redir := "/p/" + ident.ParseID(a.ID).String()
+	redir := "/p/" + a.ID
 
 	if isBan := m.IsBanned(a.Author); isBan != banID {
 		if err := m.BanUser(a.Author, banID); err != nil {
@@ -106,18 +110,21 @@ func Delete(g *gin.Context) {
 		return
 	}
 
-	var eid = ident.ParseID(g.PostForm("reply")).String()
-	var author = getAuthor(g)
+	u, ok := g.Get("user")
+	if !ok {
+		view.Error(500, "internal/error", g)
+		return
+	}
 
-	a, err := m.Get(eid)
+	a, err := m.Get(g.PostForm("reply"))
 	if err != nil {
 		g.Redirect(302, "/cat")
 		return
 	}
 
-	if a.Author != config.HashName(author) && !ident.IsAdmin(author) {
+	if a.Author != u.(*mv.User).ID && !u.(*mv.User).IsMod() {
 		log.Println(g.MustGet("ip").(net.IP), "tried to delete", a.ID)
-		g.Redirect(302, "/p/"+ident.ParseID(a.ID).String())
+		g.Redirect(302, "/p/"+a.ID)
 		return
 	}
 

@@ -33,16 +33,21 @@ func New(g *gin.Context) {
 		ip      = hashIP(g)
 		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		title   = mv.SoftTrunc(g.PostForm("title"), 100)
-		author  = getAuthor(g)
 		cat     = checkCategory(mv.SoftTrunc(g.PostForm("cat"), 20))
 		redir   = func(a, b string) {
-			q := EncodeQuery(a, b, "author", author, "content", content, "title", title, "cat", cat)
+			q := EncodeQuery(a, b, "content", content, "title", title, "cat", cat)
 			g.Redirect(302, "/new"+q)
 		}
 	)
 
 	if g.PostForm("refresh") != "" {
 		redir("", "")
+		return
+	}
+
+	u, ok := g.Get("user")
+	if !ok {
+		redir("error", "user/not-logged-in")
 		return
 	}
 
@@ -61,7 +66,7 @@ func New(g *gin.Context) {
 		return
 	}
 
-	a := m.NewPost(title, content, config.HashName(author), ip, cat)
+	a := m.NewPost(title, content, u.(*mv.User).ID, ip, cat)
 	a.Saged = g.PostForm("saged") != ""
 
 	if _, err := m.Post(a); err != nil {
@@ -78,14 +83,19 @@ func Reply(g *gin.Context) {
 		reply   = ident.ParseID(g.PostForm("reply"))
 		ip      = hashIP(g)
 		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
-		author  = getAuthor(g)
 		redir   = func(a, b string) {
-			g.Redirect(302, "/p/"+reply.String()+EncodeQuery(a, b, "author", author, "content", content)+"&p=-1#paging")
+			g.Redirect(302, "/p/"+reply.String()+EncodeQuery(a, b, "content", content)+"&p=-1#paging")
 		}
 	)
 
 	if g.PostForm("refresh") != "" {
 		redir("refresh", "1")
+		return
+	}
+
+	u, ok := g.Get("user")
+	if !ok {
+		redir("error", "user/not-logged-in")
 		return
 	}
 
@@ -99,12 +109,12 @@ func Reply(g *gin.Context) {
 		return
 	}
 
-	if _, err := m.PostReply(reply.String(), m.NewReply(content, config.HashName(author), ip)); err != nil {
+	if _, err := m.PostReply(reply.String(), m.NewReply(content, u.(*mv.User).ID, ip)); err != nil {
 		log.Println(err)
 		redir("error", "error/can-not-reply")
 		return
 	}
 
-	author, content = "", ""
+	content = ""
 	redir("", "")
 }

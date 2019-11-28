@@ -2,6 +2,7 @@ package action
 
 import (
 	"fmt"
+	"log"
 	"net/url"
 	"unicode"
 
@@ -67,4 +68,44 @@ func sanUsername(id string) string {
 		}
 	}
 	return string(buf)
+}
+
+func checkCaptcha(g *gin.Context) string {
+	var (
+		answer            = mv.SoftTrunc(g.PostForm("answer"), 6)
+		uuid              = mv.SoftTrunc(g.PostForm("uuid"), 32)
+		tokenbuf, tokenok = ident.ParseToken(g, uuid)
+		challengePassed   bool
+	)
+
+	if !g.GetBool("ip-ok") {
+		return fmt.Sprintf("guard/cooling-down/%.1fs", float64(config.Cfg.Cooldown)-g.GetFloat64("ip-ok-remain"))
+	}
+
+	if len(answer) == 4 {
+		challengePassed = true
+		for i := range answer {
+			a := answer[i]
+			if a >= 'A' && a <= 'Z' {
+				a = a - 'A' + 'a'
+			}
+
+			if a != "0123456789acefhijklmnpqrtuvwxyz"[tokenbuf[i]%31] &&
+				a != "oiz3asg7b9acefhijklmnpqrtuvwxyz"[tokenbuf[i]%31] {
+				challengePassed = false
+				break
+			}
+		}
+	}
+
+	if !challengePassed {
+		log.Println(g.MustGet("ip"), "challenge failed")
+		return "guard/failed-captcha"
+	}
+
+	if !tokenok {
+		return "guard/token-expired"
+	}
+
+	return ""
 }

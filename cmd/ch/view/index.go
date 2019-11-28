@@ -9,6 +9,7 @@ import (
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/manager"
+	mv "github.com/coyove/iis/cmd/ch/model"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,18 +21,20 @@ type ArticlesTimelineView struct {
 	Next       string
 	Prev       string
 	SearchTerm string
+	IsAdmin    bool
 	Index      bool
 }
 
 type ArticleRepliesView struct {
-	Tags          []string
-	Articles      []ArticleView
-	ParentArticle ArticleView
-	CurPage       int
-	TotalPages    int
-	Pages         []int
-	ShowIP        bool
-	ReplyView     struct {
+	Tags            []string
+	Articles        []ArticleView
+	ParentArticle   ArticleView
+	CanDeleteParent bool
+	CurPage         int
+	TotalPages      int
+	Pages           []int
+	ShowIP          bool
+	ReplyView       struct {
 		UUID      string
 		Challenge string
 		ShowReply bool
@@ -52,19 +55,15 @@ func Index(g *gin.Context) {
 	}
 	var opt uint64
 
-	if strings.HasPrefix(pl.SearchTerm, "@@") {
-		if !g.GetBool("ip-ok") {
-			Error(500, "NOT FOUND", g)
-			return
-		}
-		pl.SearchTerm = config.HashName(pl.SearchTerm[2:])
-		opt |= _abstract
-	} else if strings.HasPrefix(pl.SearchTerm, "@") {
+	if strings.HasPrefix(pl.SearchTerm, "@") {
 		pl.SearchTerm = pl.SearchTerm[1:]
 		opt |= _abstract
 	} else if pl.SearchTerm != "" {
 		pl.SearchTerm = "#" + pl.SearchTerm
 	}
+
+	u, ok := g.Get("user")
+	pl.IsAdmin = ok && u.(*mv.User).IsAdmin()
 
 	cursor := ident.ParseID(g.Query("n")).String()
 	a, next, err := m.Walk(pl.SearchTerm, cursor, int(config.Cfg.PostsPerPage))
@@ -108,6 +107,10 @@ func Replies(g *gin.Context) {
 	pl.ParentArticle.from(parent, opt)
 	pl.ParentArticle.Index = 0
 	pl.ParentArticle.SubIndex = ""
+
+	if u, ok := g.Get("user"); ok {
+		pl.CanDeleteParent = u.(*mv.User).ID == pl.ParentArticle.Author || u.(*mv.User).IsMod()
+	}
 
 	j := ident.ParseID(g.Query("j"))
 	if idx := j.RIndex(); idx > 0 && int(idx) <= parent.Replies {

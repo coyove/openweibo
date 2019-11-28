@@ -5,35 +5,29 @@ import (
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
+	mv "github.com/coyove/iis/cmd/ch/model"
 	"github.com/gin-gonic/gin"
 )
 
 func New(g *gin.Context) {
 	var pl = struct {
-		UUID      string
-		Reply     string
-		Abstract  string
-		Challenge string
-		Tags      []string
-		IsAdmin   bool
+		UUID     string
+		Reply    string
+		Abstract string
+		Tags     []string
+		IsAdmin  bool
 
-		RTitle, RAuthor, RContent, RCat, EError string
+		RTitle, RContent, RCat, EError string
 	}{
 		RTitle:   g.Query("title"),
 		RContent: g.Query("content"),
 		RCat:     g.Query("cat"),
-		RAuthor:  g.Query("author"),
 		EError:   g.Query("error"),
 		Tags:     config.Cfg.Tags,
 		IsAdmin:  ident.IsAdmin(g),
 	}
 
-	pl.UUID, pl.Challenge = ident.MakeToken(g)
-
-	if pl.RAuthor == "" {
-		pl.RAuthor, _ = g.Cookie("id")
-	}
-
+	pl.UUID, _ = ident.MakeToken(g)
 	g.HTML(200, "newpost.html", pl)
 }
 
@@ -42,7 +36,6 @@ func Edit(g *gin.Context) {
 		UUID           string
 		Reply          string
 		Tags           []string
-		RAuthor        string
 		IsAdmin        bool
 		IsAuthorBanned bool
 		Article        ArticleView
@@ -51,9 +44,14 @@ func Edit(g *gin.Context) {
 		Tags:  config.Cfg.Tags,
 	}
 
+	u, ok := g.Get("user")
+	if !ok {
+		g.Redirect(302, "/cat")
+		return
+	}
+
 	pl.UUID, _ = ident.MakeToken(g)
-	pl.RAuthor, _ = g.Cookie("id")
-	pl.IsAdmin = ident.IsAdmin(pl.RAuthor)
+	pl.IsAdmin = u.(*mv.User).IsMod()
 
 	a, err := m.Get(ident.ParseID(pl.Reply).String())
 	if err != nil {

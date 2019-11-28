@@ -98,6 +98,14 @@ func (u User) Marshal() []byte {
 	return b
 }
 
+func (u User) IsMod() bool {
+	return u.Role == "admin" || u.Role == "mod" || u.ID == config.Cfg.AdminName
+}
+
+func (u User) IsAdmin() bool {
+	return u.Role == "admin" || u.ID == config.Cfg.AdminName
+}
+
 func UnmarshalUser(b []byte) (*User, error) {
 	a := &User{}
 	err := json.Unmarshal(b, a)
@@ -112,8 +120,8 @@ func MakeUserToken(u *User) string {
 		return ""
 	}
 	x := make([]byte, len(u.ID)+1+len(u.Session))
-	copy(x, u.ID)
-	copy(x[len(u.ID)+1:], u.Session)
+	copy(x, u.Session)
+	copy(x[len(u.Session)+1:], u.ID)
 
 	for i := 0; i < len(x)-16; i += 4 {
 		config.Cfg.Blk.Encrypt(x[i:], x[i:])

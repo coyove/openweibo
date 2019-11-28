@@ -59,8 +59,12 @@ a:hover {
     text-decoration: underline;
 }
 
+.vcenter {
+    vertical-align: middle;
+}
+
 hr {
-    border-color: rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.1);
     border-style: dotted;
 }
 

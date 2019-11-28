@@ -15,7 +15,7 @@ tr {
 <table class="articles">
     <input type=hidden name=uuid value="{{.UUID}}">
     <tr>
-        <td>新主题:</td>
+        <td class=nowrap>新主题:</td>
         <td><input class=t name=title value="{{.RTitle}}"></td>
     </tr>
     <tr>
@@ -31,28 +31,9 @@ tr {
         </td>
     </tr>
     <tr>
-        <td class=nowrap>ID: </td>
-        <td><input class=t name=author value="{{.RAuthor}}"></td>
-    </tr>
-    <tr>
-        <td></td><td style="font-size:90%">(选填) ID是删除自己发言时的凭证，其他人看到的为加密后的名字</td>
-    </tr>
-    <tr>
         <td class=nowrap>内容:</td>
         <td><textarea maxlength=4000 rows=10 name="content">{{.RContent}}</textarea></td>
     </tr>
-    <tr>
-        <td></td>
-        <td>
-<button name=refresh value=1 type=submit class=none>
-                <img src="data:image/png;base64,{{.Challenge}}">
-            </button>
-        </td>
-    </tr>
-    <tr>
-        <td class=nowrap>验证码:</td>
-        <td><input size=10 name="answer" class=s></td>
-    </tr> 
     <tr>
         <td class=nowrap></td>
         <td>
