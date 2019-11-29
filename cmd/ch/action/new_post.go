@@ -40,6 +40,12 @@ func New(g *gin.Context) {
 		}
 	)
 
+	if emoji := g.PostForm("emoji"); emoji != "" {
+		content += emoji
+		redir("", "")
+		return
+	}
+
 	if g.PostForm("refresh") != "" {
 		redir("", "")
 		return
@@ -87,6 +93,12 @@ func Reply(g *gin.Context) {
 			g.Redirect(302, "/p/"+reply.String()+EncodeQuery(a, b, "content", content)+"&p=-1#paging")
 		}
 	)
+
+	if emoji := g.PostForm("emoji"); emoji != "" {
+		content += emoji
+		redir("refresh", "1")
+		return
+	}
 
 	if g.PostForm("refresh") != "" {
 		redir("refresh", "1")

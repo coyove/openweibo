@@ -26,15 +26,22 @@
         <td class=nowrap>分类:</td>
         <td>
             <select class=t name=cat value="{{.RCat}}" size=5 >
-                <option value="default">default</option>
+                <option value="default">default (默认)</option>
                 {{range .Tags}}<option value="{{.}}" {{if eq $.RCat .}}selected{{end}}>{{.}}</option>{{end}}
             </select>
+        </td>
+    </tr>
+    <tr>
+        <td class=nowrap></td>
+        <td style="padding:0">
+            {{template "emoji.html" .}}
         </td>
     </tr>
     <tr>
         <td class=nowrap>内容:</td>
         <td><textarea maxlength=4000 rows=10 name="content">{{.RContent}}</textarea></td>
     </tr>
+    
     <tr>
         <td class=nowrap></td>
         <td>
@@ -55,4 +62,3 @@
     </tr>
 </table>
 </form>
-

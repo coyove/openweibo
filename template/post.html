@@ -22,6 +22,11 @@
                     <input type=hidden name=uuid value="{{.UUID}}">
                     <input type=hidden name=reply value="{{$.ParentArticle.ID}}">
                     <tr>
+                        <td style="padding:0;background:#f1f2f3;box-shadow:0 1px 2px #ddd">
+                            {{template "emoji.html" .}}
+                        </td>
+                    </tr>
+                    <tr>
                         <td>
                             <textarea maxlength=4000 placeholder="内容" style="border:none;padding:0" rows=12 name="content">{{.RContent}}</textarea>
                         </td>
