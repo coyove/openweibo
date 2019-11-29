@@ -19,13 +19,8 @@ func SetManager(mgr *manager.Manager) {
 }
 
 func Edit(g *gin.Context) {
-	if !g.GetBool("ip-ok") {
-		view.Error(400, "guard/cooling-down", g)
-		return
-	}
-
-	if _, ok := ident.ParseToken(g, g.PostForm("uuid")); !ok {
-		view.Error(400, "guard/token-expired", g)
+	if ret := checkToken(g); ret != "" {
+		view.Error(400, ret, g)
 		return
 	}
 
@@ -84,13 +79,14 @@ func Edit(g *gin.Context) {
 		return
 	}
 
+	oldcat := a.Category
 	a.Content, a.Category = content, cat
 
 	if p, _ := a.Parent(); p == "" {
 		a.Title = title
 	}
 
-	if err := m.Update(a); err != nil {
+	if err := m.Update(a, oldcat); err != nil {
 		log.Println(err)
 		view.Error(500, "internal/error", g)
 		return

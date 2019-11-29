@@ -47,7 +47,7 @@ func New(g *gin.Context) {
 
 	u, ok := g.Get("user")
 	if !ok {
-		redir("error", "user/not-logged-in")
+		redir("login-error", "user/not-logged-in")
 		return
 	}
 

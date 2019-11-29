@@ -1,16 +1,17 @@
 {{template "header.html" .}}
 
 <style>
-            table {
-                max-width:500px;
-            }
+table.z {
+    margin: 0 auto;
+    max-width: 500px;
+}
 </style>
 
 {{if .User}}
 
 <title>{{.User.ID}}</title>
 
-<table class="articles">
+<table class="articles z">
     <tr>
         <td class=nowrap>用户名:</td>
         <td><span>{{.User.ID}}</td>
@@ -42,7 +43,7 @@
     </tr>
     <tr>
         <td class=nowrap>收件箱:</td>
-        <td><span>{{.User.Unread}} (<a href="/cat/inbox:{{.User.ID}}">查看</a>)</td>
+        <td><span>{{.User.Unread}}未读 (<a href="/cat/inbox:{{.User.ID}}">查看</a>)</td>
     </tr>
     <tr>
         <td class=nowrap>登入时间:</td>
@@ -90,37 +91,9 @@
 
 {{else}}
 
-<title>登入注册</title>
-
+<title>注册</title>
 <form method="POST" action="/user">
-<table class="articles">
-    <input type=hidden name=uuid value="{{.UUID}}">
-    <input type=hidden name=method value="login">
-    <tr>
-        <td class=nowrap>用户名:</td>
-        <td><input class=t name=username value="{{.RUsername}}"></td>
-    </tr>
-    <tr>
-        <td class=nowrap>密码: </td>
-        <td><input type=password class=t name=password></td>
-    </tr>
-    {{if .EError}}
-    <tr>
-        <td></td> <td> <div>错误: {{template "error_i18n.html" .EError}}</div></td>
-    </tr>
-    {{end}}
-    <tr>
-        <td></td> <td style="text-align:right">
-            <button class="gbutton" type=submit>登入</button>
-        </td>
-    </tr>
-</table>
-</form>
-
-<hr>
-
-<form method="POST" action="/user">
-<table class="articles">
+<table class="articles z">
     <input type=hidden name=uuid value="{{.UUID}}">
     <input type=hidden name=method value="signup">
     <tr>
@@ -128,15 +101,15 @@
         <td><input class=t name=username value="{{.RUsername}}"></td>
     </tr>
     <tr>
-        <td></td><td style="font-size:90%">3~12字节</td>
+        <td></td><td style="font-size:90%">3~12英文，2~6中文</td>
     </tr>
     <tr>
         <td class=nowrap>密码: </td>
-        <td><input type=password class=t name=password></td>
+        <td><input type=password class=t name=password value="{{.RPassword}}"></td>
     </tr>
     <tr>
         <td class=nowrap>重复密码:</td>
-        <td><input type=password class=t name=password2></td>
+        <td><input type=password class=t name=password2 value="{{.RPassword}}"></td>
     </tr>
     <tr>
         <td>Email:</td>

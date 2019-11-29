@@ -90,7 +90,7 @@ func (m *Manager) Walk(hdr ident.IDTag, tag string, cursor string, n int) (a []*
 
 		p, err := mv.UnmarshalArticle(m.kvMustGet(next.Ptr))
 		if err == nil {
-			if strings.HasPrefix(tag, "#") && p.Category != tag[1:] {
+			if hdr == ident.IDTagCategory && p.Category != tag {
 				log.Println("[mgr.Walk] Stale tag ptr:", next, "expect:", tag, "actual:", p.Category)
 				goto HOLE
 			}
@@ -113,7 +113,7 @@ func (m *Manager) Walk(hdr ident.IDTag, tag string, cursor string, n int) (a []*
 		// root.Next should be unlinked and root's next will be root.Next.Next, but since root itself will also be deleted
 		// there is no need to schedule it into purgeDeleted()
 		if !holes[root.ID] {
-			go m.purgeDeleted(tag, root.ID)
+			go m.purgeDeleted(hdr, tag, root.ID)
 		}
 
 		holes[root.Next] = true
@@ -128,7 +128,7 @@ func (m *Manager) Walk(hdr ident.IDTag, tag string, cursor string, n int) (a []*
 	return
 }
 
-func (m *Manager) purgeDeleted(tag string, startID string) {
+func (m *Manager) purgeDeleted(hdr ident.IDTag, tag string, startID string) {
 	m.db.Lock(startID)
 	defer m.db.Unlock(startID)
 
@@ -154,7 +154,7 @@ func (m *Manager) purgeDeleted(tag string, startID string) {
 
 		p, err := mv.UnmarshalArticle(m.kvMustGet(next.Ptr))
 		if err == nil {
-			if strings.HasPrefix(tag, "#") && p.Category != tag[1:] {
+			if hdr == ident.IDTagCategory && p.Category != tag {
 				// Refer to Walk()
 			} else if tag == "" && next.ID != p.TimelineID {
 				// Refer to Walk()
@@ -197,6 +197,10 @@ func (m *Manager) Post(a *mv.Article) (string, error) {
 		u.TotalPosts++
 		return nil
 	})
+
+	for _, id := range mv.ExtractMentions(a.Content) {
+		go m.MentionUser(a, id)
+	}
 
 	return a.ID, nil
 }
@@ -349,6 +353,10 @@ func (m *Manager) PostReply(parent string, a *mv.Article) (string, error) {
 		return nil
 	})
 
+	for _, id := range mv.ExtractMentions(a.Content) {
+		go m.MentionUser(a, id)
+	}
+
 	return a.ID, nil
 }
 
@@ -356,7 +364,7 @@ func (m *Manager) Get(id string) (a *mv.Article, err error) {
 	return mv.UnmarshalArticle(m.kvMustGet(id))
 }
 
-func (m *Manager) Update(a *mv.Article) error {
+func (m *Manager) Update(a *mv.Article, oldcat ...string) error {
 	m.db.Lock(a.ID)
 	defer m.db.Unlock(a.ID)
 
@@ -364,7 +372,7 @@ func (m *Manager) Update(a *mv.Article) error {
 		return err
 	}
 
-	if a.Category != "" {
+	if a.Category != "" && len(oldcat) == 1 && a.Category != oldcat[0] {
 		m.insertTag(a.ID, ident.IDTagCategory, a.Category)
 	}
 	return nil

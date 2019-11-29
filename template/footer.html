@@ -1,16 +1,47 @@
 </div>
 <div id="footer" style="word-break:break-all;line-height:2.25em;position:absolute;right:0;bottom:0;left:0;padding:0 1em;background:#eee;box-shadow:0 -1px 0px #ccc;">
     {{if .User}}
-    ID: <a href='/user'>{{.User.ID}}</a>
+    ID / <a href='/user'>{{.User.ID}}</a>
     {{if .User.Unread}}
-    <a href="/cat/inbox:{{.User.ID}}" style="display:inline-block;color:white;background:#FF5722;padding:0 0.33em;border-radius:8px;min-width:20px;text-align:center;line-height:20px;font-size:12px;vertical-align:middle;margin:0 0.33em;">
-        {{.User.Unread}}
+    <a href="/cat/inbox:{{.User.ID}}" style="display:inline-block;color:white;background:#FF5722;padding:0 0.5em;border-radius:8px;min-width:20px;text-align:center;line-height:20px;font-size:12px;vertical-align:middle;margin:0 0.33em;">
+        {{.User.Unread}}消息
     </a>
     {{end}}
     {{else}}
-    <a href='/user'>登入</a>
+    ID / <input class="reply-toggle" style="display:none" type=checkbox id="login" {{if .LoginError}}checked{{end}}>
+        <label for=login>登入</label>
+        <div class="reply-view">
+            <form method="POST" action="/user">
+                <table class="articles">
+                    <input type=hidden name=uuid value="{{.UUID}}">
+                    <input type=hidden name=method value="login">
+                    <tr>
+                        <td class=nowrap>用户名:</td>
+                        <td><input class=t name=username value="{{.LoginUsername}}"></td>
+                    </tr>
+                    <tr>
+                        <td class=nowrap>密码: </td>
+                        <td><input type=password class=t name=password value="{{.LoginPassword}}"></td>
+                    </tr>
+                    {{if .LoginError}}
+                    <tr>
+                        <td></td> <td> <div>错误: {{template "error_i18n.html" .LoginError}}</div></td>
+                    </tr>
+                    {{end}}
+                    <tr>
+                        <td></td> <td style="text-align:right">
+                            <button class="gbutton" type=submit>登入</button>
+                            <button class="gbutton" type=submit name=cancel value=1>取消</button>
+                        </td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+        <div class="bg"></div>
+        / <a href="/user">注册</a>
     {{end}}
 
+    &emsp;分类
     {{range .Tags}}
     {{if eq . $.CurTag}}
     / <b>#{{.}}</b>
@@ -18,6 +49,6 @@
     / <a href="/cat/{{.}}">#{{.}}</a>
     {{end}}
     {{end}}
-    <span style="float:right">{{.Render}}ms</span>
+    <span style="float:right"><a href="https://github.com/coyove/iis">IIS</a> / {{.Render}}ms</span>
 </div>
 </html>

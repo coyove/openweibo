@@ -25,6 +25,7 @@ var Cfg = struct {
 	IPBlacklist  []string `yaml:"IPBlacklist"`
 	Cooldown     int      `yaml:"Cooldown"`
 	NeedID       bool     `yaml:"NeedID"`
+	MaxMentions  int      `yaml:"MaxMentions"`
 	DyRegion     string   `yaml:"DyRegion"`
 	CwRegion     string   `yaml:"CwRegion"`
 	DyAccessKey  string   `yaml:"DyAccessKey"`
@@ -47,6 +48,7 @@ var Cfg = struct {
 	PostsPerPage: 30,
 	Tags:         []string{},
 	Cooldown:     10,
+	MaxMentions:  2,
 }
 
 func MustLoad() {

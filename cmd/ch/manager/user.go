@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/coyove/iis/cmd/ch/config"
+	"github.com/coyove/iis/cmd/ch/ident"
 	mv "github.com/coyove/iis/cmd/ch/model"
 )
 
@@ -85,4 +86,14 @@ func (m *Manager) UpdateUser(id string, cb func(u *mv.User) error) error {
 		return err
 	}
 	return m.SetUser(u)
+}
+
+func (m *Manager) MentionUser(a *mv.Article, id string) error {
+	if err := m.insertTag(a.ID, ident.IDTagInbox, id); err != nil {
+		return err
+	}
+	return m.UpdateUser(id, func(u *mv.User) error {
+		u.Unread++
+		return nil
+	})
 }

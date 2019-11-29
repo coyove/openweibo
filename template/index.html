@@ -3,9 +3,16 @@
 <div style="padding:0.5em;line-height:2em">
 {{if .SearchTerm}}
         <title>{{.SearchTerm}} 的相关发言</title>
-        <span style="font-size:125%">{{.SearchTerm}} {{if .IsTagInbox}}收件箱{{else}}发言{{end}}</span>
-        {{if and .IsTagAuthor .IsAdmin}}
-        [ <a href="/user?as={{.SearchTerm}}">swap</a> / <a href="/cat/inbox:{{.SearchTerm}}">inbox</a> ]
+        <span style="font-size:18px">
+            {{.SearchTerm}}
+            {{if .User}}
+                {{if .User.IsMod}}<b style="font-size:18px;color:purple">mod</b>{{end}}
+                {{if .User.Banned}}<b style="font-size:18px;color:red">封禁</b>{{end}}
+            {{end}}
+            {{if .IsTagInbox}}收件箱{{end}}
+        </span>
+        {{if and .User .IsAdmin}}
+        [ <a href="/user?as={{.User.ID}}">swap</a> / <a href="/cat/inbox:{{.User.ID}}">inbox</a> ]
         {{end}}
 {{else}}
         <title>全部主题</title>
@@ -17,13 +24,9 @@
     {{if len .Articles}}
     {{range .Articles}}
         <div class=row style="padding:0.5em;line-height:1em">
-            <span style=";margin-right:1em">
-            {{if not .Parent}}
-            <a style="color:black" href="/cat/{{.Category}}">#{{.Category}}</a>
-            {{else}}
-            {{if ne $.SearchTerm .Author}}被{{.Author}}{{end}}回复
+            {{if .Category}}
+            <span style="margin-right:1em"><a style="color:black" href="/cat/{{.Category}}">#{{.Category}}</a></span>
             {{end}}
-            </span>
             <b style="font-size:150%"><a href="/p/{{.ID}}">{{template "row_tags.html" .}}</a></b>
         </div>
         <div class=row></div>

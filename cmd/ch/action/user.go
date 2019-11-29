@@ -5,33 +5,53 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"log"
-	"math/rand"
-	"strconv"
+	"strings"
 	"time"
 
 	"github.com/coyove/iis/cmd/ch/config"
+	"github.com/coyove/iis/cmd/ch/ident"
 	mv "github.com/coyove/iis/cmd/ch/model"
 	"github.com/gin-gonic/gin"
 )
 
 func User(g *gin.Context) {
+
 	var (
 		ip        = hashIP(g)
 		username  = sanUsername(g.PostForm("username"))
 		email     = mv.SoftTrunc(g.PostForm("email"), 64)
-		passowrd  = mv.SoftTrunc(g.PostForm("password"), 32)
-		passowrd2 = mv.SoftTrunc(g.PostForm("password2"), 32)
+		password  = mv.SoftTrunc(g.PostForm("password"), 32)
+		password2 = mv.SoftTrunc(g.PostForm("password2"), 32)
+		mth       = g.PostForm("method")
 		redir     = func(a, b string) {
-			q := EncodeQuery(a, b, "username", username, "email", email)
-			g.Redirect(302, "/user"+q)
+			if mth == "login" && a == "error" {
+				a = "login-error"
+			}
+			q := EncodeQuery(a, b, "username", username, "email", email, "password", ident.MakeTempToken(password))
+			if mth == "login" {
+				u := g.Request.Referer()
+				if idx := strings.Index(u, "?"); idx > -1 {
+					u = u[:idx]
+				}
+				g.Redirect(302, u+q)
+			} else {
+				g.Redirect(302, "/user"+q)
+			}
 		}
 		u *mv.User
 	)
 
-	if m := g.PostForm("method"); m == "logout" {
+	if g.PostForm("cancel") != "" {
+		redir("", "")
+		return
+	}
+
+	if mth == "logout" {
 		u = &mv.User{}
 		goto SKIP
-	} else if m == "update-email" {
+	}
+
+	if mth == "update-email" {
 		if ret := checkToken(g); ret != "" {
 			redir("error", ret)
 			return
@@ -56,16 +76,16 @@ SKIP:
 	defer m.UnlockUserID(username)
 
 	pwdHash := hmac.New(sha256.New, config.Cfg.KeyBytes)
-	pwdHash.Write([]byte(passowrd))
+	pwdHash.Write([]byte(password))
 
-	switch g.PostForm("method") {
+	switch mth {
 	case "signup":
 		if ret := checkCaptcha(g); ret != "" {
 			redir("error", ret)
 			return
 		}
 
-		if len(passowrd) == 0 || passowrd != passowrd2 {
+		if len(password) == 0 || password != password2 {
 			redir("error", "password/invalid-too-short")
 			return
 		}
@@ -77,13 +97,16 @@ SKIP:
 
 		u = &mv.User{
 			ID:           username,
-			Session:      strconv.FormatInt(time.Now().Unix(), 10) + strconv.FormatInt(rand.Int63(), 10),
+			Session:      genSession(),
 			Email:        email,
 			PasswordHash: pwdHash.Sum(nil),
 			SignupIP:     ip,
 			Signup:       time.Now(),
+			LoginIP:      ip,
+			Login:        time.Now(),
 		}
 	case "login":
+
 		if ret := checkToken(g); ret != "" {
 			redir("error", ret)
 			return
@@ -98,7 +121,7 @@ SKIP:
 			redir("error", "internal/error")
 			return
 		}
-		u.Session = strconv.FormatInt(time.Now().Unix(), 10) + strconv.FormatInt(rand.Int63(), 10)
+		u.Session = genSession()
 		u.Login = time.Now()
 		u.LoginIP = ip
 	}
@@ -110,5 +133,5 @@ SKIP:
 	}
 
 	g.SetCookie("id", mv.MakeUserToken(u), 365*86400, "", "", false, false)
-	g.Redirect(302, "/user")
+	redir("", "")
 }

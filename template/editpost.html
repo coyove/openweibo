@@ -9,11 +9,12 @@ tr {
 }
 </style>
 
-<form method="POST" action="/delete" style="padding: 0.5em">
+<form method="POST" action="/delete" style="padding: 0.5em;text-align:center">
+    To {{.Article.Author}}: 删除操作不可逆<br>
     <input type=hidden name=reply value="{{.Reply}}">
     <input type=hidden name=uuid value="{{.UUID}}">
-                <button class="gbutton" type=submit>删除{{.Reply}}</button>
-                <a class="gbutton" href="{{if .Reply}}/p/{{.Reply}}{{else}}/cat{{end}}">取消</a>
+    <button class="gbutton" type=submit>删除发言</button>
+    <a class="gbutton" href="{{if .Reply}}/p/{{.Reply}}{{else}}/cat{{end}}">取消删除{{.Reply}}</a>
 </form>
 
 {{if .IsAdmin}}
@@ -22,7 +23,12 @@ tr {
 <form method="POST" action="/edit">
     <table class=articles>
         <tr>
-         <input type=hidden name=uuid value="{{.UUID}}">
+        <input type=hidden name=uuid value="{{.UUID}}">
+        <input type=hidden name=reply value="{{.Reply}}">
+            <tr>
+                <td class=nowrap>IP:</td>
+                <td><span>{{.Article.IP}}</span></td>
+            </tr>
             {{if not .Article.Parent}}
             <tr>
                 <td class=nowrap>标题:</td>
@@ -52,7 +58,7 @@ tr {
                     <input id=saged name=saged type=checkbox {{if .Article.Saged}}checked{{end}}>
                     <label for=saged >SAGE</label>&emsp;
                     <input id=banned name=banned type=checkbox {{if .IsAuthorBanned}}checked{{end}}>
-                    <label for=banned >封ID</label>&emsp;
+                    <label for=banned >封{{.Article.Author}}</label>&emsp;
                 </td>
             </tr>
             <tr>

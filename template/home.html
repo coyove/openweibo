@@ -7,12 +7,6 @@
         document.write("本站不需要JS即可实现所有功能，如果你看到了这段文字，则表示你的浏览器版本过低。<br><br>")
     </script>
     <form action="/cookie" method="POST">
-        <input class=s size=30 name=id value="{{.ID}}" placeholder="Cookie ID"><br>
-        <button class="gbutton" type=submit>更新我的ID</button><br>
-        <button class="gbutton" type=submit name=clear value=1>清除ID</button><br>
-        <button class="gbutton" type=submit name=view value=1>查看ID发言</button><br><br>
-        当前运行配置：<br>
-        <pre style="font-family: monospace;line-height:1.1em;font-size:12px;">{{.Config}}</pre>
         {{if .IsAdmin}}
         <button class="gbutton" type=submit name=needid value=1>开关匿名ID</button><br>
         {{end}}

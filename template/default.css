@@ -50,12 +50,13 @@ input:focus, select:focus, textarea:focus, button:focus {
     outline: none;
 }
 
-a {
+a, label[for=login] {
+    cursor: pointer;
     text-decoration: none;
     color: #2a66d9;
 }
 
-a:hover {
+a:hover, label[for=login]:hover {
     text-decoration: underline;
 }
 
@@ -136,27 +137,6 @@ nav a {
 nav ul li:hover > a {
     background: rgba(0,0,0,0.1);
     text-decoration: none;
-}
-
-nav ul ul li {
-    background: white;
-}
-
-nav ul ul {
-	display: none;
-	position: absolute;
-    box-shadow: 0 1px 5px rgba(0, 0, 0, .3);
-}
-
-nav ul li:hover > ul, nav ul a:active + ul {
-	display: inherit;
-}
-
-nav ul ul li {
-	width:170px;
-	float:none;
-	display:list-item;
-	position: relative;
 }
 
 .reply-toggle:checked + label + .reply-view {

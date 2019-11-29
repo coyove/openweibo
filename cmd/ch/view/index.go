@@ -16,15 +16,15 @@ import (
 var m *manager.Manager
 
 type ArticlesTimelineView struct {
-	Tags        []string
-	Articles    []ArticleView
-	Next        string
-	Prev        string
-	SearchTerm  string
-	IsAdmin     bool
-	IsTagInbox  bool
-	IsTagAuthor bool
-	Index       bool
+	Tags       []string
+	Articles   []ArticleView
+	Next       string
+	Prev       string
+	SearchTerm string
+	IsAdmin    bool
+	IsTagInbox bool
+	Index      bool
+	User       *mv.User
 }
 
 type ArticleRepliesView struct {
@@ -60,7 +60,8 @@ func Index(g *gin.Context) {
 
 	if strings.HasPrefix(pl.SearchTerm, "@") {
 		pl.SearchTerm = pl.SearchTerm[1:]
-		pl.IsTagAuthor = true
+		pl.User, _ = m.GetUser(pl.SearchTerm)
+
 		opt |= _abstract
 		idtag = ident.IDTagAuthor
 	} else if strings.HasPrefix(pl.SearchTerm, "inbox:") {

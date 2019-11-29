@@ -1,6 +1,8 @@
 package action
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"log"
 	"net/url"
@@ -97,4 +99,10 @@ func checkCaptcha(g *gin.Context) string {
 	}
 
 	return ""
+}
+
+func genSession() string {
+	p := [12]byte{}
+	rand.Read(p[:])
+	return base64.StdEncoding.EncodeToString(p[:])
 }

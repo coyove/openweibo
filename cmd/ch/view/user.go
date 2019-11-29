@@ -15,6 +15,7 @@ func User(g *gin.Context) {
 		Challenge string
 		EError    string
 		RUsername string
+		RPassword string
 		REmail    string
 		Survey    interface{}
 		Config    string
@@ -24,6 +25,7 @@ func User(g *gin.Context) {
 		EError:    g.Query("error"),
 		RUsername: g.Query("username"),
 		REmail:    g.Query("email"),
+		RPassword: ident.ParseTempToken(g.Query("password")),
 		Survey:    engine.Survey,
 		Config:    config.Cfg.PrivateString,
 	}
