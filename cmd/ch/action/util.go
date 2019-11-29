@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/url"
-	"unicode"
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
@@ -57,17 +56,7 @@ func checkToken(g *gin.Context) string {
 }
 
 func sanUsername(id string) string {
-	buf := []byte(id)
-	for i, c := range buf {
-		if c := rune(c); !unicode.IsDigit(c) && !unicode.IsLetter(c) {
-			buf[i] = '_'
-		}
-		if i == 12 {
-			buf = buf[:12]
-			break
-		}
-	}
-	return string(buf)
+	return ident.SafeStringForCompressString12(id)
 }
 
 func checkCaptcha(g *gin.Context) string {

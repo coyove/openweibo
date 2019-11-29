@@ -58,11 +58,11 @@ func (m *Manager) kvMustGet(id string) []byte {
 	return p
 }
 
-func (m *Manager) Walk(tag string, cursor string, n int) (a []*mv.Article, nextID string, err error) {
+func (m *Manager) Walk(hdr ident.IDTag, tag string, cursor string, n int) (a []*mv.Article, nextID string, err error) {
 	var root *mv.Timeline
 
 	if cursor == "" {
-		root, err = mv.UnmarshalTimeline(m.kvMustGet(ident.NewTagID(tag).String()))
+		root, err = mv.UnmarshalTimeline(m.kvMustGet(ident.NewTagID(hdr, ident.CompressString12(tag)).String()))
 	} else {
 		root, err = mv.UnmarshalTimeline(m.kvMustGet(cursor))
 	}
@@ -183,29 +183,26 @@ func (m *Manager) Post(a *mv.Article) (string, error) {
 		return "", err
 	}
 
-	if err := m.insertTag(a.ID, "#"+a.Category); err != nil {
+	if err := m.insertTag(a.ID, ident.IDTagCategory, a.Category); err != nil {
 		// If failed, the article will be visible in timeline
 		return "", err
 	}
 
-	if err := m.insertTag(a.ID, a.Author); err != nil {
+	if err := m.insertTag(a.ID, ident.IDTagAuthor, a.Author); err != nil {
 		// If failed, the article will be visible in timeline and tagline
 		return "", err
 	}
 
-	go func() {
-		u, _ := m.GetUser(a.Author)
-		if u != nil {
-			u.TotalPosts++
-			m.SetUser(u)
-		}
-	}()
+	go m.UpdateUser(a.Author, func(u *mv.User) error {
+		u.TotalPosts++
+		return nil
+	})
 
 	return a.ID, nil
 }
 
-func (m *Manager) insertTag(aid, tag string) error {
-	rootID := ident.NewTagID(tag).String()
+func (m *Manager) insertTag(aid string, hdr ident.IDTag, tag string) error {
+	rootID := ident.NewTagID(hdr, ident.CompressString12(tag)).String()
 
 	m.db.Lock(rootID)
 	defer m.db.Unlock(rootID)
@@ -241,7 +238,7 @@ func (m *Manager) insertTag(aid, tag string) error {
 }
 
 func (m *Manager) insertRootThenUpdate(a *mv.Article) error {
-	rootID := ident.NewTagID("").String()
+	rootID := ident.NewTagID(ident.IDTagGeneral, nil).String()
 
 	m.db.Lock(rootID)
 	defer m.db.Unlock(rootID)
@@ -334,21 +331,23 @@ func (m *Manager) PostReply(parent string, a *mv.Article) (string, error) {
 		}
 	}
 
-	if err := m.insertTag(a.ID, a.Author); err != nil {
+	if err := m.insertTag(a.ID, ident.IDTagAuthor, a.Author); err != nil {
 		return "", err
 	}
 
-	if err := m.insertTag(a.ID, p.Author); err != nil {
+	if err := m.insertTag(a.ID, ident.IDTagInbox, p.Author); err != nil {
 		return "", err
 	}
 
-	go func() {
-		u, _ := m.GetUser(a.Author)
-		if u != nil {
-			u.TotalPosts++
-			m.SetUser(u)
-		}
-	}()
+	go m.UpdateUser(a.Author, func(u *mv.User) error {
+		u.TotalPosts++
+		return nil
+	})
+
+	go m.UpdateUser(p.Author, func(u *mv.User) error {
+		u.Unread++
+		return nil
+	})
 
 	return a.ID, nil
 }
@@ -366,7 +365,7 @@ func (m *Manager) Update(a *mv.Article) error {
 	}
 
 	if a.Category != "" {
-		m.insertTag(a.ID, "#"+a.Category)
+		m.insertTag(a.ID, ident.IDTagCategory, a.Category)
 	}
 	return nil
 }

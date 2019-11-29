@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -15,12 +14,14 @@ import (
 	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/manager"
 	"github.com/coyove/iis/cmd/ch/manager/logs"
+	mv "github.com/coyove/iis/cmd/ch/model"
 	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 )
 
 var m *manager.Manager
+var engine *gin.Engine
 
 func SetManager(mgr *manager.Manager) {
 	m = mgr
@@ -46,13 +47,11 @@ func mwRenderPerf(g *gin.Context) {
 
 	start := time.Now()
 
-	userid := `<a href='/user'><svg class="vcenter" height="24" version="1.1" width="24"><g transform="translate(0 -1028.4)"><path d="m4 1034.4c-1.1046 0-2 0.9-2 2v10c0 1.1 0.8954 2 2 2h16c1.105 0 2-0.9 2-2v-10c0-1.1-0.895-2-2-2h-16z" fill="#95a5a6"/><path d="m4 5c-1.1046 0-2 0.8954-2 2v10c0 1.105 0.8954 2 2 2h16c1.105 0 2-0.895 2-2v-10c0-1.1046-0.895-2-2-2h-16z" fill="#bdc3c7" transform="translate(0 1028.4)"/><rect fill="#ecf0f1" height="10" width="7" x="4" y="1035.4"/><path d="m7.3125 8a2.5 2.5 0 0 0 -2.3125 2.5 2.5 2.5 0 0 0 0.8125 1.844c-0.7184 0.297-1.3395 0.769-1.8125 1.375v2.281 1h7v-1-2.312c-0.474-0.592-1.1053-1.052-1.8125-1.344a2.5 2.5 0 0 0 0.8125 -1.844 2.5 2.5 0 0 0 -2.6875 -2.5z" fill="#2c3e50" transform="translate(0 1028.4)"/><path d="m13 8v1h4v-1h-4zm0 2v1h7v-1h-7zm0 2v1h7v-1h-7z" fill="#7f8c8d" transform="translate(0 1028.4)"/></g></svg></a>`
 	tok, _ := g.Cookie("id")
-	if u, _ := m.GetUserByToken(tok); u != nil {
+	u, _ := m.GetUserByToken(tok)
+	if u != nil {
 		g.Set("user", u)
-		userid += "&nbsp;<a class='vcenter' href='/user'>" + u.ID + "</a>"
 	}
-
 	g.Set("ip", ip)
 	g.Set("req-start", start)
 	g.Next()
@@ -65,17 +64,17 @@ func mwRenderPerf(g *gin.Context) {
 
 	x := g.Writer.Header().Get("Content-Type")
 	if strings.HasPrefix(x, "text/html") {
-		g.Writer.Write([]byte(userid))
-
-		tag := g.Param("tag")
-		for _, t := range config.Cfg.Tags {
-			if tag == t {
-				g.Writer.Write([]byte(fmt.Sprintf(" / <b class='vcenter'>%v</b>", t)))
-			} else {
-				g.Writer.Write([]byte(fmt.Sprintf(" / <a class='vcenter' href='/cat/%v'>%v</a>", t, t)))
-			}
-		}
-		g.Writer.Write([]byte(fmt.Sprintf("<span class='vcenter' style='float:right'>%dms</span>", msec)))
+		engine.HTMLRender.Instance("footer.html", struct {
+			Render int64
+			Tags   []string
+			CurTag string
+			User   *mv.User
+		}{
+			msec,
+			config.Cfg.Tags,
+			g.Param("tag"),
+			u,
+		}).Render(g.Writer)
 	}
 }
 
@@ -188,5 +187,7 @@ func New(prod bool) *gin.Engine {
 	r.Use(gin.Recovery(), gzip.Gzip(gzip.BestSpeed), gin.LoggerWithConfig(mwLoggerConfig), mwRenderPerf, mwIPThrot)
 
 	loadTrafficCounter()
+
+	engine = r
 	return r
 }

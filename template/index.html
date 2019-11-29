@@ -3,9 +3,9 @@
 <div style="padding:0.5em;line-height:2em">
 {{if .SearchTerm}}
         <title>{{.SearchTerm}} 的相关发言</title>
-        <span style="font-size:125%">{{.SearchTerm}} 的相关发言</span>
-        {{if .IsAdmin}}
-        [ <a href="/user?as={{.SearchTerm}}">as {{.SearchTerm}}</a> ]
+        <span style="font-size:125%">{{.SearchTerm}} {{if .IsTagInbox}}收件箱{{else}}发言{{end}}</span>
+        {{if and .IsTagAuthor .IsAdmin}}
+        [ <a href="/user?as={{.SearchTerm}}">swap</a> / <a href="/cat/inbox:{{.SearchTerm}}">inbox</a> ]
         {{end}}
 {{else}}
         <title>全部主题</title>
@@ -47,4 +47,3 @@
     {{end}}
 </div>
 
-{{template "footer.html" .}}

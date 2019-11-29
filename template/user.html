@@ -41,6 +41,10 @@
         <td><span>{{.User.TotalPosts}} (<a href="/cat/@{{.User.ID}}">查看</a>)</td>
     </tr>
     <tr>
+        <td class=nowrap>收件箱:</td>
+        <td><span>{{.User.Unread}} (<a href="/cat/inbox:{{.User.ID}}">查看</a>)</td>
+    </tr>
+    <tr>
         <td class=nowrap>登入时间:</td>
         <td><span>{{.User.Login}}</td>
     </tr>
@@ -164,4 +168,3 @@
 </form>
 {{end}}
 
-{{template "footer.html" .}}

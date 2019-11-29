@@ -9,7 +9,16 @@ import (
 	"unsafe"
 )
 
-const IDLen = 15
+const (
+	IDLen = 15
+
+	IDTagGeneral  IDTag = 0xFF
+	IDTagCategory       = 0xFE
+	IDTagAuthor         = 0xFC
+	IDTagInbox          = 0xFA
+)
+
+type IDTag byte
 
 type ID struct {
 	rIndex [6]byte
@@ -31,10 +40,10 @@ func NewID() ID {
 	return id
 }
 
-func NewTagID(tag string) ID {
+func NewTagID(hdr IDTag, tag []byte) ID {
 	id := ID{}
 	x := (*[IDLen]byte)(unsafe.Pointer(&id))
-	(*x)[0] = 0xff
+	(*x)[0] = byte(hdr)
 	copy((*x)[1:], tag)
 	return id
 }

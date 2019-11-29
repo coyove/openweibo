@@ -16,13 +16,15 @@ import (
 var m *manager.Manager
 
 type ArticlesTimelineView struct {
-	Tags       []string
-	Articles   []ArticleView
-	Next       string
-	Prev       string
-	SearchTerm string
-	IsAdmin    bool
-	Index      bool
+	Tags        []string
+	Articles    []ArticleView
+	Next        string
+	Prev        string
+	SearchTerm  string
+	IsAdmin     bool
+	IsTagInbox  bool
+	IsTagAuthor bool
+	Index       bool
 }
 
 type ArticleRepliesView struct {
@@ -54,19 +56,38 @@ func Index(g *gin.Context) {
 		Tags:       config.Cfg.Tags,
 	}
 	var opt uint64
+	var idtag = ident.IDTagGeneral
 
 	if strings.HasPrefix(pl.SearchTerm, "@") {
 		pl.SearchTerm = pl.SearchTerm[1:]
+		pl.IsTagAuthor = true
 		opt |= _abstract
+		idtag = ident.IDTagAuthor
+	} else if strings.HasPrefix(pl.SearchTerm, "inbox:") {
+		pl.SearchTerm = pl.SearchTerm[6:]
+		pl.IsTagInbox = true
+
+		if u, ok := g.Get("user"); !ok || (u.(*mv.User).ID != pl.SearchTerm && !u.(*mv.User).IsMod()) {
+			g.Redirect(302, "/cat")
+			return
+		} else if u.(*mv.User).ID == pl.SearchTerm {
+			m.UpdateUser(pl.SearchTerm, func(u *mv.User) error {
+				u.Unread = 0
+				return nil
+			})
+		}
+
+		opt |= _abstract
+		idtag = ident.IDTagInbox
 	} else if pl.SearchTerm != "" {
-		pl.SearchTerm = "#" + pl.SearchTerm
+		idtag = ident.IDTagCategory
 	}
 
 	u, ok := g.Get("user")
 	pl.IsAdmin = ok && u.(*mv.User).IsAdmin()
 
 	cursor := ident.ParseID(g.Query("n")).String()
-	a, next, err := m.Walk(pl.SearchTerm, cursor, int(config.Cfg.PostsPerPage))
+	a, next, err := m.Walk(idtag, pl.SearchTerm, cursor, int(config.Cfg.PostsPerPage))
 	if err != nil {
 		Error(500, "INTERNAL: "+err.Error(), g)
 		return

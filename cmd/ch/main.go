@@ -15,6 +15,7 @@ import (
 	"github.com/coyove/iis/cmd/ch/action"
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/engine"
+	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/manager"
 	"github.com/coyove/iis/cmd/ch/view"
 	"github.com/gin-gonic/autotls"
@@ -60,7 +61,7 @@ func main() {
 			go func() {
 				time.Sleep(time.Second)
 				x := append(names, "", "", "")
-				m.Walk(x[rand.Intn(len(x))], "", rand.Intn(N/2)+N/2)
+				m.Walk(ident.IDTagCategory, x[rand.Intn(len(x))], "", rand.Intn(N/2)+N/2)
 				wg.Done()
 			}()
 

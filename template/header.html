@@ -10,14 +10,6 @@
     <nav>
         <ul>
             <li><a href="/cat">主页</a></li>
-            <li><a>分类</a>
-                <ul>
-                    <li><a href="/cat/default">默认</a></li>
-                    {{range .Tags}}
-                    <li><a href="/cat/{{.}}">{{.}}</a></li>
-                    {{end}}
-                </ul>
-            </li>
             <li><a href="/new">新主题</a></li>
         </ul>
     </nav>

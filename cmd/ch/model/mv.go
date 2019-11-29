@@ -86,6 +86,7 @@ type User struct {
 	Email        string
 	PasswordHash []byte
 	TotalPosts   int
+	Unread       int
 	Signup       time.Time
 	SignupIP     string
 	Login        time.Time

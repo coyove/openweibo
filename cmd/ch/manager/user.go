@@ -73,3 +73,16 @@ func (m *Manager) LockUserID(id string) {
 func (m *Manager) UnlockUserID(id string) {
 	m.db.Unlock(id)
 }
+
+func (m *Manager) UpdateUser(id string, cb func(u *mv.User) error) error {
+	m.db.Lock(id)
+	defer m.db.Unlock(id)
+	u, err := m.GetUser(id)
+	if err != nil {
+		return err
+	}
+	if err := cb(u); err != nil {
+		return err
+	}
+	return m.SetUser(u)
+}

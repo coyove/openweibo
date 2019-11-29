@@ -1,2 +1,23 @@
 </div>
 <div id="footer" style="word-break:break-all;line-height:2.25em;position:absolute;right:0;bottom:0;left:0;padding:0 1em;background:#eee;box-shadow:0 -1px 0px #ccc;">
+    {{if .User}}
+    ID: <a href='/user'>{{.User.ID}}</a>
+    {{if .User.Unread}}
+    <a href="/cat/inbox:{{.User.ID}}" style="display:inline-block;color:white;background:#FF5722;padding:0 0.33em;border-radius:8px;min-width:20px;text-align:center;line-height:20px;font-size:12px;vertical-align:middle;margin:0 0.33em;">
+        {{.User.Unread}}
+    </a>
+    {{end}}
+    {{else}}
+    <a href='/user'>登入</a>
+    {{end}}
+
+    {{range .Tags}}
+    {{if eq . $.CurTag}}
+    / <b>#{{.}}</b>
+    {{else}}
+    / <a href="/cat/{{.}}">#{{.}}</a>
+    {{end}}
+    {{end}}
+    <span style="float:right">{{.Render}}ms</span>
+</div>
+</html>

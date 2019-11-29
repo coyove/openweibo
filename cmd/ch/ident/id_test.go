@@ -3,7 +3,6 @@ package ident
 import (
 	"crypto/aes"
 	"math/rand"
-	"strconv"
 	"testing"
 	"time"
 	"unsafe"
@@ -65,41 +64,4 @@ func init() {
 	rand.Seed(time.Now().Unix())
 	config.Cfg.Blk, _ = aes.NewCipher([]byte("0123456789abcdef"))
 	config.Cfg.IDTokenTTL = 10
-}
-
-func BenchmarkTempToken(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		id := strconv.Itoa(rand.Int())
-		xid := MakeTempToken(id)
-		id2 := ParseTempToken(xid)
-		if id != id2 {
-			b.Fatal(id, "[", id2, "]")
-		}
-	}
-}
-
-func BenchmarkTempTokenAID(b *testing.B) {
-	key := [4]byte{byte(rand.Int()), byte(rand.Int()), byte(rand.Int()), byte(rand.Int())}
-
-	for i := 0; i < b.N; i++ {
-		id := NewID()
-		id.RIndexAppend(int16(rand.Intn(128*128-1) + 1))
-		id.RIndexAppend(int16(rand.Intn(128*128-1) + 1))
-		id.RIndexAppend(int16(rand.Intn(128*128-1) + 1))
-		id.RIndexAppend(int16(rand.Intn(128*128-1) + 1))
-
-		var id2 ID
-		id2.decrypt(id.encrypt(key), key)
-
-		if id != id2 {
-			b.Fatal(id, id2)
-		}
-	}
-}
-
-func BenchmarkPNGCaptchaBase64(b *testing.B) {
-	id := [4]byte{}
-	for i := 0; i < b.N; i++ {
-		GenerateCaptcha(id)
-	}
 }

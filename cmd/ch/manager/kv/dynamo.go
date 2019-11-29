@@ -16,7 +16,7 @@ import (
 )
 
 var dyTable = "iis"
-var rootID = ident.NewTagID("").String()
+var rootID = ident.NewTagID(ident.IDTagGeneral, nil).String()
 
 type DynamoKV struct {
 	cache *lru.Cache
