@@ -26,6 +26,10 @@
         {{end}}
     </div>
 
+{{if .Image}}
+    <a href="/img/{{.Image}}"><img src="/img/{{.Image}}" style="display:block;width:100%;max-width:400px;margin-top:0.5em"></a>
+    {{end}}
+
     {{if .Content}}
     <pre style="padding:0.66em 0">{{.ContentHTML}}</pre>
     {{else}}

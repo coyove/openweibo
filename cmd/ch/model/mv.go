@@ -43,6 +43,7 @@ type Article struct {
 	Locked      bool      `json:"lock,omitempty"`
 	Highlighted bool      `json:"hl,omitempty"`
 	Saged       bool      `json:"sage,omitempty"`
+	Image       string    `json:"img,omitempty"`
 	Title       string    `json:"title,omitempty"`
 	Content     string    `json:"content"`
 	Author      string    `json:"author"`
@@ -83,15 +84,15 @@ type User struct {
 	ID           string
 	Session      string
 	Role         string
-	Email        string
 	PasswordHash []byte
-	TotalPosts   int
-	Unread       int
-	Signup       time.Time
-	SignupIP     string
-	Login        time.Time
-	LoginIP      string
-	Banned       bool
+	Email        string    `json:"e"`
+	TotalPosts   int       `json:"tp"`
+	Unread       int       `json:"ur"`
+	Signup       time.Time `json:"st"`
+	SignupIP     string    `json:"sip"`
+	Login        time.Time `json:"lt"`
+	LoginIP      string    `json:"lip"`
+	Banned       bool      `json:"ban"`
 }
 
 func (u User) Marshal() []byte {

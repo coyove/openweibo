@@ -17,29 +17,33 @@
         <input class="reply-toggle" style="display:none" type=checkbox id="reply" {{if .ShowReply}}checked{{end}}>
         <label class="gbutton" for=reply><b>回复主题</b></label>
         <div class="reply-view">
-            <form method="POST" action="/reply">
+            <form method="POST" action="/reply" enctype="multipart/form-data">
                 <table class="articles">
                     <input type=hidden name=uuid value="{{.UUID}}">
                     <input type=hidden name=reply value="{{$.ParentArticle.ID}}">
                     <tr>
-                        <td style="padding:0;background:#f1f2f3;box-shadow:0 1px 2px #ddd">
+                        <td style="padding:0;background:#f1f2f3;box-shadow:0 1px 2px #ddd" colspan=2>
                             {{template "emoji.html" .}}
                         </td>
                     </tr>
                     <tr>
-                        <td>
+                        <td colspan=2>
                             <textarea maxlength=4000 placeholder="内容" style="border:none;padding:0" rows=12 name="content">{{.RContent}}</textarea>
                         </td>
                     </tr>
-                    <tr style="border-top:solid 1px #ccc;text-align:right">
-                        <td>
+                    <tr style="border-top:dashed 1px #ddd;border-bottom:solid 1px #ddd">
+                        <td class=nowrap>图片:</td>
+                        <td><input style="width: 100%" type=file name=image></td>
+                    </tr> 
+                    <tr style="text-align:right">
+                        <td colspan=2>
                             <button {{if $.ParentArticle.Locked}}disabled{{end}} class="gbutton" type=submit>回复</button>
                             <a class="gbutton" href="/p/{{$.ParentArticle.ID}}">取消</a>
                         </td>
                     </tr> 
                     {{if .EError}}
                     <tr style="border-top:solid 1px #ccc">
-                        <td colspan=3>错误: {{template "error_i18n.html" .EError}}</td>
+                        <td colspan=2>错误: {{template "error_i18n.html" .EError}}</td>
                     </tr>
                     {{end}}
                 </table>

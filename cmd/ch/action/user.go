@@ -41,7 +41,7 @@ func User(g *gin.Context) {
 		u *mv.User
 	)
 
-	if g.PostForm("cancel") != "" {
+	if g.PostForm("cancel") != "" || g.PostForm("refresh") != "" {
 		redir("", "")
 		return
 	}

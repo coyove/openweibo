@@ -114,7 +114,7 @@ nav {
 }
 
 nav ul {
-    z-index: 9999;
+    z-index: 99;
 	padding: 0;
     margin: 0;
 	list-style: none;
@@ -156,7 +156,7 @@ nav ul li:hover > a {
     width: 90%;
     position: fixed;
     background: white;
-    z-index: 10000;
+    z-index: 1000;
     box-shadow: 0 1px 5px rgba(0, 0, 0, .3);
     display: none;
 }
@@ -172,7 +172,7 @@ nav ul li:hover > a {
     top: 0;
     height: 100%;
     width: 100%;
-    z-index: 9999;
+    z-index: 999;
     pointer-events: none;
     background: rgba(0,0,0,0.1);
 }

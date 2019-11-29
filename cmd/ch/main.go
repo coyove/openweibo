@@ -16,6 +16,7 @@ import (
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/engine"
 	"github.com/coyove/iis/cmd/ch/ident"
+	"github.com/coyove/iis/cmd/ch/imagex"
 	"github.com/coyove/iis/cmd/ch/manager"
 	"github.com/coyove/iis/cmd/ch/view"
 	"github.com/gin-gonic/autotls"
@@ -92,6 +93,7 @@ func main() {
 
 	r.NoRoute(view.NotFound)
 	r.Handle("GET", "/", view.Home)
+	r.Handle("GET", "/img/*path", imagex.Image)
 	r.Handle("GET", "/user", view.User)
 	r.Handle("GET", "/cat", view.Index)
 	r.Handle("GET", "/cat/:tag", view.Index)

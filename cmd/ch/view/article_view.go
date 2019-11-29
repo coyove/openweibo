@@ -12,6 +12,7 @@ type ArticleView struct {
 	Timeline  string
 	Parent    string
 	TopParent string
+	Image     string
 	Index     int
 	SubIndex  string
 	Replies   int
@@ -67,9 +68,14 @@ func (a *ArticleView) from(a2 *mv.Article, opt uint64) *ArticleView {
 
 	if opt&_abstract > 0 {
 		a.Content = mv.SoftTrunc(a2.Content, 64)
+		a.Image = a2.Image
+		if len(a.Content) == 0 && a.Image != "" {
+			a.Content = a.Image
+		}
 		a.ContentHTML = template.HTML(template.HTMLEscapeString(a.Content))
 	} else if opt&_showcontent > 0 {
 		a.Content = a2.Content
+		a.Image = a2.Image
 		a.ContentHTML = a2.ContentHTML()
 	}
 
