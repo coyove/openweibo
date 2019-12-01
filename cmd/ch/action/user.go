@@ -10,6 +10,7 @@ import (
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
+	"github.com/coyove/iis/cmd/ch/imagex"
 	mv "github.com/coyove/iis/cmd/ch/model"
 	"github.com/gin-gonic/gin"
 )
@@ -46,32 +47,11 @@ func User(g *gin.Context) {
 		return
 	}
 
-	if mth == "logout" {
-		u = &mv.User{}
-		goto SKIP
-	}
-
-	if mth == "update-email" {
-		if ret := checkToken(g); ret != "" {
-			redir("error", ret)
-			return
-		}
-		user, _ := g.Get("user")
-		if user == nil {
-			redir("error", "guard/id-not-existed")
-			return
-		}
-		u = user.(*mv.User)
-		u.Email = email
-		goto SKIP
-	}
-
 	if len(username) < 3 {
 		redir("error", "id/too-short")
 		return
 	}
 
-SKIP:
 	m.LockUserID(username)
 	defer m.UnlockUserID(username)
 
@@ -124,6 +104,28 @@ SKIP:
 		u.Session = genSession()
 		u.Login = time.Now()
 		u.LoginIP = ip
+	case "logout":
+		u = &mv.User{}
+	case "update-avatar", "update-email":
+		if ret := checkToken(g); ret != "" {
+			redir("error", ret)
+			return
+		}
+		user, _ := g.Get("user")
+		if user == nil {
+			redir("error", "guard/id-not-existed")
+			return
+		}
+		u = user.(*mv.User)
+		if mth == "update-email" {
+			u.Email = email
+		} else {
+			if err := imagex.GetAvatar(u, g); err != nil {
+				log.Println(u, err)
+				redir("error", "internal/error")
+				return
+			}
+		}
 	}
 
 	if err := m.SetUser(u); err != nil {

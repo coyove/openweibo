@@ -12,9 +12,29 @@ table.z {
 <title>{{.User.ID}}</title>
 
 <table class="articles z">
+    {{if .EError}}
+    <tr>
+        <td></td> <td> <div>错误: {{template "error_i18n.html" .EError}}</div></td>
+    </tr>
+    {{end}}
     <tr>
         <td class=nowrap>用户名:</td>
         <td><span>{{.User.ID}}</td>
+    </tr>
+    <tr>
+        <td class=nowrap>头像:</td>
+        <form method="POST" action="/user" enctype="multipart/form-data">
+            <td> 
+                <img src="/avatar/{{.User.ID}}" style="display:block;max-width:64px; max-width:64px">
+                <input type=hidden name=uuid value="{{.UUID}}">
+                <input type=hidden name=method value="update-avatar">
+                <input type=hidden name=username value="{{.User.ID}}">
+                <input type=file name=image>
+            </td>
+            <td class=nowrap>
+                <button class="gbutton" type=submit>更新</button>
+            </td>
+        </form>
     </tr>
     <tr>
         <form method="POST" action="/user">
@@ -22,6 +42,7 @@ table.z {
             <td> 
                 <input type=hidden name=uuid value="{{.UUID}}">
                 <input type=hidden name=method value="update-email">
+                <input type=hidden name=username value="{{.User.ID}}">
                 <input name=email class=t value="{{.User.Email}}">
             </td>
             <td class=nowrap>
@@ -65,8 +86,9 @@ table.z {
         <td></td> <td style="text-align:right">
 <form method="POST" action="/user">
     <input type=hidden name=uuid value="{{.UUID}}">
+    <input type=hidden name=username value="{{.User.ID}}">
     <input type=hidden name=method value="logout">
-            <button class="gbutton" type=submit>注销</button>
+    <button class="gbutton" type=submit>注销</button>
 </form>
         </td>
     </tr>

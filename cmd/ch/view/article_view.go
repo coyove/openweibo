@@ -68,9 +68,8 @@ func (a *ArticleView) from(a2 *mv.Article, opt uint64) *ArticleView {
 
 	if opt&_abstract > 0 {
 		a.Content = mv.SoftTrunc(a2.Content, 64)
-		a.Image = a2.Image
-		if len(a.Content) == 0 && a.Image != "" {
-			a.Content = a.Image
+		if len(a.Content) == 0 && a2.Image != "" {
+			a.Content = "IMG:" + a2.Image
 		}
 		a.ContentHTML = template.HTML(template.HTMLEscapeString(a.Content))
 	} else if opt&_showcontent > 0 {

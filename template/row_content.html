@@ -1,5 +1,12 @@
 <div id="r{{.Index}}" style="padding:0.5em 0.5em 0 0.5em" class="row">
-    <div class="row-header">
+    <div class="row-header"
+    {{if or .Content .Image}}
+        style="line-height:36px">
+        <img width=36 height=36 alt="{{.Author}}" src="/avatar/{{.Author}}" style="display:block;float:left;margin-right:0.5em">
+    {{else}}
+        >
+    {{end}}
+
         {{if .Index}}
             {{if .SubIndex}}
             <b>#{{.SubIndex}}</b>
@@ -26,8 +33,10 @@
         {{end}}
     </div>
 
-{{if .Image}}
-    <a href="/img/{{.Image}}"><img src="/img/{{.Image}}" style="display:block;width:100%;max-width:400px;margin-top:0.5em"></a>
+    {{if .Image}}
+    <a href="/img/{{.Image}}">
+        <img alt="{{.Image}}" src="/img/{{.Image}}" style="display:block;width:100%;max-height:400px;max-width:400px;margin-top:0.5em">
+    </a>
     {{end}}
 
     {{if .Content}}
@@ -38,7 +47,13 @@
 
     {{if .ShowReplies.First}}
     <div style="position:relative;margin:0 -0.5em; border-top:dotted 1px #aaa">
-        <span style="display:block;height:16px;width:16px;line-height:16px;position:absolute;top:-8px;left:1.5em;transform:rotate(-90deg)">&crarr;</span>
+        <svg version="1.1"
+            viewBox="0 0 392.652 392.652" width=16 height=16 style="display:block;height:16px;width:16px;line-height:16px;position:absolute;top:-6px;left:1em"
+            xml:space="preserve">
+        <path fill="#233" d="M371.439,243.7l-35.961,35.961c11.209-92.047-39.457-184.193-129.211-221.371c-34.202-14.167-71.578-19.149-108.094-14.425
+            C62.773,48.452,28.825,62.018,0,83.1l17.709,24.215c51.74-37.839,117.938-45.807,177.078-21.308
+            c85.411,35.379,129.596,128.751,105.878,215.706L242.652,243.7l-21.213,21.213l85.606,85.606l85.606-85.606L371.439,243.7z"/>
+        </svg>
     </div>
 
     <div class="subreply">
