@@ -10,7 +10,10 @@ tr {
 </style>
 
 <form method="POST" action="/delete" style="padding: 0.5em;text-align:center">
-    To {{.Article.Author}}: 删除操作不可逆<br>
+    To {{.Article.Author}}: 删除操作不可逆，确认删除？<br>
+    {{if .EError}}
+    <div>错误: {{template "error_i18n.html" .EError}}</div>
+    {{end}}
     <input type=hidden name=reply value="{{.Reply}}">
     <input type=hidden name=uuid value="{{.UUID}}">
     <button class="gbutton" type=submit>删除发言</button>

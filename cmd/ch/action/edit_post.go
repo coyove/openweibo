@@ -5,7 +5,6 @@ import (
 	"net"
 
 	"github.com/coyove/iis/cmd/ch/config"
-	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/manager"
 	mv "github.com/coyove/iis/cmd/ch/model"
 	"github.com/coyove/iis/cmd/ch/view"
@@ -96,19 +95,18 @@ func Edit(g *gin.Context) {
 }
 
 func Delete(g *gin.Context) {
-	if !g.GetBool("ip-ok") {
-		view.Error(400, "guard/cooling-down", g)
-		return
+	redir := func(a, b string) {
+		g.Redirect(302, "/edit/"+g.PostForm("reply")+EncodeQuery(a, b))
 	}
 
-	if _, ok := ident.ParseToken(g, g.PostForm("uuid")); !ok {
-		view.Error(400, "guard/token-expired", g)
+	if ret := checkToken(g); ret != "" {
+		redir("error", ret)
 		return
 	}
 
 	u, ok := g.Get("user")
 	if !ok {
-		view.Error(500, "internal/error", g)
+		redir("error", "internal/error")
 		return
 	}
 
@@ -126,7 +124,7 @@ func Delete(g *gin.Context) {
 
 	if err := m.Delete(a); err != nil {
 		log.Println(err)
-		view.Error(500, "internal/error", g)
+		redir("error", "internal/error")
 		return
 	}
 

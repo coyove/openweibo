@@ -3,6 +3,7 @@ package action
 import (
 	"log"
 	"net"
+	"strconv"
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
@@ -35,9 +36,10 @@ func New(g *gin.Context) {
 		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		title   = mv.SoftTrunc(g.PostForm("title"), 100)
 		cat     = checkCategory(mv.SoftTrunc(g.PostForm("cat"), 20))
+		saged   = g.PostForm("saged") != ""
 		image   string
 		redir   = func(a, b string) {
-			q := EncodeQuery(a, b, "content", content, "title", title, "cat", cat)
+			q := EncodeQuery(a, b, "content", content, "title", title, "cat", cat, "sage", strconv.FormatBool(saged))
 			g.Redirect(302, "/new"+q)
 		}
 	)
@@ -76,7 +78,7 @@ func New(g *gin.Context) {
 	}
 
 	a := m.NewPost(title, content, u.(*mv.User).ID, ip, cat)
-	a.Saged = g.PostForm("saged") != ""
+	a.Saged = saged
 	a.Image = image
 
 	if _, err := m.Post(a); err != nil {
