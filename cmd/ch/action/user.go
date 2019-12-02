@@ -135,5 +135,5 @@ func User(g *gin.Context) {
 	}
 
 	g.SetCookie("id", mv.MakeUserToken(u), 365*86400, "", "", false, false)
-	redir("", "")
+	redir("error", "ok")
 }

@@ -18,12 +18,10 @@ func New(g *gin.Context) {
 		IsAdmin  bool
 
 		RTitle, RContent, RCat, EError string
-		RSaged                         bool
 	}{
 		RTitle:   g.Query("title"),
 		RContent: g.Query("content"),
 		RCat:     g.Query("cat"),
-		RSaged:   g.Query("sage") != "",
 		EError:   g.Query("error"),
 		Tags:     config.Cfg.Tags,
 		IsAdmin:  ident.IsAdmin(g),

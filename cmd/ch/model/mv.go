@@ -42,7 +42,6 @@ type Article struct {
 	//Views       int       `json:"vs"`
 	Locked      bool      `json:"lock,omitempty"`
 	Highlighted bool      `json:"hl,omitempty"`
-	Saged       bool      `json:"sage,omitempty"`
 	Image       string    `json:"img,omitempty"`
 	Title       string    `json:"title,omitempty"`
 	Content     string    `json:"content"`

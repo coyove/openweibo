@@ -18,7 +18,6 @@
     <tr>
     <td colspan=2>
         新主题: (至少10字节)
-        &emsp;<input id=saged name=saged type=checkbox {{if .RSaged}}checked{{end}}> <label for=saged >SAGE自沉</label>
     </td>
     </tr>
     <tr>
@@ -48,7 +47,7 @@
     
     {{if .EError}}
     <tr>
-        <td></td> <td> <div>错误: {{template "error_i18n.html" .EError}}</div></td>
+        <td></td><td>{{template "error_i18n.html" .EError}}</td>
     </tr>
     {{end}}
     <tr>

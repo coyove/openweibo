@@ -3,11 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
+	"html/template"
 	"log"
 	"math/rand"
 	"os"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -88,6 +90,14 @@ func main() {
 	}
 
 	r := engine.New(config.Cfg.Key != "0123456789abcdef")
+	r.SetFuncMap(template.FuncMap{
+		"isCDError": func(s string) string {
+			if strings.HasPrefix(s, "guard/cooling-down/") {
+				return s[19 : len(s)-1]
+			}
+			return ""
+		},
+	})
 	r.LoadHTMLGlob("template/*.html")
 	r.Static("/s/", "template")
 

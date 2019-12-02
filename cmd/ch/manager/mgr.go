@@ -266,6 +266,10 @@ func (m *Manager) insertRootThenUpdate(a *mv.Article) error {
 		Next: root.Next,
 	}
 
+	if strings.HasPrefix(a.Category, "!") {
+		goto PUT
+	}
+
 	if err := m.db.Set(tl.ID, tl.Marshal()); err != nil {
 		return err
 	}
@@ -280,6 +284,7 @@ func (m *Manager) insertRootThenUpdate(a *mv.Article) error {
 	// So the marker will be scheduled into purgeDeleted(), but since we are holding the lock of root,
 	// it will not be deleted anyway. When we release the lock, everything should be fine.
 
+PUT:
 	if err := m.db.Set(a.ID, a.Marshal()); err != nil {
 		// If failed, let purgeDeleted do the job
 		return err
@@ -322,12 +327,11 @@ func (m *Manager) PostReply(parent string, a *mv.Article) (string, error) {
 	p.ReplyTime = time.Now()
 	p.Replies = nextIndex
 
-	if p.TimelineID != "" && !p.Saged {
+	if p.TimelineID != "" {
 		// Move parent to the front of the timeline
 		if err := m.insertRootThenUpdate(p); err != nil {
 			return "", err
 		}
-
 	} else {
 		// Save parent
 		if err := m.db.Set(p.ID, p.Marshal()); err != nil {

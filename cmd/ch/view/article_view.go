@@ -19,7 +19,6 @@ type ArticleView struct {
 	//Views       uint32
 	Locked      bool
 	Highlighted bool
-	Saged       bool
 	Title       string
 	Content     string
 	ContentHTML template.HTML
@@ -58,7 +57,6 @@ func (a *ArticleView) from(a2 *mv.Article, opt uint64) *ArticleView {
 	a.Replies = a2.Replies
 	a.Locked = a2.Locked
 	a.Highlighted = a2.Highlighted
-	a.Saged = a2.Saged
 	a.Author = a2.Author
 	a.IP = a2.IP
 	a.Category = a2.Category

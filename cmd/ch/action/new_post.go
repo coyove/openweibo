@@ -3,7 +3,6 @@ package action
 import (
 	"log"
 	"net"
-	"strconv"
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
@@ -25,7 +24,7 @@ func hashIP(g *gin.Context) string {
 	if len(ip) == net.IPv4len {
 		ip[3] = 0 // \24
 	} else if len(ip) == net.IPv6len {
-		copy(ip[8:], "\x00\x00\x00\x00\x00\x00\x00\x00") // \64
+		copy(ip[10:], "\x00\x00\x00\x00\x00\x00") // \80
 	}
 	return ip.String()
 }
@@ -36,10 +35,9 @@ func New(g *gin.Context) {
 		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		title   = mv.SoftTrunc(g.PostForm("title"), 100)
 		cat     = checkCategory(mv.SoftTrunc(g.PostForm("cat"), 20))
-		saged   = g.PostForm("saged") != ""
 		image   string
 		redir   = func(a, b string) {
-			q := EncodeQuery(a, b, "content", content, "title", title, "cat", cat, "sage", strconv.FormatBool(saged))
+			q := EncodeQuery(a, b, "content", content, "title", title, "cat", cat)
 			g.Redirect(302, "/new"+q)
 		}
 	)
@@ -78,7 +76,6 @@ func New(g *gin.Context) {
 	}
 
 	a := m.NewPost(title, content, u.(*mv.User).ID, ip, cat)
-	a.Saged = saged
 	a.Image = image
 
 	if _, err := m.Post(a); err != nil {

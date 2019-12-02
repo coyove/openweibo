@@ -25,7 +25,7 @@
                     </tr>
                     {{if .LoginError}}
                     <tr>
-                        <td></td> <td> <div>错误: {{template "error_i18n.html" .LoginError}}</div></td>
+                        <td></td><td>{{template "error_i18n.html" .LoginError}}</td>
                     </tr>
                     {{end}}
                     <tr>
@@ -52,6 +52,6 @@
     / <a href="/cat/{{.}}">#{{.}}</a>
     {{end}}
     {{end}}
-    <span style="float:right"><a href="https://github.com/coyove/iis">IIS</a> / {{.Render}}ms</span>
+    <span style="float:right">IIS / {{.Render}}ms</span>
 </div>
 </html>

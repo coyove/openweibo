@@ -7,7 +7,6 @@ import (
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/manager"
 	mv "github.com/coyove/iis/cmd/ch/model"
-	"github.com/coyove/iis/cmd/ch/view"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,8 +17,12 @@ func SetManager(mgr *manager.Manager) {
 }
 
 func Edit(g *gin.Context) {
+	redir := func(a, b string) {
+		g.Redirect(302, "/edit/"+g.PostForm("reply")+EncodeQuery(a, b))
+	}
+
 	if ret := checkToken(g); ret != "" {
-		view.Error(400, ret, g)
+		redir("error", ret)
 		return
 	}
 
@@ -29,7 +32,6 @@ func Edit(g *gin.Context) {
 		cat         = checkCategory(g.PostForm("cat"))
 		locked      = g.PostForm("locked") != ""
 		highlighted = g.PostForm("highlighted") != ""
-		saged       = g.PostForm("saged") != ""
 		banID       = g.PostForm("banned") != ""
 	)
 
@@ -50,31 +52,29 @@ func Edit(g *gin.Context) {
 		return
 	}
 
-	redir := "/p/" + a.ID
-
 	if isBan := m.IsBanned(a.Author); isBan != banID {
 		if err := m.BanUser(a.Author, banID); err != nil {
-			view.Error(400, err.Error(), g)
+			redir("error", err.Error())
 		} else {
-			g.Redirect(302, redir)
+			g.Redirect(302, "/p/"+a.ID)
 		}
 		return
 	}
 
-	if locked != a.Locked || highlighted != a.Highlighted || saged != a.Saged {
-		a.Locked, a.Highlighted, a.Saged = locked, highlighted, saged
+	if locked != a.Locked || highlighted != a.Highlighted {
+		a.Locked, a.Highlighted = locked, highlighted
 		m.Update(a)
-		g.Redirect(302, redir)
+		g.Redirect(302, "/p/"+a.ID)
 		return
 	}
 
 	if p, _ := a.Parent(); p == "" && len(title) == 0 {
-		view.Error(400, "title/too-short", g)
+		redir("error", "title/too-short")
 		return
 	}
 
 	if len(content) == 0 {
-		view.Error(400, "content/too-short", g)
+		redir("error", "content/too-short")
 		return
 	}
 
@@ -87,11 +87,11 @@ func Edit(g *gin.Context) {
 
 	if err := m.Update(a, oldcat); err != nil {
 		log.Println(err)
-		view.Error(500, "internal/error", g)
+		redir("error", "internal/error")
 		return
 	}
 
-	g.Redirect(302, redir)
+	g.Redirect(302, "/p/"+a.ID)
 }
 
 func Delete(g *gin.Context) {
