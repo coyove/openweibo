@@ -4,8 +4,9 @@
 
 {{with .ParentArticle}}
 <div style="padding:0.5em;line-height:2em">
-    {{if not .Parent}}<a href="/cat/{{.Category}}" style="color:black;margin-right:1em">#{{.Category}}</a>{{end}}
-    <b>{{template "row_tags.html" .}}</b>
+    {{if not .Parent}}<span>{{.Category}} /</span>{{end}} 
+    {{if .Highlighted}}<span style="color:#ffc107">&#x2605;</span>{{end}}
+    <b>{{.Title}}</b>
 </div>
 {{end}}
 

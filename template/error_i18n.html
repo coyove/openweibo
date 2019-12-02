@@ -50,6 +50,12 @@ Token过期，请重试
 服务端异常
 {{else if eq . "guard/id-not-existed"}}
 ID不存在
+{{else if eq . "user/not-logged-in"}}
+请登入后操作
+{{else if eq . "password/invalid-too-short"}}
+密码太短或不符
+{{else if eq . "id/already-existed"}}
+ID已存在
 {{else if eq . "ok"}}
 操作成功
 {{else}}

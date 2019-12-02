@@ -104,5 +104,10 @@ func checkCaptcha(g *gin.Context) string {
 func genSession() string {
 	p := [12]byte{}
 	rand.Read(p[:])
+	for i := range p {
+		if p[i] == 0 {
+			p[i] = 1
+		}
+	}
 	return base64.StdEncoding.EncodeToString(p[:])
 }

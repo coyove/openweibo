@@ -120,11 +120,15 @@ func MakeUserToken(u *User) string {
 	if u == nil {
 		return ""
 	}
-	x := make([]byte, len(u.ID)+1+len(u.Session))
+
+	length := len(u.ID) + 1 + len(u.Session)
+	length = (length + 7) / 8 * 8
+
+	x := make([]byte, length)
 	copy(x, u.Session)
 	copy(x[len(u.Session)+1:], u.ID)
 
-	for i := 0; i < len(x)-16; i += 4 {
+	for i := 0; i <= len(x)-16; i += 8 {
 		config.Cfg.Blk.Encrypt(x[i:], x[i:])
 	}
 	return base64.StdEncoding.EncodeToString(x)

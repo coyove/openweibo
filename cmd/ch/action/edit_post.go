@@ -32,7 +32,6 @@ func Edit(g *gin.Context) {
 		cat         = checkCategory(g.PostForm("cat"))
 		locked      = g.PostForm("locked") != ""
 		highlighted = g.PostForm("highlighted") != ""
-		banID       = g.PostForm("banned") != ""
 	)
 
 	u, ok := g.Get("user")
@@ -49,15 +48,6 @@ func Edit(g *gin.Context) {
 	a, err := m.Get(g.PostForm("reply"))
 	if err != nil {
 		g.Redirect(302, "/cat")
-		return
-	}
-
-	if isBan := m.IsBanned(a.Author); isBan != banID {
-		if err := m.BanUser(a.Author, banID); err != nil {
-			redir("error", err.Error())
-		} else {
-			g.Redirect(302, "/p/"+a.ID)
-		}
 		return
 	}
 

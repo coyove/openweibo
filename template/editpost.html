@@ -56,8 +56,6 @@ tr {
                     <label for=locked >锁定</label>&emsp;
                     <input id=highlighted name=highlighted type=checkbox {{if .Article.Highlighted}}checked{{end}}>
                     <label for=highlighted >高亮</label>&emsp;
-                    <input id=banned name=banned type=checkbox {{if .IsAuthorBanned}}checked{{end}}>
-                    <label for=banned >封{{.Article.Author}}</label>&emsp;
                 </td>
             </tr>
             <tr>

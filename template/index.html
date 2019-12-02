@@ -9,10 +9,20 @@
                 {{if .User.IsMod}}<b style="font-size:18px;color:purple">mod</b>{{end}}
                 {{if .User.Banned}}<b style="font-size:18px;color:red">封禁</b>{{end}}
             {{end}}
-            {{if .IsTagInbox}}收件箱{{end}}
+            {{if .IsTagInbox}}收件箱{{else}}相关发言{{end}}
         </span>
         {{if and .User .IsAdmin}}
-        [ <a href="/user?as={{.User.ID}}">swap</a> / <a href="/cat/inbox:{{.User.ID}}">inbox</a> ]
+        <div>
+        <a class=gbutton href="/user?as={{.User.ID}}">swap</a> 
+        <a class=gbutton href="/cat/inbox:{{.User.ID}}">收件箱</a>
+        <form method="POST" action="/user" style="float:left">
+            <input type=hidden name=uuid value="{{.UUID}}">
+            <input type=hidden name=method value="ban-user">
+            <input type=hidden name=ban value="{{if not .User.Banned}}1{{end}}">
+            <input type=hidden name=username value="{{.User.ID}}">
+            <button class="gbutton" type=submit>{{if .User.Banned}}解封{{else}}封禁{{end}}</button>
+        </form>
+        </div>
         {{end}}
 {{else}}
         <title>全部主题</title>
@@ -25,7 +35,7 @@
     {{range .Articles}}
         <div class=row style="padding:0.5em;line-height:1em">
             {{if .Category}}
-            <span style="margin-right:1em"><a style="color:black" href="/cat/{{.Category}}">#{{.Category}}</a></span>
+            <span><a style="color:black" href="/cat/{{.Category}}">{{.Category}}</a> /</span>
             {{end}}
             <b style="font-size:150%"><a href="/p/{{.ID}}">{{template "row_tags.html" .}}</a></b>
         </div>

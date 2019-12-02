@@ -106,6 +106,9 @@ func User(g *gin.Context) {
 		u.LoginIP = ip
 	case "logout":
 		u = &mv.User{}
+		g.SetCookie("id", mv.MakeUserToken(u), 365*86400, "", "", false, false)
+		g.Redirect(302, "/cat")
+		return
 	case "update-avatar", "update-email":
 		if ret := checkToken(g); ret != "" {
 			redir("error", ret)
@@ -126,6 +129,27 @@ func User(g *gin.Context) {
 				return
 			}
 		}
+	case "ban-user":
+		user, _ := g.Get("user")
+		if user == nil {
+			redir("error", "internal/error")
+			return
+		}
+
+		if !user.(*mv.User).IsMod() {
+			g.Redirect(302, "/")
+			return
+		}
+
+		if err := m.UpdateUser_unlock(username, func(u *mv.User) error {
+			u.Banned = g.PostForm("ban") != ""
+			return nil
+		}); err != nil {
+			redir("error", err.Error())
+		} else {
+			g.Redirect(302, "/cat/@"+username)
+		}
+		return
 	}
 
 	if err := m.SetUser(u); err != nil {

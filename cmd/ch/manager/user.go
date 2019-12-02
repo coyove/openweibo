@@ -15,26 +15,25 @@ func (m *Manager) GetUser(id string) (*mv.User, error) {
 }
 
 func (m *Manager) GetUserByToken(tok string) (*mv.User, error) {
+	if tok == "" {
+		return nil, fmt.Errorf("invalid token")
+	}
+
 	x, err := base64.StdEncoding.DecodeString(tok)
 	if err != nil {
 		return nil, err
 	}
 
-	pos := []int{} //TODO
-	for i := 0; i < len(x)-16; i += 4 {
-		pos = append(pos, i)
+	for i := len(x) - 16; i >= 0; i -= 8 {
+		config.Cfg.Blk.Decrypt(x[i:], x[i:])
 	}
 
-	for i := len(pos) - 1; i >= 0; i-- {
-		config.Cfg.Blk.Decrypt(x[pos[i]:], x[pos[i]:])
-	}
-
-	idx := bytes.IndexByte(x, 0)
-	if idx == -1 {
+	parts := bytes.SplitN(x, []byte("\x00"), 3)
+	if len(parts) != 3 {
 		return nil, fmt.Errorf("invalid token format")
 	}
 
-	session, id := x[:idx], x[idx+1:]
+	session, id := parts[0], parts[1]
 	u, err := m.GetUser(string(id))
 	if err != nil {
 		return nil, err
@@ -54,16 +53,10 @@ func (m *Manager) IsBanned(id string) bool {
 	return u.Banned
 }
 
-func (m *Manager) BanUser(id string, ban bool) error {
-	u, err := m.GetUser(id)
-	if err != nil {
-		return err
-	}
-	u.Banned = ban
-	return m.SetUser(u)
-}
-
 func (m *Manager) SetUser(u *mv.User) error {
+	if u.ID == "" {
+		return nil
+	}
 	return m.db.Set("u/"+u.ID, u.Marshal())
 }
 
@@ -78,6 +71,10 @@ func (m *Manager) UnlockUserID(id string) {
 func (m *Manager) UpdateUser(id string, cb func(u *mv.User) error) error {
 	m.db.Lock(id)
 	defer m.db.Unlock(id)
+	return m.UpdateUser_unlock(id, cb)
+}
+
+func (m *Manager) UpdateUser_unlock(id string, cb func(u *mv.User) error) error {
 	u, err := m.GetUser(id)
 	if err != nil {
 		return err

@@ -16,7 +16,6 @@ import (
 var m *manager.Manager
 
 type ArticlesTimelineView struct {
-	Tags       []string
 	Articles   []ArticleView
 	Next       string
 	Prev       string
@@ -24,18 +23,17 @@ type ArticlesTimelineView struct {
 	IsAdmin    bool
 	IsTagInbox bool
 	Index      bool
+	UUID       string
 	User       *mv.User
 }
 
 type ArticleRepliesView struct {
-	Tags            []string
 	Articles        []ArticleView
 	ParentArticle   ArticleView
 	CanDeleteParent bool
 	CurPage         int
 	TotalPages      int
 	Pages           []int
-	ShowIP          bool
 	ReplyView       struct {
 		UUID      string
 		Challenge string
@@ -53,7 +51,6 @@ func SetManager(mgr *manager.Manager) {
 func Index(g *gin.Context) {
 	var pl = ArticlesTimelineView{
 		SearchTerm: g.Param("tag"),
-		Tags:       config.Cfg.Tags,
 	}
 	var opt uint64
 	var idtag = ident.IDTagGeneral
@@ -86,6 +83,9 @@ func Index(g *gin.Context) {
 
 	u, ok := g.Get("user")
 	pl.IsAdmin = ok && u.(*mv.User).IsAdmin()
+	if pl.IsAdmin {
+		pl.UUID, _ = ident.MakeToken(g)
+	}
 
 	cursor := ident.ParseID(g.Query("n")).String()
 	a, next, err := m.Walk(idtag, pl.SearchTerm, cursor, int(config.Cfg.PostsPerPage))
@@ -112,14 +112,11 @@ func Index(g *gin.Context) {
 }
 
 func Replies(g *gin.Context) {
-	var pl = ArticleRepliesView{
-		ShowIP: ident.IsAdmin(g),
-		Tags:   config.Cfg.Tags,
-	}
+	var pl ArticleRepliesView
 	var pid = g.Param("parent")
 	var opt = _richtime | _showcontent
 
-	parent, err := m.Get(ident.ParseID(pid).String())
+	parent, err := m.Get(pid)
 	if err != nil || parent.ID == "" {
 		Error(404, "NOT FOUND", g)
 		log.Println(pid, err)

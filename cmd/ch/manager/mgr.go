@@ -100,6 +100,11 @@ func (m *Manager) Walk(hdr ident.IDTag, tag string, cursor string, n int) (a []*
 				goto HOLE
 			}
 
+			if tag == "" && strings.HasPrefix(p.Category, "!") {
+				log.Println("[mgr.Walk] Stale !category ptr:", next, "actual:", p.Category)
+				goto HOLE
+			}
+
 			a = append(a, p)
 		} else {
 			log.Println("[mgr.Walk] Stale pointer:", next, err)
@@ -157,6 +162,8 @@ func (m *Manager) purgeDeleted(hdr ident.IDTag, tag string, startID string) {
 			if hdr == ident.IDTagCategory && p.Category != tag {
 				// Refer to Walk()
 			} else if tag == "" && next.ID != p.TimelineID {
+				// Refer to Walk()
+			} else if tag == "" && strings.HasPrefix(p.Category, "!") {
 				// Refer to Walk()
 			} else {
 				start.Next = next.ID

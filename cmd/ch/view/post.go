@@ -33,13 +33,12 @@ func New(g *gin.Context) {
 
 func Edit(g *gin.Context) {
 	var pl = struct {
-		UUID           string
-		Reply          string
-		EError         string
-		Tags           []string
-		IsAdmin        bool
-		IsAuthorBanned bool
-		Article        ArticleView
+		UUID    string
+		Reply   string
+		EError  string
+		Tags    []string
+		IsAdmin bool
+		Article ArticleView
 	}{
 		Reply:  g.Param("id"),
 		Tags:   config.Cfg.Tags,
@@ -63,7 +62,6 @@ func Edit(g *gin.Context) {
 	}
 
 	pl.Article.from(a, _showcontent)
-	pl.IsAuthorBanned = m.IsBanned(a.Author)
 
 	g.HTML(200, "editpost.html", pl)
 }

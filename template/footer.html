@@ -47,9 +47,9 @@
     &emsp;分类
     {{range .Tags}}
     {{if eq . $.CurTag}}
-    / <b>#{{.}}</b>
+    / <b>{{.}}</b>
     {{else}}
-    / <a href="/cat/{{.}}">#{{.}}</a>
+    / <a href="/cat/{{.}}">{{.}}</a>
     {{end}}
     {{end}}
     <span style="float:right">IIS / {{.Render}}ms</span>
