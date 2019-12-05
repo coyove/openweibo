@@ -1,0 +1,24 @@
+{{template "header.html" .}}
+<title>搜索</title>
+<form method="GET" style="margin:0.5em auto;max-width:500px">
+<input name=q class=t autofocus>
+    <div style="text-align:center;margin:0.5em">
+    <button class=gbutton type=submit>搜索</button>
+    </div>
+
+    <ul style="margin: 1em;line-height:1.5em">
+        <li>最多返回20条结果</li>
+        <li>超过1秒的搜索会被强制取消</li>
+        <li>已索引: {{.Count}}</li>
+        {{range $k, $v := .Stat}}
+        {{if eq $k "index"}}
+            {{range $k2, $v2 := $v}}
+            <li>index.{{$k2}}: {{$v2}}</li>
+            {{end}}
+        {{else}}
+        <li>{{$k}}: {{$v}}</li>
+        {{end}}
+        {{end}}
+    </ul>
+    
+</form>

@@ -48,11 +48,6 @@ func New(g *gin.Context) {
 		return
 	}
 
-	if g.PostForm("refresh") != "" {
-		redir("", "")
-		return
-	}
-
 	u, ok := g.Get("user")
 	if !ok {
 		redir("login-error", "user/not-logged-in")
@@ -100,11 +95,6 @@ func Reply(g *gin.Context) {
 
 	if emoji := g.PostForm("emoji"); emoji != "" {
 		content += emoji
-		redir("refresh", "1")
-		return
-	}
-
-	if g.PostForm("refresh") != "" {
 		redir("refresh", "1")
 		return
 	}

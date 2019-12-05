@@ -16,6 +16,7 @@ const (
 	IDTagCategory       = 0xFE
 	IDTagAuthor         = 0xFC
 	IDTagInbox          = 0xFA
+	IDTagGallery        = 0xF0
 )
 
 type IDTag byte

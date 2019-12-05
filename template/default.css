@@ -60,6 +60,10 @@ a:hover, label[for=login]:hover {
     text-decoration: underline;
 }
 
+input[type=file] {
+    width: 100%;
+}
+
 .vcenter {
     vertical-align: middle;
 }

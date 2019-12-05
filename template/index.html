@@ -15,7 +15,7 @@
         <div>
         <a class=gbutton href="/user?as={{.User.ID}}">swap</a> 
         <a class=gbutton href="/cat/inbox:{{.User.ID}}">收件箱</a>
-        <form method="POST" action="/user" style="float:left">
+        <form method="POST" action="/user" style="display:inline">
             <input type=hidden name=uuid value="{{.UUID}}">
             <input type=hidden name=method value="ban-user">
             <input type=hidden name=ban value="{{if not .User.Banned}}1{{end}}">
@@ -37,7 +37,10 @@
             {{if .Category}}
             <span><a style="color:black" href="/cat/{{.Category}}">{{.Category}}</a> /</span>
             {{end}}
-            <b style="font-size:150%"><a href="/p/{{.ID}}">{{template "row_tags.html" .}}</a></b>
+            <b style="font-size:150%">
+                {{if .Highlighted}}<span style="color:#ffc107">&#x2605;</span>{{end}}
+                <a href="/p/{{.ID}}">{{.Title}}</a>
+            </b>
         </div>
         <div class=row></div>
         {{template "row_content.html" .}}

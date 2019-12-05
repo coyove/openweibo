@@ -77,6 +77,20 @@ func Index(g *gin.Context) {
 
 		opt |= _abstract
 		idtag = ident.IDTagInbox
+	} else if strings.HasPrefix(pl.SearchTerm, "search:") {
+		pl.SearchTerm = mv.SoftTrunc(pl.SearchTerm[7:], 50)
+		a := []*mv.Article{}
+		for _, id := range mv.Search(pl.SearchTerm) {
+			x, _ := m.Get(id)
+			if x != nil {
+				a = append(a, x)
+			}
+		}
+		fromMultiple(&pl.Articles, a, _abstract)
+		pl.Index = true
+		pl.SearchTerm = "\"" + pl.SearchTerm + "\""
+		g.HTML(200, "index.html", pl)
+		return
 	} else if pl.SearchTerm != "" {
 		idtag = ident.IDTagCategory
 	}
@@ -160,6 +174,9 @@ func Replies(g *gin.Context) {
 	pl.CurPage = intmin(pl.CurPage, pl.TotalPages)
 	if pl.CurPage <= 0 {
 		pl.CurPage = pl.TotalPages
+	}
+	if pl.CurPage <= 0 {
+		pl.CurPage = 1
 	}
 
 	if pl.TotalPages > 0 {

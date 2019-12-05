@@ -12,12 +12,8 @@ import (
 var rxSan = regexp.MustCompile(`(?m)(^>.+|<|https?://\S+)`)
 var rxMentions = regexp.MustCompile(`(@\S+)`)
 
-func FormatTime(x time.Time, sec bool) string {
-	now := time.Now().UTC().Add(8 * time.Hour)
-	if now.YearDay() == x.YearDay() && now.Year() == x.Year() {
-		return x.Format("15:04:05")
-	}
-	return x.Format("2006-01-02 15:04:05")
+func FormatTime(x time.Time, rich bool) string {
+	return x.UTC().Add(8 * time.Hour).Format("2006-01-02 15:04")
 }
 
 func SoftTrunc(a string, n int) string {

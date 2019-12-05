@@ -76,6 +76,7 @@ func UnmarshalArticle(b []byte) (*Article, error) {
 	if a.ID == "" {
 		return nil, fmt.Errorf("failed to unmarshal: %q", b)
 	}
+	BuildIndex(a)
 	return a, err
 }
 

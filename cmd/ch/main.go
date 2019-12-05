@@ -20,6 +20,7 @@ import (
 	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/imagex"
 	"github.com/coyove/iis/cmd/ch/manager"
+	mv "github.com/coyove/iis/cmd/ch/model"
 	"github.com/coyove/iis/cmd/ch/view"
 	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"
@@ -40,6 +41,8 @@ func main() {
 	view.SetManager(m)
 	action.SetManager(m)
 	engine.SetManager(m)
+
+	mv.InitSearchIndex("tmp/search.bleve")
 
 	if os.Getenv("BENCH") == "1" {
 		ids := []string{}
@@ -108,6 +111,7 @@ func main() {
 	r.Handle("GET", "/user", view.User)
 	r.Handle("GET", "/cat", view.Index)
 	r.Handle("GET", "/cat/:tag", view.Index)
+	r.Handle("GET", "/search", view.Search)
 	r.Handle("GET", "/p/:parent", view.Replies)
 	r.Handle("GET", "/new", view.New)
 	r.Handle("GET", "/edit/:id", view.Edit)

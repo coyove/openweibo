@@ -19,7 +19,7 @@
         <span>NOT FOUND</span>
         {{else}}
             <span>ID: <a href="/cat/@{{.Author}}">{{.Author}}</a></span>
-            <span>日期: {{.CreateTime}}</span>
+            <span class="time{{.CreateTime}}time">{{.CreateTime}}</span>
 
             {{if eq .Index 0}}
                     <span>回复: {{.Replies}}</span>
