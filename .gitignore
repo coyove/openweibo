@@ -6,3 +6,4 @@ tmp
 1.db
 *.con
 iis.db
+.DS_Store

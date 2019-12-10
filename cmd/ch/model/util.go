@@ -13,7 +13,7 @@ var rxSan = regexp.MustCompile(`(?m)(^>.+|<|https?://\S+)`)
 var rxMentions = regexp.MustCompile(`(@\S+)`)
 
 func FormatTime(x time.Time, rich bool) string {
-	return x.UTC().Add(8 * time.Hour).Format("2006-01-02 15:04")
+	return x.UTC().Add(8 * time.Hour).Format("2006-01-02 15:04:05")
 }
 
 func SoftTrunc(a string, n int) string {

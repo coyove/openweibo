@@ -86,7 +86,7 @@ func (m *Manager) UpdateUser_unlock(id string, cb func(u *mv.User) error) error 
 }
 
 func (m *Manager) MentionUser(a *mv.Article, id string) error {
-	if err := m.insertTag(a.ID, ident.IDTagInbox, id); err != nil {
+	if err := m.insert(a.ID, ident.IDTagInbox, id); err != nil {
 		return err
 	}
 	return m.UpdateUser(id, func(u *mv.User) error {

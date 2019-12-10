@@ -1,6 +1,8 @@
 package view
 
 import (
+	"bytes"
+	"encoding/base64"
 	"log"
 	"net/url"
 	"strconv"
@@ -91,8 +93,6 @@ func Index(g *gin.Context) {
 		pl.SearchTerm = "\"" + pl.SearchTerm + "\""
 		g.HTML(200, "index.html", pl)
 		return
-	} else if pl.SearchTerm != "" {
-		idtag = ident.IDTagCategory
 	}
 
 	u, ok := g.Get("user")
@@ -125,6 +125,46 @@ func Index(g *gin.Context) {
 	g.HTML(200, "index.html", pl)
 }
 
+func Timeline(g *gin.Context) {
+	pl := ArticlesTimelineView{}
+	opt := _abstract
+
+	u, ok := g.Get("user")
+	pl.IsAdmin = ok && u.(*mv.User).IsAdmin()
+	if pl.IsAdmin {
+		pl.UUID, _ = ident.MakeToken(g)
+	}
+
+	cursors := []ident.ID{}
+
+	if getQ := g.Query("ids"); getQ == "" {
+		for cbuf, _ := base64.StdEncoding.DecodeString(g.PostForm("cursors")); len(cbuf) > 0; {
+			id := ident.UnmarshalID(cbuf)
+			if !id.Valid() {
+				break
+			}
+			cbuf = cbuf[id.Size():]
+			cursors = append(cursors, id)
+		}
+	} else {
+		for _, id := range strings.Split(getQ, ",") {
+			cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(id))
+		}
+	}
+
+	a, next := m.WalkMulti(int(config.Cfg.PostsPerPage), cursors...)
+	fromMultiple(&pl.Articles, a, opt)
+
+	nextbuf := bytes.Buffer{}
+	nextbuftmp := [32]byte{}
+	for _, c := range next {
+		p := c.Marshal(nextbuftmp[:])
+		nextbuf.Write(p)
+	}
+	pl.Next = base64.StdEncoding.EncodeToString(nextbuf.Bytes())
+	g.HTML(200, "timeline.html", pl)
+}
+
 func Replies(g *gin.Context) {
 	var pl ArticleRepliesView
 	var pid = g.Param("parent")
@@ -143,13 +183,6 @@ func Replies(g *gin.Context) {
 
 	if u, ok := g.Get("user"); ok {
 		pl.CanDeleteParent = u.(*mv.User).ID == pl.ParentArticle.Author || u.(*mv.User).IsMod()
-	}
-
-	j := ident.ParseID(g.Query("j"))
-	if idx := j.RIndex(); idx > 0 && int(idx) <= parent.Replies {
-		p := intdivceil(int(idx), config.Cfg.PostsPerPage)
-		g.Redirect(302, "/p/"+pid+"?p="+strconv.Itoa(p)+"#r"+strconv.Itoa(int(j.RIndex())))
-		return
 	}
 
 	{

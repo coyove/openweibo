@@ -48,7 +48,7 @@ func GetImage(g *gin.Context) (string, error) {
 
 	path := fmt.Sprintf("%s/%s_%x%s",
 		time.Now().Format("2006-Jan/02"),
-		ident.SafeStringForCompressString12(image.Filename),
+		ident.SafeStringForCompressString(image.Filename),
 		hash[:4],
 		ext,
 	)

@@ -17,7 +17,6 @@ import (
 	"github.com/coyove/iis/cmd/ch/action"
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/engine"
-	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/imagex"
 	"github.com/coyove/iis/cmd/ch/manager"
 	mv "github.com/coyove/iis/cmd/ch/model"
@@ -46,30 +45,25 @@ func main() {
 
 	if os.Getenv("BENCH") == "1" {
 		ids := []string{}
-		randString := func() string { return strconv.Itoa(rand.Int())[:12] }
-		names := []string{randString(), randString(), randString(), randString()}
+		names := []string{"aa", "bb", "cc", "dd"}
 		N := 40
 
-		wg := sync.WaitGroup{}
 		for i := 0; i < N; i++ {
-			wg.Add(1)
-			go func(i int) {
-				a := m.NewPost("BENCH "+strconv.Itoa(i)+" post", strconv.Itoa(i), names[rand.Intn(len(names))], "127.0.0.0", "default")
-				m.Post(a)
-				ids = append(ids, a.ID)
-				wg.Done()
-			}(i)
+			time.Sleep(time.Second)
+			a := m.NewPost("BENCH "+strconv.Itoa(i)+" post", strconv.Itoa(i), names[rand.Intn(len(names))], "127.0.0.0", "default")
+			m.Post(a)
+			ids = append(ids, a.ID)
 		}
-		wg.Wait()
 
+		wg := sync.WaitGroup{}
 		for k := 0; k < 2; k++ {
 			wg.Add(1)
-			go func() {
-				time.Sleep(time.Second)
-				x := append(names, "", "", "")
-				m.Walk(ident.IDTagCategory, x[rand.Intn(len(x))], "", rand.Intn(N/2)+N/2)
-				wg.Done()
-			}()
+			// go func() {
+			// 	time.Sleep(time.Second)
+			// 	x := append(names, "", "", "")
+			// 	m.Walk(ident.IDTagCategory, x[rand.Intn(len(x))], "", rand.Intn(N/2)+N/2)
+			// 	wg.Done()
+			// }()
 
 			for i := 0; i < 50; i++ {
 				wg.Add(1)
@@ -110,6 +104,8 @@ func main() {
 	r.Handle("GET", "/avatar/:id", imagex.Avatar)
 	r.Handle("GET", "/user", view.User)
 	r.Handle("GET", "/cat", view.Index)
+	r.Handle("GET", "/timeline", view.Timeline)
+	r.Handle("POST", "/timeline", view.Timeline)
 	r.Handle("GET", "/cat/:tag", view.Index)
 	r.Handle("GET", "/search", view.Search)
 	r.Handle("GET", "/p/:parent", view.Replies)

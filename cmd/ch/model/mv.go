@@ -53,12 +53,11 @@ type Article struct {
 }
 
 func (a *Article) Index() int {
-	return int(ident.ParseID(a.ID).RIndex())
+	return int(ident.ParseID(a.ID).Reply())
 }
 
-func (a *Article) Parent() (string, string) {
-	p, tp := ident.ParseID(a.ID).RIndexParent()
-	return p.String(), tp.String()
+func (a *Article) Parent() string {
+	return ident.ParseID(a.ID).Parent().String()
 }
 
 func (a *Article) ContentHTML() template.HTML {

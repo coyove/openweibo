@@ -2,7 +2,9 @@ package ident
 
 import "unicode/utf8"
 
-func SafeStringForCompressString12(id string) string {
+const CompressedLength = 15
+
+func SafeStringForCompressString(id string) string {
 	buf := make([]rune, 0, len(id))
 	count := 0
 	for _, c := range id {
@@ -11,7 +13,7 @@ func SafeStringForCompressString12(id string) string {
 			buf = append(buf, c)
 			count++
 		case c >= 0x2000 && c <= 0x9fff:
-			if count > 10 {
+			if count > CompressedLength-2 {
 				return string(buf)
 			}
 			buf = append(buf, c)
@@ -20,21 +22,21 @@ func SafeStringForCompressString12(id string) string {
 			buf = append(buf, '_')
 			count++
 		}
-		if count == 12 {
+		if count == CompressedLength {
 			break
 		}
 	}
 	return string(buf)
 }
 
-func CompressString12(id string) []byte {
+func CompressString(id string) []byte {
 	buf := make([]byte, 0, len(id))
 	for _, c := range id {
 		switch {
 		case c >= '0' && c <= '9', c >= 'a' && c <= 'z', c >= 'A' && c <= 'Z', c == '.', c == '-', c == '~', c == '!':
 			buf = append(buf, byte(c))
 		case c >= 0x2000 && c <= 0x9fff:
-			if len(buf) > 10 {
+			if len(buf) > CompressedLength-2 {
 				return buf
 			}
 			c = (c - 0x2000) | 0x8000
@@ -42,14 +44,14 @@ func CompressString12(id string) []byte {
 		default:
 			buf = append(buf, '_')
 		}
-		if len(buf) == 12 {
+		if len(buf) == CompressedLength {
 			break
 		}
 	}
 	return buf
 }
 
-func DecompressString12(buf []byte) string {
+func DecompressString(buf []byte) string {
 	p := make([]byte, 0, len(buf))
 	for i := 0; i < len(buf); {
 		c := buf[i]

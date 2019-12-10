@@ -58,7 +58,7 @@ func checkToken(g *gin.Context) string {
 }
 
 func sanUsername(id string) string {
-	return ident.SafeStringForCompressString12(id)
+	return ident.SafeStringForCompressString(id)
 }
 
 func checkCaptcha(g *gin.Context) string {

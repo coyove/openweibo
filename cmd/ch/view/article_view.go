@@ -62,7 +62,7 @@ func (a *ArticleView) from(a2 *mv.Article, opt uint64) *ArticleView {
 	a.Category = a2.Category
 	a.CreateTime = mv.FormatTime(a2.CreateTime, opt&_richtime > 0)
 	a.ReplyTime = mv.FormatTime(a2.ReplyTime, opt&_richtime > 0)
-	a.Parent, a.TopParent = a2.Parent()
+	a.Parent = a2.Parent()
 
 	if opt&_abstract > 0 {
 		a.Content = mv.SoftTrunc(a2.Content, 64)

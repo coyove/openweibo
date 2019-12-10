@@ -1,6 +1,8 @@
 package ident
 
 import (
+	"bytes"
+	"compress/gzip"
 	"math/rand"
 	"testing"
 	"time"
@@ -25,14 +27,35 @@ func randomString() string {
 func TestCompress(t *testing.T) {
 	rand.Seed(time.Now().Unix())
 
-	t.Log(DecompressString12(CompressString12("阿是事ア1多万吨")))
-	t.Log("" == DecompressString12(CompressString12("")))
+	t.Log(DecompressString(CompressString("阿是事ア1多万吨")))
+	t.Log("" == DecompressString(CompressString("")))
 
 	for i := 0; i < 1e7; i++ {
 		ori := randomString()
-		str := SafeStringForCompressString12(ori)
-		if x := DecompressString12(CompressString12(str)); x != str {
+		str := SafeStringForCompressString(ori)
+		if x := DecompressString(CompressString(str)); x != str {
 			t.Fatal("Ori:", ori, "Safe:", str, "Dec:", x)
 		}
 	}
+}
+
+func TestCompress2(t *testing.T) {
+	rand.Seed(time.Now().Unix())
+
+	p := bytes.Buffer{}
+	n := 16000
+	for i := 0; i < n; i++ {
+		ori := SafeStringForCompressString(randomString())
+		p.Write([]byte(ori))
+		p.WriteByte(0)
+		p.Write([]byte("    "))
+	}
+
+	comp := &bytes.Buffer{}
+	w := gzip.NewWriter(comp)
+	w.Write(p.Bytes())
+	w.Close()
+
+	t.Log(p.Len())
+	t.Log(comp.Len())
 }

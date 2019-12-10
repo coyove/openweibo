@@ -58,7 +58,7 @@ func Edit(g *gin.Context) {
 		return
 	}
 
-	if p, _ := a.Parent(); p == "" && len(title) == 0 {
+	if p := a.Parent(); p == "" && len(title) == 0 {
 		redir("error", "title/too-short")
 		return
 	}
@@ -71,7 +71,7 @@ func Edit(g *gin.Context) {
 	oldcat := a.Category
 	a.Content, a.Category = content, cat
 
-	if p, _ := a.Parent(); p == "" {
+	if a.Parent() == "" {
 		a.Title = title
 	}
 
@@ -118,7 +118,7 @@ func Delete(g *gin.Context) {
 		return
 	}
 
-	if p, _ := a.Parent(); p != "" {
+	if p := a.Parent(); p != "" {
 		g.Redirect(302, "/p/"+p)
 	} else {
 		g.Redirect(302, "/cat")

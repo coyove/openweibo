@@ -1,7 +1,6 @@
 package kv
 
 import (
-	"log"
 	"net/http"
 	sync "sync"
 	"time"
@@ -11,12 +10,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/coyove/common/lru"
-	"github.com/coyove/iis/cmd/ch/ident"
 	//sync "github.com/sasha-s/go-deadlock"
 )
 
 var dyTable = "iis"
-var rootID = ident.NewTagID(ident.IDTagGeneral, nil).String()
 
 type DynamoKV struct {
 	cache *lru.Cache
@@ -84,9 +81,6 @@ func (m *DynamoKV) Get(key string) ([]byte, error) {
 
 	if vi := out.Item["value"]; vi != nil && vi.S != nil {
 		v = []byte(*vi.S)
-		if key == rootID {
-			log.Println("Last [TOOR]:", *vi.S)
-		}
 	}
 
 	if len(v) > 0 {
