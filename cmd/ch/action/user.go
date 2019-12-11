@@ -11,7 +11,7 @@ import (
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/imagex"
-	mv "github.com/coyove/iis/cmd/ch/model"
+	"github.com/coyove/iis/cmd/ch/mv"
 	"github.com/gin-gonic/gin"
 )
 
@@ -24,11 +24,14 @@ func User(g *gin.Context) {
 		password  = mv.SoftTrunc(g.PostForm("password"), 32)
 		password2 = mv.SoftTrunc(g.PostForm("password2"), 32)
 		mth       = g.PostForm("method")
-		redir     = func(a, b string) {
+		redir     = func(a, b string, ext ...string) {
 			if mth == "login" && a == "error" {
 				a = "login-error"
 			}
-			q := EncodeQuery(a, b, "username", username, "email", email, "password", ident.MakeTempToken(password))
+
+			ext = append([]string{a, b, "username", username, "email", email, "password", ident.MakeTempToken(password)}, ext...)
+			q := EncodeQuery(ext...)
+
 			if mth == "login" {
 				u := g.Request.Referer()
 				if idx := strings.Index(u, "?"); idx > -1 {
@@ -148,6 +151,29 @@ func User(g *gin.Context) {
 			redir("error", err.Error())
 		} else {
 			g.Redirect(302, "/cat/@"+username)
+		}
+		return
+	case "follow":
+
+		user, _ := g.Get("user")
+		to := g.PostForm("to")
+		follow := g.PostForm("follow") != ""
+		if user == nil || to == "" {
+			redir("error", "internal/error")
+			return
+		}
+		if g.PostForm("search") != "" {
+			redir("n", "u/"+user.(*mv.User).ID+"/follow/"+to)
+			return
+		}
+		if ret := checkToken(g); ret != "" {
+			redir("error", ret)
+			return
+		}
+		if err := m.FollowUser_unlock(user.(*mv.User).ID, to, follow); err != nil {
+			redir("error", err.Error())
+		} else {
+			redir("error", "ok", "n", "u/"+user.(*mv.User).ID+"/follow/"+to)
 		}
 		return
 	}

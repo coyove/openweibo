@@ -4,22 +4,25 @@ import (
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/engine"
 	"github.com/coyove/iis/cmd/ch/ident"
-	mv "github.com/coyove/iis/cmd/ch/model"
+	"github.com/coyove/iis/cmd/ch/manager"
+	"github.com/coyove/iis/cmd/ch/mv"
 	"github.com/gin-gonic/gin"
 )
 
 func User(g *gin.Context) {
 	p := struct {
-		Tags      []string
-		UUID      string
-		Challenge string
-		EError    string
-		RUsername string
-		RPassword string
-		REmail    string
-		Survey    interface{}
-		Config    string
-		User      *mv.User
+		Tags           []string
+		UUID           string
+		Challenge      string
+		EError         string
+		RUsername      string
+		RPassword      string
+		REmail         string
+		Survey         interface{}
+		Config         string
+		Followings     []manager.FollowingState
+		FollowingsNext string
+		User           *mv.User
 	}{
 		Tags:      config.Cfg.Tags,
 		EError:    g.Query("error"),
@@ -44,6 +47,8 @@ func User(g *gin.Context) {
 			p.User = u
 			g.SetCookie("id", mv.MakeUserToken(u), 86400, "", "", false, false)
 		}
+
+		p.Followings, p.FollowingsNext = m.GetFollowingList(p.User, g.Query("n"), int(config.Cfg.PostsPerPage))
 	}
 
 	g.HTML(200, "user.html", p)

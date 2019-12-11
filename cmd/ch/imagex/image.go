@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/coyove/iis/cmd/ch/ident"
-	mv "github.com/coyove/iis/cmd/ch/model"
+	"github.com/coyove/iis/cmd/ch/mv"
 	"github.com/gin-gonic/gin"
 )
 

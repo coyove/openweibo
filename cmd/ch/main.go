@@ -19,7 +19,7 @@ import (
 	"github.com/coyove/iis/cmd/ch/engine"
 	"github.com/coyove/iis/cmd/ch/imagex"
 	"github.com/coyove/iis/cmd/ch/manager"
-	mv "github.com/coyove/iis/cmd/ch/model"
+	"github.com/coyove/iis/cmd/ch/mv"
 	"github.com/coyove/iis/cmd/ch/view"
 	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"

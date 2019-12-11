@@ -4,14 +4,13 @@ import (
 	"bytes"
 	"encoding/base64"
 	"log"
-	"net/url"
 	"strconv"
 	"strings"
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/manager"
-	mv "github.com/coyove/iis/cmd/ch/model"
+	"github.com/coyove/iis/cmd/ch/mv"
 	"github.com/gin-gonic/gin"
 )
 
@@ -51,78 +50,78 @@ func SetManager(mgr *manager.Manager) {
 }
 
 func Index(g *gin.Context) {
-	var pl = ArticlesTimelineView{
-		SearchTerm: g.Param("tag"),
-	}
-	var opt uint64
-	var idtag = ident.IDTagGeneral
-
-	if strings.HasPrefix(pl.SearchTerm, "@") {
-		pl.SearchTerm = pl.SearchTerm[1:]
-		pl.User, _ = m.GetUser(pl.SearchTerm)
-
-		opt |= _abstract
-		idtag = ident.IDTagAuthor
-	} else if strings.HasPrefix(pl.SearchTerm, "inbox:") {
-		pl.SearchTerm = pl.SearchTerm[6:]
-		pl.IsTagInbox = true
-
-		if u, ok := g.Get("user"); !ok || (u.(*mv.User).ID != pl.SearchTerm && !u.(*mv.User).IsMod()) {
-			g.Redirect(302, "/cat")
-			return
-		} else if u.(*mv.User).ID == pl.SearchTerm {
-			m.UpdateUser(pl.SearchTerm, func(u *mv.User) error {
-				u.Unread = 0
-				return nil
-			})
-		}
-
-		opt |= _abstract
-		idtag = ident.IDTagInbox
-	} else if strings.HasPrefix(pl.SearchTerm, "search:") {
-		pl.SearchTerm = mv.SoftTrunc(pl.SearchTerm[7:], 50)
-		a := []*mv.Article{}
-		for _, id := range mv.Search(pl.SearchTerm) {
-			x, _ := m.Get(id)
-			if x != nil {
-				a = append(a, x)
-			}
-		}
-		fromMultiple(&pl.Articles, a, _abstract)
-		pl.Index = true
-		pl.SearchTerm = "\"" + pl.SearchTerm + "\""
-		g.HTML(200, "index.html", pl)
-		return
-	}
-
-	u, ok := g.Get("user")
-	pl.IsAdmin = ok && u.(*mv.User).IsAdmin()
-	if pl.IsAdmin {
-		pl.UUID, _ = ident.MakeToken(g)
-	}
-
-	cursor := ident.ParseID(g.Query("n")).String()
-	a, next, err := m.Walk(idtag, pl.SearchTerm, cursor, int(config.Cfg.PostsPerPage))
-	if err != nil {
-		Error(500, "INTERNAL: "+err.Error(), g)
-		return
-	}
-
-	fromMultiple(&pl.Articles, a, opt)
-
-	pl.Next = next
-	pl.Index = cursor == ""
-
-	if u, _ := url.Parse(g.Request.Referer()); u != nil {
-		pl.Prev = u.Query().Get("n")
-		if pl.Prev <= pl.Next || pl.Index {
-			// If we are at the front page, or the prev page is smaller than the next page
-			// then we consider the prev page invalid
-			pl.Prev = ""
-		}
-	}
-
-	g.HTML(200, "index.html", pl)
+	//	var pl = ArticlesTimelineView{
+	//		SearchTerm: g.Param("tag"),
+	//	}
+	//	var opt uint64
+	//	var idtag = ident.IDTagGeneral
+	//
+	//	if strings.HasPrefix(pl.SearchTerm, "@") {
+	//		pl.SearchTerm = pl.SearchTerm[1:]
+	//		pl.User, _ = m.GetUser(pl.SearchTerm)
+	//
+	//		opt |= _abstract
+	//		idtag = ident.IDTagAuthor
+	//	} else if strings.HasPrefix(pl.SearchTerm, "inbox:") {
+	//		pl.SearchTerm = pl.SearchTerm[6:]
+	//		pl.IsTagInbox = true
+	//
+	//		if u, ok := g.Get("user"); !ok || (u.(*mv.User).ID != pl.SearchTerm && !u.(*mv.User).IsMod()) {
+	//			g.Redirect(302, "/cat")
+	//			return
+	//		} else if u.(*mv.User).ID == pl.SearchTerm {
+	//			m.UpdateUser(pl.SearchTerm, func(u *mv.User) error {
+	//				u.Unread = 0
+	//				return nil
+	//			})
+	//		}
+	//
+	//		opt |= _abstract
+	//		idtag = ident.IDTagInbox
+	//	} else if strings.HasPrefix(pl.SearchTerm, "search:") {
+	//		pl.SearchTerm = mv.SoftTrunc(pl.SearchTerm[7:], 50)
+	//		a := []*mv.Article{}
+	//		for _, id := range mv.Search(pl.SearchTerm) {
+	//			x, _ := m.Get(id)
+	//			if x != nil {
+	//				a = append(a, x)
+	//			}
+	//		}
+	//		fromMultiple(&pl.Articles, a, _abstract)
+	//		pl.Index = true
+	//		pl.SearchTerm = "\"" + pl.SearchTerm + "\""
+	//		g.HTML(200, "index.html", pl)
+	//		return
+	//	}
+	//
+	//	u, ok := g.Get("user")
+	//	pl.IsAdmin = ok && u.(*mv.User).IsAdmin()
+	//	if pl.IsAdmin {
+	//		pl.UUID, _ = ident.MakeToken(g)
+	//	}
+	//
+	//	cursor := ident.ParseID(g.Query("n")).String()
+	//	a, next, err := m.Walk(idtag, pl.SearchTerm, cursor, int(config.Cfg.PostsPerPage))
+	//	if err != nil {
+	//		Error(500, "INTERNAL: "+err.Error(), g)
+	//		return
+	//	}
+	//
+	//	fromMultiple(&pl.Articles, a, opt)
+	//
+	//	pl.Next = next
+	//	pl.Index = cursor == ""
+	//
+	//	if u, _ := url.Parse(g.Request.Referer()); u != nil {
+	//		pl.Prev = u.Query().Get("n")
+	//		if pl.Prev <= pl.Next || pl.Index {
+	//			// If we are at the front page, or the prev page is smaller than the next page
+	//			// then we consider the prev page invalid
+	//			pl.Prev = ""
+	//		}
+	//	}
+	//
+	//	g.HTML(200, "index.html", pl)
 }
 
 func Timeline(g *gin.Context) {

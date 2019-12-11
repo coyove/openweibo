@@ -85,7 +85,7 @@ func (id ID) Time() time.Time {
 	return time.Unix(int64(id.ts), 0)
 }
 
-func (id ID) IsZeroTime() bool {
+func (id ID) IsRoot() bool {
 	return id.ts == 0
 }
 

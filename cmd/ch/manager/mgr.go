@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"log"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/manager/kv"
-	mv "github.com/coyove/iis/cmd/ch/model"
+	"github.com/coyove/iis/cmd/ch/mv"
 )
 
 type Manager struct {
@@ -46,153 +45,57 @@ func (m *Manager) NewReply(content, author, ip string) *mv.Article {
 	return m.NewPost("", content, author, ip, "")
 }
 
-func (m *Manager) kvMustGet(id string) []byte {
+func (m *Manager) GetArticle(id string) (*mv.Article, error) {
 	if id == "" {
-		return []byte("{}")
+		return nil, fmt.Errorf("empty ID")
 	}
-
 	p, err := m.db.Get(id)
 	if err != nil {
-		return []byte("#ERR: " + err.Error())
+		return nil, err
 	}
-
-	return p
-}
-
-func (m *Manager) Walk(hdr ident.IDTag, tag string, cursor string, n int) (a []*mv.Article, nextID string, err error) {
-	var root *mv.Timeline
-
-	if cursor == "" {
-		root, err = mv.UnmarshalTimeline(m.kvMustGet(ident.NewID(hdr).SetTag(tag).String()))
-	} else {
-		root, err = mv.UnmarshalTimeline(m.kvMustGet(cursor))
+	if len(p) == 0 {
+		return nil, mv.ErrNotExisted
 	}
-	if err != nil {
-		if !strings.Contains(err.Error(), "#ERR") {
-			err = nil
-		}
-		return
-	}
-
-	holes := map[string]bool{}
-	startTime := time.Now()
-
-	for len(a) < n && root.Next != "" {
-
-		if time.Since(startTime).Seconds() > 1 {
-			log.Println("[mgr.Walk] Break out slow walk from: [", cursor, "], now at: ", root.ID, ", tag: [", tag, "]")
-			break
-		}
-
-		next, err := mv.UnmarshalTimeline(m.kvMustGet(root.Next))
-		if err != nil {
-			return nil, "", err
-		}
-
-		p, err := mv.UnmarshalArticle(m.kvMustGet(next.Ptr))
-		if err == nil {
-			//if hdr == ident.IDTagCategory && p.Category != tag {
-			//	log.Println("[mgr.Walk] Stale tag ptr:", next, "expect:", tag, "actual:", p.Category)
-			//	goto HOLE
-			//}
-
-			//if tag == "" && next.ID != p.TimelineID {
-			//	log.Println("[mgr.Walk] Stale timeline ptr:", next, "actual:", p.TimelineID)
-			//	goto HOLE
-			//}
-
-			//if tag == "" && strings.HasPrefix(p.Category, "!") {
-			//	log.Println("[mgr.Walk] Stale !category ptr:", next, "actual:", p.Category)
-			//	goto HOLE
-			//}
-
-			a = append(a, p)
-		} else {
-			log.Println("[mgr.Walk] Stale pointer:", next, err)
-			goto HOLE
-		}
-
-		root = next
-		continue
-
-	HOLE:
-		// root.Next should be unlinked and root's next will be root.Next.Next, but since root itself will also be deleted
-		// there is no need to schedule it into purgeDeleted()
-		if !holes[root.ID] {
-			go m.purgeDeleted(hdr, tag, root.ID)
-		}
-
-		holes[root.Next] = true
-		root = next
-	}
-
-	nextID = root.ID
-	if nextID == cursor {
-		nextID = ""
-	}
-
-	return
+	return mv.UnmarshalArticle(p)
 }
 
 func (m *Manager) WalkMulti(n int, cursors ...ident.ID) (a []*mv.Article, next []ident.ID) {
+	if len(cursors) == 0 {
+		return
+	}
+
 	startTime := time.Now()
-
-	/* Check cursors */
-	{
-		i := 0
-		for _, c := range cursors {
-			if c.IsZeroTime() {
-				i++
-			}
+	for i, root := range cursors {
+		if time.Since(startTime).Seconds() > 0.5 {
+			log.Println("[mgr.WalkMulti] Break out slow cursor walk", cursors)
+			break
 		}
 
-		// Cursors must be all root starters or not
-		if i != 0 && i != len(cursors) {
-			log.Println("[mgr.WalkMulti] Invalid cursors:", cursors)
-			return
+		if !root.IsRoot() {
+			continue
 		}
 
-		if i == len(cursors) {
-			// If all cursors are root starters, translate them into the latest timeline markers (root.Next)
-			for i, root := range cursors {
-				if time.Since(startTime).Seconds() > 0.5 {
-					log.Println("[mgr.WalkMulti] Break out slow ROOT walk at", cursors)
-					break
-				}
-
-				tl, err := mv.UnmarshalTimeline(m.kvMustGet(root.String()))
-				if err != nil {
-					log.Println("[mgr.WalkMulti] Get root:", root, err)
-					continue
-				}
-				cursors[i] = ident.ParseID(tl.Next)
-			}
-		}
-
-		i = 0
-		for i, c := range cursors {
-			if c.IsZeroTime() || !c.Valid() {
-				cursors[i] = ident.ID{}
-				i++
-			}
-		}
-
-		if len(cursors) == i {
-			return
+		tl, err := m.GetArticle(root.String())
+		if err != nil {
+			log.Println("[mgr.Walk] Get root:", err)
+			cursors[i] = ident.ID{}
+		} else {
+			cursors[i] = ident.ParseID(tl.NextID)
 		}
 	}
 
 	for len(a) < n {
 		if time.Since(startTime).Seconds() > 1 {
-			log.Println("[mgr.WalkMulti] Break out slow walk at [", cursors, "]")
+			log.Println("[mgr.WalkMulti] Break out slow walk at", cursors)
 			break
 		}
 
 		sort.Slice(cursors, func(i, j int) bool {
-			if cursors[i].Time() == cursors[j].Time() {
+			if ii, jj := cursors[i].Time(), cursors[j].Time(); ii == jj {
 				return cursors[i].Tag() < cursors[j].Tag()
+			} else {
+				return ii.Before(jj)
 			}
-			return cursors[i].Time().Before(cursors[j].Time())
 		})
 
 		latest := &cursors[len(cursors)-1]
@@ -200,81 +103,69 @@ func (m *Manager) WalkMulti(n int, cursors ...ident.ID) (a []*mv.Article, next [
 			break
 		}
 
-		tl, err := mv.UnmarshalTimeline(m.kvMustGet(latest.String()))
-		if err != nil {
-			log.Println("[mgr.WalkMulti] Failed to get timeline marker:", *latest, err)
-			*latest = ident.ID{}
-			continue
-		}
-
-		p, err := mv.UnmarshalArticle(m.kvMustGet(tl.Ptr))
+		p, err := m.GetArticle(latest.String())
 		if err == nil {
 			a = append(a, p)
 		} else {
-			log.Println("[mgr.WalkMulti] Failed to get:", tl, err)
+			log.Println("[mgr.WalkMulti] Failed to get:", latest.String(), err)
 			// go m.purgeDeleted(hdr, tag, root.ID)
 		}
-		*latest = ident.ParseID(tl.Next)
+		*latest = ident.ParseID(p.NextID)
 	}
 
 	return a, cursors
 }
 
-func (m *Manager) purgeDeleted(hdr ident.IDTag, tag string, startID string) {
-	m.db.Lock(startID)
-	defer m.db.Unlock(startID)
-
-	start, err := mv.UnmarshalTimeline(m.kvMustGet(startID))
-	if err != nil {
-		return
-	}
-
-	var next *mv.Timeline
-	startTime := time.Now()
-	oldNext := start.Next
-
-	for root := start; root.Next != ""; root = next {
-		next, err = mv.UnmarshalTimeline(m.kvMustGet(root.Next))
-		if err != nil {
-			return
-		}
-
-		if time.Since(startTime).Seconds() > 10 {
-			start.Next = next.ID
-			goto SET
-		}
-
-		p, err := mv.UnmarshalArticle(m.kvMustGet(next.Ptr))
-		if err == nil {
-			if tag == "" && next.ID != p.TimelineID {
-				// Refer to Walk()
-			} else {
-				start.Next = next.ID
-				goto SET
-			}
-		}
-	}
-
-	start.Next = ""
-
-SET:
-	if start.Next == oldNext {
-		return
-	}
-
-	log.Println("[mgr.purgeDeleted] New next of", start, ", old:", oldNext)
-	m.db.Set(startID, start.Marshal())
-}
+// func (m *Manager) purgeDeleted(hdr ident.IDTag, tag string, startID string) {
+// 	m.db.Lock(startID)
+// 	defer m.db.Unlock(startID)
+//
+// 	start, err := mv.UnmarshalTimeline(m.kvMustGet(startID))
+// 	if err != nil {
+// 		return
+// 	}
+//
+// 	var next *mv.Timeline
+// 	startTime := time.Now()
+// 	oldNext := start.Next
+//
+// 	for root := start; root.Next != ""; root = next {
+// 		next, err = mv.UnmarshalTimeline(m.kvMustGet(root.Next))
+// 		if err != nil {
+// 			return
+// 		}
+//
+// 		if time.Since(startTime).Seconds() > 10 {
+// 			start.Next = next.ID
+// 			goto SET
+// 		}
+//
+// 		p, err := mv.UnmarshalArticle(m.kvMustGet(next.Ptr))
+// 		if err == nil {
+// 			if tag == "" && next.ID != p.TimelineID {
+// 				// Refer to Walk()
+// 			} else {
+// 				start.Next = next.ID
+// 				goto SET
+// 			}
+// 		}
+// 	}
+//
+// 	start.Next = ""
+//
+// SET:
+// 	if start.Next == oldNext {
+// 		return
+// 	}
+//
+// 	log.Println("[mgr.purgeDeleted] New next of", start, ", old:", oldNext)
+// 	m.db.Set(startID, start.Marshal())
+// }
 
 func (m *Manager) Post(a *mv.Article) (string, error) {
-	a.ID = ident.NewGeneralID().String()
+	a.ID = ident.NewID(ident.IDTagAuthor).SetTag(a.Author).SetTime(time.Now()).String()
 
-	if err := m.db.Set(a.ID, a.Marshal()); err != nil {
-		// If failed, the article will be visible in timeline and tagline
-		return "", err
-	}
-
-	if err := m.insert(a.ID, ident.IDTagAuthor, a.Author); err != nil {
+	if err := m.insertArticle(ident.NewID(ident.IDTagAuthor).SetTag(a.Author).String(), a); err != nil {
 		// If failed, the article will be visible in timeline and tagline
 		return "", err
 	}
@@ -291,93 +182,30 @@ func (m *Manager) Post(a *mv.Article) (string, error) {
 	return a.ID, nil
 }
 
-func (m *Manager) insert(aid string, hdr ident.IDTag, tag string) error {
-	rootID := ident.NewID(hdr).SetTag(tag).String()
-
+func (m *Manager) insertArticle(rootID string, a *mv.Article) error {
 	m.db.Lock(rootID)
 	defer m.db.Unlock(rootID)
 
-	root, err := mv.UnmarshalTimeline(m.kvMustGet(rootID))
-	if err != nil && strings.Contains(err.Error(), "#ERR") {
+	root, err := m.GetArticle(rootID)
+	if err != nil && err != mv.ErrNotExisted {
 		return err
 	}
 
-	if root == nil {
-		root = &mv.Timeline{
-			ID: rootID,
-		}
+	if err == mv.ErrNotExisted {
+		root = &mv.Article{ID: rootID}
 	}
 
-	tl := &mv.Timeline{
-		ID:   ident.NewID(hdr).SetTag(tag).SetTime(time.Now()).String(),
-		Next: root.Next,
-		Ptr:  aid,
-	}
-
-	if err := m.db.Set(tl.ID, tl.Marshal()); err != nil {
+	a.NextID = root.NextID
+	if err := m.db.Set(a.ID, a.Marshal()); err != nil {
 		return err
 	}
 
-	root.Next = tl.ID
+	root.NextID = a.ID
 	if err := m.db.Set(root.ID, root.Marshal()); err != nil {
-		// If failed, the stale timeline marker 'tl' will be left in the database
 		return err
 	}
-
 	return nil
 }
-
-// func (m *Manager) insertRootThenUpdate(a *mv.Article) error {
-// 	rootID := ident.NewTagID(ident.IDTagGeneral, nil).String()
-//
-// 	m.db.Lock(rootID)
-// 	defer m.db.Unlock(rootID)
-//
-// 	root, err := mv.UnmarshalTimeline(m.kvMustGet(rootID))
-// 	if err != nil && strings.Contains(err.Error(), "#ERR") {
-// 		return err
-// 	}
-//
-// 	if root == nil {
-// 		root = &mv.Timeline{
-// 			ID: rootID,
-// 		}
-// 	}
-//
-// 	a.TimelineID = ident.NewID().String()
-//
-// 	tl := &mv.Timeline{
-// 		ID:   a.TimelineID,
-// 		Ptr:  a.ID,
-// 		Next: root.Next,
-// 	}
-//
-// 	if strings.HasPrefix(a.Category, "!") {
-// 		goto PUT
-// 	}
-//
-// 	if err := m.db.Set(tl.ID, tl.Marshal()); err != nil {
-// 		return err
-// 	}
-//
-// 	root.Next = tl.ID
-// 	if err := m.db.Set(root.ID, root.Marshal()); err != nil {
-// 		// If failed, the newly created timeline marker 'tl' will be orphaned in the database forever
-// 		return err
-// 	}
-//
-// 	// At this stage, Walk() may find the marker not pointing to a.ID because we haven't updated a.TimelineID yet.
-// 	// So the marker will be scheduled into purgeDeleted(), but since we are holding the lock of root,
-// 	// it will not be deleted anyway. When we release the lock, everything should be fine.
-//
-// PUT:
-// 	if err := m.db.Set(a.ID, a.Marshal()); err != nil {
-// 		// If failed, let purgeDeleted do the job
-// 		return err
-// 	}
-//
-// 	return nil
-// }
 
 func (m *Manager) PostReply(parent string, a *mv.Article) (string, error) {
 	m.db.Lock(parent)
@@ -387,43 +215,41 @@ func (m *Manager) PostReply(parent string, a *mv.Article) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	if p.Locked {
 		return "", fmt.Errorf("locked parent")
 	}
-	if p.Replies >= 16000 {
+
+	if p.Replies >= 65535 {
 		return "", fmt.Errorf("too many replies")
 	}
 
 	pid := ident.ParseID(parent)
 
-	nextIndex := p.Replies + 1
-	pid = pid.SetReply(uint16(nextIndex))
-
-	a.Category = ""
-	a.Title = "RE: " + p.Title
-	a.ID = pid.String()
-
 	// Save reply
+	a.ID = pid.SetReply(uint16(p.Replies + 1)).String()
 	if err := m.db.Set(a.ID, a.Marshal()); err != nil {
 		return "", err
 	}
 
-	p.ReplyTime = time.Now()
-	p.Replies = nextIndex
-
 	// Save parent
+	p.ReplyTime = time.Now()
+	p.Replies++
 	if err := m.db.Set(p.ID, p.Marshal()); err != nil {
 		return "", err
 	}
 
-	if err := m.insert(a.ID, ident.IDTagInbox, p.Author); err != nil {
+	if err := m.insertArticle(ident.NewID(ident.IDTagInbox).SetTag(p.Author).String(), &mv.Article{
+		ID:  ident.NewGeneralID().String(),
+		Cmd: mv.CmdReply,
+		Extras: map[string]string{
+			"from":       a.Author,
+			"article_id": a.ID,
+		},
+		CreateTime: time.Now(),
+	}); err != nil {
 		return "", err
 	}
-
-	go m.UpdateUser(a.Author, func(u *mv.User) error {
-		u.TotalPosts++
-		return nil
-	})
 
 	go m.UpdateUser(p.Author, func(u *mv.User) error {
 		u.Unread++
@@ -438,7 +264,7 @@ func (m *Manager) PostReply(parent string, a *mv.Article) (string, error) {
 }
 
 func (m *Manager) Get(id string) (a *mv.Article, err error) {
-	return mv.UnmarshalArticle(m.kvMustGet(id))
+	return m.GetArticle(id)
 }
 
 func (m *Manager) Update(a *mv.Article, oldcat ...string) error {

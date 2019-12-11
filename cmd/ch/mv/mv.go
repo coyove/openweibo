@@ -3,6 +3,7 @@ package mv
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"time"
@@ -35,21 +36,35 @@ func UnmarshalTimeline(p []byte) (*Timeline, error) {
 	return t, err
 }
 
+var ErrNotExisted = errors.New("article not existed")
+
+type Cmd string
+
+const (
+	CmdNone    Cmd = ""
+	CmdReply       = "inbox-reply"
+	CmdMention     = "inbox-mention"
+	CmdFollow      = "follow"
+)
+
 type Article struct {
 	ID         string `json:"id"`
 	TimelineID string `json:"tlid"`
 	Replies    int    `json:"rs"`
 	//Views       int       `json:"vs"`
-	Locked      bool      `json:"lock,omitempty"`
-	Highlighted bool      `json:"hl,omitempty"`
-	Image       string    `json:"img,omitempty"`
-	Title       string    `json:"title,omitempty"`
-	Content     string    `json:"content"`
-	Author      string    `json:"author"`
-	IP          string    `json:"ip"`
-	Category    string    `json:"cat,omitempty"`
-	CreateTime  time.Time `json:"create"`
-	ReplyTime   time.Time `json:"reply"`
+	Locked      bool              `json:"lock,omitempty"`
+	Highlighted bool              `json:"hl,omitempty"`
+	Image       string            `json:"img,omitempty"`
+	Title       string            `json:"title,omitempty"`
+	Content     string            `json:"content"`
+	Author      string            `json:"author"`
+	IP          string            `json:"ip"`
+	Category    string            `json:"cat,omitempty"`
+	CreateTime  time.Time         `json:"create,omitempty"`
+	ReplyTime   time.Time         `json:"reply,omitempty"`
+	NextID      string            `json:"N"`
+	Cmd         Cmd               `json:"K"`
+	Extras      map[string]string `json:"X"`
 }
 
 func (a *Article) Index() int {
@@ -80,18 +95,20 @@ func UnmarshalArticle(b []byte) (*Article, error) {
 }
 
 type User struct {
-	ID           string
-	Session      string
-	Role         string
-	PasswordHash []byte
-	Email        string    `json:"e"`
-	TotalPosts   int       `json:"tp"`
-	Unread       int       `json:"ur"`
-	Signup       time.Time `json:"st"`
-	SignupIP     string    `json:"sip"`
-	Login        time.Time `json:"lt"`
-	LoginIP      string    `json:"lip"`
-	Banned       bool      `json:"ban"`
+	ID             string
+	Session        string
+	Role           string
+	PasswordHash   []byte
+	Email          string    `json:"e"`
+	TotalPosts     int       `json:"tp"`
+	Followers      int       `json:"F"`
+	FollowingChain string    `json:"FC"`
+	Unread         int       `json:"ur"`
+	Signup         time.Time `json:"st"`
+	SignupIP       string    `json:"sip"`
+	Login          time.Time `json:"lt"`
+	LoginIP        string    `json:"lip"`
+	Banned         bool      `json:"ban"`
 }
 
 func (u User) Marshal() []byte {

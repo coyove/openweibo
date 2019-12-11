@@ -4,7 +4,7 @@ import (
 	"html/template"
 	"strconv"
 
-	mv "github.com/coyove/iis/cmd/ch/model"
+	"github.com/coyove/iis/cmd/ch/mv"
 )
 
 type ArticleView struct {

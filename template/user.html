@@ -94,6 +94,46 @@ table.z {
         </td>
     </tr>
 
+    <tr>
+        <form method="POST" action="/user">
+            <td>ID:</td>
+            <td>
+                <input type=hidden name=uuid value="{{.UUID}}">
+                <input type=hidden name=username value="{{.User.ID}}">
+                <input type=hidden name=method value="follow">
+                <input type=hidden name=follow value="1">
+                <input class=t name=to>
+            </td>
+            <td class=nowrap>
+                <button class="gbutton" name="search" value="1" type=submit>搜索</button>
+            </td>
+        </form>
+    </tr>
+
+    {{range .Followings}}
+    <tr>
+        <td colspan=2>{{.Time.Format "2006-01-02 15:04:05"}}&emsp;<b>{{.ID}}</b></td>
+        <td class=nowrap>
+            <form method="POST" action="/user">
+                <input type=hidden name=uuid value="{{$.UUID}}">
+                <input type=hidden name=username value="{{$.User.ID}}">
+                <input type=hidden name=method value="follow">
+                <input type=hidden name=to value="{{.ID}}">
+                {{if .Followed}}
+                <button class="gbutton" type=submit>取消关注</button>
+                {{else}}
+                <input type=hidden name=follow value="1">
+                <button class="gbutton" type=submit>关注</button>
+                {{end}}
+            </form>
+        </td>
+    </tr>
+    {{end}}
+
+    <tr>
+        <td colspan=3 style="text-align:center"><a href="/user?n={{.FollowingsNext}}" class=gbutton>更多 &raquo;</a></td>
+    </tr>
+
     {{if .User.IsMod}}
     <tr>
         <td>最大耗时:</td>

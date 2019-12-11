@@ -47,7 +47,7 @@ var Cfg = struct {
 	MinContent:   8,
 	PostsPerPage: 30,
 	Tags:         []string{},
-	Cooldown:     10,
+	Cooldown:     5,
 	MaxMentions:  2,
 }
 
