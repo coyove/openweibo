@@ -50,9 +50,8 @@ func main() {
 
 		for i := 0; i < N; i++ {
 			time.Sleep(time.Second)
-			a := m.NewPost("BENCH "+strconv.Itoa(i)+" post", strconv.Itoa(i), names[rand.Intn(len(names))], "127.0.0.0", "default")
-			m.Post(a)
-			ids = append(ids, a.ID)
+			aid, _ := m.Post("BENCH "+strconv.Itoa(i)+" post", names[rand.Intn(len(names))], "127.0.0.0")
+			ids = append(ids, aid)
 		}
 
 		wg := sync.WaitGroup{}
@@ -68,13 +67,12 @@ func main() {
 			for i := 0; i < 50; i++ {
 				wg.Add(1)
 				go func(i int) {
-					a := m.NewReply("BENCH "+strconv.Itoa(i)+" reply", names[rand.Intn(len(names))], "127.0.0.0")
+					parent := ids[0]
 					if rand.Intn(4) == 1 {
-						m.PostReply(ids[0], a)
-					} else {
-						m.PostReply(ids[rand.Intn(len(ids))], a)
+						parent = ids[rand.Intn(len(ids))]
 					}
-					ids = append(ids, a.ID)
+					aid, _ := m.PostReply(parent, "BENCH "+strconv.Itoa(i)+" reply", names[rand.Intn(len(names))], "127.0.0.0")
+					ids = append(ids, aid)
 
 					if i%10 == 0 {
 						log.Println("Progress", i)

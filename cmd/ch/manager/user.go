@@ -102,7 +102,7 @@ func (m *Manager) MentionUser(a *mv.Article, id string) error {
 			"article_id": a.ID,
 		},
 		CreateTime: time.Now(),
-	}); err != nil {
+	}, false); err != nil {
 		return err
 	}
 	return m.UpdateUser(id, func(u *mv.User) error {
@@ -176,7 +176,7 @@ func (m *Manager) FollowUser_unlock(from, to string, following bool) error {
 			"follow": strconv.FormatBool(following),
 		},
 		CreateTime: time.Now(),
-	}); err != nil {
+	}, false); err != nil {
 		return err
 	}
 
@@ -191,6 +191,14 @@ type FollowingState struct {
 
 func (m *Manager) GetFollowingList(u *mv.User, cursor string, n int) ([]FollowingState, string) {
 	if u.FollowingChain == "" {
+		if cursor != "" {
+			if u, _ := m.GetUser(cursor[strings.LastIndex(cursor, "/")+1:]); u != nil {
+				return []FollowingState{{
+					ID:   u.ID,
+					Time: u.Signup,
+				}}, ""
+			}
+		}
 		return nil, ""
 	}
 
@@ -251,3 +259,32 @@ func (m *Manager) IsFollowing(from, to string) bool {
 	p, _ := m.db.Get(makeFollowID(from, to))
 	return bytes.Equal(p, []byte("true"))
 }
+
+// func (m *Manager) UpvoteArticle(uid, aid string, upvote bool) error {
+// 	relationID := makeUserArticleRelationID(uid, aid)
+//
+// 	if a, _ := m.GetArticle(relationID); a != nil {
+// 		a.Extras["upvote"] = strconv.FormatBool(upvote)
+// 		a.Extras["forward"] = strconv.FormatBool(forward)
+// 		return m.db.Set(a.ID, a.Marshal())
+// 	}
+//
+// 	if err := m.db.Set(relationID, (&mv.Article{
+// 		ID:  relationID,
+// 		Cmd: mv.CmdUARelation,
+// 		Extras: map[string]string{
+// 			"article_id": aid,
+// 			"upvote":     strconv.FormatBool(upvote),
+// 			"forward":    strconv.FormatBool(forward),
+// 		},
+// 		CreateTime: time.Now(),
+// 	}).Marshal()); err != nil {
+// 		return err
+// 	}
+//
+// 	return m.UpdateArticle(aid, func(a *mv.Article) error {
+// 		if upvote {
+// 		}
+// 		return nil
+// 	})
+// }

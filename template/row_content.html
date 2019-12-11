@@ -6,20 +6,22 @@
         <span>NOT FOUND</span>
         {{else}}
             <span><a href="/cat/@{{.Author}}">{{.Author}}</a></span>
+            {{if .Parent}}
+            <span>回复于 {{.CreateTime}}</span>
+            {{else}}
             <span>发布于 {{.CreateTime}}</span>
+            {{end}}
         {{end}}
     </div>
 
     <pre style="padding:0.66em 0">{{.ContentHTML}}</pre>
     
-    {{if not .Parent}}
     <div style="padding: 0.5em 0">
         <span><a href="/p/{{.ID}}">{{.Replies}} 回复</a></span>
-        <span>{{.Forwards}} 转发</span>
         <span>{{.Upvotes}} 赞</span>
     </div>
 
-    {{if .ShowReplies.Last}}
+    {{if .Parent}}
     <div style="position:relative;margin:0 -0.5em; border-top:dotted 1px #aaa">
         <svg version="1.1"
             viewBox="0 0 392.652 392.652" width=16 height=16 style="display:block;height:16px;width:16px;line-height:16px;position:absolute;top:-6px;left:1em"
@@ -31,9 +33,7 @@
     </div>
 
     <div class="subreply">
-        {{template "row_content.html" .ShowReplies.Last}}
+        {{template "row_content.html" .Parent}}
     </div>
-    {{end}}
-
     {{end}}
 </div>

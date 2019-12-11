@@ -6,7 +6,6 @@ import (
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
-	"github.com/coyove/iis/cmd/ch/imagex"
 	"github.com/coyove/iis/cmd/ch/mv"
 	"github.com/gin-gonic/gin"
 )
@@ -35,7 +34,6 @@ func New(g *gin.Context) {
 		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		title   = mv.SoftTrunc(g.PostForm("title"), 100)
 		cat     = checkCategory(mv.SoftTrunc(g.PostForm("cat"), 20))
-		image   string
 		redir   = func(a, b string) {
 			q := EncodeQuery(a, b, "content", content, "title", title, "cat", cat)
 			g.Redirect(302, "/new"+q)
@@ -59,27 +57,19 @@ func New(g *gin.Context) {
 		return
 	}
 
-	image, _ = imagex.GetImage(g)
-	if image == "" && len(content) < int(config.Cfg.MinContent) {
-		redir("error", "content/too-short")
-		return
-	}
-
 	if len(title) < int(config.Cfg.MinContent) {
 		redir("error", "title/too-short")
 		return
 	}
 
-	a := m.NewPost(title, content, u.(*mv.User).ID, ip, cat)
-	a.Image = image
-
-	if _, err := m.Post(a); err != nil {
-		log.Println(a, err)
+	aid, err := m.Post(content, u.(*mv.User).ID, ip)
+	if err != nil {
+		log.Println(aid, err)
 		redir("error", "internal/error")
 		return
 	}
 
-	g.Redirect(302, "/p/"+ident.ParseID(a.ID).String())
+	g.Redirect(302, "/p/"+aid)
 }
 
 func Reply(g *gin.Context) {
@@ -114,9 +104,7 @@ func Reply(g *gin.Context) {
 		return
 	}
 
-	re := m.NewReply(content, u.(*mv.User).ID, ip)
-
-	if _, err := m.PostReply(reply.String(), re); err != nil {
+	if _, err := m.PostReply(reply.String(), content, u.(*mv.User).ID, ip); err != nil {
 		log.Println(err)
 		redir("error", "error/can-not-reply")
 		return

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/coyove/iis/cmd/ch/config"
-	"github.com/coyove/iis/cmd/ch/ident"
 )
 
 var ErrNotExisted = errors.New("article not existed")
@@ -17,17 +16,18 @@ var ErrNotExisted = errors.New("article not existed")
 type Cmd string
 
 const (
-	CmdNone    Cmd = ""
-	CmdReply       = "inbox-reply"
-	CmdMention     = "inbox-mention"
-	CmdFollow      = "follow"
+	CmdNone       Cmd = ""
+	CmdReply          = "inbox-reply"
+	CmdMention        = "inbox-mention"
+	CmdFollow         = "follow"
+	CmdUARelation     = "user-article-relation"
+	CmdPointer        = "ptr"
 )
 
 type Article struct {
-	ID         string `json:"id"`
-	TimelineID string `json:"tlid"`
-	Replies    int    `json:"rs"`
-	//Views       int       `json:"vs"`
+	ID          string            `json:"id"`
+	Replies     int               `json:"rs,omitempty"`
+	Upvotes     int               `json:"up,omitempty"`
 	Locked      bool              `json:"lock,omitempty"`
 	Highlighted bool              `json:"hl,omitempty"`
 	Image       string            `json:"img,omitempty"`
@@ -37,18 +37,11 @@ type Article struct {
 	IP          string            `json:"ip"`
 	Category    string            `json:"cat,omitempty"`
 	CreateTime  time.Time         `json:"create,omitempty"`
-	ReplyTime   time.Time         `json:"reply,omitempty"`
+	Parent      string            `json:"P"`
+	NextReplyID string            `json:"R"`
 	NextID      string            `json:"N"`
 	Cmd         Cmd               `json:"K"`
 	Extras      map[string]string `json:"X"`
-}
-
-func (a *Article) Index() int {
-	return int(ident.ParseID(a.ID).Reply())
-}
-
-func (a *Article) Parent() string {
-	return ident.ParseID(a.ID).Parent().String()
 }
 
 func (a *Article) ContentHTML() template.HTML {

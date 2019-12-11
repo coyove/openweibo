@@ -29,22 +29,6 @@ func New(path string) *Manager {
 	return m
 }
 
-func (m *Manager) NewPost(title, content, author, ip string, cat string) *mv.Article {
-	return &mv.Article{
-		Title:      title,
-		Content:    content,
-		Author:     author,
-		Category:   cat,
-		IP:         ip,
-		CreateTime: time.Now(),
-		ReplyTime:  time.Now(),
-	}
-}
-
-func (m *Manager) NewReply(content, author, ip string) *mv.Article {
-	return m.NewPost("", content, author, ip, "")
-}
-
 func (m *Manager) GetArticle(id string) (*mv.Article, error) {
 	if id == "" {
 		return nil, fmt.Errorf("empty ID")
@@ -162,10 +146,16 @@ func (m *Manager) WalkMulti(n int, cursors ...ident.ID) (a []*mv.Article, next [
 // 	m.db.Set(startID, start.Marshal())
 // }
 
-func (m *Manager) Post(a *mv.Article) (string, error) {
-	a.ID = ident.NewID(ident.IDTagAuthor).SetTag(a.Author).SetTime(time.Now()).String()
+func (m *Manager) Post(content, author, ip string) (string, error) {
+	a := &mv.Article{
+		ID:         ident.NewGeneralID().String(),
+		Content:    content,
+		Author:     author,
+		IP:         ip,
+		CreateTime: time.Now(),
+	}
 
-	if err := m.insertArticle(ident.NewID(ident.IDTagAuthor).SetTag(a.Author).String(), a); err != nil {
+	if err := m.insertArticle(ident.NewID(ident.IDTagAuthor).SetTag(a.Author).String(), a, false); err != nil {
 		// If failed, the article will be visible in timeline and tagline
 		return "", err
 	}
@@ -182,7 +172,7 @@ func (m *Manager) Post(a *mv.Article) (string, error) {
 	return a.ID, nil
 }
 
-func (m *Manager) insertArticle(rootID string, a *mv.Article) error {
+func (m *Manager) insertArticle(rootID string, a *mv.Article, asReply bool) error {
 	m.db.Lock(rootID)
 	defer m.db.Unlock(rootID)
 
@@ -192,25 +182,30 @@ func (m *Manager) insertArticle(rootID string, a *mv.Article) error {
 	}
 
 	if err == mv.ErrNotExisted {
+		if asReply {
+			return err
+		}
 		root = &mv.Article{ID: rootID}
 	}
 
-	a.NextID = root.NextID
+	if asReply {
+		a.NextReplyID, root.NextReplyID = root.NextReplyID, a.ID
+		root.Replies++
+	} else {
+		a.NextID, root.NextID = root.NextID, a.ID
+	}
+
 	if err := m.db.Set(a.ID, a.Marshal()); err != nil {
 		return err
 	}
 
-	root.NextID = a.ID
 	if err := m.db.Set(root.ID, root.Marshal()); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (m *Manager) PostReply(parent string, a *mv.Article) (string, error) {
-	m.db.Lock(parent)
-	defer m.db.Unlock(parent)
-
+func (m *Manager) PostReply(parent string, content, author, ip string) (string, error) {
 	p, err := m.Get(parent)
 	if err != nil {
 		return "", err
@@ -220,22 +215,20 @@ func (m *Manager) PostReply(parent string, a *mv.Article) (string, error) {
 		return "", fmt.Errorf("locked parent")
 	}
 
-	if p.Replies >= 65535 {
-		return "", fmt.Errorf("too many replies")
+	a := &mv.Article{
+		ID:         ident.NewGeneralID().String(),
+		Content:    content,
+		Author:     author,
+		IP:         ip,
+		Parent:     p.ID,
+		CreateTime: time.Now(),
 	}
 
-	pid := ident.ParseID(parent)
-
-	// Save reply
-	a.ID = pid.SetReply(uint16(p.Replies + 1)).String()
-	if err := m.db.Set(a.ID, a.Marshal()); err != nil {
+	if err := m.insertArticle(p.ID, a, true); err != nil {
 		return "", err
 	}
 
-	// Save parent
-	p.ReplyTime = time.Now()
-	p.Replies++
-	if err := m.db.Set(p.ID, p.Marshal()); err != nil {
+	if err := m.insertArticle(ident.NewID(ident.IDTagAuthor).SetTag(a.Author).String(), a, false); err != nil {
 		return "", err
 	}
 
@@ -247,7 +240,7 @@ func (m *Manager) PostReply(parent string, a *mv.Article) (string, error) {
 			"article_id": a.ID,
 		},
 		CreateTime: time.Now(),
-	}); err != nil {
+	}, false); err != nil {
 		return "", err
 	}
 
@@ -267,14 +260,20 @@ func (m *Manager) Get(id string) (a *mv.Article, err error) {
 	return m.GetArticle(id)
 }
 
-func (m *Manager) Update(a *mv.Article, oldcat ...string) error {
-	m.db.Lock(a.ID)
-	defer m.db.Unlock(a.ID)
+func (m *Manager) UpdateArticle(aid string, cb func(a *mv.Article) error) error {
+	m.db.Lock(aid)
+	defer m.db.Unlock(aid)
 
+	a, err := m.GetArticle(aid)
+	if err != nil {
+		return err
+	}
+	if err := cb(a); err != nil {
+		return err
+	}
 	if err := m.db.Set(a.ID, a.Marshal()); err != nil {
 		return err
 	}
-
 	return nil
 }
 
