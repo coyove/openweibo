@@ -10,7 +10,6 @@ import (
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
-	"github.com/coyove/iis/cmd/ch/imagex"
 	"github.com/coyove/iis/cmd/ch/mv"
 	"github.com/gin-gonic/gin"
 )
@@ -112,7 +111,7 @@ func User(g *gin.Context) {
 		g.SetCookie("id", mv.MakeUserToken(u), 365*86400, "", "", false, false)
 		g.Redirect(302, "/cat")
 		return
-	case "update-avatar", "update-email":
+	case "update-info":
 		if ret := checkToken(g); ret != "" {
 			redir("error", ret)
 			return
@@ -123,15 +122,8 @@ func User(g *gin.Context) {
 			return
 		}
 		u = user.(*mv.User)
-		if mth == "update-email" {
-			u.Email = email
-		} else {
-			if err := imagex.GetAvatar(u, g); err != nil {
-				log.Println(u, err)
-				redir("error", "internal/error")
-				return
-			}
-		}
+		u.Email = email
+		u.Avatar = mv.SoftTrunc(g.PostForm("avatar"), 256)
 	case "ban-user":
 		user, _ := g.Get("user")
 		if user == nil {

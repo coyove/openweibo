@@ -1,6 +1,8 @@
 package view
 
 import (
+	"net/http"
+
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/engine"
 	"github.com/coyove/iis/cmd/ch/ident"
@@ -52,4 +54,13 @@ func User(g *gin.Context) {
 	}
 
 	g.HTML(200, "user.html", p)
+}
+
+func Avatar(g *gin.Context) {
+	u, _ := m.GetUser(g.Param("id"))
+	if u == nil || u.Avatar == "" {
+		http.ServeFile(g.Writer, g.Request, "template/user.png")
+	} else {
+		g.Redirect(302, u.Avatar)
+	}
 }

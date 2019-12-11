@@ -136,7 +136,28 @@ func (m *Manager) FollowUser_unlock(from, to string, following bool) error {
 		root = a.ID
 	}
 
-	followID := "u/" + from + "/follow/" + to
+	followID := makeFollowID(from, to)
+
+	defer func() {
+
+		go m.UpdateUser(to, func(u *mv.User) error {
+			if following {
+				u.Followers++
+			} else {
+				dec0(&u.Followers)
+			}
+			return nil
+		})
+
+		go m.UpdateUser(from, func(u *mv.User) error {
+			if following {
+				u.Followings++
+			} else {
+				dec0(&u.Followings)
+			}
+			return nil
+		})
+	}()
 
 	if a, _ := m.GetArticle(followID); a != nil {
 		state := strconv.FormatBool(following)
@@ -158,15 +179,6 @@ func (m *Manager) FollowUser_unlock(from, to string, following bool) error {
 	}); err != nil {
 		return err
 	}
-
-	go m.UpdateUser(to, func(u *mv.User) error {
-		if following {
-			u.Followers++
-		} else {
-			u.Followers--
-		}
-		return nil
-	})
 
 	return nil
 }
@@ -203,10 +215,14 @@ func (m *Manager) GetFollowingList(u *mv.User, cursor string, n int) ([]Followin
 		a, err := m.GetArticle(cursor)
 		if err != nil {
 			if cursor == startCursor {
-				res = append(res, FollowingState{
-					ID:   cursor[strings.LastIndex(cursor, "/")+1:],
-					Time: time.Now(),
-				})
+				to := cursor[strings.LastIndex(cursor, "/")+1:]
+				u, err := m.GetUser(to)
+				if err == nil {
+					res = append(res, FollowingState{
+						ID:   to,
+						Time: u.Signup,
+					})
+				}
 			}
 			log.Println("[GetFollowingList]", err)
 			break
@@ -232,6 +248,6 @@ func (m *Manager) GetFollowingList(u *mv.User, cursor string, n int) ([]Followin
 }
 
 func (m *Manager) IsFollowing(from, to string) bool {
-	p, _ := m.db.Get("u/" + from + "/follow/" + to)
+	p, _ := m.db.Get(makeFollowID(from, to))
 	return bytes.Equal(p, []byte("true"))
 }

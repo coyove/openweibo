@@ -19,15 +19,6 @@ func Image(g *gin.Context) {
 	http.ServeFile(g.Writer, g.Request, filepath.Join("tmp/images", g.Param("path")))
 }
 
-func Avatar(g *gin.Context) {
-	fn := calcAvatarPath(g.Param("id"))
-	if _, err := os.Stat(fn); err != nil {
-		http.ServeFile(g.Writer, g.Request, "template/user.png")
-		return
-	}
-	http.ServeFile(g.Writer, g.Request, fn)
-}
-
 func GetImage(g *gin.Context) (string, error) {
 	image, err := g.FormFile("image")
 	if err != nil || image == nil {

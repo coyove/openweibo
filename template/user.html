@@ -12,91 +12,62 @@ table.z {
 <title>{{.User.ID}}</title>
 
 <table class="articles z">
-    {{if .EError}}
     <tr>
-        <td></td><td>{{template "error_i18n.html" .EError}}</td>
-    </tr>
-    {{end}}
-    <tr>
-        <td class=nowrap>用户名:</td>
-        <td><span>{{.User.ID}}</td>
-    </tr>
-    <tr>
-        <td class=nowrap>头像:</td>
-        <form method="POST" action="/user" enctype="multipart/form-data">
-            <td> 
-                <img src="/avatar/{{.User.ID}}" style="display:block;max-width:64px; max-width:64px">
-                <input type=hidden name=uuid value="{{.UUID}}">
-                <input type=hidden name=method value="update-avatar">
-                <input type=hidden name=username value="{{.User.ID}}">
-                <input type=file name=image id=zzz required><br>
-                <span style="font-size:90%">头像大小<1M</span>
-            </td>
-            <td class=nowrap>
-                <button class="gbutton" type=submit>更新</button>
-            </td>
-        </form>
-    </tr>
-    <tr>
-        <form method="POST" action="/user">
-            <td class=nowrap>Email:</td>
-            <td> 
-                <input type=hidden name=uuid value="{{.UUID}}">
-                <input type=hidden name=method value="update-email">
-                <input type=hidden name=username value="{{.User.ID}}">
-                <input name=email class=t value="{{.User.Email}}" required type=email>
-            </td>
-            <td class=nowrap>
-                <button class="gbutton" type=submit>更新</button>
-            </td>
-        </form>
-    </tr>
-    <tr>
-        <td class=nowrap>封禁:</td>
-        <td><span>{{.User.Banned}}</td>
-    </tr>
-    <tr>
-        <td class=nowrap>权限:</td>
-        <td><span>{{.User.Role}} (mod: {{.User.IsMod}})</td>
-    </tr>
-    <tr>
-        <td class=nowrap>发言数:</td>
-        <td><span>{{.User.TotalPosts}} (<a href="/cat/@{{.User.ID}}">查看</a>)</td>
-    </tr>
-    <tr>
-        <td class=nowrap>收件箱:</td>
-        <td><span>{{.User.Unread}}未读 (<a href="/cat/inbox:{{.User.ID}}">查看</a>)</td>
-    </tr>
-    <tr>
-        <td class=nowrap>登入时间:</td>
-        <td><span>{{.User.Login}}</td>
-    </tr>
-    <tr>
-        <td class=nowrap>登入IP:</td>
-        <td><span>{{.User.LoginIP}}</td>
-    </tr>
-    <tr>
-        <td class=nowrap>注册时间:</td>
-        <td><span>{{.User.Signup}}</td>
-    </tr>
-    <tr>
-        <td class=nowrap>注册IP:</td>
-        <td><span>{{.User.SignupIP}}</td>
-    </tr>
-    <tr>
-        <td></td> <td style="text-align:right">
-<form method="POST" action="/user">
-    <input type=hidden name=uuid value="{{.UUID}}">
-    <input type=hidden name=username value="{{.User.ID}}">
-    <input type=hidden name=method value="logout">
-    <button class="gbutton" type=submit>注销</button>
-</form>
+        <td colspan=2>{{.User.ID}}
+            {{if .User.Role}}/ {{.User.Role}}{{end}}
+            {{if .User.IsMod}}/ Mod{{end}}
+            {{if .User.IsAdmin}}/ 管理员{{end}}
+            {{if .User.Banned}}/ 封禁{{end}}
+            / {{.User.Followers}} 关注者 
+            / {{.User.TotalPosts}} 状态
+            {{if .User.Unread}}/ <a href="/cat/inbox:{{.User.ID}}">{{.User.Unread}} 未读</a> {{end}}
         </td>
+        <td rowspan=2><form method="POST" action="/user">
+                <input type=hidden name=uuid value="{{.UUID}}">
+                <input type=hidden name=username value="{{.User.ID}}">
+                <input type=hidden name=method value="logout">
+                <button class="gbutton" type=submit>注销</button>
+            </form></td>
     </tr>
 
     <tr>
+        <td colspan=2>
+            上次登入: {{.User.Login.Format "2006-01-02 15:04"}}
+            / 注册于: {{.User.Signup.Format "2006-01-02 15:04"}}
+        </td>
+    </tr>
+
+    <form method="POST" action="/user">
+        <tr>
+            <td class=nowrap>头像URL:</td>
+            <td colspan=2> 
+                <input type=hidden name=uuid value="{{.UUID}}">
+                <input type=hidden name=method value="update-info">
+                <input type=hidden name=username value="{{.User.ID}}">
+                <input class=t name=avatar value="{{.User.Avatar}}" maxlength=256>
+            </td>
+        </tr>
+        <tr>
+            <td class=nowrap>Email:</td>
+            <td colspan=2> 
+                <input name=email class=t value="{{.User.Email}}" required type=email>
+            </td>
+        </tr>
+        <tr>
+            <td colspan=2>
+                {{if .EError}}{{template "error_i18n.html" .EError}}{{end}}
+            </td>
+            <td class=nowrap>
+                <button class="gbutton" type=submit>更新</button>
+            </td>
+        </tr>
+    </form> 
+</table>
+
+<table class="articles z">
+    <tr style="border-bottom:dotted 1px #ccc">
+        <td class=nowrap><b>我的关注 ({{.User.Followings}})</b></td>
         <form method="POST" action="/user">
-            <td>ID:</td>
             <td>
                 <input type=hidden name=uuid value="{{.UUID}}">
                 <input type=hidden name=username value="{{.User.ID}}">
@@ -105,14 +76,15 @@ table.z {
                 <input class=t name=to>
             </td>
             <td class=nowrap>
-                <button class="gbutton" name="search" value="1" type=submit>搜索</button>
+                <button class="gbutton" name="search" value="1" type=submit>搜索 ID</button>
             </td>
         </form>
     </tr>
 
     {{range .Followings}}
     <tr>
-        <td colspan=2>{{.Time.Format "2006-01-02 15:04:05"}}&emsp;<b>{{.ID}}</b></td>
+        <td class=nowrap>{{.Time.Format "2006-01-02"}}</td>
+        <td><b>{{.ID}}</b></td>
         <td class=nowrap>
             <form method="POST" action="/user">
                 <input type=hidden name=uuid value="{{$.UUID}}">
@@ -131,7 +103,7 @@ table.z {
     {{end}}
 
     <tr>
-        <td colspan=3 style="text-align:center"><a href="/user?n={{.FollowingsNext}}" class=gbutton>更多 &raquo;</a></td>
+        <td colspan=3 style="text-align:center"><a href="/user?n={{.FollowingsNext}}" class=gbutton>更多关注 &raquo;</a></td>
     </tr>
 
     {{if .User.IsMod}}
@@ -143,11 +115,6 @@ table.z {
         <td>流出流量:</td>
         <td>{{.Survey.Written}}b</td>
     </tr>
-    {{if .User.IsAdmin}}
-    <tr>
-        <td colspan=2><pre style="font:12px monospace">{{.Config}}</pre></td>
-    </tr>
-    {{end}}
     {{end}}
 </table>
 

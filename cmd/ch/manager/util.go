@@ -65,3 +65,18 @@ func IsCrawler(g *gin.Context) bool {
 //	m.counter.m = sync.Map{}
 //	log.Println("[writeCounterToDB] sched:", count)
 //}
+
+func dec0(a *int) {
+	*a--
+	if *a < 0 {
+		*a = 0
+	}
+}
+
+func makeFollowID(from, to string) string {
+	return "u/" + from + "/follow/" + to
+}
+
+func makeBlockID(from, to string) string {
+	return "u/" + from + "/block/" + to
+}

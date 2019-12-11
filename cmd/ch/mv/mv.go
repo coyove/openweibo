@@ -12,30 +12,6 @@ import (
 	"github.com/coyove/iis/cmd/ch/ident"
 )
 
-type Timeline struct {
-	ID   string
-	Next string
-	Ptr  string
-}
-
-func (t Timeline) Marshal() []byte {
-	p, _ := json.Marshal(t)
-	return p
-}
-
-func (t *Timeline) String() string {
-	return fmt.Sprintf("<I:%s N:%s P:%s>", t.ID, t.Next, t.Ptr)
-}
-
-func UnmarshalTimeline(p []byte) (*Timeline, error) {
-	t := &Timeline{}
-	err := json.Unmarshal(p, t)
-	if t.ID == "" {
-		return nil, fmt.Errorf("failed to unmarshal: %q", p)
-	}
-	return t, err
-}
-
 var ErrNotExisted = errors.New("article not existed")
 
 type Cmd string
@@ -100,8 +76,10 @@ type User struct {
 	Role           string
 	PasswordHash   []byte
 	Email          string    `json:"e"`
+	Avatar         string    `json:"a"`
 	TotalPosts     int       `json:"tp"`
 	Followers      int       `json:"F"`
+	Followings     int       `json:"f"`
 	FollowingChain string    `json:"FC"`
 	Unread         int       `json:"ur"`
 	Signup         time.Time `json:"st"`
