@@ -61,7 +61,7 @@ func Edit(g *gin.Context) {
 		return
 	}
 
-	pl.Article.from(a, _showcontent)
+	pl.Article.from(a, 0)
 
 	g.HTML(200, "editpost.html", pl)
 }

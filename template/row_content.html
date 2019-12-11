@@ -1,51 +1,25 @@
 <div id="r{{.Index}}" style="padding:0.5em 0.5em 0 0.5em" class="row">
-    <div class="row-header"
-    {{if or .Content .Image}}
-        style="line-height:36px">
+    <div class="row-header" style="line-height:36px">
         <img width=36 height=36 alt="{{.Author}}" src="/avatar/{{.Author}}" style="display:block;float:left;margin-right:0.5em">
-    {{else}}
-        >
-    {{end}}
-
-        {{if .Index}}
-            {{if .SubIndex}}
-            <b>#{{.SubIndex}}</b>
-            {{else}}
-            <b>#{{.Index}}</b>
-            {{end}}
-        {{end}}
 
         {{if not .Author}}
         <span>NOT FOUND</span>
         {{else}}
-            <span>ID: <a href="/cat/@{{.Author}}">{{.Author}}</a></span>
-            <span class="time{{.CreateTime}}time">{{.CreateTime}}</span>
-
-            {{if eq .Index 0}}
-                    <span>回复: {{.Replies}}</span>
-            {{else}}
-                {{if le .Replies 2}}
-                {{if not .ShowReplies.Hidden}}
-                    <a href="/p/{{.ID}}">回复</a>
-                {{end}}
-                {{end}}
-            {{end}}
+            <span><a href="/cat/@{{.Author}}">{{.Author}}</a></span>
+            <span>发布于 {{.CreateTime}}</span>
         {{end}}
     </div>
 
-    {{if .Image}}
-    <a href="/img/{{.Image}}">
-        <img alt="{{.Image}}" src="/img/{{.Image}}" style="display:block;width:100%;max-height:400px;max-width:400px;margin-top:0.5em">
-    </a>
-    {{end}}
-
-    {{if .Content}}
     <pre style="padding:0.66em 0">{{.ContentHTML}}</pre>
-    {{else}}
-    <pre style="padding:0 0 0.66em 0"></pre>
-    {{end}}
+    
+    {{if not .Parent}}
+    <div style="padding: 0.5em 0">
+        <span><a href="/p/{{.ID}}">{{.Replies}} 回复</a></span>
+        <span>{{.Forwards}} 转发</span>
+        <span>{{.Upvotes}} 赞</span>
+    </div>
 
-    {{if .ShowReplies.First}}
+    {{if .ShowReplies.Last}}
     <div style="position:relative;margin:0 -0.5em; border-top:dotted 1px #aaa">
         <svg version="1.1"
             viewBox="0 0 392.652 392.652" width=16 height=16 style="display:block;height:16px;width:16px;line-height:16px;position:absolute;top:-6px;left:1em"
@@ -57,19 +31,9 @@
     </div>
 
     <div class="subreply">
-        {{template "row_content.html" .ShowReplies.First}}
-    </div>
-    {{end}}
-
-    {{if .ShowReplies.More}}
-    <div style="padding-left:2em">
-        <a href="/p/{{.ID}}">查看全部{{.Replies}}条回复...</a>
-    </div>
-    {{end}}
-
-    {{if .ShowReplies.Last}}
-    <div class="subreply">
         {{template "row_content.html" .ShowReplies.Last}}
     </div>
+    {{end}}
+
     {{end}}
 </div>

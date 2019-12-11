@@ -16,6 +16,8 @@ type ArticleView struct {
 	Index     int
 	SubIndex  string
 	Replies   int
+	Forwards  int
+	Upvotes   int
 	//Views       uint32
 	Locked      bool
 	Highlighted bool
@@ -38,9 +40,6 @@ type ArticleView struct {
 const (
 	_ uint64 = 1 << iota
 	_abstract
-	_abstracttitle
-	_showcontent
-	_showsubreplies
 	_richtime
 )
 
@@ -66,24 +65,13 @@ func (a *ArticleView) from(a2 *mv.Article, opt uint64) *ArticleView {
 
 	if opt&_abstract > 0 {
 		a.Content = mv.SoftTrunc(a2.Content, 64)
-		if len(a.Content) == 0 && a2.Image != "" {
-			a.Content = "IMG:" + a2.Image
-		}
 		a.ContentHTML = template.HTML(template.HTMLEscapeString(a.Content))
-	} else if opt&_showcontent > 0 {
+	} else {
 		a.Content = a2.Content
-		a.Image = a2.Image
 		a.ContentHTML = a2.ContentHTML()
 	}
 
-	if opt&_abstracttitle > 0 {
-		a.Title = mv.SoftTrunc(a2.Title, 20)
-	} else {
-		a.Title = a2.Title
-	}
-
-	if opt&_showsubreplies > 0 {
-		opt ^= _showsubreplies
+	if a2.Replies > 0 {
 		opt |= _abstract
 		opt |= uint64(a.Index) << 48
 

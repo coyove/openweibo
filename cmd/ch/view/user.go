@@ -2,6 +2,7 @@ package view
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/engine"
@@ -58,7 +59,7 @@ func User(g *gin.Context) {
 
 func Avatar(g *gin.Context) {
 	u, _ := m.GetUser(g.Param("id"))
-	if u == nil || u.Avatar == "" {
+	if u == nil || !strings.HasPrefix(u.Avatar, "http") {
 		http.ServeFile(g.Writer, g.Request, "template/user.png")
 	} else {
 		g.Redirect(302, u.Avatar)

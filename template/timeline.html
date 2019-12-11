@@ -3,16 +3,6 @@
 <div class="rows">
     {{if len .Articles}}
     {{range .Articles}}
-        <div class=row style="padding:0.5em;line-height:1em">
-            {{if .Category}}
-            <span><a style="color:black" href="/cat/{{.Category}}">{{.Category}}</a> /</span>
-            {{end}}
-            <b style="font-size:150%">
-                {{if .Highlighted}}<span style="color:#ffc107">&#x2605;</span>{{end}}
-                <a href="/p/{{.ID}}">{{.Title}}</a>
-            </b>
-        </div>
-        <div class=row></div>
         {{template "row_content.html" .}}
     {{end}}
     {{else}}
@@ -21,7 +11,9 @@
 </div>
 
 
-<form method="POST" action="/timeline">
+<div class=paging>
+<form method="POST">
     <input type=hidden name="cursors" value="{{.Next}}">
-    <button type=submit class=gbutton>下一页</button>
+    <button type=submit class=gbutton>更多...</button>
 </form>
+</div>

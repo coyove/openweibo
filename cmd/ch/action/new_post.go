@@ -87,7 +87,6 @@ func Reply(g *gin.Context) {
 		reply   = ident.ParseID(g.PostForm("reply"))
 		ip      = hashIP(g)
 		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
-		image   string
 		redir   = func(a, b string) {
 			g.Redirect(302, "/p/"+reply.String()+EncodeQuery(a, b, "content", content)+"&p=-1#paging")
 		}
@@ -96,6 +95,11 @@ func Reply(g *gin.Context) {
 	if emoji := g.PostForm("emoji"); emoji != "" {
 		content += emoji
 		redir("refresh", "1")
+		return
+	}
+
+	if reply.Reply() > 0 {
+		redir("", "")
 		return
 	}
 
@@ -110,14 +114,7 @@ func Reply(g *gin.Context) {
 		return
 	}
 
-	image, _ = imagex.GetImage(g)
-	if image == "" && len(content) < int(config.Cfg.MinContent) {
-		redir("error", "content/too-short")
-		return
-	}
-
 	re := m.NewReply(content, u.(*mv.User).ID, ip)
-	re.Image = image
 
 	if _, err := m.PostReply(reply.String(), re); err != nil {
 		log.Println(err)

@@ -80,3 +80,7 @@ func makeFollowID(from, to string) string {
 func makeBlockID(from, to string) string {
 	return "u/" + from + "/block/" + to
 }
+
+func makeUserArticleRelationID(from, aid string) string {
+	return "u/" + from + "/relate/" + aid
+}

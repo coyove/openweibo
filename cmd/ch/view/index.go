@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"log"
 	"strconv"
-	"strings"
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
@@ -125,19 +124,42 @@ func Index(g *gin.Context) {
 }
 
 func Timeline(g *gin.Context) {
-	pl := ArticlesTimelineView{}
-	opt := _abstract
+	var pl ArticlesTimelineView
+	var u *mv.User
+	var single bool
 
-	u, ok := g.Get("user")
-	pl.IsAdmin = ok && u.(*mv.User).IsAdmin()
-	if pl.IsAdmin {
-		pl.UUID, _ = ident.MakeToken(g)
+	if uid := g.Param("user"); uid != "" {
+		u, _ = m.GetUser(uid)
+		if u == nil {
+			Error(404, "USER NOT FOUND", g)
+			return
+		}
+		single = true
+	} else {
+		u2, _ := g.Get("user")
+		u, _ = u2.(*mv.User)
+		if u == nil {
+			g.Redirect(302, "/user")
+			return
+		}
 	}
 
 	cursors := []ident.ID{}
+	pendingFCursor := ""
 
-	if getQ := g.Query("ids"); getQ == "" {
+	if single {
+		cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(u.ID))
+	} else if g.Request.Method == "POST" {
 		for cbuf, _ := base64.StdEncoding.DecodeString(g.PostForm("cursors")); len(cbuf) > 0; {
+			if cbuf[0] == 0 {
+				list, next := m.GetFollowingList(u, string(cbuf[1:]), 1e6)
+				for _, id := range list {
+					cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(id.ID))
+				}
+				pendingFCursor = next
+				break
+			}
+
 			id := ident.UnmarshalID(cbuf)
 			if !id.Valid() {
 				break
@@ -146,13 +168,15 @@ func Timeline(g *gin.Context) {
 			cursors = append(cursors, id)
 		}
 	} else {
-		for _, id := range strings.Split(getQ, ",") {
-			cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(id))
+		list, next := m.GetFollowingList(u, "", 1e6)
+		for _, id := range list {
+			cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(id.ID))
 		}
+		pendingFCursor = next
 	}
 
 	a, next := m.WalkMulti(int(config.Cfg.PostsPerPage), cursors...)
-	fromMultiple(&pl.Articles, a, opt)
+	fromMultiple(&pl.Articles, a, 0)
 
 	nextbuf := bytes.Buffer{}
 	nextbuftmp := [32]byte{}
@@ -160,6 +184,12 @@ func Timeline(g *gin.Context) {
 		p := c.Marshal(nextbuftmp[:])
 		nextbuf.Write(p)
 	}
+
+	if pendingFCursor != "" {
+		nextbuf.WriteByte(0)
+		nextbuf.WriteString(pendingFCursor)
+	}
+
 	pl.Next = base64.StdEncoding.EncodeToString(nextbuf.Bytes())
 	g.HTML(200, "timeline.html", pl)
 }
@@ -167,7 +197,7 @@ func Timeline(g *gin.Context) {
 func Replies(g *gin.Context) {
 	var pl ArticleRepliesView
 	var pid = g.Param("parent")
-	var opt = _richtime | _showcontent
+	var opt = _richtime
 
 	parent, err := m.Get(pid)
 	if err != nil || parent.ID == "" {
@@ -215,7 +245,7 @@ func Replies(g *gin.Context) {
 		start := intmin(int(pl.ParentArticle.Replies), (pl.CurPage-1)*config.Cfg.PostsPerPage)
 		end := intmin(int(pl.ParentArticle.Replies), pl.CurPage*config.Cfg.PostsPerPage)
 
-		fromMultiple(&pl.Articles, m.GetReplies(parent.ID, start+1, end+1), opt|_abstracttitle|_showsubreplies)
+		fromMultiple(&pl.Articles, m.GetReplies(parent.ID, start+1, end+1), opt)
 
 		// Fill in at most 7 page numbers for display
 		pl.Pages = make([]int, 0, 8)
