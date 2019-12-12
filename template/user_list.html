@@ -1,0 +1,87 @@
+{{template "header.html" .}}
+
+<div style="margin: 0.5em 0">
+    {{if not .IsBlacklist}}
+    <a href="/user/followings" class=gbutton>我的关注</a>
+    <a href="/user/blacklist" class=gbutton style="color:#ccc">黑名单</a>
+    {{else}}
+    <a href="/user/followings" class=gbutton style="color:#ccc">我的关注</a>
+    <a href="/user/blacklist" class=gbutton>黑名单</a>
+    {{end}}
+</div>
+
+<table class="articles z" style="margin: 0.5em 0">
+    {{if .EError}}
+    <tr>
+        <td colspan=3>{{template "error_i18n.html" .EError}}</td>
+    </tr>
+    {{end}}
+    <tr style="border-bottom:dotted 1px #ccc">
+        <td class=nowrap>
+            <b>
+                {{if .IsBlacklist}}
+                黑名单
+                {{else}}
+                我的关注 ({{.User.Followings}})
+                {{end}}
+            </b>
+        </td>
+        <form method="POST" action="/user">
+            <td>
+                <input type=hidden name=uuid value="{{.UUID}}">
+                <input type=hidden name=username value="{{.User.ID}}">
+                <input type=hidden name=method value="follow">
+                <input type=hidden name=follow value="1">
+                <input class=t name=to>
+            </td>
+            <td class=nowrap>
+                <button class="gbutton" name="search" value="1" type=submit>搜索 ID</button>
+            </td>
+        </form>
+    </tr>
+
+    {{range .List}}
+    <tr>
+        <td class=nowrap>{{.Time.Format "2006-01-02"}}</td>
+        <td><b><a href="/t/{{.ID}}">{{.ID}}</a></b></td>
+        <td class=nowrap>
+            {{if $.IsBlacklist}}
+            <form method="POST" action="/user">
+                <input type=hidden name=uuid value="{{$.UUID}}">
+                <input type=hidden name=username value="{{$.User.ID}}">
+                <input type=hidden name=method value="block">
+                <input type=hidden name=to value="{{.ID}}">
+                {{if .Blocked}}
+                <button class="gbutton" type=submit>解除</button>
+                {{else}}
+                <input type=hidden name=block value="1">
+                <button class="gbutton" type=submit>屏蔽</button>
+                {{end}}
+            </form>
+            {{else}}
+            <form method="POST" action="/user">
+                <input type=hidden name=uuid value="{{$.UUID}}">
+                <input type=hidden name=username value="{{$.User.ID}}">
+                <input type=hidden name=method value="follow">
+                <input type=hidden name=to value="{{.ID}}">
+                {{if .Followed}}
+                <button class="gbutton" type=submit>取消关注</button>
+                {{else}}
+                <input type=hidden name=follow value="1">
+                <button class="gbutton" type=submit>关注</button>
+                {{end}}
+            </form>
+            {{end}}
+        </td>
+    </tr>
+    {{end}}
+
+    <tr>
+        <td colspan=3 style="text-align:center">
+            <a href="?n={{.Next}}" class=gbutton>
+                下一页 &raquo;
+            </a>
+        </td>
+    </tr>
+</table>
+

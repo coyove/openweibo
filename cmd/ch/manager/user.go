@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/coyove/iis/cmd/ch/config"
@@ -94,6 +93,10 @@ func (m *Manager) UpdateUser_unlock(id string, cb func(u *mv.User) error) error 
 }
 
 func (m *Manager) MentionUser(a *mv.Article, id string) error {
+	if m.IsBlocking(id, a.Author) {
+		return fmt.Errorf("author blocked")
+	}
+
 	if err := m.insertArticle(ident.NewID(ident.IDTagInbox).SetTag(id).String(), &mv.Article{
 		ID:  ident.NewGeneralID().String(),
 		Cmd: mv.CmdMention,
@@ -187,29 +190,85 @@ func (m *Manager) FollowUser_unlock(from, to string, following bool) (E error) {
 	return nil
 }
 
+func (m *Manager) BlockUser_unlock(from, to string, blocking bool) (E error) {
+	u, err := m.GetUser(from)
+	if err != nil {
+		return err
+	}
+
+	root := u.BlockingChain
+	if u.BlockingChain == "" {
+		a := &mv.Article{
+			ID:         ident.NewGeneralID().String(),
+			Cmd:        mv.CmdBlock,
+			CreateTime: time.Now(),
+		}
+		if err := m.db.Set(a.ID, a.Marshal()); err != nil {
+			return err
+		}
+		if err := m.UpdateUser_unlock(from, func(u *mv.User) error {
+			u.BlockingChain = a.ID
+			return nil
+		}); err != nil {
+			return err
+		}
+		root = a.ID
+	}
+
+	followID := makeBlockID(from, to)
+
+	if a, _ := m.GetArticle(followID); a != nil {
+		state := strconv.FormatBool(blocking)
+		if a.Extras["block"] == state {
+			return nil
+		}
+		a.Extras["block"] = state
+		return m.db.Set(a.ID, a.Marshal())
+	}
+
+	if err := m.insertArticle(root, &mv.Article{
+		ID:  followID,
+		Cmd: mv.CmdBlock,
+		Extras: map[string]string{
+			"to":    to,
+			"block": strconv.FormatBool(blocking),
+		},
+		CreateTime: time.Now(),
+	}, false); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 type FollowingState struct {
 	ID       string
 	Time     time.Time
 	Followed bool
+	Blocked  bool
 }
 
-func (m *Manager) GetFollowingList(u *mv.User, cursor string, n int) ([]FollowingState, string) {
-	if u.FollowingChain == "" {
+func (m *Manager) GetFollowingList(getBlockList bool, u *mv.User, cursor string, n int) ([]FollowingState, string) {
+	chain := func() string {
+		if getBlockList {
+			return u.BlockingChain
+		}
+		return u.FollowingChain
+	}()
+
+	if chain == "" {
 		if cursor != "" {
-			if u, _ := m.GetUser(cursor[strings.LastIndex(cursor, "/")+1:]); u != nil {
-				return []FollowingState{{
-					ID:   u.ID,
-					Time: u.Signup,
-				}}, ""
+			if u, _ := m.GetUser(lastElemInCompID(cursor)); u != nil {
+				return []FollowingState{{ID: u.ID, Time: u.Signup}}, ""
 			}
 		}
 		return nil, ""
 	}
 
 	if cursor == "" {
-		a, err := m.GetArticle(u.FollowingChain)
+		a, err := m.GetArticle(chain)
 		if err != nil {
-			log.Println("[GetFollowingList] Failed to get chain", u, "[", u.FollowingChain, "]")
+			log.Println("[GetFollowingList] Failed to get chain", u, "[", chain, "]")
 			return nil, ""
 		}
 		cursor = a.NextID
@@ -224,33 +283,24 @@ func (m *Manager) GetFollowingList(u *mv.User, cursor string, n int) ([]Followin
 			log.Println("[GetFollowingList] Break out slow walk", u, "[", cursor, "]")
 			break
 		}
+
 		a, err := m.GetArticle(cursor)
 		if err != nil {
 			if cursor == startCursor {
-				to := cursor[strings.LastIndex(cursor, "/")+1:]
-				u, err := m.GetUser(to)
-				if err == nil {
-					res = append(res, FollowingState{
-						ID:   to,
-						Time: u.Signup,
-					})
+				if u, _ := m.GetUser(lastElemInCompID(cursor)); u != nil {
+					res = append(res, FollowingState{ID: u.ID, Time: u.Signup})
 				}
 			}
-			log.Println("[GetFollowingList]", err)
+			log.Println("[GetFollowingList]", cursor, err)
 			break
 		}
+
 		if a.Extras["follow"] == "true" {
-			res = append(res, FollowingState{
-				ID:       a.Extras["to"],
-				Time:     a.CreateTime,
-				Followed: true,
-			})
+			res = append(res, FollowingState{ID: a.Extras["to"], Time: a.CreateTime, Followed: true})
+		} else if a.Extras["block"] == "true" {
+			res = append(res, FollowingState{ID: a.Extras["to"], Time: a.CreateTime, Blocked: true})
 		} else if cursor == startCursor {
-			res = append(res, FollowingState{
-				ID:       a.Extras["to"],
-				Time:     a.CreateTime,
-				Followed: false,
-			})
+			res = append(res, FollowingState{ID: a.Extras["to"], Time: a.CreateTime})
 		}
 
 		cursor = a.NextID
@@ -264,31 +314,7 @@ func (m *Manager) IsFollowing(from, to string) bool {
 	return p != nil && p.Extras["follow"] == "true"
 }
 
-// func (m *Manager) UpvoteArticle(uid, aid string, upvote bool) error {
-// 	relationID := makeUserArticleRelationID(uid, aid)
-//
-// 	if a, _ := m.GetArticle(relationID); a != nil {
-// 		a.Extras["upvote"] = strconv.FormatBool(upvote)
-// 		a.Extras["forward"] = strconv.FormatBool(forward)
-// 		return m.db.Set(a.ID, a.Marshal())
-// 	}
-//
-// 	if err := m.db.Set(relationID, (&mv.Article{
-// 		ID:  relationID,
-// 		Cmd: mv.CmdUARelation,
-// 		Extras: map[string]string{
-// 			"article_id": aid,
-// 			"upvote":     strconv.FormatBool(upvote),
-// 			"forward":    strconv.FormatBool(forward),
-// 		},
-// 		CreateTime: time.Now(),
-// 	}).Marshal()); err != nil {
-// 		return err
-// 	}
-//
-// 	return m.UpdateArticle(aid, func(a *mv.Article) error {
-// 		if upvote {
-// 		}
-// 		return nil
-// 	})
-// }
+func (m *Manager) IsBlocking(from, to string) bool {
+	p, _ := m.GetArticle(makeBlockID(from, to))
+	return p != nil && p.Extras["block"] == "true"
+}

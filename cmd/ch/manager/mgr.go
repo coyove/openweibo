@@ -192,6 +192,9 @@ func (m *Manager) Post(content, author, ip string) (string, error) {
 		return "", err
 	}
 
+	master := *a
+	go m.insertArticle(ident.NewID(ident.IDTagAuthor).SetTag("master").String(), &master, false)
+
 	go func() {
 		m.UpdateUser(a.Author, func(u *mv.User) error {
 			u.TotalPosts++
@@ -246,6 +249,10 @@ func (m *Manager) PostReply(parent string, content, author, ip string) (string, 
 
 	if p.Locked {
 		return "", fmt.Errorf("locked parent")
+	}
+
+	if m.IsBlocking(p.Author, author) {
+		return "", fmt.Errorf("author blocked")
 	}
 
 	a := &mv.Article{

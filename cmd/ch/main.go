@@ -17,7 +17,6 @@ import (
 	"github.com/coyove/iis/cmd/ch/action"
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/engine"
-	"github.com/coyove/iis/cmd/ch/imagex"
 	"github.com/coyove/iis/cmd/ch/manager"
 	"github.com/coyove/iis/cmd/ch/mv"
 	"github.com/coyove/iis/cmd/ch/view"
@@ -98,10 +97,10 @@ func main() {
 
 	r.NoRoute(view.NotFound)
 	r.Handle("GET", "/", view.Home)
-	r.Handle("GET", "/img/*path", imagex.Image)
+	r.Handle("GET", "/master", view.Index)
 	r.Handle("GET", "/avatar/:id", view.Avatar)
 	r.Handle("GET", "/user", view.User)
-	r.Handle("GET", "/cat", view.Index)
+	r.Handle("GET", "/user/:type", view.UserList)
 	r.Handle("GET", "/t", view.Timeline)
 	r.Handle("GET", "/t/:user", view.Timeline)
 	r.Handle("POST", "/t", view.Timeline)

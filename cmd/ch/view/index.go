@@ -21,6 +21,8 @@ type ArticlesTimelineView struct {
 	IsInbox                bool
 	IsUserTimeline         bool
 	IsUserTimelineFollowed bool
+	IsUserTimelineBlocked  bool
+	IsGlobalTimeline       bool
 	Index                  bool
 	User                   *mv.User
 	You                    *mv.User
@@ -51,6 +53,26 @@ func SetManager(mgr *manager.Manager) {
 }
 
 func Index(g *gin.Context) {
+	var pl ArticlesTimelineView
+	var cursor ident.ID
+
+	if g.Request.Method == "POST" {
+		cbuf, _ := base64.StdEncoding.DecodeString(g.PostForm("cursors"))
+		cursor = ident.UnmarshalID(cbuf)
+	} else {
+		cursor = ident.NewID(ident.IDTagAuthor).SetTag("master")
+	}
+
+	a, next := m.WalkMulti(int(config.Cfg.PostsPerPage), cursor)
+	fromMultiple(&pl.Articles, a, 0)
+
+	for _, c := range next {
+		pl.Next = base64.StdEncoding.EncodeToString(c.Marshal(nil))
+		break
+	}
+
+	pl.IsGlobalTimeline = true
+	g.HTML(200, "timeline.html", pl)
 }
 
 func Timeline(g *gin.Context) {
@@ -70,6 +92,7 @@ func Timeline(g *gin.Context) {
 		}
 		if pl.You != nil {
 			pl.IsUserTimelineFollowed = m.IsFollowing(pl.You.ID, uid)
+			pl.IsUserTimelineBlocked = m.IsBlocking(pl.You.ID, uid)
 			pl.UUID, _ = ident.MakeToken(g)
 		}
 	case uid == ":in":
@@ -102,7 +125,7 @@ func Timeline(g *gin.Context) {
 	} else if g.Request.Method == "POST" {
 		for cbuf, _ := base64.StdEncoding.DecodeString(g.PostForm("cursors")); len(cbuf) > 0; {
 			if cbuf[0] == 0 {
-				list, next := m.GetFollowingList(pl.User, string(cbuf[1:]), 1e6)
+				list, next := m.GetFollowingList(false, pl.User, string(cbuf[1:]), 1e6)
 				for _, id := range list {
 					if id.Followed {
 						cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(id.ID))
@@ -124,7 +147,7 @@ func Timeline(g *gin.Context) {
 		pl.UUID, _ = ident.MakeToken(g)
 		pl.EError, pl.RContent = g.Query("error"), g.Query("content")
 
-		list, next := m.GetFollowingList(pl.User, "", 1e6)
+		list, next := m.GetFollowingList(false, pl.User, "", 1e6)
 		for _, id := range list {
 			if id.Followed {
 				cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(id.ID))
@@ -192,7 +215,7 @@ func Replies(g *gin.Context) {
 	}
 
 	a, next := m.WalkReply(int(config.Cfg.PostsPerPage), cursor)
-	fromMultiple(&pl.Articles, a, _RichTime|_NoMoreParent|_ForceShowAvatar)
+	fromMultiple(&pl.Articles, a, _RichTime|_NoMoreParent|_ShowAvatar)
 	pl.Next = next
 	g.HTML(200, "post.html", pl)
 }

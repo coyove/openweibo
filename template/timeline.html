@@ -6,7 +6,7 @@
     <title>@{{.User.ID}} 的时间线</title>
     {{if .You}}
     {{if ne .You.ID .User.ID}}
-    <form method="POST" action="/user">
+    &emsp;<form method="POST" action="/user" style="display:inline-block">
             <input type=hidden name=uuid value="{{.UUID}}">
             <input type=hidden name=username value="{{.You.ID}}">
             <input type=hidden name=method value="follow">
@@ -18,11 +18,26 @@
             <button class="gbutton" type=submit>关注</button>
             {{end}}
     </form>
+    <form method="POST" action="/user" style="display:inline-block">
+            <input type=hidden name=uuid value="{{.UUID}}">
+            <input type=hidden name=username value="{{.You.ID}}">
+            <input type=hidden name=method value="block">
+            <input type=hidden name=to value="{{.User.ID}}">
+            {{if .IsUserTimelineBlocked}}
+            <button class="gbutton" type=submit>解除黑名单</button>
+            {{else}}
+            <input type=hidden name=block value="1">
+            <button class="gbutton" type=submit>拉入黑名单</button>
+            {{end}}
+    </form>
     {{end}}
     {{end}}
 {{else if .IsInbox}}
     <b>我的提醒</b>
     <title>我的提醒</title>
+{{else if .IsGlobalTimeline}}
+    <b>全局时间线</b>
+    <title>全局时间线</title>
 {{else}}
     {{if .ShowNewPost}}
     <form method="POST" action="/new">
@@ -64,14 +79,14 @@
 
 <div class=paging>
     <form method="POST">
-    {{if not .ShowNewPost}}
-        {{if .IsUserTimeline}}
-            <a class=gbutton href="/t/{{.User.ID}}">首页</a>
-        {{else if .IsInbox}}
-            <a class=gbutton href="/t/:in">首页</a>
-        {{else}}
-            <a class=gbutton href="/t">首页</a>
-        {{end}}
+    {{if .IsUserTimeline}}
+        <a class=gbutton href="/t/{{.User.ID}}">首页</a>
+    {{else if .IsInbox}}
+        <a class=gbutton href="/t/:in">首页</a>
+    {{else if .IsGlobalTimeline}}
+        <a class=gbutton href="/master">首页</a>
+    {{else}}
+        <a class=gbutton href="/t">首页</a>
     {{end}}
 
     {{if .Next}}
@@ -84,6 +99,8 @@
             <a class=gbutton href="/t/{{.User.ID}}">没有更多{{.User.ID}}的状态了</a>
         {{else if .IsInbox}}
             <a class=gbutton href="/t/:in">没有更多提醒了</a>
+        {{else if .IsGlobalTimeline}}
+            <a class=gbutton href="/master">没有更多状态了</a>
         {{else}}
             <a class=gbutton href="/t">没有更多状态了</a>
         {{end}}

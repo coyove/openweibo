@@ -16,11 +16,11 @@ var ErrNotExisted = errors.New("article not existed")
 type Cmd string
 
 const (
-	CmdNone       Cmd = ""
-	CmdReply          = "inbox-reply"
-	CmdMention        = "inbox-mention"
-	CmdFollow         = "follow"
-	CmdUARelation     = "user-article-relation"
+	CmdNone    Cmd = ""
+	CmdReply       = "inbox-reply"
+	CmdMention     = "inbox-mention"
+	CmdFollow      = "follow"
+	CmdBlock       = "block"
 
 	DeletionMarker = "[[b19b8759-391b-460a-beb0-16f5f334c34f]]"
 )
@@ -69,16 +69,18 @@ func UnmarshalArticle(b []byte) (*Article, error) {
 }
 
 type User struct {
-	ID             string
-	Session        string
-	Role           string
-	PasswordHash   []byte
-	Email          string    `json:"e"`
-	Avatar         string    `json:"a"`
-	TotalPosts     int       `json:"tp"`
-	Followers      int       `json:"F"`
-	Followings     int       `json:"f"`
+	ID           string
+	Session      string
+	Role         string
+	PasswordHash []byte
+	Email        string `json:"e"`
+	Avatar       string `json:"a"`
+	TotalPosts   int    `json:"tp"`
+	Followers    int    `json:"F"`
+	Followings   int    `json:"f"`
+	//Blockings      int       `json:"b"`
 	FollowingChain string    `json:"FC"`
+	BlockingChain  string    `json:"BC"`
 	Unread         int       `json:"ur"`
 	Signup         time.Time `json:"st"`
 	SignupIP       string    `json:"sip"`

@@ -2,6 +2,7 @@ package manager
 
 import (
 	"regexp"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -83,4 +84,8 @@ func makeBlockID(from, to string) string {
 
 func makeUserArticleRelationID(from, aid string) string {
 	return "u/" + from + "/relate/" + aid
+}
+
+func lastElemInCompID(id string) string {
+	return id[strings.LastIndex(id, "/")+1:]
 }

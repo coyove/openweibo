@@ -32,7 +32,7 @@ func User(g *gin.Context) {
 			q := EncodeQuery(ext...)
 
 			switch mth {
-			case "login", "follow":
+			case "login", "follow", "block":
 				u := g.Request.Referer()
 				if idx := strings.Index(u, "?"); idx > -1 {
 					u = u[:idx]
@@ -78,6 +78,11 @@ func User(g *gin.Context) {
 			return
 		}
 
+		if username == "master" {
+			redir("error", "id/already-existed")
+			return
+		}
+
 		u = &mv.User{
 			ID:           username,
 			Session:      genSession(),
@@ -110,7 +115,7 @@ func User(g *gin.Context) {
 	case "logout":
 		u = &mv.User{}
 		g.SetCookie("id", mv.MakeUserToken(u), 365*86400, "", "", false, false)
-		g.Redirect(302, "/cat")
+		g.Redirect(302, "/")
 		return
 	case "update-info":
 		if ret := checkToken(g); ret != "" {
@@ -146,27 +151,36 @@ func User(g *gin.Context) {
 			g.Redirect(302, "/cat/@"+username)
 		}
 		return
-	case "follow":
-
+	case "follow", "block":
 		user, _ := g.Get("user")
 		to := g.PostForm("to")
-		follow := g.PostForm("follow") != ""
-		if user == nil || to == "" {
+
+		if user == nil || to == "" || user.(*mv.User).ID == to {
 			redir("error", "internal/error")
 			return
 		}
+
 		if g.PostForm("search") != "" {
-			redir("n", "u/"+user.(*mv.User).ID+"/follow/"+to)
+			redir("n", "u/"+user.(*mv.User).ID+"/"+mth+"/"+to)
 			return
 		}
+
 		if ret := checkToken(g); ret != "" {
 			redir("error", ret)
 			return
 		}
-		if err := m.FollowUser_unlock(user.(*mv.User).ID, to, follow); err != nil {
+
+		var err error
+		if mth == "block" {
+			err = m.BlockUser_unlock(user.(*mv.User).ID, to, g.PostForm(mth) != "")
+		} else {
+			err = m.FollowUser_unlock(user.(*mv.User).ID, to, g.PostForm(mth) != "")
+		}
+
+		if err != nil {
 			redir("error", err.Error())
 		} else {
-			redir("error", "ok", "n", "u/"+user.(*mv.User).ID+"/follow/"+to)
+			redir("error", "ok", "n", "u/"+user.(*mv.User).ID+"/"+mth+"/"+to)
 		}
 		return
 	}

@@ -8,7 +8,7 @@
     <div style="padding:0.33em">
         {{with .ReplyView}}
         <input class="reply-toggle" style="display:none" type=checkbox id="reply" {{if .ShowReply}}checked{{end}}>
-        <label class="gbutton" for=reply><b>回复</b></label>
+        <label class="gbutton" for=reply><b>回复</b>{{if $.CanDeleteParent}}/ 删除该状态{{end}}</label>
         <div class="reply-view">
             <form method="POST" action="/reply">
                 <table class="articles">
@@ -27,7 +27,7 @@
                     <tr style="text-align:right">
                         <td class=nowrap>
                             {{if $.CanDeleteParent}}
-                            <button class="gbutton" type=submit name=delete value=1 style="color:#ff5722">删除我的发言</a>
+                            <button class="gbutton" type=submit name=delete value=1 style="color:#ff5722">删除该状态</a>
                             {{end}}
                         </td>
                         <td colspan=2>
@@ -45,10 +45,6 @@
         </div>
         <div class="bg"></div>
         {{end}}
-
-        {{if .ParentArticle.Parent}}
-        <a class="gbutton" href="/p/{{.ParentArticle.Parent.ID}}">上一层</a>
-        {{end}} 
     </div>
 
     {{if len .Articles}}

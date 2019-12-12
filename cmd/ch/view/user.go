@@ -14,18 +14,16 @@ import (
 
 func User(g *gin.Context) {
 	p := struct {
-		Tags           []string
-		UUID           string
-		Challenge      string
-		EError         string
-		RUsername      string
-		RPassword      string
-		REmail         string
-		Survey         interface{}
-		Config         string
-		Followings     []manager.FollowingState
-		FollowingsNext string
-		User           *mv.User
+		Tags      []string
+		UUID      string
+		Challenge string
+		EError    string
+		RUsername string
+		RPassword string
+		REmail    string
+		Survey    interface{}
+		Config    string
+		User      *mv.User
 	}{
 		Tags:      config.Cfg.Tags,
 		EError:    g.Query("error"),
@@ -51,10 +49,37 @@ func User(g *gin.Context) {
 			g.SetCookie("id", mv.MakeUserToken(u), 86400, "", "", false, false)
 		}
 
-		p.Followings, p.FollowingsNext = m.GetFollowingList(p.User, g.Query("n"), int(config.Cfg.PostsPerPage))
 	}
 
 	g.HTML(200, "user.html", p)
+}
+
+func UserList(g *gin.Context) {
+	p := struct {
+		UUID        string
+		List        []manager.FollowingState
+		EError      string
+		Next        string
+		IsBlacklist bool
+		User        *mv.User
+	}{
+		EError:      g.Query("error"),
+		IsBlacklist: g.Param("type") == "blacklist",
+	}
+
+	p.UUID, _ = ident.MakeToken(g)
+
+	u, _ := g.Get("user")
+	p.User, _ = u.(*mv.User)
+
+	if p.User == nil {
+		g.Redirect(302, "/user")
+		return
+	}
+
+	p.List, p.Next = m.GetFollowingList(p.IsBlacklist, p.User, g.Query("n"), int(config.Cfg.PostsPerPage))
+
+	g.HTML(200, "user_list.html", p)
 }
 
 func Avatar(g *gin.Context) {

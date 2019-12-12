@@ -1,15 +1,13 @@
 {{template "header.html" .}}
 
-<style>
-table.z {
-    margin: 0.5em auto;
-    max-width: 500px;
-}
-</style>
-
 {{if .User}}
 
 <title>{{.User.ID}}</title>
+
+<div style="margin: 0.5em 0">
+    <a href="/user/followings" class=gbutton style="color:#ccc">我的关注</a>
+    <a href="/user/blacklist" class=gbutton style="color:#ccc">黑名单</a>
+</div>
 
 <table class="articles z">
     <tr>
@@ -62,57 +60,14 @@ table.z {
             </td>
         </tr>
     </form> 
-</table>
-
-<table class="articles z">
-    <tr style="border-bottom:dotted 1px #ccc">
-        <td class=nowrap><b>我的关注 ({{.User.Followings}})</b></td>
-        <form method="POST" action="/user">
-            <td>
-                <input type=hidden name=uuid value="{{.UUID}}">
-                <input type=hidden name=username value="{{.User.ID}}">
-                <input type=hidden name=method value="follow">
-                <input type=hidden name=follow value="1">
-                <input class=t name=to>
-            </td>
-            <td class=nowrap>
-                <button class="gbutton" name="search" value="1" type=submit>搜索 ID</button>
-            </td>
-        </form>
-    </tr>
-
-    {{range .Followings}}
-    <tr>
-        <td class=nowrap>{{.Time.Format "2006-01-02"}}</td>
-        <td><b><a href="/t/{{.ID}}">{{.ID}}</a></b></td>
-        <td class=nowrap>
-            <form method="POST" action="/user">
-                <input type=hidden name=uuid value="{{$.UUID}}">
-                <input type=hidden name=username value="{{$.User.ID}}">
-                <input type=hidden name=method value="follow">
-                <input type=hidden name=to value="{{.ID}}">
-                {{if .Followed}}
-                <button class="gbutton" type=submit>取消关注</button>
-                {{else}}
-                <input type=hidden name=follow value="1">
-                <button class="gbutton" type=submit>关注</button>
-                {{end}}
-            </form>
-        </td>
-    </tr>
-    {{end}}
-
-    <tr>
-        <td colspan=3 style="text-align:center"><a href="/user?n={{.FollowingsNext}}" class=gbutton>更多关注 &raquo;</a></td>
-    </tr>
 
     {{if .User.IsMod}}
     <tr>
-        <td>最大耗时:</td>
+        <td class=nowrap>最大耗时:</td>
         <td>{{.Survey.Max}}ms</td>
     </tr>
     <tr>
-        <td>流出流量:</td>
+        <td class=nowrap>流出流量:</td>
         <td>{{.Survey.Written}}b</td>
     </tr>
     {{end}}

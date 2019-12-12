@@ -19,7 +19,6 @@ type ArticleView struct {
 	Forwards    int
 	Upvotes     int
 	Locked      bool
-	Highlighted bool
 	NoAvatar    bool
 	Title       string
 	Content     string
@@ -34,8 +33,8 @@ const (
 	_ uint64 = 1 << iota
 	_Abstract
 	_NoMoreParent
-	_ForceShowAvatar
 	_RichTime
+	_ShowAvatar
 )
 
 func (a *ArticleView) from(a2 *mv.Article, opt uint64) *ArticleView {
@@ -48,7 +47,6 @@ func (a *ArticleView) from(a2 *mv.Article, opt uint64) *ArticleView {
 	a.Locked = a2.Locked
 	a.Cmd = string(a2.Cmd)
 	a.Extras = a2.Extras
-	a.Highlighted = a2.Highlighted
 	a.Author = a2.Author
 	a.IP = a2.IP
 	a.CreateTime = mv.FormatTime(a2.CreateTime, opt&_RichTime > 0)
@@ -68,7 +66,7 @@ func (a *ArticleView) from(a2 *mv.Article, opt uint64) *ArticleView {
 	}
 
 	a.NoAvatar = opt&_NoMoreParent > 0
-	if opt&_ForceShowAvatar > 0 {
+	if opt&_ShowAvatar > 0 {
 		a.NoAvatar = false
 	}
 
