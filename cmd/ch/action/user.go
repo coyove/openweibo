@@ -31,13 +31,14 @@ func User(g *gin.Context) {
 			ext = append([]string{a, b, "username", username, "email", email, "password", ident.MakeTempToken(password)}, ext...)
 			q := EncodeQuery(ext...)
 
-			if mth == "login" {
+			switch mth {
+			case "login", "follow":
 				u := g.Request.Referer()
 				if idx := strings.Index(u, "?"); idx > -1 {
 					u = u[:idx]
 				}
 				g.Redirect(302, u+q)
-			} else {
+			default:
 				g.Redirect(302, "/user"+q)
 			}
 		}

@@ -111,7 +111,7 @@ func (m *Manager) MentionUser(a *mv.Article, id string) error {
 	})
 }
 
-func (m *Manager) FollowUser_unlock(from, to string, following bool) error {
+func (m *Manager) FollowUser_unlock(from, to string, following bool) (E error) {
 	u, err := m.GetUser(from)
 	if err != nil {
 		return err
@@ -139,24 +139,28 @@ func (m *Manager) FollowUser_unlock(from, to string, following bool) error {
 	followID := makeFollowID(from, to)
 
 	defer func() {
+		if E != nil {
+			return
+		}
 
-		go m.UpdateUser(to, func(u *mv.User) error {
-			if following {
-				u.Followers++
-			} else {
-				dec0(&u.Followers)
-			}
-			return nil
-		})
-
-		go m.UpdateUser(from, func(u *mv.User) error {
-			if following {
-				u.Followings++
-			} else {
-				dec0(&u.Followings)
-			}
-			return nil
-		})
+		go func() {
+			m.UpdateUser(to, func(u *mv.User) error {
+				if following {
+					u.Followers++
+				} else {
+					dec0(&u.Followers)
+				}
+				return nil
+			})
+			m.UpdateUser(from, func(u *mv.User) error {
+				if following {
+					u.Followings++
+				} else {
+					dec0(&u.Followings)
+				}
+				return nil
+			})
+		}()
 	}()
 
 	if a, _ := m.GetArticle(followID); a != nil {
@@ -256,8 +260,8 @@ func (m *Manager) GetFollowingList(u *mv.User, cursor string, n int) ([]Followin
 }
 
 func (m *Manager) IsFollowing(from, to string) bool {
-	p, _ := m.db.Get(makeFollowID(from, to))
-	return bytes.Equal(p, []byte("true"))
+	p, _ := m.GetArticle(makeFollowID(from, to))
+	return p != nil && p.Extras["follow"] == "true"
 }
 
 // func (m *Manager) UpvoteArticle(uid, aid string, upvote bool) error {

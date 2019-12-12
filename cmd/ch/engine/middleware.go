@@ -88,7 +88,7 @@ func mwRenderPerf(g *gin.Context) {
 }
 
 func mwIPThrot(g *gin.Context) {
-	if ident.IsAdmin(g) {
+	if ident.IsAdmin(g) || g.Request.Method != "POST" {
 		g.Set("ip-ok", true)
 		g.Next()
 		return

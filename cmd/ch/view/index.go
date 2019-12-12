@@ -15,14 +15,20 @@ import (
 var m *manager.Manager
 
 type ArticlesTimelineView struct {
-	Articles       []ArticleView
-	Next           string
-	IsAdmin        bool
-	IsInbox        bool
-	IsUserTimeline bool
-	Index          bool
-	UUID           string
-	User           *mv.User
+	Articles               []ArticleView
+	Next                   string
+	IsAdmin                bool
+	IsInbox                bool
+	IsUserTimeline         bool
+	IsUserTimelineFollowed bool
+	Index                  bool
+	User                   *mv.User
+	You                    *mv.User
+
+	ShowNewPost bool
+	UUID        string
+	RContent    string
+	EError      string
 }
 
 type ArticleRepliesView struct {
@@ -49,6 +55,10 @@ func Index(g *gin.Context) {
 
 func Timeline(g *gin.Context) {
 	var pl ArticlesTimelineView
+
+	u2, _ := g.Get("user")
+	pl.You, _ = u2.(*mv.User)
+
 	switch uid := g.Param("user"); {
 	case uid != "" && uid != ":in":
 		// View someone's timeline
@@ -58,18 +68,21 @@ func Timeline(g *gin.Context) {
 			Error(404, "USER NOT FOUND", g)
 			return
 		}
+		if pl.You != nil {
+			pl.IsUserTimelineFollowed = m.IsFollowing(pl.You.ID, uid)
+			pl.UUID, _ = ident.MakeToken(g)
+		}
 	case uid == ":in":
 		// View my inbox
 		pl.IsInbox = true
 		fallthrough
 	default:
 		// View my timeline
-		u2, _ := g.Get("user")
-		pl.User, _ = u2.(*mv.User)
-		if pl.User == nil {
+		if pl.You == nil {
 			g.Redirect(302, "/user")
 			return
 		}
+		pl.User = pl.You
 	}
 
 	cursors := []ident.ID{}
@@ -91,7 +104,9 @@ func Timeline(g *gin.Context) {
 			if cbuf[0] == 0 {
 				list, next := m.GetFollowingList(pl.User, string(cbuf[1:]), 1e6)
 				for _, id := range list {
-					cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(id.ID))
+					if id.Followed {
+						cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(id.ID))
+					}
 				}
 				pendingFCursor = next
 				break
@@ -105,9 +120,15 @@ func Timeline(g *gin.Context) {
 			cursors = append(cursors, id)
 		}
 	} else {
+		pl.ShowNewPost = true
+		pl.UUID, _ = ident.MakeToken(g)
+		pl.EError, pl.RContent = g.Query("error"), g.Query("content")
+
 		list, next := m.GetFollowingList(pl.User, "", 1e6)
 		for _, id := range list {
-			cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(id.ID))
+			if id.Followed {
+				cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(id.ID))
+			}
 		}
 		cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(pl.User.ID))
 		pendingFCursor = next

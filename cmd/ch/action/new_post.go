@@ -1,11 +1,11 @@
 package action
 
 import (
+	"fmt"
 	"log"
 	"net"
 
 	"github.com/coyove/iis/cmd/ch/config"
-	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/mv"
 	"github.com/gin-gonic/gin"
 )
@@ -32,11 +32,9 @@ func New(g *gin.Context) {
 	var (
 		ip      = hashIP(g)
 		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
-		title   = mv.SoftTrunc(g.PostForm("title"), 100)
-		cat     = checkCategory(mv.SoftTrunc(g.PostForm("cat"), 20))
 		redir   = func(a, b string) {
-			q := EncodeQuery(a, b, "content", content, "title", title, "cat", cat)
-			g.Redirect(302, "/new"+q)
+			q := EncodeQuery(a, b, "content", content)
+			g.Redirect(302, "/t"+q)
 		}
 	)
 
@@ -52,13 +50,13 @@ func New(g *gin.Context) {
 		return
 	}
 
-	if ret := checkToken(g); ret != "" {
-		redir("error", ret)
+	if len(content) < 3 {
+		redir("error", "content/too-short")
 		return
 	}
 
-	if len(title) < int(config.Cfg.MinContent) {
-		redir("error", "title/too-short")
+	if ret := checkToken(g); ret != "" {
+		redir("error", ret)
 		return
 	}
 
@@ -69,27 +67,23 @@ func New(g *gin.Context) {
 		return
 	}
 
-	g.Redirect(302, "/p/"+aid)
+	content = ""
+	redir("", "")
 }
 
 func Reply(g *gin.Context) {
 	var (
-		reply   = ident.ParseID(g.PostForm("reply"))
+		reply   = g.PostForm("reply")
 		ip      = hashIP(g)
 		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		redir   = func(a, b string) {
-			g.Redirect(302, "/p/"+reply.String()+EncodeQuery(a, b, "content", content)+"&p=-1#paging")
+			g.Redirect(302, "/p/"+reply+EncodeQuery(a, b, "content", content)+"&p=-1#paging")
 		}
 	)
 
 	if emoji := g.PostForm("emoji"); emoji != "" {
 		content += emoji
 		redir("refresh", "1")
-		return
-	}
-
-	if reply.Reply() > 0 {
-		redir("", "")
 		return
 	}
 
@@ -104,7 +98,29 @@ func Reply(g *gin.Context) {
 		return
 	}
 
-	if _, err := m.PostReply(reply.String(), content, u.(*mv.User).ID, ip); err != nil {
+	if g.PostForm("delete") != "" {
+		u := u.(*mv.User)
+		err := m.UpdateArticle(reply, func(a *mv.Article) error {
+			if u.ID != a.Author && !u.IsMod() {
+				return fmt.Errorf("user/can-not-delete")
+			}
+			a.Content = mv.DeletionMarker
+			return nil
+		})
+		if err != nil {
+			redir("error", err.Error())
+		} else {
+			redir("", "")
+		}
+		return
+	}
+
+	if len(content) < 3 {
+		redir("error", "content/too-short")
+		return
+	}
+
+	if _, err := m.PostReply(reply, content, u.(*mv.User).ID, ip); err != nil {
 		log.Println(err)
 		redir("error", "error/can-not-reply")
 		return

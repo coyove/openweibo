@@ -20,7 +20,7 @@ table.z {
             {{if .User.Banned}}/ 封禁{{end}}
             / {{.User.Followers}} 关注者 
             / {{.User.TotalPosts}} 状态
-            {{if .User.Unread}}/ <a href="/cat/inbox:{{.User.ID}}">{{.User.Unread}} 未读</a> {{end}}
+            / <a href="/t/:in">{{.User.Unread}} 未读</a> 
         </td>
         <td rowspan=2><form method="POST" action="/user">
                 <input type=hidden name=uuid value="{{.UUID}}">
@@ -84,7 +84,7 @@ table.z {
     {{range .Followings}}
     <tr>
         <td class=nowrap>{{.Time.Format "2006-01-02"}}</td>
-        <td><b>{{.ID}}</b></td>
+        <td><b><a href="/t/{{.ID}}">{{.ID}}</a></b></td>
         <td class=nowrap>
             <form method="POST" action="/user">
                 <input type=hidden name=uuid value="{{$.UUID}}">

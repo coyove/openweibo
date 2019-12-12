@@ -21,6 +21,8 @@ const (
 	CmdMention        = "inbox-mention"
 	CmdFollow         = "follow"
 	CmdUARelation     = "user-article-relation"
+
+	DeletionMarker = "[[b19b8759-391b-460a-beb0-16f5f334c34f]]"
 )
 
 type Article struct {
@@ -45,6 +47,9 @@ type Article struct {
 }
 
 func (a *Article) ContentHTML() template.HTML {
+	if a.Content == DeletionMarker {
+		return "<span class=deleted></span>"
+	}
 	return template.HTML(sanText(a.Content))
 }
 

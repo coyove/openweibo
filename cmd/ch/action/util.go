@@ -57,6 +57,17 @@ func checkToken(g *gin.Context) string {
 	return ""
 }
 
+func throtUser(g *gin.Context) string {
+	u2, _ := g.Get("user")
+	u, _ := u2.(*mv.User)
+
+	if u == nil || u.Banned {
+		return "guard/id-not-existed"
+	}
+
+	return ""
+}
+
 func sanUsername(id string) string {
 	return ident.SafeStringForCompressString(id)
 }

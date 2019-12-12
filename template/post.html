@@ -1,14 +1,16 @@
 {{template "header.html" .}}
 
+<title>查看 {{.ParentArticle.ID}}</title>
+
 <div class="rows"> 
     {{template "row_content.html" .ParentArticle}}
 
     <div style="padding:0.33em">
         {{with .ReplyView}}
         <input class="reply-toggle" style="display:none" type=checkbox id="reply" {{if .ShowReply}}checked{{end}}>
-        <label class="gbutton" for=reply><b>回复主题</b></label>
+        <label class="gbutton" for=reply><b>回复</b></label>
         <div class="reply-view">
-            <form method="POST" action="/reply" enctype="multipart/form-data">
+            <form method="POST" action="/reply">
                 <table class="articles">
                     <input type=hidden name=uuid value="{{.UUID}}">
                     <input type=hidden name=reply value="{{$.ParentArticle.ID}}">
@@ -17,16 +19,17 @@
                             {{template "emoji.html" .}}
                         </td>
                     </tr>
-                    <tr>
+                    <tr style="border-bottom:solid 1px #ddd">
                         <td colspan=2 style="padding:0">
                             <textarea autofocus maxlength=4000 placeholder="内容" style="border:none" rows=12 name="content">{{.RContent}}</textarea>
                         </td>
                     </tr>
-                    <tr style="border-top:dashed 1px #ddd;border-bottom:solid 1px #ddd">
-                        <td class=nowrap>图片:</td>
-                        <td><input style="width: 100%" type=file name=image></td>
-                    </tr> 
                     <tr style="text-align:right">
+                        <td class=nowrap>
+                            {{if $.CanDeleteParent}}
+                            <button class="gbutton" type=submit name=delete value=1 style="color:#ff5722">删除我的发言</a>
+                            {{end}}
+                        </td>
                         <td colspan=2>
                             <button {{if $.ParentArticle.Locked}}disabled{{end}} class="gbutton" type=submit>回复</button>
                             <a class="gbutton" href="/p/{{$.ParentArticle.ID}}">取消</a>
@@ -45,11 +48,7 @@
 
         {{if .ParentArticle.Parent}}
         <a class="gbutton" href="/p/{{.ParentArticle.Parent.ID}}">上一层</a>
-        {{end}}
-
-        {{if .CanDeleteParent}}
-        <a class="gbutton" href="/edit/{{.ParentArticle.ID}}">删除</a>
-        {{end}}
+        {{end}} 
     </div>
 
     {{if len .Articles}}

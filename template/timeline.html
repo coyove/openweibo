@@ -4,11 +4,49 @@
 {{if .IsUserTimeline}}
     <b>@{{.User.ID}} 的时间线</b>
     <title>@{{.User.ID}} 的时间线</title>
+    {{if .You}}
+    {{if ne .You.ID .User.ID}}
+    <form method="POST" action="/user">
+            <input type=hidden name=uuid value="{{.UUID}}">
+            <input type=hidden name=username value="{{.You.ID}}">
+            <input type=hidden name=method value="follow">
+            <input type=hidden name=to value="{{.User.ID}}">
+            {{if .IsUserTimelineFollowed}}
+            <button class="gbutton" type=submit>取消关注</button>
+            {{else}}
+            <input type=hidden name=follow value="1">
+            <button class="gbutton" type=submit>关注</button>
+            {{end}}
+    </form>
+    {{end}}
+    {{end}}
 {{else if .IsInbox}}
     <b>我的提醒</b>
     <title>我的提醒</title>
 {{else}}
-    <b>我的时间线</b>
+    {{if .ShowNewPost}}
+    <form method="POST" action="/new">
+    <table class="articles" style="width: 100%;border:solid 1px #ccc;overflow:hidden;margin:0.5em 0">
+        <input type=hidden name=uuid value="{{.UUID}}">
+        <tr style="border-bottom: dotted 1px #ccc">
+            <td colspan=2 style="padding:0">{{template "emoji.html" .}}</td>
+        </tr>
+        <tr style="border-bottom: dotted 1px #ccc">
+            <td colspan=2 style="padding:0">
+                <textarea maxlength=1024 placeholder="正文" rows=10 name="content" style="padding:0.5em;border:none">{{.RContent}}</textarea>
+            </td>
+        </tr>
+        <tr>
+            <td>{{if .EError}}{{template "error_i18n.html" .EError}}{{end}}</td>
+            <td class="nowrap">
+                <button class="gbutton" type=submit>发布</button>
+            </td>
+        </tr>
+    </table>
+    </form>
+    {{end}}
+
+<b>我的时间线</b>
     <title>我的时间线</title>
 {{end}}
 </div>
@@ -25,12 +63,23 @@
 
 
 <div class=paging>
-    {{if .Next}}
     <form method="POST">
+    {{if not .ShowNewPost}}
+        {{if .IsUserTimeline}}
+            <a class=gbutton href="/t/{{.User.ID}}">首页</a>
+        {{else if .IsInbox}}
+            <a class=gbutton href="/t/:in">首页</a>
+        {{else}}
+            <a class=gbutton href="/t">首页</a>
+        {{end}}
+    {{end}}
+
+    {{if .Next}}
         <input type=hidden name="cursors" value="{{.Next}}">
         <button type=submit class=gbutton>更多...</button>
-    </form>
-    {{else}}
+    {{end}}
+
+    {{if not .Next}}
         {{if .IsUserTimeline}}
             <a class=gbutton href="/t/{{.User.ID}}">没有更多{{.User.ID}}的状态了</a>
         {{else if .IsInbox}}
@@ -39,4 +88,5 @@
             <a class=gbutton href="/t">没有更多状态了</a>
         {{end}}
     {{end}}
+    </form>
 </div>
