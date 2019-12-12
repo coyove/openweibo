@@ -1,19 +1,9 @@
 {{template "header.html" .}}
 
-<title>第{{.CurPage}}页</title>
-
-{{with .ParentArticle}}
-<div style="padding:0.5em;line-height:2em">
-    {{if not .Parent}}<span>{{.Category}} /</span>{{end}} 
-    {{if .Highlighted}}<span style="color:#ffc107">&#x2605;</span>{{end}}
-    <b>{{.Title}}</b>
-</div>
-{{end}}
-
 <div class="rows"> 
     {{template "row_content.html" .ParentArticle}}
 
-    <div class=row style="padding:0.33em">
+    <div style="padding:0.33em">
         {{with .ReplyView}}
         <input class="reply-toggle" style="display:none" type=checkbox id="reply" {{if .ShowReply}}checked{{end}}>
         <label class="gbutton" for=reply><b>回复主题</b></label>
@@ -52,12 +42,11 @@
         </div>
         <div class="bg"></div>
         {{end}}
+
         {{if .ParentArticle.Parent}}
-        <a class="gbutton" href="/p/{{.ParentArticle.Parent}}?j={{.ParentArticle.ID}}">上一层</a>
-        <a class="gbutton" href="/p/{{.ParentArticle.TopParent}}">顶层</a>
-        {{else}}
-        <a class="gbutton" href="/cat?n={{.ParentArticle.Timeline}}">下一个主题</a>
+        <a class="gbutton" href="/p/{{.ParentArticle.Parent.ID}}">上一层</a>
         {{end}}
+
         {{if .CanDeleteParent}}
         <a class="gbutton" href="/edit/{{.ParentArticle.ID}}">删除</a>
         {{end}}
@@ -73,14 +62,10 @@
 </div>
 
 <div class="paging" id="paging">
-    <a href="?p=0">&laquo; 首页</a>
-    {{range .Pages}}
-    {{if eq . $.CurPage}}
-    <a style="color:black"><b>{{.}}</b></a>
+    {{if .Next}}
+    <a href="?n={{.Next}}">更多回复 &raquo;</a>
     {{else}}
-    <a href="?p={{.}}">{{.}}</a>
+    <a href="?n={{.Next}}">&laquo; 没有更多回复</a>
     {{end}}
-    {{end}}
-    <a href="?p=-1">末页 &raquo;</a>
 </div>
 

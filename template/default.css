@@ -296,11 +296,30 @@ button.none {
 }
 
 div.subreply {
-    padding-left:1.5em;opacity:0.6;
+    padding-left:1.5em;
 }
 
-div.rows > .row:nth-child(odd) {
+div.subreply .row-header {
+    background: transparent;
+    padding: 0;
+    margin: 0;
+}
+
+div.subreply .row {
+    margin: 0;
+}
+
+div.row {
     background: #f1f2f3;
+    margin: 0.5em;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+div.row-header {
+    margin: -0.5em -0.5em 0 -0.5em;
+    background: rgba(0,0,0,0.05);
+    padding: 0.5em;
 }
 
 div.row-header > * {
@@ -313,7 +332,8 @@ div.row-header > * {
         font-size: 16px;
     }
 
-    .reply-view {
-        width: 100%;
+    .row {
+        margin-right: 0.1em;
+        margin-left: 0.1em;
     }
 }

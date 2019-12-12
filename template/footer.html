@@ -3,7 +3,7 @@
     {{if .User}}
     ID / <a href='/user'>{{.User.ID}}</a>
     {{if .User.Unread}}
-    <a href="/cat/inbox:{{.User.ID}}" style="display:inline-block;color:white;background:#FF5722;padding:0 0.5em;border-radius:8px;min-width:20px;text-align:center;line-height:20px;font-size:12px;vertical-align:middle;margin:0 0.33em;">
+    <a href="/t/:in" style="display:inline-block;color:white;background:#FF5722;padding:0 0.5em;border-radius:8px;min-width:20px;text-align:center;line-height:20px;font-size:12px;vertical-align:middle;margin:0 0.33em;">
         {{.User.Unread}}消息
     </a>
     {{end}}
@@ -44,14 +44,6 @@
         / <a href="/user">注册</a>
     {{end}}
 
-    &emsp;分类
-    {{range .Tags}}
-    {{if eq . $.CurTag}}
-    / <b>{{.}}</b>
-    {{else}}
-    / <a href="/cat/{{.}}">{{.}}</a>
-    {{end}}
-    {{end}}
     <span style="float:right">IIS / {{.Render}}ms</span>
 </div>
 </html>

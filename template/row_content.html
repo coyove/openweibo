@@ -1,23 +1,37 @@
 <div id="r{{.Index}}" style="padding:0.5em 0.5em 0 0.5em" class="row">
+    {{if .NoAvatar}}
+    <div class="row-header">
+    {{else}}
     <div class="row-header" style="line-height:36px">
-        <img width=36 height=36 alt="{{.Author}}" src="/avatar/{{.Author}}" style="display:block;float:left;margin-right:0.5em">
+        <img alt="{{.Author}}" src="/avatar/{{.Author}}" style="display:inline-block;vertical-align:middle;margin-right:0.5em;max-width:36px;max-height:36px">
+    {{end}}
 
-        {{if not .Author}}
-        <span>NOT FOUND</span>
-        {{else}}
-            <span><a href="/cat/@{{.Author}}">{{.Author}}</a></span>
-            {{if .Parent}}
-            <span>回复于 {{.CreateTime}}</span>
+    {{if eq .Cmd "inbox-reply"}}
+        <a href="/t/{{.Author}}">@{{.Author}}</a>
+        <span>于 {{.CreateTime}} 回复了你</span>
+    {{else if eq .Cmd "inbox-mention"}}
+        <a href="/t/{{.Author}}">@{{.Author}}</a>
+        <span>于 {{.CreateTime}} @了你</span>
+    {{else}}
+        <span><a href="/t/{{.Author}}">@{{.Author}}</a></span>
+        {{if .Parent}}
+            {{if .Content}}
+                <span>回复于 {{.CreateTime}}</span>
             {{else}}
-            <span>发布于 {{.CreateTime}}</span>
+                <span>转发于 {{.CreateTime}}</span>
             {{end}}
+        {{else}}
+            <span>发布于 {{.CreateTime}}</span>
         {{end}}
+    {{end}}
     </div>
 
-    <pre style="padding:0.66em 0">{{.ContentHTML}}</pre>
-    
+    {{if .Content}}
+    <pre style="padding:0.66em 0 0">{{.ContentHTML}}</pre>
+    {{end}}
+
     <div style="padding: 0.5em 0">
-        <span><a href="/p/{{.ID}}">{{.Replies}} 回复</a></span>
+        <span><a href="/p/{{.ID}}">{{.Replies}} 回复</a></span> /
         <span>{{.Upvotes}} 赞</span>
     </div>
 

@@ -74,6 +74,16 @@ func (m *Manager) WalkMulti(n int, cursors ...ident.ID) (a []*mv.Article, next [
 			break
 		}
 
+	DEDUP:
+		dedup := make(map[ident.ID]bool, len(cursors))
+		for i, c := range cursors {
+			if dedup[c] {
+				cursors = append(cursors[:i], cursors[i+1:]...)
+				goto DEDUP
+			}
+			dedup[c] = true
+		}
+
 		sort.Slice(cursors, func(i, j int) bool {
 			if ii, jj := cursors[i].Time(), cursors[j].Time(); ii == jj {
 				return cursors[i].Tag() < cursors[j].Tag()
@@ -98,6 +108,28 @@ func (m *Manager) WalkMulti(n int, cursors ...ident.ID) (a []*mv.Article, next [
 	}
 
 	return a, cursors
+}
+
+func (m *Manager) WalkReply(n int, cursor string) (a []*mv.Article, next string) {
+	startTime := time.Now()
+
+	for len(a) < n && cursor != "" {
+		if time.Since(startTime).Seconds() > 1 {
+			log.Println("[mgr.WalkReply] Break out slow walk at", cursor)
+			break
+		}
+
+		p, err := m.GetArticle(cursor)
+		if err == nil {
+			a = append(a, p)
+		} else {
+			log.Println("[mgr.WalkReply] Failed to get:", cursor, err)
+			// go m.purgeDeleted(hdr, tag, root.ID)
+		}
+		cursor = p.NextReplyID
+	}
+
+	return a, cursor
 }
 
 // func (m *Manager) purgeDeleted(hdr ident.IDTag, tag string, startID string) {
@@ -160,14 +192,15 @@ func (m *Manager) Post(content, author, ip string) (string, error) {
 		return "", err
 	}
 
-	go m.UpdateUser(a.Author, func(u *mv.User) error {
-		u.TotalPosts++
-		return nil
-	})
-
-	for _, id := range mv.ExtractMentions(a.Content) {
-		go m.MentionUser(a, id)
-	}
+	go func() {
+		m.UpdateUser(a.Author, func(u *mv.User) error {
+			u.TotalPosts++
+			return nil
+		})
+		for _, id := range mv.ExtractMentions(a.Content) {
+			m.MentionUser(a, id)
+		}
+	}()
 
 	return a.ID, nil
 }
@@ -189,7 +222,7 @@ func (m *Manager) insertArticle(rootID string, a *mv.Article, asReply bool) erro
 	}
 
 	if asReply {
-		a.NextReplyID, root.NextReplyID = root.NextReplyID, a.ID
+		a.NextReplyID, root.ReplyChain = root.ReplyChain, a.ID
 		root.Replies++
 	} else {
 		a.NextID, root.NextID = root.NextID, a.ID
@@ -244,14 +277,15 @@ func (m *Manager) PostReply(parent string, content, author, ip string) (string, 
 		return "", err
 	}
 
-	go m.UpdateUser(p.Author, func(u *mv.User) error {
-		u.Unread++
-		return nil
-	})
-
-	for _, id := range mv.ExtractMentions(a.Content) {
-		go m.MentionUser(a, id)
-	}
+	go func() {
+		m.UpdateUser(p.Author, func(u *mv.User) error {
+			u.Unread++
+			return nil
+		})
+		for _, id := range mv.ExtractMentions(a.Content) {
+			m.MentionUser(a, id)
+		}
+	}()
 
 	return a.ID, nil
 }

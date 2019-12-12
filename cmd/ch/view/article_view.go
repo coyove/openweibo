@@ -7,46 +7,53 @@ import (
 )
 
 type ArticleView struct {
-	ID       string
-	Timeline string
-	Parent   *ArticleView
-	Image    string
-	Index    int
-	SubIndex string
-	Replies  int
-	Forwards int
-	Upvotes  int
-	//Views       uint32
+	ID          string
+	Timeline    string
+	Parent      *ArticleView
+	Image       string
+	Cmd         string
+	Extras      map[string]string
+	Index       int
+	SubIndex    string
+	Replies     int
+	Forwards    int
+	Upvotes     int
 	Locked      bool
 	Highlighted bool
+	NoAvatar    bool
 	Title       string
 	Content     string
 	ContentHTML template.HTML
 	Author      string
 	IP          string
-	Category    string
 	CreateTime  string
 	ReplyTime   string
 }
 
 const (
 	_ uint64 = 1 << iota
-	_abstract
-	_nomoreparent
-	_richtime
+	_Abstract
+	_NoMoreParent
+	_ForceShowAvatar
+	_RichTime
 )
 
 func (a *ArticleView) from(a2 *mv.Article, opt uint64) *ArticleView {
+	if a2 == nil {
+		return a
+	}
+
 	a.ID = a2.ID
 	a.Replies = a2.Replies
 	a.Locked = a2.Locked
+	a.Cmd = string(a2.Cmd)
+	a.Extras = a2.Extras
 	a.Highlighted = a2.Highlighted
 	a.Author = a2.Author
 	a.IP = a2.IP
-	a.Category = a2.Category
-	a.CreateTime = mv.FormatTime(a2.CreateTime, opt&_richtime > 0)
+	a.CreateTime = mv.FormatTime(a2.CreateTime, opt&_RichTime > 0)
 
-	if opt&_abstract > 0 {
+	if opt&_Abstract > 0 {
 		a.Content = mv.SoftTrunc(a2.Content, 64)
 		a.ContentHTML = template.HTML(template.HTMLEscapeString(a.Content))
 	} else {
@@ -54,10 +61,22 @@ func (a *ArticleView) from(a2 *mv.Article, opt uint64) *ArticleView {
 		a.ContentHTML = a2.ContentHTML()
 	}
 
-	if a2.Parent != "" && opt&_nomoreparent == 0 {
+	if a2.Parent != "" && opt&_NoMoreParent == 0 {
 		p, _ := m.GetArticle(a2.Parent)
 		a.Parent = &ArticleView{}
-		a.Parent.from(p, opt|_nomoreparent)
+		a.Parent.from(p, opt|_NoMoreParent)
+	}
+
+	a.NoAvatar = opt&_NoMoreParent > 0
+	if opt&_ForceShowAvatar > 0 {
+		a.NoAvatar = false
+	}
+
+	switch a2.Cmd {
+	case mv.CmdReply, mv.CmdMention:
+		p, _ := m.GetArticle(a2.Extras["article_id"])
+		a.from(p, opt)
+		a.Cmd = string(a2.Cmd)
 	}
 
 	return a

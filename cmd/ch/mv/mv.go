@@ -21,7 +21,6 @@ const (
 	CmdMention        = "inbox-mention"
 	CmdFollow         = "follow"
 	CmdUARelation     = "user-article-relation"
-	CmdPointer        = "ptr"
 )
 
 type Article struct {
@@ -38,6 +37,7 @@ type Article struct {
 	Category    string            `json:"cat,omitempty"`
 	CreateTime  time.Time         `json:"create,omitempty"`
 	Parent      string            `json:"P"`
+	ReplyChain  string            `json:"Rc"`
 	NextReplyID string            `json:"R"`
 	NextID      string            `json:"N"`
 	Cmd         Cmd               `json:"K"`

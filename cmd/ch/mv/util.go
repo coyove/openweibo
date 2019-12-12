@@ -43,10 +43,10 @@ func sanText(in string) string {
 		return "<a href='" + in + "' target=_blank>" + in + "</a>"
 	})
 	in = rxMentions.ReplaceAllStringFunc(in, func(in string) string {
-		if len(in) > 18 {
+		if len(in) < 2 {
 			return in
 		}
-		return "<a href='/cat/" + template.HTMLEscapeString(in) + "'>" + in + "</a>"
+		return "<a href='/t/" + template.HTMLEscapeString(in[1:]) + "'>" + in + "</a>"
 	})
 	return in
 }

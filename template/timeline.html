@@ -1,5 +1,18 @@
 {{template "header.html" .}}
 
+<div style="padding: 0.5em 0.5em 0 0.5em">
+{{if .IsUserTimeline}}
+    <b>@{{.User.ID}} 的时间线</b>
+    <title>@{{.User.ID}} 的时间线</title>
+{{else if .IsInbox}}
+    <b>我的提醒</b>
+    <title>我的提醒</title>
+{{else}}
+    <b>我的时间线</b>
+    <title>我的时间线</title>
+{{end}}
+</div>
+
 <div class="rows">
     {{if len .Articles}}
     {{range .Articles}}
@@ -12,8 +25,18 @@
 
 
 <div class=paging>
-<form method="POST">
-    <input type=hidden name="cursors" value="{{.Next}}">
-    <button type=submit class=gbutton>更多...</button>
-</form>
+    {{if .Next}}
+    <form method="POST">
+        <input type=hidden name="cursors" value="{{.Next}}">
+        <button type=submit class=gbutton>更多...</button>
+    </form>
+    {{else}}
+        {{if .IsUserTimeline}}
+            <a class=gbutton href="/t/{{.User.ID}}">没有更多{{.User.ID}}的状态了</a>
+        {{else if .IsInbox}}
+            <a class=gbutton href="/t/:in">没有更多提醒了</a>
+        {{else}}
+            <a class=gbutton href="/t">没有更多状态了</a>
+        {{end}}
+    {{end}}
 </div>
