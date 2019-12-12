@@ -2,12 +2,12 @@
 <style>
 emoji {
 	position: relative;
-	display: block;
+	display: inline-block;
     line-height: 2em;
     cursor: pointer;
 }
 
-emoji:hover, emoji li:hover, emoji li:hover button {
+emoji li:hover, emoji li:hover button {
 	background-color: #E0EBF5;
 }
 
@@ -18,6 +18,11 @@ emoji > ul {
     box-shadow: 0 1px 5px rgba(0, 0, 0, .3);
     max-height: 128px;
     overflow-y: scroll;
+}
+
+emoji:hover {
+    display: block;
+    width: 100%;
 }
 
 emoji:hover > ul {
@@ -52,7 +57,7 @@ emoji button {
 </style>
 
 <emoji>
-<div style="padding: 0.2em 0.33em;color: #2a66d9;">颜文字 <span>&#x25be;</span></div>
+<div class=gbutton>( ﾟ∀ﾟ)</div>
 <ul>
     <li><button type=submit name=emoji value="|∀ﾟ">|∀ﾟ</button></li>
     <li><button type=submit name=emoji value="(´ﾟДﾟ`)">(´ﾟДﾟ`)</button></li>

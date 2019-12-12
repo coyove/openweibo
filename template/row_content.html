@@ -8,20 +8,20 @@
 
     {{if eq .Cmd "inbox-reply"}}
         <a href="/t/{{.Author}}">@{{.Author}}</a>
-        <span>于 {{.CreateTime}} 回复了你</span>
+        <span>于 {{formatTime .CreateTime}} 回复了你</span>
     {{else if eq .Cmd "inbox-mention"}}
         <a href="/t/{{.Author}}">@{{.Author}}</a>
-        <span>于 {{.CreateTime}} @了你</span>
+        <span>于 {{formatTime .CreateTime}} @了你</span>
     {{else}}
         <span><a href="/t/{{.Author}}">@{{.Author}}</a></span>
         {{if .Parent}}
             {{if .Content}}
-                <span>回复于 {{.CreateTime}}</span>
+                <span>回复于 {{formatTime .CreateTime}}</span>
             {{else}}
-                <span>转发于 {{.CreateTime}}</span>
+                <span>转发于 {{formatTime .CreateTime}}</span>
             {{end}}
         {{else}}
-            <span>发布于 {{.CreateTime}}</span>
+            <span>发布于 {{formatTime .CreateTime}}</span>
         {{end}}
     {{end}}
     </div>

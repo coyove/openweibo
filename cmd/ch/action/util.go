@@ -9,18 +9,15 @@ import (
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
+	"github.com/coyove/iis/cmd/ch/manager"
 	"github.com/coyove/iis/cmd/ch/mv"
 	"github.com/gin-gonic/gin"
 )
 
-func checkCategory(u string) string {
-	if u == "default" {
-		return u
-	}
-	if !config.Cfg.TagsMap[u] {
-		return "default"
-	}
-	return u
+var m *manager.Manager
+
+func SetManager(mgr *manager.Manager) {
+	m = mgr
 }
 
 func EncodeQuery(a ...string) string {

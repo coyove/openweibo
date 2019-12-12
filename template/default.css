@@ -60,10 +60,6 @@ a:hover, label[for=login]:hover {
     text-decoration: underline;
 }
 
-input[type=file] {
-    width: 100%;
-}
-
 .vcenter {
     vertical-align: middle;
 }
@@ -143,7 +139,7 @@ nav ul li:hover > a {
     text-decoration: none;
 }
 
-.reply-toggle:checked + label + .reply-view {
+/* .reply-toggle:checked + label + .reply-view {
     display: block;
     left: 50%;
     top: 50%;
@@ -179,7 +175,7 @@ nav ul li:hover > a {
     z-index: 999;
     pointer-events: none;
     background: rgba(0,0,0,0.1);
-}
+}*/
 
 .paging {
     text-align:center;
@@ -332,6 +328,11 @@ span.deleted:before {
     font-weight: bold;
     color: #f52;
 }
+
+span.time.sec:after { content: '秒前' }
+span.time.min:after { content: '分钟前' }
+span.time.hour:after { content: '小时前' }
+span.time.day:after { content: '天前' }
 
 @media only screen and (max-width: 540px) {
     * {

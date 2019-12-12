@@ -20,7 +20,6 @@ type IDTag byte
 type ID struct {
 	hdr    IDTag
 	taglen byte
-	reply  uint16
 	ts     uint32
 	tag    [16]byte
 }
@@ -37,10 +36,9 @@ func NewID(hdr IDTag) ID {
 func NewGeneralID() ID {
 	ctr := atomic.AddUint32(&idCounter, 1)
 	return ID{
-		hdr:    IDTagGeneral,
-		ts:     uint32(time.Now().Unix()),
-		tag:    [16]byte{byte(ctr >> 8), byte(ctr), byte(rand.Int()), byte(rand.Int())},
-		taglen: 4,
+		hdr: IDTagGeneral,
+		ts:  uint32(time.Now().Unix()),
+		tag: [16]byte{byte(ctr >> 8), byte(ctr), byte(rand.Int()), byte(rand.Int())},
 	}
 }
 
@@ -48,10 +46,10 @@ func (id ID) Size() int {
 	if !id.Valid() {
 		return 0
 	}
-	if id.reply > 0 {
-		return int(1 + id.taglen + 4 + 2)
+	if id.hdr == IDTagGeneral {
+		return 9
 	}
-	return int(1 + id.taglen + 4)
+	return int(1 + id.taglen)
 }
 
 func (id ID) Marshal(buf []byte) []byte {
@@ -62,23 +60,19 @@ func (id ID) Marshal(buf []byte) []byte {
 		buf = make([]byte, id.Size())
 	}
 
-	if id.reply > 0 {
-		buf[0] = byte(id.hdr)<<5 | 0x10 | (id.taglen & 0xf)
-		binary.BigEndian.PutUint16(buf[1+id.taglen+4:], id.reply)
+	buf[0] = byte(id.hdr)<<4 | (id.taglen & 0xf)
+	if id.hdr == IDTagGeneral {
+		binary.BigEndian.PutUint32(buf[1:], id.ts)
+		copy(buf[5:], id.tag[:4])
 	} else {
-		buf[0] = byte(id.hdr)<<5 | (id.taglen & 0xf)
+		copy(buf[1:], id.tag[:id.taglen])
 	}
 
-	copy(buf[1:], id.tag[:id.taglen])
-	binary.BigEndian.PutUint32(buf[1+id.taglen:], id.ts)
 	return buf[:id.Size()]
 }
 
-func (id ID) Valid() bool { return id.hdr != 0 }
-
-func (id ID) SetTime(t time.Time) ID {
-	id.ts = uint32(time.Now().Unix())
-	return id
+func (id ID) Valid() bool {
+	return id.hdr != 0
 }
 
 func (id ID) Time() time.Time {
@@ -87,23 +81,6 @@ func (id ID) Time() time.Time {
 
 func (id ID) IsRoot() bool {
 	return id.ts == 0
-}
-
-func (id ID) SetReply(index uint16) ID {
-	id.reply = index
-	return id
-}
-
-func (id ID) Reply() uint16 {
-	return id.reply
-}
-
-func (id ID) Parent() ID {
-	if id.reply == 0 {
-		return ID{}
-	}
-	id.reply = 0
-	return id
 }
 
 func (id ID) SetTag(tag string) ID {
@@ -127,21 +104,18 @@ func UnmarshalID(p []byte) ID {
 	}
 
 	id := ID{}
-	id.hdr = IDTag(p[0] >> 5)
+	id.hdr = IDTag(p[0] >> 4)
 	id.taglen = p[0] & 0xf
-	id.ts = binary.BigEndian.Uint32(p[1+id.taglen:])
 
-	if len(p) < int(1+id.taglen+4) {
+	if len(p) < id.Size() {
 		return ID{}
 	}
 
-	copy(id.tag[:id.taglen], p[1:1+id.taglen])
-
-	if p[0]>>4&1 == 1 {
-		if len(p) < int(1+id.taglen+4+2) {
-			return ID{}
-		}
-		id.reply = binary.BigEndian.Uint16(p[1+id.taglen+4:])
+	if id.hdr == IDTagGeneral {
+		copy(id.tag[:4], p[5:])
+		id.ts = binary.BigEndian.Uint32(p[1:])
+	} else {
+		copy(id.tag[:id.taglen], p[1:])
 	}
 	return id
 }

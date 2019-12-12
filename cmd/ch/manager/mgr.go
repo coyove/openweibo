@@ -61,7 +61,7 @@ func (m *Manager) WalkMulti(n int, cursors ...ident.ID) (a []*mv.Article, next [
 
 		tl, err := m.GetArticle(root.String())
 		if err != nil {
-			log.Println("[mgr.Walk] Get root:", err)
+			log.Println("[mgr.Walk] Get root:", root, err)
 			cursors[i] = ident.ID{}
 		} else {
 			cursors[i] = ident.ParseID(tl.NextID)
@@ -193,6 +193,7 @@ func (m *Manager) Post(content, author, ip string) (string, error) {
 	}
 
 	master := *a
+	master.ID = ident.NewGeneralID().String()
 	go m.insertArticle(ident.NewID(ident.IDTagAuthor).SetTag("master").String(), &master, false)
 
 	go func() {
@@ -316,28 +317,4 @@ func (m *Manager) UpdateArticle(aid string, cb func(a *mv.Article) error) error 
 		return err
 	}
 	return nil
-}
-
-func (m *Manager) Delete(a *mv.Article) error {
-	m.db.Lock(a.ID)
-	defer m.db.Unlock(a.ID)
-	return m.db.Delete(a.ID)
-}
-
-func (m *Manager) GetReplies(parent string, start, end int) (a []*mv.Article) {
-	pid := ident.ParseID(parent)
-
-	for i := start; i < end; i++ {
-		if i <= 0 || i >= 128*128 {
-			continue
-		}
-
-		pid = pid.SetReply(uint16(i))
-		p, _ := m.Get(pid.String())
-		if p == nil {
-			p = &mv.Article{ID: pid.String()}
-		}
-		a = append(a, p)
-	}
-	return
 }

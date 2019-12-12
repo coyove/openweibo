@@ -36,7 +36,7 @@ func (m *Manager) GetUserByToken(tok string) (*mv.User, error) {
 	}
 
 	parts := bytes.SplitN(x, []byte("\x00"), 3)
-	if len(parts) != 3 {
+	if len(parts) < 2 {
 		return nil, fmt.Errorf("invalid token format")
 	}
 

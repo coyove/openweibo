@@ -40,28 +40,10 @@
     <title>全局时间线</title>
 {{else}}
     {{if .ShowNewPost}}
-    <form method="POST" action="/new">
-    <table class="articles" style="width: 100%;border:solid 1px #ccc;overflow:hidden;margin:0.5em 0">
-        <input type=hidden name=uuid value="{{.UUID}}">
-        <tr style="border-bottom: dotted 1px #ccc">
-            <td colspan=2 style="padding:0">{{template "emoji.html" .}}</td>
-        </tr>
-        <tr style="border-bottom: dotted 1px #ccc">
-            <td colspan=2 style="padding:0">
-                <textarea maxlength=1024 placeholder="正文" rows=10 name="content" style="padding:0.5em;border:none">{{.RContent}}</textarea>
-            </td>
-        </tr>
-        <tr>
-            <td>{{if .EError}}{{template "error_i18n.html" .EError}}{{end}}</td>
-            <td class="nowrap">
-                <button class="gbutton" type=submit>发布</button>
-            </td>
-        </tr>
-    </table>
-    </form>
+    {{template "reply_view.html" .ReplyView}}
     {{end}}
 
-<b>我的时间线</b>
+    <b>我的时间线</b>
     <title>我的时间线</title>
 {{end}}
 </div>
@@ -79,14 +61,15 @@
 
 <div class=paging>
     <form method="POST">
+    <a class=gbutton style="color:#aaa"
     {{if .IsUserTimeline}}
-        <a class=gbutton href="/t/{{.User.ID}}">首页</a>
+        href="/t/{{.User.ID}}">首页</a>
     {{else if .IsInbox}}
-        <a class=gbutton href="/t/:in">首页</a>
+        href="/t/:in">首页</a>
     {{else if .IsGlobalTimeline}}
-        <a class=gbutton href="/master">首页</a>
+        href="/master">首页</a>
     {{else}}
-        <a class=gbutton href="/t">首页</a>
+        href="/t">首页</a>
     {{end}}
 
     {{if .Next}}
@@ -95,14 +78,15 @@
     {{end}}
 
     {{if not .Next}}
+        <a class=gbutton style="color:#aaa"
         {{if .IsUserTimeline}}
-            <a class=gbutton href="/t/{{.User.ID}}">没有更多{{.User.ID}}的状态了</a>
+            href="/t/{{.User.ID}}">没有更多{{.User.ID}}的状态了</a>
         {{else if .IsInbox}}
-            <a class=gbutton href="/t/:in">没有更多提醒了</a>
+            href="/t/:in">没有更多提醒了</a>
         {{else if .IsGlobalTimeline}}
-            <a class=gbutton href="/master">没有更多状态了</a>
+            href="/master">没有更多状态了</a>
         {{else}}
-            <a class=gbutton href="/t">没有更多状态了</a>
+            href="/t">没有更多状态了</a>
         {{end}}
     {{end}}
     </form>

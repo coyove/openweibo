@@ -18,7 +18,6 @@ import (
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/engine"
 	"github.com/coyove/iis/cmd/ch/manager"
-	"github.com/coyove/iis/cmd/ch/mv"
 	"github.com/coyove/iis/cmd/ch/view"
 	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"
@@ -39,8 +38,6 @@ func main() {
 	view.SetManager(m)
 	action.SetManager(m)
 	engine.SetManager(m)
-
-	mv.InitSearchIndex("tmp/search.bleve")
 
 	if os.Getenv("BENCH") == "1" {
 		ids := []string{}
@@ -91,6 +88,22 @@ func main() {
 			}
 			return ""
 		},
+		"formatTime": func(a time.Time) template.HTML {
+			s := time.Since(a).Seconds()
+			if s < 60 {
+				return template.HTML("<span class='time sec'>" + strconv.Itoa(int(s)) + "</span>")
+			}
+			if s < 3600 {
+				return template.HTML("<span class='time min'>" + strconv.Itoa(int(s)/60) + "</span>")
+			}
+			if s < 86400 {
+				return template.HTML("<span class='time hour'>" + strconv.Itoa(int(s)/3600) + "</span>")
+			}
+			if s < 7*86400 {
+				return template.HTML("<span class='time day'>" + strconv.Itoa(int(s)/86400) + "</span>")
+			}
+			return template.HTML("<span class='time'>" + a.Format("2006-01-02 15:04") + "</span>")
+		},
 	})
 	r.LoadHTMLGlob("template/*.html")
 	r.Static("/s/", "template")
@@ -98,24 +111,18 @@ func main() {
 	r.NoRoute(view.NotFound)
 	r.Handle("GET", "/", view.Home)
 	r.Handle("GET", "/master", view.Index)
-	r.Handle("GET", "/avatar/:id", view.Avatar)
+	r.Handle("POST", "/master", view.Index)
 	r.Handle("GET", "/user", view.User)
 	r.Handle("GET", "/user/:type", view.UserList)
 	r.Handle("GET", "/t", view.Timeline)
 	r.Handle("GET", "/t/:user", view.Timeline)
 	r.Handle("POST", "/t", view.Timeline)
 	r.Handle("POST", "/t/:user", view.Timeline)
-	r.Handle("GET", "/cat/:tag", view.Index)
-	r.Handle("GET", "/search", view.Search)
 	r.Handle("GET", "/p/:parent", view.Replies)
-	r.Handle("GET", "/new", view.New)
-	r.Handle("GET", "/edit/:id", view.Edit)
+	r.Handle("GET", "/avatar/:id", view.Avatar)
 	r.Handle("POST", "/user", action.User)
 	r.Handle("POST", "/new", action.New)
 	r.Handle("POST", "/reply", action.Reply)
-	r.Handle("POST", "/edit", action.Edit)
-	r.Handle("POST", "/delete", action.Delete)
-	r.Handle("POST", "/cookie", action.Cookie)
 
 	r.Handle("GET", "/loaderio-4d068f605f9b693f6ca28a8ca23435c6", func(g *gin.Context) { g.String(200, ("loaderio-4d068f605f9b693f6ca28a8ca23435c6")) })
 

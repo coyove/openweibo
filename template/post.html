@@ -6,45 +6,7 @@
     {{template "row_content.html" .ParentArticle}}
 
     <div style="padding:0.33em">
-        {{with .ReplyView}}
-        <input class="reply-toggle" style="display:none" type=checkbox id="reply" {{if .ShowReply}}checked{{end}}>
-        <label class="gbutton" for=reply><b>回复</b>{{if $.CanDeleteParent}}/ 删除该状态{{end}}</label>
-        <div class="reply-view">
-            <form method="POST" action="/reply">
-                <table class="articles">
-                    <input type=hidden name=uuid value="{{.UUID}}">
-                    <input type=hidden name=reply value="{{$.ParentArticle.ID}}">
-                    <tr>
-                        <td style="padding:0;background:#f1f2f3;box-shadow:0 1px 2px #ddd" colspan=2>
-                            {{template "emoji.html" .}}
-                        </td>
-                    </tr>
-                    <tr style="border-bottom:solid 1px #ddd">
-                        <td colspan=2 style="padding:0">
-                            <textarea autofocus maxlength=4000 placeholder="内容" style="border:none" rows=12 name="content">{{.RContent}}</textarea>
-                        </td>
-                    </tr>
-                    <tr style="text-align:right">
-                        <td class=nowrap>
-                            {{if $.CanDeleteParent}}
-                            <button class="gbutton" type=submit name=delete value=1 style="color:#ff5722">删除该状态</a>
-                            {{end}}
-                        </td>
-                        <td colspan=2>
-                            <button {{if $.ParentArticle.Locked}}disabled{{end}} class="gbutton" type=submit>回复</button>
-                            <a class="gbutton" href="/p/{{$.ParentArticle.ID}}">取消</a>
-                        </td>
-                    </tr> 
-                    {{if .EError}}
-                    <tr style="border-top:solid 1px #ccc">
-                        <td colspan=2>{{template "error_i18n.html" .EError}}</td>
-                    </tr>
-                    {{end}}
-                </table>
-            </form>
-        </div>
-        <div class="bg"></div>
-        {{end}}
+        {{template "reply_view.html" .ReplyView}}
     </div>
 
     {{if len .Articles}}

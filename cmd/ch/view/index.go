@@ -23,29 +23,17 @@ type ArticlesTimelineView struct {
 	IsUserTimelineFollowed bool
 	IsUserTimelineBlocked  bool
 	IsGlobalTimeline       bool
-	Index                  bool
+	ShowNewPost            bool
 	User                   *mv.User
 	You                    *mv.User
-
-	ShowNewPost bool
-	UUID        string
-	RContent    string
-	EError      string
+	ReplyView              ReplyView
 }
 
 type ArticleRepliesView struct {
-	Articles        []ArticleView
-	ParentArticle   ArticleView
-	CanDeleteParent bool
-	Next            string
-	ReplyView       struct {
-		UUID      string
-		Challenge string
-		ShowReply bool
-		RAuthor   string
-		RContent  string
-		EError    string
-	}
+	Articles      []ArticleView
+	ParentArticle ArticleView
+	Next          string
+	ReplyView     ReplyView
 }
 
 func SetManager(mgr *manager.Manager) {
@@ -77,6 +65,7 @@ func Index(g *gin.Context) {
 
 func Timeline(g *gin.Context) {
 	var pl ArticlesTimelineView
+	pl.ReplyView = makeReplyView(g, "")
 
 	u2, _ := g.Get("user")
 	pl.You, _ = u2.(*mv.User)
@@ -93,7 +82,6 @@ func Timeline(g *gin.Context) {
 		if pl.You != nil {
 			pl.IsUserTimelineFollowed = m.IsFollowing(pl.You.ID, uid)
 			pl.IsUserTimelineBlocked = m.IsBlocking(pl.You.ID, uid)
-			pl.UUID, _ = ident.MakeToken(g)
 		}
 	case uid == ":in":
 		// View my inbox
@@ -144,8 +132,6 @@ func Timeline(g *gin.Context) {
 		}
 	} else {
 		pl.ShowNewPost = true
-		pl.UUID, _ = ident.MakeToken(g)
-		pl.EError, pl.RContent = g.Query("error"), g.Query("content")
 
 		list, next := m.GetFollowingList(false, pl.User, "", 1e6)
 		for _, id := range list {
@@ -195,19 +181,11 @@ func Replies(g *gin.Context) {
 	}
 
 	pl.ParentArticle.from(parent, _RichTime)
+	pl.ReplyView = makeReplyView(g, pid)
 
 	if u, ok := g.Get("user"); ok {
-		pl.CanDeleteParent = u.(*mv.User).ID == pl.ParentArticle.Author || u.(*mv.User).IsMod()
+		pl.ReplyView.CanDelete = u.(*mv.User).ID == pl.ParentArticle.Author || u.(*mv.User).IsMod()
 	}
-
-	pl.ReplyView.RContent = g.Query("content")
-	pl.ReplyView.RAuthor = g.Query("author")
-	pl.ReplyView.EError = g.Query("error")
-	pl.ReplyView.ShowReply = g.Query("refresh") == "1" || pl.ReplyView.EError != ""
-	if pl.ReplyView.RAuthor == "" {
-		pl.ReplyView.RAuthor, _ = g.Cookie("id")
-	}
-	pl.ReplyView.UUID, pl.ReplyView.Challenge = ident.MakeToken(g)
 
 	cursor := g.Query("n")
 	if cursor == "" {

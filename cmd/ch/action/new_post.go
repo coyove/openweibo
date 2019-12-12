@@ -77,7 +77,7 @@ func Reply(g *gin.Context) {
 		ip      = hashIP(g)
 		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		redir   = func(a, b string) {
-			g.Redirect(302, "/p/"+reply+EncodeQuery(a, b, "content", content)+"&p=-1#paging")
+			g.Redirect(302, "/p/"+reply+EncodeQuery(a, b, "content", content))
 		}
 	)
 
@@ -98,7 +98,7 @@ func Reply(g *gin.Context) {
 		return
 	}
 
-	if g.PostForm("delete") != "" {
+	if g.PostForm("delete") != "" && g.PostForm("delete-confirm") != "" {
 		u := u.(*mv.User)
 		err := m.UpdateArticle(reply, func(a *mv.Article) error {
 			if u.ID != a.Author && !u.IsMod() {

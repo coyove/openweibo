@@ -14,24 +14,24 @@ import (
 
 func User(g *gin.Context) {
 	p := struct {
-		Tags      []string
-		UUID      string
-		Challenge string
-		EError    string
-		RUsername string
-		RPassword string
-		REmail    string
-		Survey    interface{}
-		Config    string
-		User      *mv.User
+		UUID       string
+		Challenge  string
+		EError     string
+		RUsername  string
+		RPassword  string
+		REmail     string
+		LoginError string
+		Survey     interface{}
+		Config     string
+		User       *mv.User
 	}{
-		Tags:      config.Cfg.Tags,
-		EError:    g.Query("error"),
-		RUsername: g.Query("username"),
-		REmail:    g.Query("email"),
-		RPassword: ident.ParseTempToken(g.Query("password")),
-		Survey:    engine.Survey,
-		Config:    config.Cfg.PrivateString,
+		EError:     g.Query("error"),
+		LoginError: g.Query("login-error"),
+		RUsername:  g.Query("username"),
+		REmail:     g.Query("email"),
+		RPassword:  ident.ParseTempToken(g.Query("password")),
+		Survey:     engine.Survey,
+		Config:     config.Cfg.PrivateString,
 	}
 
 	p.UUID, p.Challenge = ident.MakeToken(g)

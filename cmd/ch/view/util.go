@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"github.com/coyove/iis/cmd/ch/config"
+	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/gin-gonic/gin"
 )
 
@@ -24,4 +25,21 @@ func intmin(a, b int) int {
 
 func intdivceil(a, b int) int {
 	return int(math.Ceil(float64(a) / float64(b)))
+}
+
+type ReplyView struct {
+	UUID      string
+	Content   string
+	Error     string
+	CanDelete bool
+	ReplyTo   string
+}
+
+func makeReplyView(g *gin.Context, reply string) ReplyView {
+	r := ReplyView{}
+	r.UUID, _ = ident.MakeToken(g)
+	r.Content = g.Query("content")
+	r.Error = g.Query("error")
+	r.ReplyTo = reply
+	return r
 }

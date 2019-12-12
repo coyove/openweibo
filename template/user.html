@@ -76,9 +76,37 @@
 
 {{else}}
 
-<title>注册</title>
+<title>登入/注册</title>
+
 <form method="POST" action="/user">
-<table class="articles z">
+    <table class="articles">
+        <input type=hidden name=uuid value="{{.UUID}}">
+        <input type=hidden name=method value="login">
+        <tr>
+            <td class=nowrap>用户名:</td>
+            <td><input autofocus class=t name=username value="{{.RUsername}}"></td>
+        </tr>
+        <tr>
+            <td class=nowrap>密码:</td>
+            <td><input type=password class=t name=password value="{{.RPassword}}"></td>
+        </tr>
+        {{if .LoginError}}
+        <tr>
+            <td></td><td>{{template "error_i18n.html" .LoginError}}</td>
+        </tr>
+        {{end}}
+        <tr>
+            <td>
+            </td> 
+            <td style="text-align:right">
+                <button class="gbutton" type=submit>登入</button>
+            </td>
+        </tr>
+</form>
+    <tr><td colspan=2><hr></td></tr>
+    <tr><td colspan=2><b>注册新用户</b></td></tr>
+
+<form method="POST" action="/user">
     <input type=hidden name=uuid value="{{.UUID}}">
     <input type=hidden name=method value="signup">
     <tr>

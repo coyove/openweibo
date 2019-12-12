@@ -148,7 +148,7 @@ func User(g *gin.Context) {
 		}); err != nil {
 			redir("error", err.Error())
 		} else {
-			g.Redirect(302, "/cat/@"+username)
+			g.Redirect(302, "/t/"+username)
 		}
 		return
 	case "follow", "block":
@@ -161,12 +161,20 @@ func User(g *gin.Context) {
 		}
 
 		if g.PostForm("search") != "" {
-			redir("n", "u/"+user.(*mv.User).ID+"/"+mth+"/"+to)
+			if _, err := m.GetUser(to); err != nil {
+				to = mv.SearchUser(to)
+			}
+
+			if to == "" {
+				redir("error", "user/not-found")
+			} else {
+				redir("n", "u/"+user.(*mv.User).ID+"/"+mth+"/"+to)
+			}
 			return
 		}
 
 		if ret := checkToken(g); ret != "" {
-			redir("error", ret)
+			redir("error", ret, "n", "u/"+user.(*mv.User).ID+"/"+mth+"/"+to)
 			return
 		}
 

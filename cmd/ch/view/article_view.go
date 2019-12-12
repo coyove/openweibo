@@ -2,6 +2,7 @@ package view
 
 import (
 	"html/template"
+	"time"
 
 	"github.com/coyove/iis/cmd/ch/mv"
 )
@@ -25,8 +26,7 @@ type ArticleView struct {
 	ContentHTML template.HTML
 	Author      string
 	IP          string
-	CreateTime  string
-	ReplyTime   string
+	CreateTime  time.Time
 }
 
 const (
@@ -49,7 +49,7 @@ func (a *ArticleView) from(a2 *mv.Article, opt uint64) *ArticleView {
 	a.Extras = a2.Extras
 	a.Author = a2.Author
 	a.IP = a2.IP
-	a.CreateTime = mv.FormatTime(a2.CreateTime, opt&_RichTime > 0)
+	a.CreateTime = a2.CreateTime
 
 	if opt&_Abstract > 0 {
 		a.Content = mv.SoftTrunc(a2.Content, 64)
