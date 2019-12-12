@@ -9,7 +9,7 @@
                     placeholder="正文"
                     rows={{if .ReplyTo}}6{{else}}10{{end}}
                     name="content"
-                    style="padding:0.5em;border:none">{{if not .Content}}转发{{else}}{{.Content}}{{end}}</textarea>
+                    style="padding:0.5em;border:none">{{if not .Content}}{{if .ReplyTo}}转发{{else}}{{.Content}}{{end}}{{else}}{{.Content}}{{end}}</textarea>
             </td>
         </tr>
 {{if .Error}}
