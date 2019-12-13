@@ -3,6 +3,7 @@ package ident
 import (
 	"encoding/base64"
 	"encoding/binary"
+	"io"
 	"math/rand"
 	"sync/atomic"
 	"time"
@@ -107,6 +108,10 @@ func UnmarshalID(p []byte) ID {
 	id.hdr = IDTag(p[0] >> 4)
 	id.taglen = p[0] & 0xf
 
+	if !id.Valid() {
+		return ID{}
+	}
+
 	if len(p) < id.Size() {
 		return ID{}
 	}
@@ -116,6 +121,33 @@ func UnmarshalID(p []byte) ID {
 		id.ts = binary.BigEndian.Uint32(p[1:])
 	} else {
 		copy(id.tag[:id.taglen], p[1:])
+	}
+	return id
+}
+
+func ReadID(r io.Reader) ID {
+	p := [16]byte{}
+	if n, _ := io.ReadFull(r, p[:1]); n != 1 {
+		return ID{}
+	}
+
+	id := ID{}
+	id.hdr = IDTag(p[0] >> 4)
+	id.taglen = p[0] & 0xf
+
+	if !id.Valid() {
+		return ID{}
+	}
+
+	if n, _ := io.ReadFull(r, p[:id.Size()-1]); n != id.Size()-1 {
+		return ID{}
+	}
+
+	if id.hdr == IDTagGeneral {
+		copy(id.tag[:4], p[4:])
+		id.ts = binary.BigEndian.Uint32(p[:4])
+	} else {
+		copy(id.tag[:id.taglen], p[:])
 	}
 	return id
 }

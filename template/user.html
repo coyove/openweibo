@@ -4,35 +4,20 @@
 
 <title>{{.User.ID}}</title>
 
-<div style="margin: 0.5em 0">
-    <a href="/user/followings" class=gbutton style="color:#ccc">我的关注</a>
-    <a href="/user/blacklist" class=gbutton style="color:#ccc">黑名单</a>
-</div>
+
 
 <table class="articles z">
     <tr>
         <td colspan=2>{{.User.ID}}
-            {{if .User.Role}}/ {{.User.Role}}{{end}}
-            {{if .User.IsMod}}/ Mod{{end}}
-            {{if .User.IsAdmin}}/ 管理员{{end}}
-            {{if .User.Banned}}/ 封禁{{end}}
-            / {{.User.Followers}} 关注者 
-            / {{.User.TotalPosts}} 状态
-            / <a href="/t/:in">{{.User.Unread}} 未读</a> 
+            / 上次登入: {{.User.Login.Format "2006-01-02 15:04"}} 
+            / 注册于: {{.User.Signup.Format "2006-01-02 15:04"}}
         </td>
-        <td rowspan=2><form method="POST" action="/user">
+        <td><form method="POST" action="/user">
                 <input type=hidden name=uuid value="{{.UUID}}">
                 <input type=hidden name=username value="{{.User.ID}}">
                 <input type=hidden name=method value="logout">
                 <button class="gbutton" type=submit>注销</button>
             </form></td>
-    </tr>
-
-    <tr>
-        <td colspan=2>
-            上次登入: {{.User.Login.Format "2006-01-02 15:04"}}
-            / 注册于: {{.User.Signup.Format "2006-01-02 15:04"}}
-        </td>
     </tr>
 
     <form method="POST" action="/user">

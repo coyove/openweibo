@@ -40,7 +40,19 @@ func (m *Manager) GetArticle(id string) (*mv.Article, error) {
 	if len(p) == 0 {
 		return nil, mv.ErrNotExisted
 	}
-	return mv.UnmarshalArticle(p)
+	a, err := mv.UnmarshalArticle(p)
+	if err != nil {
+		return nil, err
+	}
+	if a.ReferID == "" {
+		return a, nil
+	}
+	a2, err := m.GetArticle(a.ReferID)
+	if err != nil {
+		return nil, err
+	}
+	a2.NextID = a.NextID
+	return a2, nil
 }
 
 func (m *Manager) WalkMulti(n int, cursors ...ident.ID) (a []*mv.Article, next []ident.ID) {
@@ -61,7 +73,9 @@ func (m *Manager) WalkMulti(n int, cursors ...ident.ID) (a []*mv.Article, next [
 
 		tl, err := m.GetArticle(root.String())
 		if err != nil {
-			log.Println("[mgr.Walk] Get root:", root, err)
+			if err != mv.ErrNotExisted {
+				log.Println("[mgr.Walk] Get root:", root, err)
+			}
 			cursors[i] = ident.ID{}
 		} else {
 			cursors[i] = ident.ParseID(tl.NextID)
@@ -100,11 +114,12 @@ func (m *Manager) WalkMulti(n int, cursors ...ident.ID) (a []*mv.Article, next [
 		p, err := m.GetArticle(latest.String())
 		if err == nil {
 			a = append(a, p)
+			*latest = ident.ParseID(p.NextID)
 		} else {
 			log.Println("[mgr.WalkMulti] Failed to get:", latest.String(), err)
 			// go m.purgeDeleted(hdr, tag, root.ID)
+			*latest = ident.ID{}
 		}
-		*latest = ident.ParseID(p.NextID)
 	}
 
 	return a, cursors
@@ -178,6 +193,10 @@ func (m *Manager) WalkReply(n int, cursor string) (a []*mv.Article, next string)
 // 	m.db.Set(startID, start.Marshal())
 // }
 
+func (m *Manager) Ref(a *mv.Article, id string) error {
+	return m.insertArticle(ident.NewID(ident.IDTagAuthor).SetTag(id).String(), a, false)
+}
+
 func (m *Manager) Post(content, author, ip string) (string, error) {
 	a := &mv.Article{
 		ID:         ident.NewGeneralID().String(),
@@ -192,9 +211,11 @@ func (m *Manager) Post(content, author, ip string) (string, error) {
 		return "", err
 	}
 
-	master := *a
-	master.ID = ident.NewGeneralID().String()
-	go m.insertArticle(ident.NewID(ident.IDTagAuthor).SetTag("master").String(), &master, false)
+	go m.Ref(&mv.Article{
+		ID:         ident.NewGeneralID().String(),
+		ReferID:    a.ID,
+		CreateTime: time.Now(),
+	}, "master")
 
 	go func() {
 		m.UpdateUser(a.Author, func(u *mv.User) error {

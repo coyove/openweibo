@@ -1,13 +1,22 @@
 {{template "header.html" .}}
 
-<div style="padding: 0.5em 0.5em 0 0.5em">
+<div style="padding: 0.5em;text-align:center;line-height:2em">
 {{if .IsUserTimeline}}
-    <b>@{{.User.ID}} 的时间线</b>
     <title>@{{.User.ID}} 的时间线</title>
+
+    <b>@{{.User.ID}}</b>
+            {{if .User.Role}}/ {{.User.Role}}{{end}}
+            {{if .User.IsMod}}/ Mod{{end}}
+            {{if .User.IsAdmin}}/ 管理员{{end}}
+            {{if .User.Banned}}/ 封禁{{end}}
+            / {{.User.Followers}} 关注者 
+            / {{.User.TotalPosts}} 状态
+
     {{if .You}}
+    <div>
     {{if ne .You.ID .User.ID}}
-    &emsp;<form method="POST" action="/user" style="display:inline-block">
-            <input type=hidden name=uuid value="{{.UUID}}">
+    <form method="POST" action="/user" style="display:inline-block">
+            <input type=hidden name=uuid value="{{.ReplyView.UUID}}">
             <input type=hidden name=username value="{{.You.ID}}">
             <input type=hidden name=method value="follow">
             <input type=hidden name=to value="{{.User.ID}}">
@@ -19,7 +28,7 @@
             {{end}}
     </form>
     <form method="POST" action="/user" style="display:inline-block">
-            <input type=hidden name=uuid value="{{.UUID}}">
+            <input type=hidden name=uuid value="{{.ReplyView.UUID}}">
             <input type=hidden name=username value="{{.You.ID}}">
             <input type=hidden name=method value="block">
             <input type=hidden name=to value="{{.User.ID}}">
@@ -27,10 +36,30 @@
             <button class="gbutton" type=submit>解除黑名单</button>
             {{else}}
             <input type=hidden name=block value="1">
-            <button class="gbutton" type=submit>拉入黑名单</button>
+            <button class="gbutton" type=submit style="color:#f52">拉入黑名单</button>
             {{end}}
     </form>
     {{end}}
+
+    {{if .You.IsAdmin}}
+    <a class=gbutton href="/user?as={{.User.ID}}">SWAP</a>
+    {{end}}
+
+    {{if .You.IsMod}}
+    <form method="POST" action="/user" style="display:inline">
+        <input type=hidden name=uuid value="{{.ReplyView.UUID}}">
+        <input type=hidden name=method value="ban-user">
+        <input type=hidden name=ban value="{{if not .User.Banned}}1{{end}}">
+        <input type=hidden name=username value="{{.User.ID}}">
+        <button class="gbutton" type=submit>{{if .User.Banned}}解封{{else}}封禁{{end}}</button>
+    </form>
+    {{end}}
+
+    {{if .ReplyView.Error}}
+    <div style="display:inline-block">{{template "error_i18n.html" .ReplyView.Error}}</div>
+    {{end}}
+    </div>
+
     {{end}}
 {{else if .IsInbox}}
     <b>我的提醒</b>
@@ -40,11 +69,24 @@
     <title>全局时间线</title>
 {{else}}
     {{if .ShowNewPost}}
-    {{template "reply_view.html" .ReplyView}}
+    <div style="margin-bottom:0.5em">{{template "reply_view.html" .ReplyView}}</div>
     {{end}}
 
-    <b>我的时间线</b>
     <title>我的时间线</title>
+        <b>我的时间线</b>
+        {{if .User.Role}}/ {{.User.Role}}{{end}}
+            {{if .User.IsMod}}/ Mod{{end}}
+            {{if .User.IsAdmin}}/ 管理员{{end}}
+            {{if .User.Banned}}/ 封禁{{end}}
+            / {{.User.Followers}} 关注者 
+            / <a href="/t/{{.User.ID}}">{{.User.TotalPosts}} 状态</a>
+            {{if .User.Unread}}
+            / <a class=unread href="/t/:in">{{.User.Unread}} 消息</a>
+            {{else}}
+            / <a href="/t/:in">{{.User.Unread}} 未读</a>
+            {{end}}
+            / <a href="/user/followings">我的关注</a>
+            / <a href="/user/blacklist">黑名单</a>
 {{end}}
 </div>
 

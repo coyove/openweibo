@@ -1,7 +1,6 @@
 package view
 
 import (
-	"bytes"
 	"encoding/base64"
 	"log"
 
@@ -111,24 +110,17 @@ func Timeline(g *gin.Context) {
 			}
 		}
 	} else if g.Request.Method == "POST" {
-		for cbuf, _ := base64.StdEncoding.DecodeString(g.PostForm("cursors")); len(cbuf) > 0; {
-			if cbuf[0] == 0 {
-				list, next := m.GetFollowingList(false, pl.User, string(cbuf[1:]), 1e6)
-				for _, id := range list {
-					if id.Followed {
-						cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(id.ID))
-					}
-				}
-				pendingFCursor = next
-				break
-			}
+		var payload []byte
+		cursors, payload = ident.SplitIDs(g.PostForm("cursors"))
 
-			id := ident.UnmarshalID(cbuf)
-			if !id.Valid() {
-				break
+		if len(payload) > 0 {
+			list, next := m.GetFollowingList(false, pl.User, string(payload), 1e6)
+			for _, id := range list {
+				if id.Followed {
+					cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(id.ID))
+				}
 			}
-			cbuf = cbuf[id.Size():]
-			cursors = append(cursors, id)
+			pendingFCursor = next
 		}
 	} else {
 		pl.ShowNewPost = true
@@ -146,18 +138,6 @@ func Timeline(g *gin.Context) {
 	a, next := m.WalkMulti(int(config.Cfg.PostsPerPage), cursors...)
 	fromMultiple(&pl.Articles, a, 0)
 
-	nextbuf := bytes.Buffer{}
-	nextbuftmp := [32]byte{}
-	for _, c := range next {
-		p := c.Marshal(nextbuftmp[:])
-		nextbuf.Write(p)
-	}
-
-	if pendingFCursor != "" {
-		nextbuf.WriteByte(0)
-		nextbuf.WriteString(pendingFCursor)
-	}
-
 	if pl.IsInbox {
 		go m.UpdateUser(pl.User.ID, func(u *mv.User) error {
 			u.Unread = 0
@@ -165,7 +145,7 @@ func Timeline(g *gin.Context) {
 		})
 	}
 
-	pl.Next = base64.StdEncoding.EncodeToString(nextbuf.Bytes())
+	pl.Next = ident.CombineIDs([]byte(pendingFCursor), next...)
 	g.HTML(200, "timeline.html", pl)
 }
 

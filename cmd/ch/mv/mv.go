@@ -39,6 +39,7 @@ type Article struct {
 	NextID      string            `json:"N"`
 	Cmd         Cmd               `json:"K"`
 	Extras      map[string]string `json:"X"`
+	ReferID     string            `json:"ref,omitempty"`
 }
 
 func (a *Article) ContentHTML() template.HTML {

@@ -334,11 +334,21 @@ span.time.min:after { content: '分钟前' }
 span.time.hour:after { content: '小时前' }
 span.time.day:after { content: '天前' }
 
-@media only screen and (max-width: 540px) {
-    * {
-        font-size: 16px;
-    }
+a.unread {
+    display:inline-block;
+    color:white;
+    background:#FF5722;
+    padding:0 0.5em;
+    border-radius:8px;
+    min-width:20px;
+    text-align:center;
+    line-height:20px;
+    font-size:12px;
+    vertical-align:middle;
+    margin:0 0.33em; 
+}
 
+@media only screen and (max-width: 540px) {
     .row {
         margin-right: 0.1em;
         margin-left: 0.1em;

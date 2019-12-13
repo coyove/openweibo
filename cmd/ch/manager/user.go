@@ -280,7 +280,7 @@ func (m *Manager) GetFollowingList(getBlockList bool, u *mv.User, cursor string,
 
 	for len(res) < n && cursor != "" {
 		if time.Since(start).Seconds() > 0.2 {
-			log.Println("[GetFollowingList] Break out slow walk", u, "[", cursor, "]")
+			log.Println("[GetFollowingList] Break out slow walk", u.ID, "[", cursor, "]")
 			break
 		}
 
