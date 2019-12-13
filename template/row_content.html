@@ -30,14 +30,19 @@
     <pre style="padding:0.66em 0 0">{{.ContentHTML}}</pre>
     {{end}}
 
-    <div style="padding: 0.5em 0">
-        <span><a target=_blank href="/p/{{.ID}}">{{.Replies}} 回复</a></span>
+    <div style="padding: 0.5em 0;line-height:1.5em">
+        <a class="reply-box" target=_blank href="/p/{{.ID}}" style="text-decoration:none!important">
+<svg viewBox="0 0 384 384" style="" xml:space="preserve">
+    <path fill="transparent" stroke="#2a66d9" stroke-width="32"
+        d="M149.333,117.333V32L0,181.333l149.333,149.333V243.2C256,243.2,330.667,277.333,384,352C362.667,245.333,298.667,138.667,149.333,117.333z"/>
+</svg>
+            {{.Replies}}</a>
     </div>
 
     {{if .Parent}}
     <div style="position:relative;margin:0 -0.5em; border-top:dotted 1px #aaa">
         <svg version="1.1"
-            viewBox="0 0 392.652 392.652" width=16 height=16 style="display:block;height:16px;width:16px;line-height:16px;position:absolute;top:-6px;left:1em"
+            viewBox="0 0 392.652 392.652" width=16 height=16 style="display:block;height:16px;width:16px;line-height:16px;position:absolute;top:-6px;left:50%"
             xml:space="preserve">
         <path fill="#233" d="M371.439,243.7l-35.961,35.961c11.209-92.047-39.457-184.193-129.211-221.371c-34.202-14.167-71.578-19.149-108.094-14.425
             C62.773,48.452,28.825,62.018,0,83.1l17.709,24.215c51.74-37.839,117.938-45.807,177.078-21.308

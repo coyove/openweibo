@@ -22,9 +22,12 @@ func CombineIDs(payload []byte, ids ...ID) string {
 	i := p.Len()
 
 	w, _ := flate.NewWriter(&p, -1)
+
+	xlen := 0
 	for _, id := range ids {
 		x := id.Marshal(fill[:])
 		w.Write(x)
+		xlen += len(x)
 	}
 
 	if len(payload) > 0 {
@@ -33,7 +36,7 @@ func CombineIDs(payload []byte, ids ...ID) string {
 		w.Write(payload)
 	}
 
-	if p.Len() == i {
+	if xlen == 0 {
 		return ""
 	}
 

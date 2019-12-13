@@ -348,6 +348,14 @@ a.unread {
     margin:0 0.33em; 
 }
 
+.reply-box svg {
+    width:16px;height:16px;vertical-align:text-bottom;margin-right:4px;
+}
+
+.reply-box:hover svg * {
+    fill: #2196f3;
+}
+
 @media only screen and (max-width: 540px) {
     .row {
         margin-right: 0.1em;
