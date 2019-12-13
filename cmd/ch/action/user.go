@@ -202,5 +202,10 @@ func User(g *gin.Context) {
 	}
 
 	g.SetCookie("id", mv.MakeUserToken(u), 365*86400, "", "", false, false)
-	redir("error", "ok")
+
+	if mth == "signup" && username != g.PostForm("username") {
+		redir("error", "ok/username-changed")
+	} else {
+		redir("error", "ok")
+	}
 }
