@@ -81,6 +81,10 @@ func checkCaptcha(g *gin.Context) string {
 		return fmt.Sprintf("guard/cooling-down/%.1fs", float64(config.Cfg.Cooldown)-g.GetFloat64("ip-ok-remain"))
 	}
 
+if !tokenok {
+		return "guard/token-expired"
+	}
+
 	if len(answer) == 4 {
 		challengePassed = true
 		for i := range answer {
