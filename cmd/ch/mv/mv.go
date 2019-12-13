@@ -74,14 +74,16 @@ type User struct {
 	Followers    int    `json:"F"`
 	Followings   int    `json:"f"`
 	//Blockings      int       `json:"b"`
-	FollowingChain string    `json:"FC"`
-	BlockingChain  string    `json:"BC"`
-	Unread         int       `json:"ur"`
-	Signup         time.Time `json:"st"`
-	SignupIP       string    `json:"sip"`
-	Login          time.Time `json:"lt"`
-	LoginIP        string    `json:"lip"`
-	Banned         bool      `json:"ban"`
+	FollowingChain    string    `json:"FC"`
+	BlockingChain     string    `json:"BC"`
+	Unread            int       `json:"ur"`
+	Signup            time.Time `json:"st"`
+	SignupIP          string    `json:"sip"`
+	Login             time.Time `json:"lt"`
+	LoginIP           string    `json:"lip"`
+	Banned            bool      `json:"ban"`
+	NoReplyInTimeline bool      `json:"nrit,omitempty"`
+	NoPostInMaster    bool      `json:"npim,omitempty"`
 }
 
 func (u User) Marshal() []byte {

@@ -197,11 +197,11 @@ func (m *Manager) Ref(a *mv.Article, id string) error {
 	return m.insertArticle(ident.NewID(ident.IDTagAuthor).SetTag(id).String(), a, false)
 }
 
-func (m *Manager) Post(content, author, ip string) (string, error) {
+func (m *Manager) Post(content string, author *mv.User, ip string) (string, error) {
 	a := &mv.Article{
 		ID:         ident.NewGeneralID().String(),
 		Content:    content,
-		Author:     author,
+		Author:     author.ID,
 		IP:         ip,
 		CreateTime: time.Now(),
 	}
@@ -211,11 +211,13 @@ func (m *Manager) Post(content, author, ip string) (string, error) {
 		return "", err
 	}
 
-	go m.Ref(&mv.Article{
-		ID:         ident.NewGeneralID().String(),
-		ReferID:    a.ID,
-		CreateTime: time.Now(),
-	}, "master")
+	if !author.NoPostInMaster {
+		go m.Ref(&mv.Article{
+			ID:         ident.NewGeneralID().String(),
+			ReferID:    a.ID,
+			CreateTime: time.Now(),
+		}, "master")
+	}
 
 	go func() {
 		m.UpdateUser(a.Author, func(u *mv.User) error {
@@ -263,7 +265,7 @@ func (m *Manager) insertArticle(rootID string, a *mv.Article, asReply bool) erro
 	return nil
 }
 
-func (m *Manager) PostReply(parent string, content, author, ip string) (string, error) {
+func (m *Manager) PostReply(parent string, content string, author *mv.User, ip string) (string, error) {
 	p, err := m.Get(parent)
 	if err != nil {
 		return "", err
@@ -273,14 +275,14 @@ func (m *Manager) PostReply(parent string, content, author, ip string) (string, 
 		return "", fmt.Errorf("locked parent")
 	}
 
-	if m.IsBlocking(p.Author, author) {
+	if m.IsBlocking(p.Author, author.ID) {
 		return "", fmt.Errorf("author blocked")
 	}
 
 	a := &mv.Article{
 		ID:         ident.NewGeneralID().String(),
 		Content:    content,
-		Author:     author,
+		Author:     author.ID,
 		IP:         ip,
 		Parent:     p.ID,
 		CreateTime: time.Now(),
@@ -290,8 +292,11 @@ func (m *Manager) PostReply(parent string, content, author, ip string) (string, 
 		return "", err
 	}
 
-	if err := m.insertArticle(ident.NewID(ident.IDTagAuthor).SetTag(a.Author).String(), a, false); err != nil {
-		return "", err
+	if !author.NoReplyInTimeline {
+		// Add reply to its timeline
+		if err := m.insertArticle(ident.NewID(ident.IDTagAuthor).SetTag(a.Author).String(), a, false); err != nil {
+			return "", err
+		}
 	}
 
 	if err := m.insertArticle(ident.NewID(ident.IDTagInbox).SetTag(p.Author).String(), &mv.Article{

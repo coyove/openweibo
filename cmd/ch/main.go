@@ -18,6 +18,7 @@ import (
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/engine"
 	"github.com/coyove/iis/cmd/ch/manager"
+	"github.com/coyove/iis/cmd/ch/mv"
 	"github.com/coyove/iis/cmd/ch/view"
 	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"
@@ -46,7 +47,9 @@ func main() {
 
 		for i := 0; i < N; i++ {
 			time.Sleep(time.Second)
-			aid, _ := m.Post("BENCH "+strconv.Itoa(i)+" post", names[rand.Intn(len(names))], "127.0.0.0")
+			aid, _ := m.Post("BENCH "+strconv.Itoa(i)+" post", &mv.User{
+				ID: names[rand.Intn(len(names))],
+			}, "127.0.0.0")
 			ids = append(ids, aid)
 		}
 
@@ -67,7 +70,9 @@ func main() {
 					if rand.Intn(4) == 1 {
 						parent = ids[rand.Intn(len(ids))]
 					}
-					aid, _ := m.PostReply(parent, "BENCH "+strconv.Itoa(i)+" reply", names[rand.Intn(len(names))], "127.0.0.0")
+					aid, _ := m.PostReply(parent, "BENCH "+strconv.Itoa(i)+" reply", &mv.User{
+						ID: names[rand.Intn(len(names))],
+					}, "127.0.0.0")
 					ids = append(ids, aid)
 
 					if i%10 == 0 {

@@ -4,20 +4,29 @@
 
 <title>{{.User.ID}}</title>
 
-
-
-<table class="articles z">
+<table class="articles" style="margin: 0.5em 0">
     <tr>
-        <td colspan=2>{{.User.ID}}
-            / 上次登入: {{.User.Login.Format "2006-01-02 15:04"}} 
-            / 注册于: {{.User.Signup.Format "2006-01-02 15:04"}}
-        </td>
-        <td><form method="POST" action="/user">
+        <td colspan=3 style="text-align:center"><b>{{.User.ID}}</b> 的设置</td>
+    </tr>
+    <tr>
+        <td>上次登入:</td>
+        <td>{{.User.Login.Format "2006-01-02 15:04:05"}}</td>
+        <td rowspan=2><form method="POST" action="/user">
                 <input type=hidden name=uuid value="{{.UUID}}">
                 <input type=hidden name=username value="{{.User.ID}}">
                 <input type=hidden name=method value="logout">
-                <button class="gbutton" type=submit>注销</button>
+                <button style="color:#f52" class="gbutton" type=submit>注销</button>
             </form></td>
+    </tr>
+    <tr>
+        <td>注册于:</td>
+        <td>{{.User.Signup.Format "2006-01-02 15:04:05"}}</td>
+    </tr>
+    <tr>
+        <td class=nowrap>上次登入IP:</td><td colspan=2>{{.User.LoginIP}}</td>
+    </tr>
+    <tr>
+        <td class=nowrap>注册IP:</td><td colspan=2>{{.User.SignupIP}}</td>
     </tr>
 
     <form method="POST" action="/user">
@@ -34,6 +43,20 @@
             <td class=nowrap>Email:</td>
             <td colspan=2> 
                 <input name=email class=t value="{{.User.Email}}" required type=email>
+            </td>
+        </tr>
+        <tr>
+            <td class=nowrap></td>
+            <td colspan=2> 
+                <input name=nrit type=checkbox {{if .User.NoReplyInTimeline}}checked{{end}} id=nrit>
+                <label for=nrit>不要将我的回复显示在我的时间线中</label>
+            </td>
+        </tr>
+        <tr>
+            <td class=nowrap></td>
+            <td colspan=2> 
+                <input name=npim type=checkbox {{if .User.NoPostInMaster}}checked{{end}} id=npim>
+                <label for= npim>不要将我的状态显示在Master时间线中</label>
             </td>
         </tr>
         <tr>

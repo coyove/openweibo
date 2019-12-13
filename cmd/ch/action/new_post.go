@@ -60,7 +60,7 @@ func New(g *gin.Context) {
 		return
 	}
 
-	aid, err := m.Post(content, u.(*mv.User).ID, ip)
+	aid, err := m.Post(content, u.(*mv.User), ip)
 	if err != nil {
 		log.Println(aid, err)
 		redir("error", "internal/error")
@@ -120,7 +120,7 @@ func Reply(g *gin.Context) {
 		return
 	}
 
-	if _, err := m.PostReply(reply, content, u.(*mv.User).ID, ip); err != nil {
+	if _, err := m.PostReply(reply, content, u.(*mv.User), ip); err != nil {
 		log.Println(err)
 		redir("error", "error/can-not-reply")
 		return
