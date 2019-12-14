@@ -34,6 +34,8 @@
 {{end}}
 
 {{$cd := isCDError .}}
+{{$it := isITError .}}
+
 {{if $cd}}
 操作过快，请等待{{$cd}}s
 {{else if eq . "guard/failed-captcha"}}
@@ -60,8 +62,8 @@ ID已存在
 注册成功，但是请注意你的登入用户名内非法字符已经被过滤为下划线“_"
 {{else if eq . "ok"}}
 操作成功
-{{else if eq . "image/throt"}}
-图片功能暂时限制，请稍后再试
+{{else if $it}}
+图片功能暂时限制，请等待{{$it}}s
 {{else}}
 错误: {{.}}
 {{end}}

@@ -141,14 +141,19 @@ var imgurThrot = struct {
 	start:   time.Now(),
 }
 
-var imageThrotErr = fmt.Errorf("image/throt")
-
 func uploadImgur(image string) (string, error) {
 	imgurThrot.Lock()
 	// 50 posts per hour, we use 45, so that is 0.0125 per sec
+	diff := time.Since(imgurThrot.start).Seconds()
+	if diff > 3600 {
+		imgurThrot.start = time.Unix(time.Now().Unix()-1, 0)
+	}
+
 	if float64(imgurThrot.counter)/time.Since(imgurThrot.start).Seconds() > 0.01 {
 		imgurThrot.Unlock()
-		return "", imageThrotErr
+
+		sec := time.Unix(imgurThrot.start.Unix()+int64(float64(imgurThrot.counter)/0.01), 0).Sub(time.Now()).Seconds()
+		return "", fmt.Errorf("image/throt/%.1fs", sec)
 	}
 	imgurThrot.counter++
 	imgurThrot.Unlock()
@@ -192,6 +197,9 @@ func uploadImgur(image string) (string, error) {
 	}
 
 	if err := json.Unmarshal(buf, &p); err != nil || !p.Success {
+		if len(buf) > 1024 {
+			buf = buf[:1024]
+		}
 		return "", fmt.Errorf("resp error: %q", buf)
 	}
 

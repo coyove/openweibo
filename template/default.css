@@ -87,7 +87,7 @@ hr {
 
 .articles th.nowrap, .articles td.nowrap {
     white-space: nowrap;
-    width: 1%;
+    width: 1px;
 }
 
 input.t, textarea, select.t {
@@ -324,15 +324,18 @@ div.row-header > * {
 }
 
 span.deleted:before {
-    content: '[已删除]';
-    font-weight: bold;
-    color: #f52;
 }
 
 span.time.sec:after { content: '秒前' }
 span.time.min:after { content: '分钟前' }
 span.time.hour:after { content: '小时前' }
 span.time.day:after { content: '天前' }
+
+span.deleted:after {
+    content: '内容已删除，不要想了';
+    text-shadow: 0 0 5px #667;
+    color: transparent;
+}
 
 a.unread {
     display:inline-block;

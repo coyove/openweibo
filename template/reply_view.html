@@ -55,8 +55,8 @@
             </td>
         </tr>
 {{if .Error}}
-        <tr style="background:#f1f2f3;border-bottom:solid 1px #ddd" >
-            <td colspan=2>{{template "error_i18n.html" .Error}}</td>
+        <tr style="background:#f1f2f3;border-bottom:solid 1px #ddd;cursor:pointer" >
+            <td onclick="this.parentNode.style.display='none'" colspan=2>{{template "error_i18n.html" .Error}}</td>
         </tr>
 {{end}}
         <tr>

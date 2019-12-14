@@ -93,6 +93,12 @@ func main() {
 			}
 			return ""
 		},
+		"isITError": func(s string) string {
+			if strings.HasPrefix(s, "image/throt/") {
+				return s[12 : len(s)-1]
+			}
+			return ""
+		},
 		"formatTime": func(a time.Time) template.HTML {
 			s := time.Since(a).Seconds()
 			if s < 60 {

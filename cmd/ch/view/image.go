@@ -45,7 +45,7 @@ func Home(g *gin.Context) {
 
 var imgClient = &http.Client{Timeout: 2 * time.Second}
 
-func inti() {
+func init() {
 	if config.Cfg.Key == "0123456789abcdef" {
 		// debug
 		imgClient.Transport = &http.Transport{
@@ -89,25 +89,19 @@ func Image(g *gin.Context) {
 	cachedir := filepath.Dir(cachepath)
 	os.MkdirAll(cachedir, 0777)
 
-	var w io.Writer = g.Writer
-
 	f, err := os.Create(cachepath)
 	if err != nil {
 		log.Println("Image Proxy, disk error:", err)
-	} else {
-		w = io.MultiWriter(w, f)
+		return
 	}
 
-	g.Writer.Header().Add("Content-Type", resp.Header.Get("Content-Type"))
-	if _, err := io.Copy(w, resp.Body); err != nil {
+	if _, err := io.Copy(f, resp.Body); err != nil {
 		log.Println("Image Proxy, disk copy error:", err)
-		if f != nil {
-			f.Close()
-			os.Remove(cachepath)
-		}
+		f.Close()
+		os.Remove(cachepath)
+		g.Status(500)
 	} else {
-		if f != nil {
-			f.Close()
-		}
+		f.Close()
+		http.ServeFile(g.Writer, g.Request, cachepath)
 	}
 }
