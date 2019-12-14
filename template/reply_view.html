@@ -34,7 +34,7 @@
                 <a class=gbutton id=post-image-button onclick="sel('#post-image').click()">图片</a>
                 <script>
                     function onImageChanged(el) {
-                        sel('#post-image-button').innerText=el.value.split(/(\\|\/)/g).pop() || "图片";
+                        sel('#post-image-button').innerText = (el.value.split(/(\\|\/)/g).pop() || "图片").substring(0, 32);
                         sel("#post-image-base64").value = "";
 
                         if (!el.value) return;

@@ -43,9 +43,10 @@ func Home(g *gin.Context) {
 	g.HTML(200, "home.html", p)
 }
 
-var imgClient = &http.Client{Timeout: 2 * time.Second}
+var imgClient = &http.Client{Timeout: 1 * time.Second}
 
-func init() {
+func Image(g *gin.Context) {
+
 	if config.Cfg.Key == "0123456789abcdef" {
 		// debug
 		imgClient.Transport = &http.Transport{
@@ -55,9 +56,7 @@ func init() {
 		}
 		imgClient.Timeout = 0
 	}
-}
 
-func Image(g *gin.Context) {
 	img, _ := base64.StdEncoding.DecodeString(g.Param("img"))
 
 	hash := sha1.Sum(img)
