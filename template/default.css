@@ -353,7 +353,7 @@ a.unread {
 }
 
 .reply-box:hover svg * {
-    fill: #2196f3;
+    fill: #2a66d9;
 }
 
 @media only screen and (max-width: 540px) {

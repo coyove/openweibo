@@ -3,7 +3,6 @@ package engine
 import (
 	"encoding/binary"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -30,7 +29,7 @@ func loadTrafficCounter() {
 			binary.BigEndian.PutUint64(traffic[:], uint64(Survey.Written))
 
 			if Survey.Written != last {
-				log.Println("[Traffic recorder] traffic:", Survey.Written, ioutil.WriteFile(tmppath, traffic[:], 0700))
+				// log.Println("[Traffic recorder] traffic:", Survey.Written, ioutil.WriteFile(tmppath, traffic[:], 0700))
 			}
 
 			last = Survey.Written

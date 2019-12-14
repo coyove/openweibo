@@ -1,15 +1,57 @@
 <form method="POST" action="{{if .ReplyTo}}/reply{{else}}/new{{end}}">
+        {{if .CanDelete}}
+    <table class="articles" style="width: 100%;margin:1em 0 2em;box-shadow: 0 1px 3px rgba(0, 0, 0,.2);text-align:left">
+        <tr style="border-top: solid 1px #ddd">
+            <td>
+                <input type=checkbox name=delete-confirm id=delete-confirm>
+                <label for=delete-confirm>确认删除该状态，该操作不可逆</label>
+            </td>
+            <td class=nowrap>
+                <button class="gbutton" type=submit name=delete value=1 style="color:#ff5722">删除</a>
+            </td>
+        </tr>
+    </table>
+        {{end}}
+
     <table class="articles" style="width: 100%;margin:1em 0;box-shadow: 0 1px 4px rgba(0, 0, 0,.3);position:relative;text-align:left">
 
         <input type=hidden name=uuid value="{{.UUID}}">
         <tr style="border-bottom: solid 1px #ddd">
             <td colspan=2 style="padding:0">
                 <textarea
+                    id="content"
                     maxlength=1024
                     placeholder="正文"
                     rows={{if .ReplyTo}}6{{else}}10{{end}}
                     name="content"
-                    style="padding:0.5em;border:none">{{if not .Content}}{{if .ReplyTo}}转发{{else}}{{.Content}}{{end}}{{else}}{{.Content}}{{end}}</textarea>
+                    style="padding:0.5em;border:none">{{.Content}}</textarea>
+            </td>
+        </tr>
+        <tr style="border-bottom: solid 1px #ddd">
+            <td colspan=2>
+                <input type=file id=post-image style="display:none" onchange="onImageChanged(this)">
+                <input type=hidden id=post-image-base64 name=image64>
+                <a class=gbutton id=post-image-button onclick="sel('#post-image').click()">图片</a>
+                <script>
+                    function onImageChanged(el) {
+                        sel('#post-image-button').innerText=el.value.split(/(\\|\/)/g).pop() || "图片";
+                        sel("#post-image-base64").value = "";
+
+                        if (!el.value) return;
+
+                        var reader = new FileReader();
+                        reader.readAsDataURL(el.files[0]);
+                        reader.onload = function () {
+                            sel("#post-image-base64").value = reader.result;
+                            sel("#post-image-button").innerText += " (" + (reader.result.length / 1.33 / 1024).toFixed(0) + "KB)";
+                            if (reader.result.length > 2 * 1024 * 1024) {
+                                el.value = null;
+                                onImageChanged(el);
+                                sel('#post-image-button').innerText="图片过大";
+                            }
+                        };
+                    }
+                </script>
             </td>
         </tr>
 {{if .Error}}
@@ -28,17 +70,5 @@
                 {{end}}
             </td>
         </tr>
-
-        {{if .CanDelete}}
-        <tr style="border-top: solid 1px #ddd">
-            <td>
-                <input type=checkbox name=delete-confirm id=delete-confirm>
-                <label for=delete-confirm>确认删除该状态，该操作不可逆</label>
-            </td>
-            <td class=nowrap>
-                <button class="gbutton" type=submit name=delete value=1 style="color:#ff5722">删除</a>
-            </td>
-        </tr>
-        {{end}}
     </table>
 </form>

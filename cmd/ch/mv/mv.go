@@ -30,6 +30,7 @@ type Article struct {
 	Replies     int               `json:"rs,omitempty"`
 	Locked      bool              `json:"lock,omitempty"`
 	Content     string            `json:"content"`
+	Media       string            `json:"M,omitempty"`
 	Author      string            `json:"author"`
 	IP          string            `json:"ip"`
 	CreateTime  time.Time         `json:"create,omitempty"`

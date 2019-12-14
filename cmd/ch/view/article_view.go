@@ -1,7 +1,9 @@
 package view
 
 import (
+	"encoding/base64"
 	"html/template"
+	"strings"
 	"time"
 
 	"github.com/coyove/iis/cmd/ch/mv"
@@ -9,23 +11,17 @@ import (
 
 type ArticleView struct {
 	ID          string
-	Timeline    string
 	Parent      *ArticleView
-	Image       string
 	Cmd         string
-	Extras      map[string]string
-	Index       int
-	SubIndex    string
 	Replies     int
-	Forwards    int
-	Upvotes     int
 	Locked      bool
 	NoAvatar    bool
-	Title       string
 	Content     string
 	ContentHTML template.HTML
 	Author      string
 	IP          string
+	Media       string
+	MediaType   string
 	CreateTime  time.Time
 }
 
@@ -46,10 +42,21 @@ func (a *ArticleView) from(a2 *mv.Article, opt uint64) *ArticleView {
 	a.Replies = a2.Replies
 	a.Locked = a2.Locked
 	a.Cmd = string(a2.Cmd)
-	a.Extras = a2.Extras
 	a.Author = a2.Author
 	a.IP = a2.IP
 	a.CreateTime = a2.CreateTime
+
+	if p := strings.SplitN(a2.Media, ":", 2); len(p) == 2 {
+		a.MediaType, a.Media = p[0], p[1]
+		switch a.MediaType {
+		case "IMG":
+			a.Media = "/img/" + base64.StdEncoding.EncodeToString([]byte(a.Media))
+		}
+	}
+
+	if img := mv.ExtractFirstImage(a2.Content); img != "" && a2.Media == "" {
+		a.MediaType, a.Media = "IMG", img
+	}
 
 	if opt&_Abstract > 0 {
 		a.Content = mv.SoftTrunc(a2.Content, 64)

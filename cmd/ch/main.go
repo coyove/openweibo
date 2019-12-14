@@ -47,7 +47,7 @@ func main() {
 
 		for i := 0; i < N; i++ {
 			time.Sleep(time.Second)
-			aid, _ := m.Post("BENCH "+strconv.Itoa(i)+" post", &mv.User{
+			aid, _ := m.Post("BENCH "+strconv.Itoa(i)+" post", "", &mv.User{
 				ID: names[rand.Intn(len(names))],
 			}, "127.0.0.0")
 			ids = append(ids, aid)
@@ -70,7 +70,7 @@ func main() {
 					if rand.Intn(4) == 1 {
 						parent = ids[rand.Intn(len(ids))]
 					}
-					aid, _ := m.PostReply(parent, "BENCH "+strconv.Itoa(i)+" reply", &mv.User{
+					aid, _ := m.PostReply(parent, "BENCH "+strconv.Itoa(i)+" reply", "", &mv.User{
 						ID: names[rand.Intn(len(names))],
 					}, "127.0.0.0")
 					ids = append(ids, aid)
@@ -115,6 +115,7 @@ func main() {
 
 	r.NoRoute(view.NotFound)
 	r.Handle("GET", "/", view.Home)
+	r.Handle("GET", "/img/:img", view.Image)
 	r.Handle("GET", "/master", view.Index)
 	r.Handle("POST", "/master", view.Index)
 	r.Handle("GET", "/user", view.User)

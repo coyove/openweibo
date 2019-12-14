@@ -2,6 +2,9 @@
 <div id="footer" style="word-break:break-all;line-height:2.25em;position:absolute;right:0;bottom:0;left:0;padding:0 1em;background:#eee;box-shadow:0 -1px 0px #ccc;">
     {{if .User}}
     ID / <a href='/user'>{{.User.ID}}</a>
+    {{if .User.Unread}}
+        <a class=unread href="/t/:in">{{.User.Unread}} 消息</a>
+    {{end}}
     {{else}}
     ID / <a href="/user">登入</a>
     {{end}}

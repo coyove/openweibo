@@ -39,7 +39,7 @@ var Cfg = struct {
 	PublicString      string
 	PrivateString     string
 }{
-	TokenTTL:     1,
+	TokenTTL:     10,
 	IDTokenTTL:   600,
 	Key:          "0123456789abcdef",
 	AdminName:    "zzzz",

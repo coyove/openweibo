@@ -32,17 +32,13 @@ func New(g *gin.Context) {
 	var (
 		ip      = hashIP(g)
 		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
+		image   = g.PostForm("image64")
 		redir   = func(a, b string) {
 			q := EncodeQuery(a, b, "content", content)
 			g.Redirect(302, "/t"+q)
 		}
+		err error
 	)
-
-	if emoji := g.PostForm("emoji"); emoji != "" {
-		content += emoji
-		redir("", "")
-		return
-	}
 
 	u, ok := g.Get("user")
 	if !ok {
@@ -50,9 +46,17 @@ func New(g *gin.Context) {
 		return
 	}
 
-	if len(content) < 3 {
+	if len(content) < 3 && image == "" {
 		redir("error", "content/too-short")
 		return
+	}
+
+	if image != "" {
+		if image, err = uploadImgur(image); err != nil {
+			redir("error", err.Error())
+			return
+		}
+		image = "IMG:" + image
 	}
 
 	if ret := checkToken(g); ret != "" {
@@ -60,7 +64,7 @@ func New(g *gin.Context) {
 		return
 	}
 
-	aid, err := m.Post(content, u.(*mv.User), ip)
+	aid, err := m.Post(content, image, u.(*mv.User), ip)
 	if err != nil {
 		log.Println(aid, err)
 		redir("error", "internal/error")
@@ -76,16 +80,12 @@ func Reply(g *gin.Context) {
 		reply   = g.PostForm("reply")
 		ip      = hashIP(g)
 		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
+		image   = g.PostForm("image64")
 		redir   = func(a, b string) {
 			g.Redirect(302, "/p/"+reply+EncodeQuery(a, b, "content", content))
 		}
+		err error
 	)
-
-	if emoji := g.PostForm("emoji"); emoji != "" {
-		content += emoji
-		redir("refresh", "1")
-		return
-	}
 
 	u, ok := g.Get("user")
 	if !ok {
@@ -105,6 +105,7 @@ func Reply(g *gin.Context) {
 				return fmt.Errorf("user/can-not-delete")
 			}
 			a.Content = mv.DeletionMarker
+			a.Media = ""
 			return nil
 		})
 		if err != nil {
@@ -115,12 +116,16 @@ func Reply(g *gin.Context) {
 		return
 	}
 
-	if len(content) < 3 {
-		redir("error", "content/too-short")
-		return
+	if image != "" {
+		image, err = uploadImgur(image)
+		if err != nil {
+			redir("error", err.Error())
+			return
+		}
+		image = "IMG:" + image
 	}
 
-	if _, err := m.PostReply(reply, content, u.(*mv.User), ip); err != nil {
+	if _, err := m.PostReply(reply, content, image, u.(*mv.User), ip); err != nil {
 		log.Println(err)
 		redir("error", "error/can-not-reply")
 		return

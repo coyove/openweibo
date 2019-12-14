@@ -141,6 +141,11 @@ func (m *Manager) FollowUser_unlock(from, to string, following bool) (E error) {
 
 	followID := makeFollowID(from, to)
 
+	if following && m.IsBlocking(to, from) {
+		// "from" wants "to" follow "to" but "to" blocked "from"
+		return fmt.Errorf("failed due to blocking")
+	}
+
 	defer func() {
 		if E != nil {
 			return
@@ -171,6 +176,7 @@ func (m *Manager) FollowUser_unlock(from, to string, following bool) (E error) {
 		if a.Extras["follow"] == state {
 			return nil
 		}
+
 		a.Extras["follow"] = state
 		return m.db.Set(a.ID, a.Marshal())
 	}
@@ -213,6 +219,12 @@ func (m *Manager) BlockUser_unlock(from, to string, blocking bool) (E error) {
 			return err
 		}
 		root = a.ID
+	}
+
+	if blocking {
+		if err := m.FollowUser_unlock(to, from, false); err != nil {
+			log.Println("Block user:", to, "unfollow error:", err)
+		}
 	}
 
 	followID := makeBlockID(from, to)

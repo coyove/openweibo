@@ -9,8 +9,16 @@
     <a href="/user/followings" class=gbutton style="color:#ccc">我的关注</a>
     <a href="/user/blacklist" class=gbutton>黑名单</a>
     <title>黑名单</title>
+
     {{end}}
 </div>
+
+{{if .IsBlacklist}}
+    <div style="margin: 0.5em">
+        1. 拉黑用户无法评论/@你的状态<br>
+        2. 拉黑用户如果之前已经关注了你，则会自动取消且无法再次关注，同时无法看到你的状态
+    </div>
+{{end}}
 
 <table class="articles z" style="margin: 0.5em 0">
     {{if .EError}}

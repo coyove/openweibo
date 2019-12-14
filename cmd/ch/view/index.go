@@ -165,6 +165,10 @@ func Replies(g *gin.Context) {
 
 	if u, ok := g.Get("user"); ok {
 		pl.ReplyView.CanDelete = u.(*mv.User).ID == pl.ParentArticle.Author || u.(*mv.User).IsMod()
+		if m.IsBlocking(pl.ParentArticle.Author, u.(*mv.User).ID) {
+			Error(404, "NOT FOUND", g)
+			return
+		}
 	}
 
 	cursor := g.Query("n")

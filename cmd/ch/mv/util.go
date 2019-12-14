@@ -9,8 +9,11 @@ import (
 	"github.com/coyove/iis/cmd/ch/config"
 )
 
-var rxSan = regexp.MustCompile(`(?m)(^>.+|<|https?://\S+)`)
-var rxMentions = regexp.MustCompile(`(@\S+)`)
+var (
+	rxSan        = regexp.MustCompile(`(?m)(^>.+|<|https?://\S+)`)
+	rxFirstImage = regexp.MustCompile(`(?i)https?://\S+\.(png|jpg|gif|webp|jpeg)`)
+	rxMentions   = regexp.MustCompile(`(@\S+)`)
+)
 
 func FormatTime(x time.Time, rich bool) string {
 	return x.UTC().Add(8 * time.Hour).Format("2006-01-02 15:04:05")
@@ -64,4 +67,12 @@ AGAIN: // TODO
 		res[i] = res[i][1:]
 	}
 	return res
+}
+
+func ExtractFirstImage(in string) string {
+	m := rxFirstImage.FindAllString(in, 1)
+	if len(m) > 0 {
+		return m[0]
+	}
+	return ""
 }
