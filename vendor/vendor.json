@@ -322,6 +322,12 @@
 			"revisionTime": "2018-07-18T01:23:57Z"
 		},
 		{
+			"checksumSHA1": "Lmd2WmbKenLjMhwOgjFUtCxU+3A=",
+			"path": "github.com/o1egl/govatar",
+			"revision": "fd0ac734f4e77cfda4cc1bc4400e82fe1fcca8a2",
+			"revisionTime": "2019-09-08T23:15:37Z"
+		},
+		{
 			"checksumSHA1": "I7hloldMJZTqUx6hbVDp5nk9fZQ=",
 			"path": "github.com/pkg/errors",
 			"revision": "27936f6d90f9c8e1145f11ed52ffffbfdb9e0af7",

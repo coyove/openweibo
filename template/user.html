@@ -117,11 +117,14 @@
                 <button class="gbutton" type=submit>登入</button>
             </td>
         </tr>
+</table>
 </form>
+
+<form method="POST" action="/user">
+    <table class="articles">
     <tr><td colspan=2><hr></td></tr>
     <tr><td colspan=2><b>注册新用户</b></td></tr>
 
-<form method="POST" action="/user">
     <input type=hidden name=uuid value="{{.UUID}}">
     <input type=hidden name=method value="signup">
     <tr>
