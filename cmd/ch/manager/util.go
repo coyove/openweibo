@@ -78,12 +78,12 @@ func makeFollowID(from, to string) string {
 	return "u/" + from + "/follow/" + to
 }
 
-func makeBlockID(from, to string) string {
-	return "u/" + from + "/block/" + to
+func makeFollowedID(from, to string) string {
+	return "u/" + from + "/followed/" + to
 }
 
-func makeUserArticleRelationID(from, aid string) string {
-	return "u/" + from + "/relate/" + aid
+func makeBlockID(from, to string) string {
+	return "u/" + from + "/block/" + to
 }
 
 func lastElemInCompID(id string) string {

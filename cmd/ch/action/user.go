@@ -15,7 +15,6 @@ import (
 )
 
 func User(g *gin.Context) {
-
 	var (
 		ip        = hashIP(g)
 		username  = sanUsername(g.PostForm("username"))
@@ -28,8 +27,7 @@ func User(g *gin.Context) {
 				a = "login-error"
 			}
 
-			ext = append([]string{a, b, "username", username, "email", email, "password", ident.MakeTempToken(password)}, ext...)
-			q := EncodeQuery(ext...)
+			q := EncodeQuery(append([]string{a, b, "username", username, "email", email, "password", ident.MakeTempToken(password)}, ext...)...)
 
 			switch mth {
 			case "login", "follow", "block":
@@ -207,5 +205,48 @@ func User(g *gin.Context) {
 		redir("error", "ok/username-changed")
 	} else {
 		redir("error", "ok")
+	}
+}
+
+func UserFollowers(g *gin.Context) {
+	redir := func(a ...string) {
+		g.Redirect(302, "/user/followers"+EncodeQuery(a...))
+	}
+
+	user, _ := g.Get("user")
+	u, _ := user.(*mv.User)
+	to := g.PostForm("to")
+
+	if u == nil || to == "" || u.ID == to {
+		redir("error", "internal/error")
+		return
+	}
+
+	m.LockUserID(u.ID)
+	defer m.UnlockUserID(u.ID)
+
+	if g.PostForm("search") != "" {
+		if _, err := m.GetUser(to); err != nil {
+			to = mv.SearchUser(to)
+		}
+
+		if to == "" {
+			redir("error", "user/not-found")
+		} else {
+			redir("n", "u/"+u.ID+"/followed/"+to)
+		}
+		return
+	}
+
+	if ret := checkToken(g); ret != "" {
+		redir("error", ret, "n", "u/"+u.ID+"/followed/"+to)
+		return
+	}
+
+	err := m.BlockUser_unlock(u.ID, to, true)
+	if err != nil {
+		redir("error", err.Error())
+	} else {
+		redir("error", "ok", "n", "u/"+u.ID+"/followed/"+to)
 	}
 }

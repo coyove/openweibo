@@ -56,15 +56,15 @@ func User(g *gin.Context) {
 
 func UserList(g *gin.Context) {
 	p := struct {
-		UUID        string
-		List        []manager.FollowingState
-		EError      string
-		Next        string
-		IsBlacklist bool
-		User        *mv.User
+		UUID     string
+		List     []manager.FollowingState
+		EError   string
+		Next     string
+		ListType string
+		User     *mv.User
 	}{
-		EError:      g.Query("error"),
-		IsBlacklist: g.Param("type") == "blacklist",
+		EError:   g.Query("error"),
+		ListType: g.Param("type"),
 	}
 
 	p.UUID, _ = ident.MakeToken(g)
@@ -77,7 +77,14 @@ func UserList(g *gin.Context) {
 		return
 	}
 
-	p.List, p.Next = m.GetFollowingList(p.IsBlacklist, p.User, g.Query("n"), int(config.Cfg.PostsPerPage))
+	switch p.ListType {
+	case "blacklist":
+		p.List, p.Next = m.GetFollowingList(p.User.BlockingChain, p.User, g.Query("n"), int(config.Cfg.PostsPerPage))
+	case "followers":
+		p.List, p.Next = m.GetFollowingList(p.User.FollowerChain, p.User, g.Query("n"), int(config.Cfg.PostsPerPage))
+	default:
+		p.List, p.Next = m.GetFollowingList(p.User.FollowingChain, p.User, g.Query("n"), int(config.Cfg.PostsPerPage))
+	}
 
 	g.HTML(200, "user_list.html", p)
 }

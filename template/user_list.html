@@ -1,19 +1,25 @@
 {{template "header.html" .}}
 
 <div style="margin: 0.5em 0">
-    {{if not .IsBlacklist}}
+    {{if eq .ListType "followings"}}
     <a href="/user/followings" class=gbutton>我的关注</a>
+    <a href="/user/followers" class=gbutton style="color:#ccc">我的粉丝</a>
     <a href="/user/blacklist" class=gbutton style="color:#ccc">黑名单</a>
     <title>我的关注</title>
-    {{else}}
+    {{else if eq .ListType "blacklist"}}
     <a href="/user/followings" class=gbutton style="color:#ccc">我的关注</a>
+    <a href="/user/followers" class=gbutton style="color:#ccc">我的粉丝</a>
     <a href="/user/blacklist" class=gbutton>黑名单</a>
     <title>黑名单</title>
-
+    {{else}}
+    <a href="/user/followings" class=gbutton style="color:#ccc">我的关注</a>
+    <a href="/user/followers" class=gbutton>我的粉丝</a>
+    <a href="/user/blacklist" class=gbutton style="color:#ccc">黑名单</a>
+    <title>我的粉丝</title>
     {{end}}
 </div>
 
-{{if .IsBlacklist}}
+{{if eq .ListType "blacklist"}}
     <div style="margin: 0.5em">
         1. 拉黑用户无法评论/@你的状态<br>
         2. 拉黑用户如果之前已经关注了你，则会自动取消且无法再次关注，同时无法看到你的状态
@@ -29,19 +35,20 @@
     <tr style="border-bottom:dotted 1px #ccc">
         <td class=nowrap>
             <b>
-                {{if .IsBlacklist}}
+                {{if eq .ListType "blacklist"}}
                 黑名单
+                {{else if eq .ListType "followers"}}
+                我的粉丝 ({{.User.Followers}})
                 {{else}}
                 我的关注 ({{.User.Followings}})
                 {{end}}
             </b>
         </td>
-        <form method="POST" action="/user">
+        <form method="POST" action="/user{{if eq .ListType "followers"}}/followers{{end}}">
             <td>
                 <input type=hidden name=uuid value="{{.UUID}}">
                 <input type=hidden name=username value="{{.User.ID}}">
                 <input type=hidden name=method value="follow">
-                <input type=hidden name=follow value="1">
                 <input class=t name=to>
             </td>
             <td class=nowrap>
@@ -55,7 +62,7 @@
         <td class=nowrap>{{.Time.Format "2006-01-02"}}</td>
         <td><b><a href="/t/{{.ID}}">{{.ID}}</a></b></td>
         <td class=nowrap>
-            {{if $.IsBlacklist}}
+            {{if eq $.ListType "blacklist"}}
             <form method="POST" action="/user">
                 <input type=hidden name=uuid value="{{$.UUID}}">
                 <input type=hidden name=username value="{{$.User.ID}}">
@@ -68,6 +75,16 @@
                 <button class="gbutton" type=submit style="color:#f52">拉入黑名单</button>
                 {{end}}
             </form>
+            {{else if eq $.ListType "followers"}}
+                {{if not .RevFollowed}}
+                    <button class=gbutton disabled>已解除关注</button>
+                {{else}}
+                    <form method="POST" action="/user/followers">
+                        <input type=hidden name=uuid value="{{$.UUID}}">
+                        <input type=hidden name=to value="{{.ID}}">
+                        <button class="gbutton" type=submit style="color:#f52">拉入黑名单</button>
+                    </form>
+                {{end}}
             {{else}}
             <form method="POST" action="/user">
                 <input type=hidden name=uuid value="{{$.UUID}}">

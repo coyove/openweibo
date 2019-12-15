@@ -114,30 +114,42 @@ func (m *Manager) MentionUser(a *mv.Article, id string) error {
 	})
 }
 
+func (m *Manager) createUserChain(u *mv.User, cmd mv.Cmd) error {
+	a := &mv.Article{
+		ID:         ident.NewGeneralID().String(),
+		Cmd:        cmd,
+		CreateTime: time.Now(),
+	}
+	if err := m.db.Set(a.ID, a.Marshal()); err != nil {
+		return err
+	}
+	return m.UpdateUser_unlock(u.ID, func(uu *mv.User) error {
+		switch cmd {
+		case mv.CmdFollow:
+			u.FollowingChain, uu.FollowingChain = a.ID, a.ID
+		case mv.CmdBlock:
+			u.BlockingChain, uu.BlockingChain = a.ID, a.ID
+		case mv.CmdFollowed:
+			u.FollowerChain, uu.FollowerChain = a.ID, a.ID
+		default:
+			panic(cmd)
+		}
+		return nil
+	})
+}
+
 func (m *Manager) FollowUser_unlock(from, to string, following bool) (E error) {
 	u, err := m.GetUser(from)
 	if err != nil {
 		return err
 	}
 
-	root := u.FollowingChain
 	if u.FollowingChain == "" {
-		a := &mv.Article{
-			ID:         ident.NewGeneralID().String(),
-			Cmd:        mv.CmdFollow,
-			CreateTime: time.Now(),
-		}
-		if err := m.db.Set(a.ID, a.Marshal()); err != nil {
+		if err := m.createUserChain(u, mv.CmdFollow); err != nil {
 			return err
 		}
-		if err := m.UpdateUser_unlock(from, func(u *mv.User) error {
-			u.FollowingChain = a.ID
-			return nil
-		}); err != nil {
-			return err
-		}
-		root = a.ID
 	}
+	root := u.FollowingChain
 
 	followID := makeFollowID(from, to)
 
@@ -168,6 +180,7 @@ func (m *Manager) FollowUser_unlock(from, to string, following bool) (E error) {
 				}
 				return nil
 			})
+			m.fromFollowToNotifyTo(from, to, following)
 		}()
 	}()
 
@@ -196,30 +209,53 @@ func (m *Manager) FollowUser_unlock(from, to string, following bool) (E error) {
 	return nil
 }
 
+func (m *Manager) fromFollowToNotifyTo(from, to string, following bool) (E error) {
+	m.db.Lock(to)
+	defer m.db.Unlock(to)
+
+	u, err := m.GetUser(to)
+	if err != nil {
+		return err
+	}
+
+	if u.FollowerChain == "" {
+		if err := m.createUserChain(u, mv.CmdFollowed); err != nil {
+			return err
+		}
+	}
+
+	followID := makeFollowedID(to, from)
+	if a, _ := m.GetArticle(followID); a != nil {
+		a.Extras["followed"] = strconv.FormatBool(following)
+		return m.db.Set(a.ID, a.Marshal())
+	}
+
+	if err := m.insertArticle(u.FollowerChain, &mv.Article{
+		ID:  followID,
+		Cmd: mv.CmdFollowed,
+		Extras: map[string]string{
+			"to":       from,
+			"followed": strconv.FormatBool(following),
+		},
+		CreateTime: time.Now(),
+	}, false); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (m *Manager) BlockUser_unlock(from, to string, blocking bool) (E error) {
 	u, err := m.GetUser(from)
 	if err != nil {
 		return err
 	}
 
-	root := u.BlockingChain
 	if u.BlockingChain == "" {
-		a := &mv.Article{
-			ID:         ident.NewGeneralID().String(),
-			Cmd:        mv.CmdBlock,
-			CreateTime: time.Now(),
-		}
-		if err := m.db.Set(a.ID, a.Marshal()); err != nil {
+		if err := m.createUserChain(u, mv.CmdBlock); err != nil {
 			return err
 		}
-		if err := m.UpdateUser_unlock(from, func(u *mv.User) error {
-			u.BlockingChain = a.ID
-			return nil
-		}); err != nil {
-			return err
-		}
-		root = a.ID
 	}
+	root := u.BlockingChain
 
 	if blocking {
 		if err := m.FollowUser_unlock(to, from, false); err != nil {
@@ -254,20 +290,14 @@ func (m *Manager) BlockUser_unlock(from, to string, blocking bool) (E error) {
 }
 
 type FollowingState struct {
-	ID       string
-	Time     time.Time
-	Followed bool
-	Blocked  bool
+	ID          string
+	Time        time.Time
+	Followed    bool
+	RevFollowed bool
+	Blocked     bool
 }
 
-func (m *Manager) GetFollowingList(getBlockList bool, u *mv.User, cursor string, n int) ([]FollowingState, string) {
-	chain := func() string {
-		if getBlockList {
-			return u.BlockingChain
-		}
-		return u.FollowingChain
-	}()
-
+func (m *Manager) GetFollowingList(chain string, u *mv.User, cursor string, n int) ([]FollowingState, string) {
 	if chain == "" {
 		if cursor != "" {
 			if u, _ := m.GetUser(lastElemInCompID(cursor)); u != nil {
@@ -311,6 +341,8 @@ func (m *Manager) GetFollowingList(getBlockList bool, u *mv.User, cursor string,
 			res = append(res, FollowingState{ID: a.Extras["to"], Time: a.CreateTime, Followed: true})
 		} else if a.Extras["block"] == "true" {
 			res = append(res, FollowingState{ID: a.Extras["to"], Time: a.CreateTime, Blocked: true})
+		} else if a.Extras["followed"] == "true" {
+			res = append(res, FollowingState{ID: a.Extras["to"], Time: a.CreateTime, RevFollowed: true})
 		} else if cursor == startCursor {
 			res = append(res, FollowingState{ID: a.Extras["to"], Time: a.CreateTime})
 		}

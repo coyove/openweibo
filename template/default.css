@@ -351,12 +351,29 @@ a.unread {
     margin:0 0.33em; 
 }
 
-.reply-box svg {
-    width:16px;height:16px;vertical-align:text-bottom;margin-right:4px;
+.status {
+    text-align: center;
+    display: inline-block;
+    border-radius: 5px;
+    padding: 0.5em 0.2em;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    background: #fcfdfe;
 }
 
-.reply-box:hover svg * {
-    fill: #2a66d9;
+.status span {
+    line-height: 1.66em;
+    display: inline-block;
+    width: 64px;
+    border-right: dotted 1px #ccc;
+}
+
+.status span:last-child {
+    border: none;
+}
+
+.status b, .status a {
+    font-size: 16px;
+    text-decoration: none !important;
 }
 
 @media only screen and (max-width: 540px) {

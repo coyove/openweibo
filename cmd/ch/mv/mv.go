@@ -16,11 +16,12 @@ var ErrNotExisted = errors.New("article not existed")
 type Cmd string
 
 const (
-	CmdNone    Cmd = ""
-	CmdReply       = "inbox-reply"
-	CmdMention     = "inbox-mention"
-	CmdFollow      = "follow"
-	CmdBlock       = "block"
+	CmdNone     Cmd = ""
+	CmdReply        = "inbox-reply"
+	CmdMention      = "inbox-mention"
+	CmdFollow       = "follow"
+	CmdFollowed     = "followed"
+	CmdBlock        = "block"
 
 	DeletionMarker = "[[b19b8759-391b-460a-beb0-16f5f334c34f]]"
 )
@@ -76,6 +77,7 @@ type User struct {
 	Followings   int    `json:"f"`
 	//Blockings      int       `json:"b"`
 	FollowingChain    string    `json:"FC"`
+	FollowerChain     string    `json:"FrC"`
 	BlockingChain     string    `json:"BC"`
 	Unread            int       `json:"ur"`
 	Signup            time.Time `json:"st"`

@@ -133,6 +133,7 @@ func main() {
 	r.Handle("GET", "/p/:parent", view.Replies)
 	r.Handle("GET", "/avatar/:id", view.Avatar)
 	r.Handle("POST", "/user", action.User)
+	r.Handle("POST", "/user/followers", action.UserFollowers)
 	r.Handle("POST", "/new", action.New)
 	r.Handle("POST", "/reply", action.Reply)
 

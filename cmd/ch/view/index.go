@@ -114,7 +114,7 @@ func Timeline(g *gin.Context) {
 		cursors, payload = ident.SplitIDs(g.PostForm("cursors"))
 
 		if len(payload) > 0 {
-			list, next := m.GetFollowingList(false, pl.User, string(payload), 1e6)
+			list, next := m.GetFollowingList(pl.User.FollowingChain, pl.User, string(payload), 1e6)
 			for _, id := range list {
 				if id.Followed {
 					cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(id.ID))
@@ -125,7 +125,7 @@ func Timeline(g *gin.Context) {
 	} else {
 		pl.ShowNewPost = true
 
-		list, next := m.GetFollowingList(false, pl.User, "", 1e6)
+		list, next := m.GetFollowingList(pl.User.FollowingChain, pl.User, "", 1e6)
 		for _, id := range list {
 			if id.Followed {
 				cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(id.ID))
