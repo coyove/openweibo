@@ -100,8 +100,7 @@ func Timeline(g *gin.Context) {
 
 	if pl.IsUserTimeline || pl.IsInbox {
 		if g.Request.Method == "POST" {
-			cbuf, _ := base64.StdEncoding.DecodeString(g.PostForm("cursors"))
-			cursors = append(cursors, ident.UnmarshalID(cbuf))
+			cursors, _ = ident.SplitIDs(g.PostForm("cursors"))
 		} else {
 			if pl.IsUserTimeline {
 				cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(pl.User.ID))
@@ -165,6 +164,7 @@ func Replies(g *gin.Context) {
 
 	if u, ok := g.Get("user"); ok {
 		pl.ReplyView.CanDelete = u.(*mv.User).ID == pl.ParentArticle.Author || u.(*mv.User).IsMod()
+		pl.ReplyView.NSFW = pl.ParentArticle.NSFW
 		if m.IsBlocking(pl.ParentArticle.Author, u.(*mv.User).ID) {
 			Error(404, "NOT FOUND", g)
 			return

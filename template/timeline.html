@@ -5,15 +5,12 @@
     <title>@{{.User.ID}} 的时间线</title>
 
     <div style="margin-bottom:0.5em">
-        <b>@{{.User.ID}}</b>
-        {{if .User.Role}}/ {{.User.Role}}{{end}}
-        {{if .User.IsMod}}/ Mod{{end}}
-        {{if .User.IsAdmin}}/ 管理员{{end}}
-        {{if .User.Banned}}/ 封禁{{end}}
-    </div>
-
-    <div style="margin-bottom:0.5em">
         <div class="status">
+            <div style="margin:-0.5em 0 0.5em;line-height:2.25em;border-bottom:dotted 1px #ccc">
+                <b>@{{.User.ID}}</b>
+                {{if .User.IsMod}}/ <span class=mod>Mod</span>{{end}}
+                {{if .User.Banned}}/ 封禁{{end}}
+            </div>
             <span><b>{{.User.Followings}}</b><br><span style="color:black">关注</span></span>
             <span><b>{{.User.Followers}}</b><br><span style="color:black">粉丝</span></span>
             <span><b>{{.User.TotalPosts}}</b><br><span style="color:black">状态</span></span>
@@ -81,21 +78,18 @@
     {{end}}
 
     <title>我的时间线</title>
-        <div style="margin-bottom:0.5em">
-            <b>我的时间线</b>
-            {{if .User.Role}}/ {{.User.Role}}{{end}}
-            {{if .User.IsMod}}/ Mod{{end}}
-            {{if .User.IsAdmin}}/ 管理员{{end}}
-            {{if .User.Banned}}/ 封禁{{end}}
-            {{if .User.Unread}}
-            / <a class=unread href="/t/:in">{{.User.Unread}} 消息</a>
-            {{else}}
-            / <a href="/t/:in">{{.User.Unread}} 未读</a>
-            {{end}}
-        </div>
-
         <div>
             <div class="status">
+                <div style="margin:-0.5em 0 0.5em;line-height:2.25em;border-bottom:dotted 1px #ccc">
+                    <a href="/user"><i class="icon-wrench"></i></a>
+                    &emsp;<b>我的时间线</b>
+                    {{if .User.Banned}}/ 封禁{{end}}
+                    &emsp;{{if .User.Unread}}
+                    <a href="/t/:in"><b style="color:#f52" class="icon-mail-alt">{{.User.Unread}}</b></a>
+                    {{else}}
+                    <a href="/t/:in"><i class="icon-mail-alt"></i></a>
+                    {{end}}
+                </div>
                 <span>
                     <a href="/user/followings"><b>{{.User.Followings}}</b>
                         <br><span style="color:black">关注</span>

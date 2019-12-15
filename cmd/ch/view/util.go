@@ -32,6 +32,7 @@ type ReplyView struct {
 	Content   string
 	Error     string
 	CanDelete bool
+	NSFW      bool
 	ReplyTo   string
 }
 

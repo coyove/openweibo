@@ -118,6 +118,23 @@ func Reply(g *gin.Context) {
 		return
 	}
 
+	if g.PostForm("nsfw") != "" {
+		u := u.(*mv.User)
+		err := m.UpdateArticle(reply, func(a *mv.Article) error {
+			if u.ID != a.Author && !u.IsMod() {
+				return fmt.Errorf("user/can-not-delete")
+			}
+			a.NSFW = g.PostForm("nsfw-confirm") != ""
+			return nil
+		})
+		if err != nil {
+			redir("error", err.Error())
+		} else {
+			redir("", "")
+		}
+		return
+	}
+
 	if image != "" {
 		image, err = uploadImgur(image)
 		if err != nil {

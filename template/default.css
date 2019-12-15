@@ -355,12 +355,12 @@ a.unread {
     text-align: center;
     display: inline-block;
     border-radius: 5px;
-    padding: 0.5em 0.2em;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    padding: 0.5em;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     background: #fcfdfe;
 }
 
-.status span {
+.status > span {
     line-height: 1.66em;
     display: inline-block;
     width: 64px;
@@ -371,9 +371,14 @@ a.unread {
     border: none;
 }
 
-.status b, .status a {
+.status span b, .status span a {
     font-size: 16px;
     text-decoration: none !important;
+}
+
+span.mod {
+    color: #673ab7;
+    font-weight: bold;
 }
 
 @media only screen and (max-width: 540px) {

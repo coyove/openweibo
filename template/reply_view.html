@@ -1,13 +1,22 @@
 <form method="POST" action="{{if .ReplyTo}}/reply{{else}}/new{{end}}">
         {{if .CanDelete}}
     <table class="articles" style="width: 100%;margin:1em 0 2em;box-shadow: 0 1px 3px rgba(0, 0, 0,.2);text-align:left">
-        <tr style="border-top: solid 1px #ddd">
+        <tr>
             <td>
                 <input type=checkbox name=delete-confirm id=delete-confirm>
                 <label for=delete-confirm>确认删除该状态，该操作不可逆</label>
             </td>
             <td class=nowrap>
                 <button class="gbutton" type=submit name=delete value=1 style="color:#ff5722">删除</a>
+            </td>
+        </tr>
+        <tr style="border-top: solid 1px #ddd">
+            <td>
+                <input type=checkbox name=nsfw-confirm id=nsfw-confirm {{if .NSFW}}checked{{end}}>
+                <label for=nsfw-confirm>标记该状态为NSFW（仅图片）</label>
+            </td>
+            <td class=nowrap>
+                <button class="gbutton" type=submit name=nsfw value=1 style="color:#f90">标记</a>
             </td>
         </tr>
     </table>
