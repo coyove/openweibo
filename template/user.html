@@ -60,6 +60,13 @@
             </td>
         </tr>
         <tr>
+            <td class=nowrap></td>
+            <td colspan=2> 
+                <input name=autonsfw type=checkbox {{if .User.AutoNSFW}}checked{{end}} id=autonsfw>
+                <label for= autonsfw>自动展开NSFW图片</label>
+            </td>
+        </tr>
+        <tr>
             <td colspan=2>
                 {{if .EError}}{{template "error_i18n.html" .EError}}{{end}}
             </td>

@@ -49,7 +49,7 @@ func main() {
 			time.Sleep(time.Second)
 			aid, _ := m.Post("BENCH "+strconv.Itoa(i)+" post", "", &mv.User{
 				ID: names[rand.Intn(len(names))],
-			}, "127.0.0.0")
+			}, "127.0.0.0", true)
 			ids = append(ids, aid)
 		}
 
@@ -72,7 +72,7 @@ func main() {
 					}
 					aid, _ := m.PostReply(parent, "BENCH "+strconv.Itoa(i)+" reply", "", &mv.User{
 						ID: names[rand.Intn(len(names))],
-					}, "127.0.0.0")
+					}, "127.0.0.0", false)
 					ids = append(ids, aid)
 
 					if i%10 == 0 {

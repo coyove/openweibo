@@ -15,6 +15,7 @@ type ArticleView struct {
 	Cmd         string
 	Replies     int
 	Locked      bool
+	NSFW        bool
 	NoAvatar    bool
 	Content     string
 	ContentHTML template.HTML
@@ -41,6 +42,7 @@ func (a *ArticleView) from(a2 *mv.Article, opt uint64) *ArticleView {
 	a.ID = a2.ID
 	a.Replies = a2.Replies
 	a.Locked = a2.Locked
+	a.NSFW = a2.NSFW
 	a.Cmd = string(a2.Cmd)
 	a.Author = a2.Author
 	a.IP = a2.IP

@@ -197,11 +197,12 @@ func (m *Manager) Ref(a *mv.Article, id string) error {
 	return m.insertArticle(ident.NewID(ident.IDTagAuthor).SetTag(id).String(), a, false)
 }
 
-func (m *Manager) Post(content, media string, author *mv.User, ip string) (string, error) {
+func (m *Manager) Post(content, media string, author *mv.User, ip string, nsfw bool) (string, error) {
 	a := &mv.Article{
 		ID:         ident.NewGeneralID().String(),
 		Content:    content,
 		Media:      media,
+		NSFW:       nsfw,
 		Author:     author.ID,
 		IP:         ip,
 		CreateTime: time.Now(),
@@ -266,7 +267,7 @@ func (m *Manager) insertArticle(rootID string, a *mv.Article, asReply bool) erro
 	return nil
 }
 
-func (m *Manager) PostReply(parent string, content, media string, author *mv.User, ip string) (string, error) {
+func (m *Manager) PostReply(parent string, content, media string, author *mv.User, ip string, nsfw bool) (string, error) {
 	p, err := m.Get(parent)
 	if err != nil {
 		return "", err
@@ -284,6 +285,7 @@ func (m *Manager) PostReply(parent string, content, media string, author *mv.Use
 		ID:         ident.NewGeneralID().String(),
 		Content:    content,
 		Media:      media,
+		NSFW:       nsfw,
 		Author:     author.ID,
 		IP:         ip,
 		Parent:     p.ID,

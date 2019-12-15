@@ -33,6 +33,7 @@ func New(g *gin.Context) {
 		ip      = hashIP(g)
 		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		image   = g.PostForm("image64")
+		nsfw    = g.PostForm("nsfw") != ""
 		redir   = func(a, b string) {
 			q := EncodeQuery(a, b, "content", content)
 			g.Redirect(302, "/t"+q)
@@ -64,7 +65,7 @@ func New(g *gin.Context) {
 		return
 	}
 
-	aid, err := m.Post(content, image, u.(*mv.User), ip)
+	aid, err := m.Post(content, image, u.(*mv.User), ip, nsfw)
 	if err != nil {
 		log.Println(aid, err)
 		redir("error", "internal/error")
@@ -81,6 +82,7 @@ func Reply(g *gin.Context) {
 		ip      = hashIP(g)
 		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		image   = g.PostForm("image64")
+		nsfw    = g.PostForm("nsfw") != ""
 		redir   = func(a, b string) {
 			g.Redirect(302, "/p/"+reply+EncodeQuery(a, b, "content", content))
 		}
@@ -125,7 +127,7 @@ func Reply(g *gin.Context) {
 		image = "IMG:" + image
 	}
 
-	if _, err := m.PostReply(reply, content, image, u.(*mv.User), ip); err != nil {
+	if _, err := m.PostReply(reply, content, image, u.(*mv.User), ip, nsfw); err != nil {
 		log.Println(err)
 		redir("error", "error/can-not-reply")
 		return

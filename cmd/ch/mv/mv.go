@@ -30,6 +30,7 @@ type Article struct {
 	ID          string            `json:"id"`
 	Replies     int               `json:"rs,omitempty"`
 	Locked      bool              `json:"lock,omitempty"`
+	NSFW        bool              `json:"nsfw,omitempty"`
 	Content     string            `json:"content"`
 	Media       string            `json:"M,omitempty"`
 	Author      string            `json:"author"`
@@ -87,6 +88,7 @@ type User struct {
 	Banned            bool      `json:"ban"`
 	NoReplyInTimeline bool      `json:"nrit,omitempty"`
 	NoPostInMaster    bool      `json:"npim,omitempty"`
+	AutoNSFW          bool      `json:"autonsfw,omitempty"`
 }
 
 func (u User) Marshal() []byte {

@@ -34,6 +34,8 @@
                 <a class="gbutton" id=post-image-button onclick="sel('#post-image').click()">
                     <span class=icon-picture></span><span class="pic">图片</span>
                 </a>
+                <input type=checkbox name=nsfw id=nsfw>
+                <label for=nsfw>NSFW</label>
                 <script>
                     function onImageChanged(el) {
                         sel('#post-image-button .pic').innerText = (el.value.split(/(\\|\/)/g).pop() || "图片").substring(0, 32);

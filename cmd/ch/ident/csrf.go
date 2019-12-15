@@ -7,11 +7,11 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
-	"net"
 	"time"
 
 	"github.com/coyove/common/lru"
 	"github.com/coyove/iis/cmd/ch/config"
+	"github.com/coyove/iis/cmd/ch/mv"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,7 +21,13 @@ func MakeToken(g *gin.Context) (string, string) {
 	var p [16]byte
 	exp := time.Now().Add(time.Minute * time.Duration(config.Cfg.TokenTTL)).Unix()
 	binary.BigEndian.PutUint32(p[:], uint32(exp))
-	copy(p[4:10], g.MustGet("ip").(net.IP))
+
+	u, _ := g.Get("user")
+	if u == nil {
+		copy(p[4:10], g.Request.UserAgent())
+	} else {
+		copy(p[4:10], u.(*mv.User).ID)
+	}
 	rand.Read(p[10:])
 
 	var x [4]byte
@@ -47,8 +53,16 @@ func ParseToken(g *gin.Context, tok string) (r []byte, ok bool) {
 		return
 	}
 
-	ok = bytes.HasPrefix(buf[4:10], g.MustGet("ip").(net.IP))
-	//log.Println(buf[4:10], []byte(g.MustGet("ip").(net.IP)))
+	tmp := [6]byte{}
+
+	u, _ := g.Get("user")
+	if u != nil {
+		copy(tmp[:], u.(*mv.User).ID)
+	} else {
+		copy(tmp[:], g.Request.UserAgent())
+	}
+
+	ok = bytes.HasPrefix(buf[4:10], tmp[:])
 	if ok {
 		if _, existed := Dedup.Get(tok); existed {
 			return nil, false

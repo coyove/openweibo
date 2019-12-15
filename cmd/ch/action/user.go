@@ -130,6 +130,7 @@ func User(g *gin.Context) {
 		u.Avatar = mv.SoftTrunc(g.PostForm("avatar"), 256)
 		u.NoReplyInTimeline = g.PostForm("nrit") != ""
 		u.NoPostInMaster = g.PostForm("npim") != ""
+		u.AutoNSFW = g.PostForm("autonsfw") != ""
 	case "ban-user":
 		user, _ := g.Get("user")
 		if user == nil {

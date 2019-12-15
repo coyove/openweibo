@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -103,4 +104,34 @@ func Image(g *gin.Context) {
 		f.Close()
 		http.ServeFile(g.Writer, g.Request, cachepath)
 	}
+}
+
+func init() {
+	go func() {
+		for {
+			dirs, _ := ioutil.ReadDir("tmp/images")
+			if len(dirs) == 0 {
+				time.Sleep(time.Hour)
+				continue
+			}
+
+			for _, dir := range dirs {
+				if !dir.IsDir() {
+					continue
+				}
+
+				path := filepath.Join("tmp/images", dir.Name())
+				files, _ := ioutil.ReadDir(path)
+
+				for _, f := range files {
+					if time.Since(f.ModTime()).Seconds() > 86400*3 {
+						path := filepath.Join(path, f.Name())
+						os.Remove(path)
+					}
+				}
+
+				time.Sleep(time.Minute)
+			}
+		}
+	}()
 }

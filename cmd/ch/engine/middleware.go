@@ -65,22 +65,12 @@ func mwRenderPerf(g *gin.Context) {
 	if strings.HasPrefix(x, "text/html") {
 		uuid, _ := ident.MakeToken(g)
 		engine.HTMLRender.Instance("footer.html", struct {
-			UUID          string
-			LoginError    string
-			LoginUsername string
-			LoginPassword string
-			Render        int64
-			Tags          []string
-			CurTag        string
-			User          *mv.User
+			UUID   string
+			Render int64
+			User   *mv.User
 		}{
 			uuid,
-			g.Query("login-error"),
-			g.Query("username"),
-			ident.ParseTempToken(g.Query("password")),
 			msec,
-			config.Cfg.Tags,
-			g.Param("tag"),
 			u,
 		}).Render(g.Writer)
 	}

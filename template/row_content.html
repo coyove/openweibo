@@ -30,11 +30,21 @@
     </div>
 
     {{if eq .MediaType "IMG"}}
+    <div style="margin-top:0.5em">
+    {{if .NSFW}}
+    <button
+        style="color:#f90"
+        onclick="this.style.display='none';this.nextElementSibling.style.display=''"
+        class="gbutton nsfw-clicker">展开NSFW内容</button>
+    <a href="{{.Media}}" target=_blank style="display:none">
+    {{else}}
     <a href="{{.Media}}" target=_blank>
+    {{end}}
         <img
             src="{{.Media}}"
-            style="border-radius:5px;display:block;max-width:300px;max-height:300px;margin-top:0.5em">
+            style="border-radius:5px;display:block;max-width:300px;max-height:300px">
     </a>
+    </div>
     {{end}}
 
     {{if .Content}}
@@ -43,13 +53,7 @@
 
     <div style="padding: 0.5em 0;line-height:1.5em">
         <a class="reply-box" href="/p/{{.ID}}" style="text-decoration:none!important">
-            <span class="icon-reply-outline">
-                <path
-                    fill="transparent"
-                    stroke="#2a66d9"
-                    stroke-width="32"
-                    d="M149.333,117.333V32L0,181.333l149.333,149.333V243.2C256,243.2,330.667,277.333,384,352C362.667,245.333,298.667,138.667,149.333,117.333z"/>
-            </span>
+            <span class="icon-reply-outline"></span>
             {{.Replies}}
         </a>
     </div>
