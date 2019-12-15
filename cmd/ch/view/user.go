@@ -1,7 +1,11 @@
 package view
 
 import (
+	"image"
+	"image/draw"
+	"image/png"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/coyove/iis/cmd/ch/config"
@@ -11,6 +15,17 @@ import (
 	"github.com/coyove/iis/cmd/ch/mv"
 	"github.com/gin-gonic/gin"
 )
+
+var avatarPNG image.Image
+
+func init() {
+	f, err := os.Open("template/emoji/sprite-32.png")
+	if err != nil {
+		panic(err)
+	}
+
+	avatarPNG, _ = png.Decode(f)
+}
 
 func User(g *gin.Context) {
 	p := struct {
@@ -91,8 +106,21 @@ func UserList(g *gin.Context) {
 
 func Avatar(g *gin.Context) {
 	u, _ := m.GetUser(g.Param("id"))
-	if u == nil || !strings.HasPrefix(u.Avatar, "http") {
+	if u == nil {
 		http.ServeFile(g.Writer, g.Request, "template/user.png")
+	} else if !strings.HasPrefix(u.Avatar, "http") {
+		h := 0
+		for i := 0; i < len(u.ID); i++ {
+			h = h*31 + int(u.ID[i])
+		}
+		// http.ServeFile(g.Writer, g.Request, "template/emoji/emoji"+strconv.Itoa(h%1832)+".png")
+		h %= 1832
+		i, j := h/43, h%43
+		c := image.NewRGBA(image.Rect(0, 0, 32, 32))
+		draw.Draw(c, c.Bounds(), avatarPNG, image.Pt(j*32, i*32), draw.Src)
+
+		g.Writer.Header().Add("Content-Type", "image/png")
+		png.Encode(g.Writer, c)
 	} else {
 		g.Redirect(302, u.Avatar)
 	}

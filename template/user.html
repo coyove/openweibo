@@ -99,11 +99,11 @@
         <input type=hidden name=method value="login">
         <tr>
             <td class=nowrap>用户名:</td>
-            <td><input autofocus class=t name=username value="{{.RUsername}}"></td>
+            <td><input autofocus class=t name=username value="{{.RUsername}}" required></td>
         </tr>
         <tr>
             <td class=nowrap>密码:</td>
-            <td><input type=password class=t name=password value="{{.RPassword}}"></td>
+            <td><input type=password class=t name=password value="{{.RPassword}}" required></td>
         </tr>
         {{if .LoginError}}
         <tr>
@@ -126,10 +126,34 @@
     <input type=hidden name=method value="signup">
     <tr>
         <td>用户名:</td>
-        <td><input class=t name=username value="{{.RUsername}}"></td>
+        <td><input class=t maxlength=15 name=username value="{{.RUsername}}" onkeyup="checkID(this.value)"></td>
+    <script>
+        function checkID(id) {
+            var x = [], j = 0, filtered = false;
+            for (var i = 0 ; i < id.length; i++) {
+                var c = id.charCodeAt(i);
+                j++;
+                if (j > 15) break
+                if (c == 46 || c == 45 || c == 95 || c == 33 || c == 126) x.push(c)
+                else if (c >= 48 && c <= 57) x.push(c)
+                else if (c >= 65 && c <= 90) x.push(c)
+                else if (c >= 97 && c <= 122) x.push(c)
+                else if (c >= 0x2000 && c <= 0x9fff) {
+                    j++;
+                    if (j > 15) break
+                    x.push(c);
+                } else {
+                    filtered = true;
+                    x.push(95)
+                }
+            }
+            sel("#id-output").innerHTML = "<b style='font-family:monospace'>" + String.fromCharCode.apply(null, x) +
+                (filtered ? "&emsp;<span style='color:#f52'>(注意: 非法字符已过滤)</span></b>" : "</b>");
+        }
+    </script>
     </tr>
     <tr>
-        <td></td><td style="font-size:90%">3~15英文，2~7中文</td>
+        <td></td><td id="id-output">3~15英文，2~7中文</td>
     </tr>
     <tr>
         <td class=nowrap>密码: </td>

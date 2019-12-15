@@ -34,14 +34,14 @@
     {{if .NSFW}}
     <button
         style="color:#f90"
-        onclick="this.style.display='none';this.nextElementSibling.style.display=''"
+        onclick="this.style.display='none';this.nextElementSibling.querySelector('img').src='{{.Media}}'"
         class="gbutton nsfw-clicker">展开NSFW内容</button>
-    <a href="{{.Media}}" target=_blank style="display:none">
+    <a href="{{.Media}}" target=_blank>
+        <img
     {{else}}
     <a href="{{.Media}}" target=_blank>
+        <img src="{{.Media}}"
     {{end}}
-        <img
-            src="{{.Media}}"
             style="border-radius:5px;display:block;max-width:300px;max-height:300px">
     </a>
     </div>

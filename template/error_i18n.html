@@ -58,6 +58,8 @@ ID不存在
 密码太短或不符
 {{else if eq . "id/already-existed"}}
 ID已存在
+{{else if eq . "id/too-short"}}
+无效ID
 {{else if eq . "ok/username-changed"}}
 注册成功，但是请注意你的登入用户名内非法字符已经被过滤为下划线“_"
 {{else if eq . "ok"}}
