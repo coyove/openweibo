@@ -20,7 +20,7 @@ import (
 )
 
 var m *manager.Manager
-var engine *gin.Engine
+var Engine *gin.Engine
 
 func SetManager(mgr *manager.Manager) {
 	m = mgr
@@ -64,7 +64,7 @@ func mwRenderPerf(g *gin.Context) {
 	x := g.Writer.Header().Get("Content-Type")
 	if strings.HasPrefix(x, "text/html") {
 		uuid, _ := ident.MakeToken(g)
-		engine.HTMLRender.Instance("footer.html", struct {
+		Engine.HTMLRender.Instance("footer.html", struct {
 			UUID   string
 			Render int64
 			User   *mv.User
@@ -185,6 +185,6 @@ func New(prod bool) *gin.Engine {
 
 	loadTrafficCounter()
 
-	engine = r
+	Engine = r
 	return r
 }

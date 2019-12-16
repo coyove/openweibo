@@ -107,7 +107,7 @@
         {{end}}
 </div>
 
-<div class="rows">
+<div class="rows" id=timeline>
     {{if len .Articles}}
     {{range .Articles}}
         {{template "row_content.html" .}}
@@ -119,21 +119,51 @@
 
 
 <div class=paging>
-    <form method="POST">
-    <a class=gbutton style="color:#aaa"
-    {{if .IsUserTimeline}}
-        href="/t/{{.User.ID}}">首页</a>
-    {{else if .IsInbox}}
-        href="/t/:in">首页</a>
-    {{else if .IsGlobalTimeline}}
-        href="/master">首页</a>
-    {{else}}
-        href="/t">首页</a>
-    {{end}}
-
     {{if .Next}}
-        <input type=hidden name="cursors" value="{{.Next}}">
-        <button type=submit class=gbutton>更多...</button>
+    <button value="{{.Next}}" class=gbutton onclick="loadMore(this)">更多...</button>
+    <script>
+        function loadMore(el) {
+            el.setAttribute("disabled", "disabled")
+            var tl = sel("#timeline"), waiting = 0;
+            var timer = setInterval(function () {
+                waiting++;
+                el.innerText = "|/-\\|/-\\".charAt(waiting % 8);
+            }, 100);
+
+            $post(location.href, 'api=1&cursors=' + encodeURIComponent(el.getAttribute("value")), function(h) {
+                clearInterval(timer);
+                try {
+                    var pl = JSON.parse(h);
+                    if (pl.EOT) {
+                        el.innerText = "没有更多内容了";
+                        el.style.color = "#aaa";
+                        el.onclick = function() { location.reload() }
+                    } else {
+                        el.innerText = "更多...";
+                    }
+                    if (pl.Articles) {
+                        el.setAttribute("value", pl.Next);
+                        for (var i = 0; i < pl.Articles.length; i++) {
+                            var div = document.createElement("div");
+                            div.innerHTML = pl.Articles[i];
+                            tl.appendChild(div.firstChild);
+                        }
+                    }
+                } catch (e) {}
+                el.removeAttribute("disabled")
+            })
+
+         //   console.log(document.documentElement.scrollTop);
+            for (var i = 0 ; i < tl.childNodes.length - 100; i++) {
+                var c = tl.childNodes[i];
+                if (c.className && c.className.match(/row/) && !c.ERASED) {
+                    c.style.height = c.offsetHeight + "px";
+                    c.innerHTML = "";
+                    c.ERASED = true;
+                }
+            }
+        }
+    </script>
     {{end}}
 
     {{if not .Next}}
@@ -148,5 +178,4 @@
             href="/t">没有更多状态了</a>
         {{end}}
     {{end}}
-    </form>
 </div>

@@ -4,6 +4,13 @@
     ID / <a href='/user'>{{.User.ID}}</a>
     {{if .User.Unread}}
         <a class=unread href="/t/:in">{{.User.Unread}} 消息</a>
+    <script>
+        window.OLD_TITLE = document.title;
+        window.BLINK = 0;
+        setInterval(function() {
+            document.title = ((window.BLINK++) % 2 === 0 ? "[新消息] " : "[　　　] ") + window.OLD_TITLE
+        }, 1000)
+    </script>
     {{end}}
     {{else}}
     ID / <a href="/user">登入</a>

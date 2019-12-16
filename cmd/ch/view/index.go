@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/coyove/iis/cmd/ch/config"
+	"github.com/coyove/iis/cmd/ch/engine"
 	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/manager"
 	"github.com/coyove/iis/cmd/ch/mv"
@@ -56,6 +57,10 @@ func Index(g *gin.Context) {
 	for _, c := range next {
 		pl.Next = base64.StdEncoding.EncodeToString(c.Marshal(nil))
 		break
+	}
+	if g.PostForm("api") != "" {
+		apiWrapper(g, pl.Next, pl.Articles)
+		return
 	}
 
 	pl.IsGlobalTimeline = true
@@ -143,7 +148,32 @@ func Timeline(g *gin.Context) {
 	}
 
 	pl.Next = ident.CombineIDs([]byte(pendingFCursor), next...)
+
+	if g.PostForm("api") != "" {
+		apiWrapper(g, pl.Next, pl.Articles)
+		return
+	}
+
 	g.HTML(200, "timeline.html", pl)
+}
+
+func apiWrapper(g *gin.Context, next string, articles []ArticleView) {
+	p := struct {
+		EOT      bool
+		Articles []string
+		Next     string
+	}{}
+
+	p.Next = next
+	p.EOT = p.Next == ""
+
+	tmp := fakeResponseCatcher{}
+	for _, a := range articles {
+		tmp.Reset()
+		engine.Engine.HTMLRender.Instance("row_content.html", a).Render(&tmp)
+		p.Articles = append(p.Articles, tmp.String())
+	}
+	g.JSON(200, p)
 }
 
 func Replies(g *gin.Context) {

@@ -1,6 +1,9 @@
 package view
 
 import (
+	"bytes"
+	"net/http"
+
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/mv"
@@ -41,3 +44,15 @@ func makeReplyView(g *gin.Context, reply string) ReplyView {
 	r.ReplyTo = reply
 	return r
 }
+
+var staticHeader = http.Header{
+	"Content-Type": []string{"something"},
+}
+
+type fakeResponseCatcher struct {
+	bytes.Buffer
+}
+
+func (w *fakeResponseCatcher) WriteHeader(code int) {}
+
+func (w *fakeResponseCatcher) Header() http.Header { return staticHeader }
