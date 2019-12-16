@@ -13,13 +13,18 @@
             var el = document.querySelectorAll(q);
             return el.length === 1 ? el[0] : el;
         }
-        function $post(url, data, cb) {
+        function $post(url, data, cb, errorcb) {
             var xmlHttp = new XMLHttpRequest();
             xmlHttp.onreadystatechange = function() {
-                if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
-                    cb(xmlHttp.responseText);
+                if (xmlHttp.readyState == 4) {
+                    if (xmlHttp.status == 200) {
+                        cb(xmlHttp.responseText);
+                    } else {
+                        errorcb ? errorcb(xmlHttp) : 0;
+                    }
                 }
             }
+            xmlHttp.onerror = function() { errorcb(xmlHttp) }
             xmlHttp.open("POST", url, true);
             xmlHttp.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
             xmlHttp.send(data);

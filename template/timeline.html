@@ -151,6 +151,10 @@
                     }
                 } catch (e) {}
                 el.removeAttribute("disabled")
+            }, function() {
+                el.removeAttribute("disabled")
+                el.innerText = "重试...";
+                clearInterval(timer);
             })
 
          //   console.log(document.documentElement.scrollTop);
