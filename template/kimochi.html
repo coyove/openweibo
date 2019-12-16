@@ -1,25 +1,123 @@
-<a class="kimochi icon-emo-happy"></a>
-<a class="kimochi icon-emo-wink"></a>
-<a class="kimochi icon-emo-unhappy"></a>
-<a class="kimochi icon-emo-sleep"></a>
-<a class="kimochi icon-emo-thumbsup"></a>
-<a class="kimochi icon-emo-devil"></a>
-<a class="kimochi icon-emo-surprised"></a>
-<a class="kimochi icon-emo-tongue"></a>
-<a class="kimochi icon-emo-coffee"></a>
-<a class="kimochi icon-emo-sunglasses"></a>
-<a class="kimochi icon-emo-displeased"></a>
-<a class="kimochi icon-emo-beer"></a>
-<a class="kimochi icon-emo-grin"></a>
-<a class="kimochi icon-emo-angry"></a>
-<a class="kimochi icon-emo-saint"></a>
-<a class="kimochi icon-emo-wink2"></a>
-<a class="kimochi icon-emo-cry"></a>
-<a class="kimochi icon-emo-shoot"></a>
-<a class="kimochi icon-emo-squint"></a>
-<a class="kimochi icon-emo-laugh"></a>
-<a class="kimochi icon-firefox"></a>
-<a class="kimochi icon-chrome"></a>
-<a class="kimochi icon-opera"></a>
-<a class="kimochi icon-ie"></a>
-<a class="kimochi icon-crown"></a>
+
+<style>
+kimochi {
+	position: relative;
+	display: inline-block;
+    width: 64px;
+    cursor: pointer;
+    vertical-align: middle;
+    margin: 0.5em;
+}
+
+kimochi li:hover, kimochi li:hover a {
+    text-decoration: none !important;
+    border-radius: 3px;
+	background-color: #f1f2f3;
+}
+
+kimochi > ul {
+	display: none;
+    background: white;
+	position: absolute;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, .3);
+    max-height: 200px;
+    overflow-y: scroll;
+}
+
+kimochi:hover > ul {
+    width: 200px;
+    margin-left: -100px;
+    left: 50%;
+	display: flex;
+    flex-wrap: wrap;
+    z-index: 100;
+}
+
+kimochi ul li {
+    display: list-item;
+    list-style: none;
+    position: relative;
+    background: white;
+    padding: 0.33em 0.66em;
+    overflow: hidden;
+    flex: 0 33%;
+}
+
+kimochi a {
+    display: block;
+    cursor: pointer;
+    line-height: 1.5em;
+    width: 100%;
+}
+
+kimochi img {
+    width: 24px; height: 24px;
+    display: block;
+    margin: 0.33em auto;
+}
+</style>
+
+<kimochi>
+<img
+    id="current-kimochi"
+    src="/s/emoji/emoji{{.Kimochi}}.png"
+    style="{{if not .Kimochi}}border:dashed 1px #233;border-radius:50%{{end}}">
+<ul>
+    <li>
+        <a onclick="updateKimochi(this)"><img src="/s/emoji/emoji0.png" style="border:dashed 1px #233;border-radius:50%"></a>
+    </li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji1.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji2.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji3.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji4.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji5.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji6.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji7.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji8.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji9.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji10.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji11.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji12.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji13.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji14.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji15.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji16.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji17.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji18.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji19.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji20.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji21.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji22.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji23.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji24.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji25.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji26.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji27.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji28.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji29.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji30.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji31.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji32.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji33.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji34.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji35.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji36.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji37.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji38.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji39.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji40.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji41.png"></a></li>
+    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji42.png"></a></li>
+</ul>
+</kimochi>
+
+    <script>
+function updateKimochi(el) {
+    var m = sel("#current-kimochi");
+    var idx = (el.querySelector("img").getAttribute("src"));
+    $post("/api/user/kimochi", "k=" + idx.match(/(\d+)\.png/)[1],
+        function(resp) {
+            if (resp === "ok") location.reload();
+        });
+}
+    </script>

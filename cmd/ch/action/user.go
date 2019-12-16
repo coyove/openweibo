@@ -5,6 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -250,4 +251,27 @@ func UserFollowers(g *gin.Context) {
 	} else {
 		redir("error", "ok", "n", "u/"+u.ID+"/followed/"+to)
 	}
+}
+
+func APIUserKimochi(g *gin.Context) {
+	user, _ := g.Get("user")
+	u, _ := user.(*mv.User)
+
+	if u == nil {
+		g.String(200, "internal/error")
+		return
+	}
+
+	if err := m.UpdateUser(u.ID, func(u *mv.User) error {
+		k, _ := strconv.Atoi(g.PostForm("k"))
+		if k < 0 || k > 42 {
+			k = 25
+		}
+		u.Kimochi = byte(k)
+		return nil
+	}); err != nil {
+		g.String(200, "internal/error")
+		return
+	}
+	g.String(200, "ok")
 }

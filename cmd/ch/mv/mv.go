@@ -22,6 +22,7 @@ const (
 	CmdFollow       = "follow"
 	CmdFollowed     = "followed"
 	CmdBlock        = "block"
+	CmdVote         = "vote"
 
 	DeletionMarker = "[[b19b8759-391b-460a-beb0-16f5f334c34f]]"
 )
@@ -47,6 +48,7 @@ type Article struct {
 
 func (a *Article) ContentHTML() template.HTML {
 	if a.Content == DeletionMarker {
+		a.Extras = nil
 		return "<span class=deleted></span>"
 	}
 	return template.HTML(sanText(a.Content))
@@ -67,16 +69,15 @@ func UnmarshalArticle(b []byte) (*Article, error) {
 }
 
 type User struct {
-	ID           string
-	Session      string
-	Role         string
-	PasswordHash []byte
-	Email        string `json:"e"`
-	Avatar       string `json:"a"`
-	TotalPosts   int    `json:"tp"`
-	Followers    int    `json:"F"`
-	Followings   int    `json:"f"`
-	//Blockings      int       `json:"b"`
+	ID                string
+	Session           string
+	Role              string
+	PasswordHash      []byte
+	Email             string    `json:"e"`
+	Avatar            string    `json:"a"`
+	TotalPosts        int       `json:"tp"`
+	Followers         int       `json:"F"`
+	Followings        int       `json:"f"`
 	FollowingChain    string    `json:"FC"`
 	FollowerChain     string    `json:"FrC"`
 	BlockingChain     string    `json:"BC"`
@@ -89,6 +90,7 @@ type User struct {
 	NoReplyInTimeline bool      `json:"nrit,omitempty"`
 	NoPostInMaster    bool      `json:"npim,omitempty"`
 	AutoNSFW          bool      `json:"autonsfw,omitempty"`
+	Kimochi           byte      `json:"kmc,omitempty"`
 }
 
 func (u User) Marshal() []byte {

@@ -2,8 +2,6 @@ package view
 
 import (
 	"image/jpeg"
-	"net/http"
-	"strings"
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/engine"
@@ -92,15 +90,8 @@ func UserList(g *gin.Context) {
 }
 
 func Avatar(g *gin.Context) {
-	u, _ := m.GetUser(strings.TrimRight(g.Param("id"), ".jpg"))
-	if u == nil {
-		http.ServeFile(g.Writer, g.Request, "template/user.png")
-	} else if !strings.HasPrefix(u.Avatar, "http") {
-		img, _ := govatar.GenerateForUsername(govatar.MALE, u.ID)
-		g.Writer.Header().Add("Content-Type", "image/jpeg")
-		g.Writer.Header().Add("Cache-Control", "public")
-		jpeg.Encode(g.Writer, img, &jpeg.Options{Quality: 75})
-	} else {
-		g.Redirect(302, u.Avatar)
-	}
+	img, _ := govatar.GenerateForUsername(govatar.MALE, g.Param("id"))
+	g.Writer.Header().Add("Content-Type", "image/jpeg")
+	g.Writer.Header().Add("Cache-Control", "public")
+	jpeg.Encode(g.Writer, img, &jpeg.Options{Quality: 75})
 }

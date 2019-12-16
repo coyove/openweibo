@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/coyove/iis/cmd/ch/config"
@@ -58,7 +59,7 @@ func Image(g *gin.Context) {
 		imgClient.Timeout = 0
 	}
 
-	img, _ := base64.StdEncoding.DecodeString(g.Param("img"))
+	img, _ := base64.StdEncoding.DecodeString(strings.TrimRight(g.Param("img"), ".jpg"))
 
 	hash := sha1.Sum(img)
 	cachepath := fmt.Sprintf("tmp/images/%x/%x", hash[0], hash[1:])

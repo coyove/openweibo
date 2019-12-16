@@ -85,6 +85,10 @@ hr {
     line-height: 1.5em;
 }
 
+.articles tr.sep {
+    border-bottom: solid 1px #ddd;
+}
+
 .articles th.nowrap, .articles td.nowrap {
     white-space: nowrap;
     width: 1px;
@@ -316,6 +320,7 @@ div.row-header {
     margin: -0.5em -0.5em 0 -0.5em;
     background: rgba(0,0,0,0.05);
     padding: 0.5em;
+    position: relative;
 }
 
 div.row-header > * {
@@ -381,10 +386,8 @@ span.mod {
     font-weight: bold;
 }
 
-a.kimochi {
-    color: white;
-    text-shadow: 0 0 4px black, 0 0 4px black, 0 0 3px black;
-    text-decoration: none;
+img.avatar {
+    border-radius:3px;display:inline-block;vertical-align:middle;margin-right:0.75em;max-width:36px;max-height:36px;overflow:hidden
 }
 
 @media only screen and (max-width: 540px) {

@@ -51,7 +51,7 @@ func Index(g *gin.Context) {
 	}
 
 	a, next := m.WalkMulti(int(config.Cfg.PostsPerPage), cursor)
-	fromMultiple(&pl.Articles, a, 0)
+	fromMultiple(&pl.Articles, a, 0, getUser(g))
 
 	for _, c := range next {
 		pl.Next = base64.StdEncoding.EncodeToString(c.Marshal(nil))
@@ -65,9 +65,7 @@ func Index(g *gin.Context) {
 func Timeline(g *gin.Context) {
 	var pl ArticlesTimelineView
 	pl.ReplyView = makeReplyView(g, "")
-
-	u2, _ := g.Get("user")
-	pl.You, _ = u2.(*mv.User)
+	pl.You = getUser(g)
 
 	switch uid := g.Param("user"); {
 	case uid != "" && uid != ":in":
@@ -135,7 +133,7 @@ func Timeline(g *gin.Context) {
 	}
 
 	a, next := m.WalkMulti(int(config.Cfg.PostsPerPage), cursors...)
-	fromMultiple(&pl.Articles, a, 0)
+	fromMultiple(&pl.Articles, a, 0, pl.You)
 
 	if pl.IsInbox {
 		go m.UpdateUser(pl.User.ID, func(u *mv.User) error {
@@ -159,13 +157,13 @@ func Replies(g *gin.Context) {
 		return
 	}
 
-	pl.ParentArticle.from(parent, _RichTime)
+	pl.ParentArticle.from(parent, _RichTime, getUser(g))
 	pl.ReplyView = makeReplyView(g, pid)
 
 	if u, ok := g.Get("user"); ok {
-		pl.ReplyView.CanDelete = u.(*mv.User).ID == pl.ParentArticle.Author || u.(*mv.User).IsMod()
+		pl.ReplyView.CanDelete = u.(*mv.User).ID == pl.ParentArticle.Author.ID || u.(*mv.User).IsMod()
 		pl.ReplyView.NSFW = pl.ParentArticle.NSFW
-		if m.IsBlocking(pl.ParentArticle.Author, u.(*mv.User).ID) {
+		if m.IsBlocking(pl.ParentArticle.Author.ID, u.(*mv.User).ID) {
 			Error(404, "NOT FOUND", g)
 			return
 		}
@@ -177,7 +175,7 @@ func Replies(g *gin.Context) {
 	}
 
 	a, next := m.WalkReply(int(config.Cfg.PostsPerPage), cursor)
-	fromMultiple(&pl.Articles, a, _RichTime|_NoMoreParent|_ShowAvatar)
+	fromMultiple(&pl.Articles, a, _RichTime|_NoMoreParent|_ShowAvatar, getUser(g))
 	pl.Next = next
 	g.HTML(200, "post.html", pl)
 }

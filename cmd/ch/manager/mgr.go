@@ -197,16 +197,11 @@ func (m *Manager) Ref(a *mv.Article, id string) error {
 	return m.insertArticle(ident.NewID(ident.IDTagAuthor).SetTag(id).String(), a, false)
 }
 
-func (m *Manager) Post(content, media string, author *mv.User, ip string, nsfw bool) (string, error) {
-	a := &mv.Article{
-		ID:         ident.NewGeneralID().String(),
-		Content:    content,
-		Media:      media,
-		NSFW:       nsfw,
-		Author:     author.ID,
-		IP:         ip,
-		CreateTime: time.Now(),
-	}
+// func (m *Manager) Post(content, media string, author *mv.User, ip string, nsfw bool) (string, error) {
+func (m *Manager) Post(a *mv.Article, author *mv.User) (string, error) {
+	a.ID = ident.NewGeneralID().String()
+	a.CreateTime = time.Now()
+	a.Author = author.ID
 
 	if err := m.insertArticle(ident.NewID(ident.IDTagAuthor).SetTag(a.Author).String(), a, false); err != nil {
 		// If failed, the article will be visible in timeline and tagline

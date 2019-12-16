@@ -1,10 +1,9 @@
 package view
 
 import (
-	"math"
-
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
+	"github.com/coyove/iis/cmd/ch/mv"
 	"github.com/gin-gonic/gin"
 )
 
@@ -19,12 +18,10 @@ func NotFound(g *gin.Context) {
 	Error(404, "NOT FOUND", g)
 }
 
-func intmin(a, b int) int {
-	return int(math.Min(float64(a), float64(b)))
-}
-
-func intdivceil(a, b int) int {
-	return int(math.Ceil(float64(a) / float64(b)))
+func getUser(g *gin.Context) *mv.User {
+	u, _ := g.Get("user")
+	u2, _ := u.(*mv.User)
+	return u2
 }
 
 type ReplyView struct {

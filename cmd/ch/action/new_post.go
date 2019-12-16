@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strconv"
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/mv"
@@ -34,11 +35,8 @@ func New(g *gin.Context) {
 		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		image   = g.PostForm("image64")
 		nsfw    = g.PostForm("nsfw") != ""
-		redir   = func(a, b string) {
-			q := EncodeQuery(a, b, "content", content)
-			g.Redirect(302, "/t"+q)
-		}
-		err error
+		redir   = func(a, b string) { g.Redirect(302, "/t"+EncodeQuery(a, b, "content", content)) }
+		err     error
 	)
 
 	u, ok := g.Get("user")
@@ -52,6 +50,11 @@ func New(g *gin.Context) {
 		return
 	}
 
+	if ret := checkToken(g); ret != "" {
+		redir("error", ret)
+		return
+	}
+
 	if image != "" {
 		if image, err = uploadImgur(image); err != nil {
 			redir("error", err.Error())
@@ -60,12 +63,27 @@ func New(g *gin.Context) {
 		image = "IMG:" + image
 	}
 
-	if ret := checkToken(g); ret != "" {
-		redir("error", ret)
-		return
+	a := &mv.Article{
+		Content: content,
+		Media:   image,
+		IP:      ip,
+		NSFW:    nsfw,
 	}
 
-	aid, err := m.Post(content, image, u.(*mv.User), ip, nsfw)
+	for i := 1; i <= 8; i++ {
+		key := "poll" + strconv.Itoa(i)
+		poll := mv.SoftTrunc(g.PostForm(key), 64)
+		if poll == "" {
+			break
+		}
+		if a.Extras == nil {
+			a.Extras = map[string]string{}
+			a.Extras["poll"] = "true"
+		}
+		a.Extras[key] = poll
+	}
+
+	aid, err := m.Post(a, u.(*mv.User))
 	if err != nil {
 		log.Println(aid, err)
 		redir("error", "internal/error")
@@ -83,10 +101,8 @@ func Reply(g *gin.Context) {
 		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		image   = g.PostForm("image64")
 		nsfw    = g.PostForm("nsfw") != ""
-		redir   = func(a, b string) {
-			g.Redirect(302, "/p/"+reply+EncodeQuery(a, b, "content", content))
-		}
-		err error
+		redir   = func(a, b string) { g.Redirect(302, "/p/"+reply+EncodeQuery(a, b, "content", content)) }
+		err     error
 	)
 
 	u, ok := g.Get("user")

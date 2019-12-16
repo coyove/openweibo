@@ -47,9 +47,13 @@ func main() {
 
 		for i := 0; i < N; i++ {
 			time.Sleep(time.Second)
-			aid, _ := m.Post("BENCH "+strconv.Itoa(i)+" post", "", &mv.User{
+			aid, _ := m.Post(&mv.Article{
+				Content: "BENCH " + strconv.Itoa(i) + " post",
+				IP:      "127.0.0.0",
+				NSFW:    true,
+			}, &mv.User{
 				ID: names[rand.Intn(len(names))],
-			}, "127.0.0.0", true)
+			})
 			ids = append(ids, aid)
 		}
 
@@ -132,7 +136,9 @@ func main() {
 	r.Handle("POST", "/t/:user", view.Timeline)
 	r.Handle("GET", "/p/:parent", view.Replies)
 	r.Handle("GET", "/avatar/:id", view.Avatar)
+
 	r.Handle("POST", "/user", action.User)
+	r.Handle("POST", "/api/user/kimochi", action.APIUserKimochi)
 	r.Handle("POST", "/user/followers", action.UserFollowers)
 	r.Handle("POST", "/new", action.New)
 	r.Handle("POST", "/reply", action.Reply)

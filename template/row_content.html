@@ -3,20 +3,26 @@
     <div class="row-header">
     {{else}}
     <div class="row-header" style="line-height:36px">
-        <img
-            alt="{{.Author}}"
-            src="/avatar/{{.Author}}.jpg"
-            style="border-radius:3px;display:inline-block;vertical-align:middle;margin-right:0.5em;max-width:36px;max-height:36px;overflow:hidden">
+        <img class="avatar" alt="{{.Author.ID}}"
+            {{if .Author.Avatar}}
+            src="{{.Author.Avatar}}"
+            {{else}}
+            src="/avatar/{{.Author.ID}}.jpg" style="opacity:0.6"
+            {{end}}>
+        {{if .Author.Kimochi}}
+        <img src="/s/emoji/emoji{{.Author.Kimochi}}.png"
+            style="width:20px;height:20;position:absolute;left:32px;top:6px;-webkit-filter: drop-shadow(0 0 3px rgba(0,0,0,0.2));">
+        {{end}}
     {{end}}
 
     {{if eq .Cmd "inbox-reply"}}
-        <a href="/t/{{.Author}}">@{{.Author}}</a>
+        <a href="/t/{{.Author.ID}}">@{{.Author.ID}}</a>
         <span>于 {{formatTime .CreateTime}} 回复了你</span>
     {{else if eq .Cmd "inbox-mention"}}
-        <a href="/t/{{.Author}}">@{{.Author}}</a>
+        <a href="/t/{{.Author.ID}}">@{{.Author.ID}}</a>
         <span>于 {{formatTime .CreateTime}} @了你</span>
     {{else}}
-        <span><a href="/t/{{.Author}}">@{{.Author}}</a></span>
+    <span><a href="/t/{{.Author.ID}}">@{{.Author.ID}}</a>{{if .Author.IsMod}} <span class=mod>Mod</span>{{end}}</span>
         {{if .Parent}}
             {{if .Content}}
                 <span>回复于 {{formatTime .CreateTime}}</span>

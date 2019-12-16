@@ -86,6 +86,10 @@ func makeBlockID(from, to string) string {
 	return "u/" + from + "/block/" + to
 }
 
+func makeVoteID(from, aid string) string {
+	return "u/" + from + "/vote/" + aid
+}
+
 func lastElemInCompID(id string) string {
 	return id[strings.LastIndex(id, "/")+1:]
 }

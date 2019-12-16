@@ -82,7 +82,7 @@
             <div class="status">
                 <div style="margin:-0.5em 0 0.5em;line-height:2.25em;border-bottom:dotted 1px #ccc">
                     <a href="/user"><i class="icon-wrench"></i></a>
-                    &emsp;<b>我的时间线</b>
+                    &emsp;<b>{{template "kimochi.html" .You}}</b>
                     {{if .User.Banned}}/ 封禁{{end}}
                     &emsp;{{if .User.Unread}}
                     <a href="/t/:in"><b style="color:#f52" class="icon-mail-alt">{{.User.Unread}}</b></a>
@@ -91,24 +91,16 @@
                     {{end}}
                 </div>
                 <span>
-                    <a href="/user/followings"><b>{{.User.Followings}}</b>
-                        <br><span style="color:black">关注</span>
-                    </a>
+                    <a href="/user/followings"><b>{{.User.Followings}}</b><br><span style="color:black">关注</span></a>
                 </span>
                 <span>
-                    <a  href="/user/followers"><b>{{.User.Followers}}</b>
-                        <br><span style="color:black">粉丝</span>
-                    </a>
+                    <a href="/user/followers"><b>{{.User.Followers}}</b><br><span style="color:black">粉丝</span></a>
                 </span>
                 <span>
-                    <a  href="/t/{{.User.ID}}"><b>{{.User.TotalPosts}}</b>
-                        <br><span style="color:black">状态</span>
-                    </a>
+                    <a href="/t/{{.User.ID}}"><b>{{.User.TotalPosts}}</b><br><span style="color:black">状态</span></a>
                 </span>
                 <span>
-                    <a href="/user/blacklist"><b class="icon-block"></b>
-                        <br><span style="color:black">黑名单</span>
-                    </a>
+                    <a href="/user/blacklist"><b class="icon-block"></b><br><span style="color:black">黑名单</span></a>
                 </span>
             </div>
         </div>
