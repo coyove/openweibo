@@ -36,20 +36,6 @@
                     style="padding:0.5em;border:none">{{.Content}}</textarea>
             </td>
         </tr>
-        <!-- <tr class=sep id=poll style="display:none">
-            <td colspan=2 style="padding:0">
-                <div style="display:flex;padding:0.5em;line-height:2.5em;flex-wrap:wrap">
-                    <span style="flex:0 10%">#1</span><span style="flex: 0 90%"><input name="poll1" class=t></span>
-                    <span style="flex:0 10%">#2</span><span style="flex: 0 90%"><input name="poll2" class=t></span>
-                    <span style="flex:0 10%">#3</span><span style="flex: 0 90%"><input name="poll3" class=t></span>
-                    <span style="flex:0 10%">#4</span><span style="flex: 0 90%"><input name="poll4" class=t></span>
-                    <span style="flex:0 10%">#5</span><span style="flex: 0 90%"><input name="poll5" class=t></span>
-                    <span style="flex:0 10%">#6</span><span style="flex: 0 90%"><input name="poll6" class=t></span>
-                    <span style="flex:0 10%">#7</span><span style="flex: 0 90%"><input name="poll7" class=t></span>
-                    <span style="flex:0 10%">#8</span><span style="flex: 0 90%"><input name="poll8" class=t></span>
-                </div>
-            </td>
-        </tr> -->
         <tr class=sep>
             <td colspan=2>
                 <input type=file id=post-image style="display:none" onchange="onImageChanged(this)">
@@ -60,6 +46,8 @@
                 <input type=checkbox name=nsfw id=nsfw>
                 <label for=nsfw>NSFW</label>
                 <script>
+                    var pica = window.pica({ features: [ 'js', 'wasm', 'ww', 'cib' ] });
+
                     function onImageChanged(el) {
                         sel('#post-image-button .pic').innerText = (el.value.split(/(\\|\/)/g).pop() || "图片").substring(0, 16);
                         sel("#post-image-base64").value = "";
@@ -69,13 +57,46 @@
                         var reader = new FileReader();
                         reader.readAsDataURL(el.files[0]);
                         reader.onload = function () {
-                            sel("#post-image-base64").value = reader.result;
-                            sel("#post-image-button .pic").innerText += " (" + (reader.result.length / 1.33 / 1024).toFixed(0) + "KB)";
-                            if (reader.result.length > 2 * 1024 * 1024) {
-                                el.value = null;
-                                onImageChanged(el);
-                                sel('#post-image-button .pic').innerText="图片过大";
+                            var img = new Image();
+                            img.onerror = function() {
+                                sel('#post-image-button .pic').innerText = "图片";
                             }
+                            img.onload = function() {
+                                img.onload = null;
+                                var canvas = document.createElement("canvas"),
+                                    throt = 1 * 1000 * 1000,
+                                    f = 1, step = 0.5,
+                                    success = function() {
+                                        sel("#post-image-base64").value = img.src;
+                                        sel("#post-image-button .pic").innerText += " (" + (img.src.length / 1.33 / 1024).toFixed(0) + "KB";
+                                        sel("#post-image-button .pic").innerText += (f == 1) ? ")" : " / 缩放" + (100/f).toFixed(0) + "%)";
+                                        sel('#reply-submit').removeAttribute("disabled");
+                                    },
+                                    scaledown = function() {
+                                        canvas.width = img.width / f;
+                                        canvas.height = img.height / f;
+                                        pica.resize(img, canvas, 3).then(function() {
+                                            var res = canvas.toDataURL("image/jpeg", 0.75);
+                                            console.log(res.length, f);
+                                            if (res.length > throt) {
+                                                f += step;
+                                                step += 0.2;
+                                                scaledown();
+                                            } else {
+                                                img.src = res;
+                                                success();
+                                            }
+                                        });
+                                    };
+
+                                sel('#reply-submit').setAttribute("disabled", "disabled");
+                                if (img.src.length > throt) {
+                                    scaledown();
+                                } else {
+                                    success();
+                                }
+                            }
+                            img.src = reader.result;
                         };
                     }
                 </script>
@@ -91,9 +112,9 @@
             <td class="nowrap">
                 {{if .ReplyTo}}
                 <input type=hidden name=reply value="{{.ReplyTo}}">
-                <button class="gbutton" type=submit>回复</button>
+                <button id=reply-submit class="gbutton" type=submit>回复</button>
                 {{else}}
-                <button class="gbutton" type=submit>发布</button>
+                <button id=reply-submit class="gbutton" type=submit>发布</button>
                 {{end}}
             </td>
         </tr>

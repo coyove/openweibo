@@ -58,6 +58,7 @@ func Index(g *gin.Context) {
 		pl.Next = base64.StdEncoding.EncodeToString(c.Marshal(nil))
 		break
 	}
+
 	if g.PostForm("api") != "" {
 		apiWrapper(g, pl.Next, pl.Articles)
 		return
