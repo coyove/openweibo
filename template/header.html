@@ -13,6 +13,14 @@
             var el = document.querySelectorAll(q);
             return el.length === 1 ? el[0] : el;
         }
+        function isInViewport(el) {
+            var top = el.offsetTop, height = el.offsetHeight, h = window.innerHeight, s = 3;
+            while (el.offsetParent) {
+                el = el.offsetParent;
+                top += el.offsetTop;
+            }
+            return top < (window.pageYOffset + h + h*s) && (top + height) > window.pageYOffset - h*s;
+        } 
         function $post(url, data, cb, errorcb) {
             var xmlHttp = new XMLHttpRequest();
             xmlHttp.onreadystatechange = function() {

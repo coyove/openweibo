@@ -164,8 +164,9 @@
             })
 
          //   console.log(document.documentElement.scrollTop);
-            for (var i = 0 ; i < tl.childNodes.length - 100; i++) {
-                var c = tl.childNodes[i];
+            var rows = sel("#timeline .row");
+            for (var i = 0 ; i < rows.length - (window.MAX_ROWS || 100); i++) {
+                var c = rows[i];
                 if (c.className && c.className.match(/row/) && !c.ERASED) {
                     c.style.height = c.offsetHeight + "px";
                     c.innerHTML = "";
@@ -173,6 +174,31 @@
                 }
             }
         }
+
+        window.addEventListener('scroll', function(e) {
+            if (!window.ticking) {
+                window.requestAnimationFrame(function() {
+                    var rows = sel("#timeline .row");
+                    for (var i = 0 ; i < rows.length; i++) {
+                        var c = rows[i];
+                        if (isInViewport(c)) {
+                            if (c.childNodes.length == 0) {
+                                c.innerHTML = c.__html;
+                                c.style.height = "";
+                            }
+                        } else {
+                            if (c.childNodes.length) {
+                                c.style.height = c.offsetHeight + "px";
+                                c.__html = c.innerHTML;
+                                c.innerHTML = "";
+                            }
+                        }
+                    }
+                    window.ticking = false;
+                });
+                window.ticking = true;
+            }
+        });
     </script>
     {{end}}
 

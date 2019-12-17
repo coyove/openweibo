@@ -11,6 +11,7 @@ import (
 
 type ArticleView struct {
 	ID          string
+	IDDOM       string
 	Parent      *ArticleView
 	Author      *mv.User
 	Cmd         string
