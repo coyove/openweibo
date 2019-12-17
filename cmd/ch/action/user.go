@@ -42,7 +42,11 @@ func User(g *gin.Context) {
 				g.Redirect(302, "/user"+q)
 			}
 		}
-		u *mv.User
+		u = func() *mv.User {
+			u, _ := g.Get("user")
+			u2, _ := u.(*mv.User)
+			return u2
+		}()
 	)
 
 	if g.PostForm("cancel") != "" || g.PostForm("refresh") != "" {
@@ -123,30 +127,47 @@ func User(g *gin.Context) {
 		g.SetCookie("id", mv.MakeUserToken(u), 365*86400, "", "", false, false)
 		g.Redirect(302, "/")
 		return
+	case "update-password":
+		if ret := checkToken(g); ret != "" {
+			redir("error", ret)
+			return
+		}
+		if u == nil {
+			redir("error", "guard/id-not-existed")
+			return
+		}
+
+		newPassword := mv.SoftTrunc(g.PostForm("new-password"), 32)
+		pwdHash := hmac.New(sha256.New, config.Cfg.KeyBytes)
+		pwdHash.Write([]byte(password))
+		if len(newPassword) == 0 || !bytes.Equal(u.PasswordHash, pwdHash.Sum(nil)) {
+			redir("error", "password/invalid-too-short")
+			return
+		}
+		pwdHash.Reset()
+		pwdHash.Write([]byte(newPassword))
+		u.PasswordHash = pwdHash.Sum(nil)
 	case "update-info":
 		if ret := checkToken(g); ret != "" {
 			redir("error", ret)
 			return
 		}
-		user, _ := g.Get("user")
-		if user == nil {
+		if u == nil {
 			redir("error", "guard/id-not-existed")
 			return
 		}
-		u = user.(*mv.User)
 		u.Email = email
 		u.Avatar = mv.SoftTrunc(g.PostForm("avatar"), 256)
 		u.NoReplyInTimeline = g.PostForm("nrit") != ""
 		u.NoPostInMaster = g.PostForm("npim") != ""
 		u.AutoNSFW = g.PostForm("autonsfw") != ""
 	case "ban-user":
-		user, _ := g.Get("user")
-		if user == nil {
+		if u == nil {
 			redir("error", "internal/error")
 			return
 		}
 
-		if !user.(*mv.User).IsMod() {
+		if !u.IsMod() {
 			g.Redirect(302, "/")
 			return
 		}
@@ -164,10 +185,8 @@ func User(g *gin.Context) {
 		}
 		return
 	case "follow", "block":
-		user, _ := g.Get("user")
 		to := g.PostForm("to")
-
-		if user == nil || to == "" || user.(*mv.User).ID == to {
+		if u == nil || to == "" || u.ID == to {
 			redir("error", "internal/error")
 			return
 		}
@@ -180,27 +199,27 @@ func User(g *gin.Context) {
 			if to == "" {
 				redir("error", "user/not-found")
 			} else {
-				redir("n", "u/"+user.(*mv.User).ID+"/"+mth+"/"+to)
+				redir("n", "u/"+u.ID+"/"+mth+"/"+to)
 			}
 			return
 		}
 
 		if ret := checkToken(g); ret != "" {
-			redir("error", ret, "n", "u/"+user.(*mv.User).ID+"/"+mth+"/"+to)
+			redir("error", ret, "n", "u/"+u.ID+"/"+mth+"/"+to)
 			return
 		}
 
 		var err error
 		if mth == "block" {
-			err = m.BlockUser_unlock(user.(*mv.User).ID, to, g.PostForm(mth) != "")
+			err = m.BlockUser_unlock(u.ID, to, g.PostForm(mth) != "")
 		} else {
-			err = m.FollowUser_unlock(user.(*mv.User).ID, to, g.PostForm(mth) != "")
+			err = m.FollowUser_unlock(u.ID, to, g.PostForm(mth) != "")
 		}
 
 		if err != nil {
 			redir("error", err.Error())
 		} else {
-			redir("error", "ok", "n", "u/"+user.(*mv.User).ID+"/"+mth+"/"+to)
+			redir("error", "ok", "n", "u/"+u.ID+"/"+mth+"/"+to)
 		}
 		return
 	}

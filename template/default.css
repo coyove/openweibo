@@ -111,75 +111,37 @@ pre {
 }
 
 nav {
-	background-color: #E0EBF5;
-    line-height: 2.5em;
-    font-weight: bold;
+    line-height: 2.25em;
+    text-align: center;
     padding: 0 8px;
+    margin: 0.5em 0;
 }
 
 nav ul {
-    z-index: 99;
 	padding: 0;
     margin: 0;
 	list-style: none;
 	position: relative;
 }
 
-nav ul li {
-	display: inline-block;
-	background-color: #E0EBF5;
-}
+nav ul li { display: inline-block; margin: 0 0.5em }
+
+nav ul li a { border-bottom: solid 2px #ddd; }
+
+nav ul li.selected a { border-color: #088; font-weight: bold;}
+
+nav ul li.selected { display: inline-block !important; }
 
 nav a {
     cursor: pointer;
 	display: block;
     color: #233 !important;
-    padding: 0px 8px;
 	text-decoration: none;
 }
 
 nav ul li:hover > a {
-    background: rgba(0,0,0,0.1);
     text-decoration: none;
 }
-
-/* .reply-toggle:checked + label + .reply-view {
-    display: block;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-}
-
-.reply-toggle:checked + label + .reply-view + .bg {
-    display: block;
-}
-
-.reply-view {
-    text-align: left;
-    max-width: 600px;
-    width: 90%;
-    position: fixed;
-    background: white;
-    z-index: 1000;
-    box-shadow: 0 1px 5px rgba(0, 0, 0, .3);
-    display: none;
-}
-
-.reply-view td {
-    padding: 0.5em;
-}
-
-.reply-view + .bg {
-    display: none;
-    position: fixed;
-    left: 0;
-    top: 0;
-    height: 100%;
-    width: 100%;
-    z-index: 999;
-    pointer-events: none;
-    background: rgba(0,0,0,0.1);
-}*/
 
 .paging {
     text-align:center;
@@ -189,15 +151,6 @@ nav ul li:hover > a {
 .paging a {
     display: inline-block;
     margin: 0 0.2em;
-}
-
-button.none {
-   -webkit-appearance: none;
-   -moz-appearance:    none;
-   appearance:         none;
-   border: none;
-   cursor: pointer;
-   background: transparent;
 }
 
 .gbutton {
@@ -363,6 +316,7 @@ a.unread {
     padding: 0.5em;
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
     background: #fcfdfe;
+    margin: 0.5em 0;
 }
 
 .status > span {

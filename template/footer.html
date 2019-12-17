@@ -1,7 +1,6 @@
-</div>
-<div id="footer" style="word-break:break-all;line-height:2.25em;position:absolute;right:0;bottom:0;left:0;padding:0 1em;background:#eee;box-shadow:0 -1px 0px #ccc;">
+<div style="word-break:break-all;line-height:2em;padding:0.5em;background:#f3f4f5;text-align:center;border-radius:5px" class=row>
     {{if .User}}
-    ID / <a href='/user'>{{.User.ID}}</a>
+    <a href='/user'>@{{.User.ID}}</a>
     {{if .User.Unread}}
         <a class=unread href="/t/:in">{{.User.Unread}} 消息</a>
     <script>
@@ -16,7 +15,7 @@
     ID / <a href="/user">登入</a>
     {{end}}
 
-    <span style="float:right">IIS / {{.Render}}ms</span>
+    <div style="font-size:12px">IIS <script>document.write(new Date().getFullYear())</script> in {{.Render}}ms</div>
 </div>
 
     <script>
@@ -29,4 +28,5 @@
         expandNSFW()
     </script>
 
+</div>
 </html>

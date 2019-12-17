@@ -1,6 +1,6 @@
 <!doctype html>
 <html>
-    <link href="/s/default.css?ver=3" rel="stylesheet" type="text/css" media="all">
+    <link href="/s/default.css?ver=4" rel="stylesheet" type="text/css" media="all">
     <link href="/s/fonts/fontello-embedded.css" rel="stylesheet" type="text/css" media="all">
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
     <!--<meta http-equiv="Content-Security-Policy" content="script-src 'none'">-->
@@ -31,11 +31,18 @@
         }
     </script>
 <body>
+    <div id="container" style="width: 100%; max-width: 800px; margin: 0 auto">
     <nav>
         <ul>
-            <li><a href="/t">我的时间线</a></li>
-            <li><a href="/master">MASTER</a></li>
+            <li id="nav-own"><a href="/t">我的时间线</a></li>
+            <li id="nav-master"><a href="/master">MASTER</a></li>
+            <li id="nav-inbox" style="display:none"><a>我的提醒</a></li>
+            <li id="nav-user-info" style="display:none"><a>我的设置</a></li>
+            <li id="nav-login" style="display:none"><a>登入注册</a></li>
+            <li id="nav-followings" style="display:none"><a>我的关注</a></li>
+            <li id="nav-blacklist" style="display:none"><a>黑名单</a></li>
+            <li id="nav-followers" style="display:none"><a>我的粉丝</a></li>
+            <li id="nav-other" style="display:none"><a></a></li>
         </ul>
     </nav>
-    <div id="container" style="padding-bottom: 2em; width: 100%; max-width: 800px; margin: 0 auto">
 

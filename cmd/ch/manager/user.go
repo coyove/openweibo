@@ -155,7 +155,7 @@ func (m *Manager) FollowUser_unlock(from, to string, following bool) (E error) {
 
 	if following && m.IsBlocking(to, from) {
 		// "from" wants "to" follow "to" but "to" blocked "from"
-		return fmt.Errorf("failed due to blocking")
+		return fmt.Errorf("follow/to-blocked")
 	}
 
 	defer func() {

@@ -113,7 +113,7 @@ func (u User) IsAdmin() bool {
 	return u.Role == "admin" || u.ID == config.Cfg.AdminName
 }
 
-var usCache [65536][]rune
+var usCache [65536][16]rune
 
 func UnmarshalUser(b []byte) (*User, error) {
 	a := &User{}
@@ -126,7 +126,10 @@ func UnmarshalUser(b []byte) (*User, error) {
 	for _, r := range a.ID {
 		hash = hash*31 + uint16(r)
 	}
-	usCache[hash] = []rune(a.ID)
+
+	bs := [16]rune{}
+	copy(bs[:], []rune(a.ID))
+	usCache[hash] = bs
 
 	return a, err
 }
@@ -143,13 +146,13 @@ func SearchUser(id string) string {
 		m[uint32(uint16(idr[i]))<<16|uint32(uint16(idr[i+1]))] = true
 	}
 
-	bigram := func(a []rune) int {
-		if len(a) < 2 {
-			return 0
-		}
+	bigram := func(a [16]rune) int {
 		s := 0
 		for i := 0; i < len(a)-1; i++ {
 			v := uint32(uint16(a[i]))<<16 | uint32(uint16(a[i+1]))
+			if v == 0 {
+				break
+			}
 			if m[v] {
 				s++
 			}
@@ -158,7 +161,7 @@ func SearchUser(id string) string {
 	}
 
 	maxScore := 0
-	res := []rune{}
+	res := [16]rune{}
 
 	for _, id2 := range usCache {
 		score := bigram(id2)
@@ -168,7 +171,12 @@ func SearchUser(id string) string {
 		}
 	}
 
-	return string(res)
+	for i := range res {
+		if res[i] == 0 {
+			return string(res[:i])
+		}
+	}
+	return ""
 }
 
 func MakeUserToken(u *User) string {

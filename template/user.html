@@ -4,18 +4,20 @@
 
 <title>{{.User.ID}}</title>
 
+    <script>sel('#nav-user-info').className = "selected"</script>
+
+<form method="POST" action="/user">
 <table class="articles" style="margin: 0.5em 0">
     <tr>
-        <td colspan=3 style="text-align:center"><b>{{.User.ID}}</b> 的设置</td>
+        <td>用户名:</td>
+        <td colspan=2>{{.User.ID}}</td>
     </tr>
     <tr>
         <td>上次登入:</td>
-        <td>{{.User.Login.Format "2006-01-02 15:04:05"}}</td>
-        <td rowspan=2 class=nowrap><form method="POST" action="/user">
-                <input type=hidden name=uuid value="{{.UUID}}">
-                <input type=hidden name=username value="{{.User.ID}}">
+            <td>{{.User.Login.Format "2006-01-02 15:04:05"}}</td>
+            <td rowspan=2 class=nowrap>
                 <button style="color:#f52" class="gbutton" type=submit name=method value=logout>注销</button>
-            </form></td>
+            </td>
     </tr>
     <tr>
         <td>注册于:</td>
@@ -25,52 +27,49 @@
         <td class=nowrap>上次登入IP:</td><td colspan=2>{{.User.DataIP}}</td>
     </tr>
 
-    <form method="POST" action="/user">
-        <tr>
-            <td class=nowrap>头像URL:</td>
-            <td colspan=2> 
-                <input type=hidden name=uuid value="{{.UUID}}">
-                <input type=hidden name=method value="update-info">
-                <input type=hidden name=username value="{{.User.ID}}">
-                <input class=t name=avatar value="{{.User.Avatar}}" maxlength=256>
-            </td>
-        </tr>
-        <tr>
-            <td class=nowrap>Email:</td>
-            <td colspan=2> 
-                <input name=email class=t value="{{.User.Email}}" required type=email>
-            </td>
-        </tr>
-        <tr>
-            <td class=nowrap></td>
-            <td colspan=2> 
-                <input name=nrit type=checkbox {{if .User.NoReplyInTimeline}}checked{{end}} id=nrit>
-                <label for=nrit>不要将我的回复显示在我的时间线中</label>
-            </td>
-        </tr>
-        <tr>
-            <td class=nowrap></td>
-            <td colspan=2> 
-                <input name=npim type=checkbox {{if .User.NoPostInMaster}}checked{{end}} id=npim>
-                <label for= npim>不要将我的状态显示在Master时间线中</label>
-            </td>
-        </tr>
-        <tr>
-            <td class=nowrap></td>
-            <td colspan=2> 
-                <input name=autonsfw type=checkbox {{if .User.AutoNSFW}}checked{{end}} id=autonsfw>
-                <label for= autonsfw>自动展开NSFW图片</label>
-            </td>
-        </tr>
-        <tr>
-            <td colspan=2>
-                {{if .EError}}{{template "error_i18n.html" .EError}}{{end}}
-            </td>
-            <td class=nowrap>
-                <button class="gbutton" type=submit>更新</button>
-            </td>
-        </tr>
-    </form> 
+    <tr>
+        <td class=nowrap>头像URL:</td>
+        <td colspan=2> 
+            <input type=hidden name=uuid value="{{.UUID}}">
+            <input type=hidden name=username value="{{.User.ID}}">
+            <input class=t name=avatar value="{{.User.Avatar}}" maxlength=256>
+        </td>
+    </tr>
+    <tr>
+        <td class=nowrap>Email:</td>
+        <td colspan=2> 
+            <input name=email class=t value="{{.User.Email}}" type=email>
+        </td>
+    </tr>
+    <tr>
+        <td class=nowrap></td>
+        <td colspan=2> 
+            <input name=nrit type=checkbox {{if .User.NoReplyInTimeline}}checked{{end}} id=nrit>
+            <label for=nrit>不要将我的回复显示在我的时间线中</label>
+        </td>
+    </tr>
+    <tr>
+        <td class=nowrap></td>
+        <td colspan=2> 
+            <input name=npim type=checkbox {{if .User.NoPostInMaster}}checked{{end}} id=npim>
+            <label for= npim>不要将我的状态显示在Master时间线中</label>
+        </td>
+    </tr>
+    <tr>
+        <td class=nowrap></td>
+        <td colspan=2> 
+            <input name=autonsfw type=checkbox {{if .User.AutoNSFW}}checked{{end}} id=autonsfw>
+            <label for= autonsfw>自动展开NSFW图片</label>
+        </td>
+    </tr>
+    <tr>
+        <td colspan=2>
+            {{if .EError}}{{template "error_i18n.html" .EError}}{{end}}
+        </td>
+        <td class=nowrap>
+            <button name=method value=update-info class="gbutton" type=submit>更新</button>
+        </td>
+    </tr>
 
     {{if .User.IsMod}}
     <tr>
@@ -82,13 +81,33 @@
         <td>{{.Survey.Written}}b</td>
     </tr>
     {{end}}
+
+    <tr>
+        <td colspan=3><b>修改密码</b></td>
+    </tr>
+    <tr>
+        <td class=nowrap>原密码:</td>
+        <td colspan=2><input name=password type=password class=t></td>
+    </tr>
+    <tr>
+        <td class=nowrap>新密码:</td>
+        <td colspan=2><input name=new-password type=password class=t></td>
+    </tr>
+    <tr>
+        <td colspan=2></td>
+        <td class=nowrap>
+            <button name=method value=update-password class="gbutton" type=submit>更新</button>
+        </td>
+    </tr>
 </table>
+    </form> 
 
 
 {{else}}
 
 <title>登入/注册</title>
 
+    <script>sel('#nav-login').className = "selected"</script>
 <form method="POST" action="/user">
     <table class="articles">
         <input type=hidden name=uuid value="{{.UUID}}">

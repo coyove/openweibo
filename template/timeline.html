@@ -1,10 +1,11 @@
 {{template "header.html" .}}
 
-<div style="padding: 0.5em;text-align:center;line-height:2em">
 {{if .IsUserTimeline}}
+<div style="text-align:center;line-height:2em">
     <title>@{{.User.ID}} 的时间线</title>
 
-    <div style="margin-bottom:0.5em">
+    <div>
+    <script>sel('#nav-other a').innerText = "{{.User.ID}}"; sel('#nav-other').className = "selected"</script>
         <div class="status">
             <div class=title>
                 <b>@{{.User.ID}}</b>
@@ -66,48 +67,50 @@
     </div>
 
     {{end}}
-{{else if .IsInbox}}
-    <b>我的提醒</b>
-    <title>我的提醒</title>
-{{else if .IsGlobalTimeline}}
-    <b>全局时间线</b>
-    <title>全局时间线</title>
-{{else}}
-    {{if .ShowNewPost}}
-    <div style="margin-bottom:0.5em">{{template "reply_view.html" .ReplyView}}</div>
-    {{end}}
-
-    <title>我的时间线</title>
-        <div>
-            <div class="status">
-                <div class=title>
-                    <b>@{{.User.ID}}</b>
-                    {{if .User.IsMod}}<span class=mod>Mod</span>{{end}}
-                    {{if .User.Banned}}/ 封禁{{end}}
-                    <a href="/user"><i class="icon-wrench"></i></a>
-                </div>
-                <div class=title>
-                    <a href="/user/blacklist"><i class="icon-block"></i></a>
-                    &emsp;<b>{{template "kimochi.html" .You}}</b>
-                    &emsp;{{if .User.Unread}}
-                    <a href="/t/:in"><b style="color:#f52" class="icon-mail-alt">{{.User.Unread}}</b></a>
-                    {{else}}
-                    <a href="/t/:in"><i class="icon-mail-alt"></i></a>
-                    {{end}}
-                </div>
-                <span>
-                    <a href="/user/followings"><b>{{.User.Followings}}</b><br><span style="color:black">关注</span></a>
-                </span>
-                <span>
-                    <a href="/user/followers"><b>{{.User.Followers}}</b><br><span style="color:black">粉丝</span></a>
-                </span>
-                <span>
-                    <a href="/t/{{.User.ID}}"><b>{{.User.TotalPosts}}</b><br><span style="color:black">状态</span></a>
-                </span>
-            </div>
-        </div>
-        {{end}}
 </div>
+{{else if .IsInbox}}
+    <title>我的提醒</title>
+    <script>sel('#nav-inbox').className = "selected"</script>
+{{else if .IsGlobalTimeline}}
+    <title>全局时间线</title>
+    <script>sel('#nav-master').className = "selected"</script>
+{{else}}
+<div style="text-align:center;line-height:2em">
+        <title>我的时间线</title>
+    <div>
+        <script>sel('#nav-own').className = "selected"</script>
+        <div class="status">
+            <div class=title>
+                <b>@{{.User.ID}}</b>
+                {{if .User.IsMod}}<span class=mod>Mod</span>{{end}}
+                {{if .User.Banned}}/ 封禁{{end}}
+                <a href="/user"><i class="icon-wrench"></i></a>
+            </div>
+            <div class=title>
+                <a href="/user/blacklist"><i class="icon-block"></i></a>
+                &emsp;<b>{{template "kimochi.html" .You}}</b>
+                &emsp;{{if .User.Unread}}
+                <a href="/t/:in"><b style="color:#f52" class="icon-mail-alt">{{.User.Unread}}</b></a>
+                {{else}}
+                <a href="/t/:in"><i class="icon-mail-alt"></i></a>
+                {{end}}
+            </div>
+            <span>
+                <a href="/user/followings"><b>{{.User.Followings}}</b><br><span style="color:black">关注</span></a>
+            </span>
+            <span>
+                <a href="/user/followers"><b>{{.User.Followers}}</b><br><span style="color:black">粉丝</span></a>
+            </span>
+            <span>
+                <a href="/t/{{.User.ID}}"><b>{{.User.TotalPosts}}</b><br><span style="color:black">状态</span></a>
+            </span>
+        </div>
+    </div>
+    {{if .ShowNewPost}}
+    <div style="padding:0 0.5em">{{template "reply_view.html" .ReplyView}}</div>
+    {{end}}
+</div>
+        {{end}}
 
 <div class="rows" id=timeline>
     {{if len .Articles}}

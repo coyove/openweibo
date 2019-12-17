@@ -2,19 +2,13 @@
 
 <div style="margin: 0.5em 0">
     {{if eq .ListType "followings"}}
-    <a href="/user/followings" class=gbutton>我的关注</a>
-    <a href="/user/followers" class=gbutton style="color:#ccc">我的粉丝</a>
-    <a href="/user/blacklist" class=gbutton style="color:#ccc">黑名单</a>
+    <script>sel('#nav-followings').className = "selected"</script>
     <title>我的关注</title>
     {{else if eq .ListType "blacklist"}}
-    <a href="/user/followings" class=gbutton style="color:#ccc">我的关注</a>
-    <a href="/user/followers" class=gbutton style="color:#ccc">我的粉丝</a>
-    <a href="/user/blacklist" class=gbutton>黑名单</a>
+    <script>sel('#nav-blacklist').className = "selected"</script>
     <title>黑名单</title>
     {{else}}
-    <a href="/user/followings" class=gbutton style="color:#ccc">我的关注</a>
-    <a href="/user/followers" class=gbutton>我的粉丝</a>
-    <a href="/user/blacklist" class=gbutton style="color:#ccc">黑名单</a>
+    <script>sel('#nav-followers').className = "selected"</script>
     <title>我的粉丝</title>
     {{end}}
 </div>
@@ -48,7 +42,7 @@
             <td>
                 <input type=hidden name=uuid value="{{.UUID}}">
                 <input type=hidden name=username value="{{.User.ID}}">
-                <input type=hidden name=method value="follow">
+                <input type=hidden name=method value="{{if eq .ListType "blacklist"}}block{{else}}follow{{end}}">
                 <input class=t name=to>
             </td>
             <td class=nowrap>
