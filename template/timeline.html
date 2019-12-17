@@ -74,6 +74,9 @@
 {{else if .IsGlobalTimeline}}
     <title>全局时间线</title>
     <script>sel('#nav-master').className = "selected"</script>
+{{else if .IsTagTimeline}}
+    <title>#{{.Tag}}</title>
+    <script>sel('#nav-other a').innerText = "#{{.Tag}} ({{.PostsUnderTag}})"; sel('#nav-other').className = "selected"</script>
 {{else}}
 <div style="text-align:center;line-height:2em">
         <title>我的时间线</title>

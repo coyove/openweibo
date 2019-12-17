@@ -92,26 +92,41 @@ func (m *Manager) UpdateUser_unlock(id string, cb func(u *mv.User) error) error 
 	return m.SetUser(u)
 }
 
-func (m *Manager) MentionUser(a *mv.Article, id string) error {
-	if m.IsBlocking(id, a.Author) {
-		return fmt.Errorf("author blocked")
+func (m *Manager) MentionUserAndTags(a *mv.Article, ids []string, tags []string) error {
+	for _, id := range ids {
+		if m.IsBlocking(id, a.Author) {
+			return fmt.Errorf("author blocked")
+		}
+
+		if err := m.insertArticle(ident.NewID(ident.IDTagInbox).SetTag(id).String(), &mv.Article{
+			ID:  ident.NewGeneralID().String(),
+			Cmd: mv.CmdMention,
+			Extras: map[string]string{
+				"from":       a.Author,
+				"article_id": a.ID,
+			},
+			CreateTime: time.Now(),
+		}, false); err != nil {
+			return err
+		}
+		if err := m.UpdateUser(id, func(u *mv.User) error {
+			u.Unread++
+			return nil
+		}); err != nil {
+			return err
+		}
 	}
 
-	if err := m.insertArticle(ident.NewID(ident.IDTagInbox).SetTag(id).String(), &mv.Article{
-		ID:  ident.NewGeneralID().String(),
-		Cmd: mv.CmdMention,
-		Extras: map[string]string{
-			"from":       a.Author,
-			"article_id": a.ID,
-		},
-		CreateTime: time.Now(),
-	}, false); err != nil {
-		return err
+	for _, tag := range tags {
+		if err := m.insertArticle(ident.NewID(ident.IDTagTag).SetTag(tag).String(), &mv.Article{
+			ID:         ident.NewGeneralID().String(),
+			ReferID:    a.ID,
+			CreateTime: time.Now(),
+		}, false); err != nil {
+			return err
+		}
 	}
-	return m.UpdateUser(id, func(u *mv.User) error {
-		u.Unread++
-		return nil
-	})
+	return nil
 }
 
 func (m *Manager) createUserChain(u *mv.User, cmd mv.Cmd) error {

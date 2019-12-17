@@ -128,6 +128,8 @@ func main() {
 	r.Handle("GET", "/img/:img", view.Image)
 	r.Handle("GET", "/master", view.Index)
 	r.Handle("POST", "/master", view.Index)
+	r.Handle("GET", "/tag/:tag", view.Index)
+	r.Handle("POST", "/tag/:tag", view.Index)
 	r.Handle("GET", "/user", view.User)
 	r.Handle("GET", "/user/:type", view.UserList)
 	r.Handle("GET", "/t", view.Timeline)

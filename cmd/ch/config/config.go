@@ -48,7 +48,7 @@ var Cfg = struct {
 	PostsPerPage: 30,
 	Tags:         []string{},
 	Cooldown:     5,
-	MaxMentions:  2,
+	MaxMentions:  3,
 }
 
 func MustLoad() {

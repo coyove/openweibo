@@ -7,6 +7,8 @@ import (
 	"math/rand"
 	"sync/atomic"
 	"time"
+
+	"github.com/coyove/iis/cmd/ch/mv"
 )
 
 const (
@@ -85,14 +87,14 @@ func (id ID) IsRoot() bool {
 }
 
 func (id ID) SetTag(tag string) ID {
-	buf := CompressString(tag)
+	buf := mv.CompressString(tag)
 	copy(id.tag[:], buf)
 	id.taglen = byte(len(buf))
 	return id
 }
 
 func (id ID) Tag() string {
-	return DecompressString(id.tag[:id.taglen])
+	return mv.DecompressString(id.tag[:id.taglen])
 }
 
 func (id ID) Header() IDTag {

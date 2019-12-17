@@ -17,12 +17,15 @@ var m *manager.Manager
 type ArticlesTimelineView struct {
 	Articles               []ArticleView
 	Next                   string
+	Tag                    string
+	PostsUnderTag          int32
 	IsAdmin                bool
 	IsInbox                bool
 	IsUserTimeline         bool
 	IsUserTimelineFollowed bool
 	IsUserTimelineBlocked  bool
 	IsGlobalTimeline       bool
+	IsTagTimeline          bool
 	ShowNewPost            bool
 	User                   *mv.User
 	You                    *mv.User
@@ -43,12 +46,28 @@ func SetManager(mgr *manager.Manager) {
 func Index(g *gin.Context) {
 	var pl ArticlesTimelineView
 	var cursor ident.ID
+	pl.Tag = g.Param("tag")
+
+	if pl.Tag == "" {
+		pl.Tag = "master"
+		pl.IsGlobalTimeline = true
+	} else {
+		pl.IsTagTimeline = true
+		a, _ := m.GetArticle(ident.NewID(ident.IDTagTag).SetTag(pl.Tag).String())
+		if a != nil {
+			pl.PostsUnderTag = int32(a.Replies)
+		}
+	}
 
 	if g.Request.Method == "POST" {
 		cbuf, _ := base64.StdEncoding.DecodeString(g.PostForm("cursors"))
 		cursor = ident.UnmarshalID(cbuf)
 	} else {
-		cursor = ident.NewID(ident.IDTagAuthor).SetTag("master")
+		if pl.IsGlobalTimeline {
+			cursor = ident.NewID(ident.IDTagAuthor).SetTag(pl.Tag)
+		} else {
+			cursor = ident.NewID(ident.IDTagTag).SetTag(pl.Tag)
+		}
 	}
 
 	a, next := m.WalkMulti(int(config.Cfg.PostsPerPage), cursor)
@@ -64,7 +83,6 @@ func Index(g *gin.Context) {
 		return
 	}
 
-	pl.IsGlobalTimeline = true
 	g.HTML(200, "timeline.html", pl)
 }
 

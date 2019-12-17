@@ -12,7 +12,7 @@ import (
 var (
 	rxSan        = regexp.MustCompile(`(?m)(^>.+|<|https?://\S+)`)
 	rxFirstImage = regexp.MustCompile(`(?i)https?://\S+\.(png|jpg|gif|webp|jpeg)`)
-	rxMentions   = regexp.MustCompile(`(@\S+)`)
+	rxMentions   = regexp.MustCompile(`((@|#)\S+)`)
 )
 
 func FormatTime(x time.Time, rich bool) string {
@@ -49,24 +49,37 @@ func sanText(in string) string {
 		if len(in) < 2 {
 			return in
 		}
-		return "<a href='/t/" + template.HTMLEscapeString(in[1:]) + "'>" + in + "</a>"
+		s := SafeStringForCompressString(template.HTMLEscapeString(in[1:]))
+		if in[0] == '#' {
+			return "<a href='/tag/" + s + "'>" + in + "</a>"
+		}
+		return "<a href='/t/" + s + "'>" + in + "</a>"
 	})
 	return in
 }
 
-func ExtractMentions(in string) []string {
+func ExtractMentionsAndTags(in string) ([]string, []string) {
 	res := rxMentions.FindAllString(in, config.Cfg.MaxMentions)
+	mentions, tags := []string{}, []string{}
+	for i := range res {
+		res[i] = res[i][:1] + SafeStringForCompressString(res[i][1:])
+	}
+
 AGAIN: // TODO
 	for i := range res {
 		for j := range res {
-			if (i != j && res[i] == res[j]) || len(res[j]) > 18 {
+			if i != j && res[i] == res[j] {
 				res = append(res[:j], res[j+1:]...)
 				goto AGAIN
 			}
 		}
-		res[i] = res[i][1:]
+		if res[i][0] == '#' {
+			tags = append(tags, strings.TrimRight(res[i][1:], "#"))
+		} else {
+			mentions = append(mentions, res[i][1:])
+		}
 	}
-	return res
+	return mentions, tags
 }
 
 func ExtractFirstImage(in string) string {

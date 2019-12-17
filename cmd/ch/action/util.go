@@ -74,7 +74,7 @@ func throtUser(g *gin.Context) string {
 }
 
 func sanUsername(id string) string {
-	return ident.SafeStringForCompressString(id)
+	return mv.SafeStringForCompressString(id)
 }
 
 func checkCaptcha(g *gin.Context) string {
@@ -147,8 +147,8 @@ func uploadImgur(image string) (string, error) {
 	diff := time.Since(imgurThrot.start).Seconds()
 	if diff > 3600 {
 		imgurThrot.start = time.Unix(time.Now().Unix()-1, 0)
-	imgurThrot.counter = 0
-}
+		imgurThrot.counter = 0
+	}
 
 	if float64(imgurThrot.counter)/time.Since(imgurThrot.start).Seconds() > 0.01 {
 		imgurThrot.Unlock()

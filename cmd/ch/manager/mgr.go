@@ -193,10 +193,6 @@ func (m *Manager) WalkReply(n int, cursor string) (a []*mv.Article, next string)
 // 	m.db.Set(startID, start.Marshal())
 // }
 
-func (m *Manager) Ref(a *mv.Article, id string) error {
-	return m.insertArticle(ident.NewID(ident.IDTagAuthor).SetTag(id).String(), a, false)
-}
-
 // func (m *Manager) Post(content, media string, author *mv.User, ip string, nsfw bool) (string, error) {
 func (m *Manager) Post(a *mv.Article, author *mv.User) (string, error) {
 	a.ID = ident.NewGeneralID().String()
@@ -209,11 +205,11 @@ func (m *Manager) Post(a *mv.Article, author *mv.User) (string, error) {
 	}
 
 	if !author.NoPostInMaster {
-		go m.Ref(&mv.Article{
+		go m.insertArticle(ident.NewID(ident.IDTagAuthor).SetTag("master").String(), &mv.Article{
 			ID:         ident.NewGeneralID().String(),
 			ReferID:    a.ID,
 			CreateTime: time.Now(),
-		}, "master")
+		}, false)
 	}
 
 	go func() {
@@ -221,9 +217,8 @@ func (m *Manager) Post(a *mv.Article, author *mv.User) (string, error) {
 			u.TotalPosts++
 			return nil
 		})
-		for _, id := range mv.ExtractMentions(a.Content) {
-			m.MentionUser(a, id)
-		}
+		ids, tags := mv.ExtractMentionsAndTags(a.Content)
+		m.MentionUserAndTags(a, ids, tags)
 	}()
 
 	return a.ID, nil
@@ -250,6 +245,7 @@ func (m *Manager) insertArticle(rootID string, a *mv.Article, asReply bool) erro
 		root.Replies++
 	} else {
 		a.NextID, root.NextID = root.NextID, a.ID
+		root.Replies++
 	}
 
 	if err := m.db.Set(a.ID, a.Marshal()); err != nil {
@@ -298,26 +294,27 @@ func (m *Manager) PostReply(parent string, content, media string, author *mv.Use
 		}
 	}
 
-	if err := m.insertArticle(ident.NewID(ident.IDTagInbox).SetTag(p.Author).String(), &mv.Article{
-		ID:  ident.NewGeneralID().String(),
-		Cmd: mv.CmdReply,
-		Extras: map[string]string{
-			"from":       a.Author,
-			"article_id": a.ID,
-		},
-		CreateTime: time.Now(),
-	}, false); err != nil {
-		return "", err
-	}
-
 	go func() {
-		m.UpdateUser(p.Author, func(u *mv.User) error {
-			u.Unread++
-			return nil
-		})
-		for _, id := range mv.ExtractMentions(a.Content) {
-			m.MentionUser(a, id)
+		if p.Content != mv.DeletionMarker {
+			if err := m.insertArticle(ident.NewID(ident.IDTagInbox).SetTag(p.Author).String(), &mv.Article{
+				ID:  ident.NewGeneralID().String(),
+				Cmd: mv.CmdReply,
+				Extras: map[string]string{
+					"from":       a.Author,
+					"article_id": a.ID,
+				},
+				CreateTime: time.Now(),
+			}, false); err != nil {
+				log.Println("PostReply", err)
+			}
+
+			m.UpdateUser(p.Author, func(u *mv.User) error {
+				u.Unread++
+				return nil
+			})
 		}
+		ids, tags := mv.ExtractMentionsAndTags(a.Content)
+		m.MentionUserAndTags(a, ids, tags)
 	}()
 
 	return a.ID, nil
