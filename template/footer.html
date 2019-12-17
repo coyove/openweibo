@@ -19,11 +19,14 @@
     <span style="float:right">IIS / {{.Render}}ms</span>
 </div>
 
-{{if .User.AutoNSFW}}
     <script>
-        var el = sel(".gbutton.nsfw-clicker");
-        for (var i = 0 ; i < el.length; i++) el[i].click();
-    </script>
+        function expandNSFW() {
+{{if .User.AutoNSFW}}
+            var el = sel(".gbutton.nsfw-clicker");
+            for (var i = 0 ; i < el.length; i++) el[i].click();
 {{end}}
+        }
+        expandNSFW()
+    </script>
 
 </html>

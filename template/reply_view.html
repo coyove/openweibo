@@ -45,11 +45,26 @@
                 </a>
                 <input type=checkbox name=nsfw id=nsfw>
                 <label for=nsfw>NSFW</label>
-                <script>
-                    var pica = window.pica({ features: [ 'js', 'wasm', 'ww', 'cib' ] });
 
+                <style>
+                    .gbutton.image { height: 100%; }
+                    .gbutton.image span { display: none; }
+                    .gbutton.image .info {
+                        position: absolute;
+                        width: 100%;
+                        height: 32px;
+                        line-height: 32px;
+                        top: 50%;
+                        margin-top: -16px;
+                        color: white;
+                        background: rgba(0,0,0,0.3)
+                    }
+                </style>
+                <script>
                     function onImageChanged(el) {
-                        sel('#post-image-button .pic').innerText = (el.value.split(/(\\|\/)/g).pop() || "图片").substring(0, 16);
+                        var btn = sel('#post-image-button');
+                        btn.className = btn.className.replace(/image/, "")
+                        btn.querySelector('div') ? btn.removeChild(btn.querySelector('div')) : 0;
                         sel("#post-image-base64").value = "";
 
                         if (!el.value) return;
@@ -59,39 +74,49 @@
                         reader.onload = function () {
                             var img = new Image();
                             img.onerror = function() {
-                                sel('#post-image-button .pic').innerText = "图片";
                             }
                             img.onload = function() {
                                 img.onload = null;
-                                var canvas = document.createElement("canvas"),
-                                    throt = 1 * 1000 * 1000,
-                                    f = 1, step = 0.5,
+                                var canvas = document.createElement("canvas"), throt = 1.2 * 1000 * 1000, f = 1,
                                     success = function() {
                                         sel("#post-image-base64").value = img.src;
-                                        sel("#post-image-button .pic").innerText += " (" + (img.src.length / 1.33 / 1024).toFixed(0) + "KB";
-                                        sel("#post-image-button .pic").innerText += (f == 1) ? ")" : " / 缩放" + (100/f).toFixed(0) + "%)";
                                         sel('#reply-submit').removeAttribute("disabled");
-                                    },
-                                    scaledown = function() {
-                                        canvas.width = img.width / f;
-                                        canvas.height = img.height / f;
-                                        pica.resize(img, canvas, 3).then(function() {
-                                            var res = canvas.toDataURL("image/jpeg", 0.75);
-                                            console.log(res.length, f);
-                                            if (res.length > throt) {
-                                                f += step;
-                                                step += 0.2;
-                                                scaledown();
-                                            } else {
-                                                img.src = res;
-                                                success();
-                                            }
-                                        });
+                                        var img2 = document.createElement("img");
+                                        var div = document.createElement("div");
+                                        var span = document.createElement("div");
+                                        img2.src = img.src;
+                                        img2.style.maxWidth = "100px";
+                                        img2.style.maxHeight = "100px";
+                                        img2.style.display = "block";
+                                        div.style.position = 'relative';
+                                        span.className = 'info';
+                                        span.innerText += (img.src.length / 1.33 / 1024).toFixed(0) + "KB";
+                                        span.innerText += (f == 1) ? "" : "/" + (f * 100).toFixed(0) + "q";
+                                        div.appendChild(img2);
+                                        div.appendChild(span);
+                                        btn.appendChild(div);
+                                        btn.className += " image";
                                     };
+                                            
 
                                 sel('#reply-submit').setAttribute("disabled", "disabled");
                                 if (img.src.length > throt) {
-                                    scaledown();
+                                    if (img.src.match(/image\/gif/)) {
+                                        img.onerror();
+                                        return;
+                                    }
+                                    var ctx = canvas.getContext('2d');
+                                    canvas.width = img.width; canvas.height = img.height;
+                                    ctx.drawImage(img,0,0);
+                                    for (f = 0.8; f > 0; f -= 0.1) {
+                                        var res = canvas.toDataURL("image/jpeg", f);
+                                        if (res.length <= throt) {
+                                            img.src = res;
+                                            success();
+                                            return;
+                                        }
+                                    }
+                                    img.onerror();
                                 } else {
                                     success();
                                 }

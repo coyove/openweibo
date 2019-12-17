@@ -264,7 +264,7 @@ func APIUserKimochi(g *gin.Context) {
 
 	if err := m.UpdateUser(u.ID, func(u *mv.User) error {
 		k, _ := strconv.Atoi(g.PostForm("k"))
-		if k < 0 || k > 42 {
+		if k < 0 || k > 44 {
 			k = 25
 		}
 		u.Kimochi = byte(k)

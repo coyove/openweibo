@@ -381,6 +381,10 @@ a.unread {
     text-decoration: none !important;
 }
 
+.status .title {
+    margin:-0.5em 0 0.5em;line-height:2.25em;border-bottom:dotted 1px #ccc;
+}
+
 span.mod {
     color: #673ab7;
     font-weight: bold;

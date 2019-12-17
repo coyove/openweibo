@@ -6,7 +6,7 @@
 
     <div style="margin-bottom:0.5em">
         <div class="status">
-            <div style="margin:-0.5em 0 0.5em;line-height:2.25em;border-bottom:dotted 1px #ccc">
+            <div class=title>
                 <b>@{{.User.ID}}</b>
                 {{if .User.IsMod}}/ <span class=mod>Mod</span>{{end}}
                 {{if .User.Banned}}/ 封禁{{end}}
@@ -80,8 +80,14 @@
     <title>我的时间线</title>
         <div>
             <div class="status">
-                <div style="margin:-0.5em 0 0.5em;line-height:2.25em;border-bottom:dotted 1px #ccc">
+                <div class=title>
+                    <b>@{{.User.ID}}</b>
+                    {{if .User.IsMod}}/ <span class=mod>Mod</span>{{end}}
+                    {{if .User.Banned}}/ 封禁{{end}}
                     <a href="/user"><i class="icon-wrench"></i></a>
+                </div>
+                <div class=title>
+                    <a href="/user/blacklist"><i class="icon-block"></i></a>
                     &emsp;<b>{{template "kimochi.html" .You}}</b>
                     {{if .User.Banned}}/ 封禁{{end}}
                     &emsp;{{if .User.Unread}}
@@ -98,9 +104,6 @@
                 </span>
                 <span>
                     <a href="/t/{{.User.ID}}"><b>{{.User.TotalPosts}}</b><br><span style="color:black">状态</span></a>
-                </span>
-                <span>
-                    <a href="/user/blacklist"><b class="icon-block"></b><br><span style="color:black">黑名单</span></a>
                 </span>
             </div>
         </div>
@@ -151,6 +154,7 @@
                     }
                 } catch (e) {}
                 el.removeAttribute("disabled")
+                expandNSFW();
             }, function() {
                 el.removeAttribute("disabled")
                 el.innerText = "重试...";

@@ -3,7 +3,7 @@
 kimochi {
 	position: relative;
 	display: inline-block;
-    width: 64px;
+    width: 48px;
     cursor: pointer;
     vertical-align: middle;
     margin: 0.5em;
@@ -57,67 +57,34 @@ kimochi img {
 }
 </style>
 
-<kimochi>
+<kimochi
+    onmouseover="
+    var ul = this.querySelector('ul');
+    var m = sel('#current-kimochi');
+    if (ul.childNodes.length) return;
+
+    for(var i = 0; i <= 44; i++){
+        var li = document.createElement('li'),
+            a = document.createElement('a'),
+            img = document.createElement('img');
+            img.src = '/s/emoji/emoji' + i + '.png';
+            if (i == 0) {
+                img.style.border = 'dashed 1px #233';
+                img.style.borderRadius = '50%';
+            }
+
+            a.appendChild(img);
+            a.onclick = (function(i) {
+                return function() {
+                    $post('/api/user/kimochi', 'k=' + i, function(resp) { if (resp === 'ok') location.reload(); });
+                }
+            })(i)
+            li.appendChild(a);
+            ul.appendChild(li);
+}">
 <img
     id="current-kimochi"
     src="/s/emoji/emoji{{.Kimochi}}.png"
     style="{{if not .Kimochi}}border:dashed 1px #233;border-radius:50%{{end}}">
-<ul>
-    <li>
-        <a onclick="updateKimochi(this)"><img src="/s/emoji/emoji0.png" style="border:dashed 1px #233;border-radius:50%"></a>
-    </li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji1.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji2.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji3.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji4.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji5.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji6.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji7.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji8.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji9.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji10.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji11.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji12.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji13.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji14.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji15.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji16.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji17.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji18.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji19.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji20.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji21.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji22.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji23.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji24.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji25.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji26.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji27.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji28.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji29.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji30.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji31.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji32.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji33.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji34.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji35.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji36.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji37.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji38.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji39.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji40.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji41.png"></a></li>
-    <li><a onclick="updateKimochi(this)"><img src="/s/emoji/emoji42.png"></a></li>
-</ul>
+<ul></ul>
 </kimochi>
-
-    <script>
-function updateKimochi(el) {
-    var m = sel("#current-kimochi");
-    var idx = (el.querySelector("img").getAttribute("src"));
-    $post("/api/user/kimochi", "k=" + idx.match(/(\d+)\.png/)[1],
-        function(resp) {
-            if (resp === "ok") location.reload();
-        });
-}
-    </script>
