@@ -8,7 +8,7 @@
         <div class="status">
             <div class=title>
                 <b>@{{.User.ID}}</b>
-                {{if .User.IsMod}}/ <span class=mod>Mod</span>{{end}}
+                {{if .User.IsMod}}<span class=mod>Mod</span>{{end}}
                 {{if .User.Banned}}/ 封禁{{end}}
             </div>
             <span><b>{{.User.Followings}}</b><br><span style="color:black">关注</span></span>
@@ -82,14 +82,13 @@
             <div class="status">
                 <div class=title>
                     <b>@{{.User.ID}}</b>
-                    {{if .User.IsMod}}/ <span class=mod>Mod</span>{{end}}
+                    {{if .User.IsMod}}<span class=mod>Mod</span>{{end}}
                     {{if .User.Banned}}/ 封禁{{end}}
                     <a href="/user"><i class="icon-wrench"></i></a>
                 </div>
                 <div class=title>
                     <a href="/user/blacklist"><i class="icon-block"></i></a>
                     &emsp;<b>{{template "kimochi.html" .You}}</b>
-                    {{if .User.Banned}}/ 封禁{{end}}
                     &emsp;{{if .User.Unread}}
                     <a href="/t/:in"><b style="color:#f52" class="icon-mail-alt">{{.User.Unread}}</b></a>
                     {{else}}

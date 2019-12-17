@@ -11,11 +11,10 @@
     <tr>
         <td>上次登入:</td>
         <td>{{.User.Login.Format "2006-01-02 15:04:05"}}</td>
-        <td rowspan=2><form method="POST" action="/user">
+        <td rowspan=2 class=nowrap><form method="POST" action="/user">
                 <input type=hidden name=uuid value="{{.UUID}}">
                 <input type=hidden name=username value="{{.User.ID}}">
-                <input type=hidden name=method value="logout">
-                <button style="color:#f52" class="gbutton" type=submit>注销</button>
+                <button style="color:#f52" class="gbutton" type=submit name=method value=logout>注销</button>
             </form></td>
     </tr>
     <tr>
@@ -23,10 +22,7 @@
         <td>{{.User.Signup.Format "2006-01-02 15:04:05"}}</td>
     </tr>
     <tr>
-        <td class=nowrap>上次登入IP:</td><td colspan=2>{{.User.LoginIP}}</td>
-    </tr>
-    <tr>
-        <td class=nowrap>注册IP:</td><td colspan=2>{{.User.SignupIP}}</td>
+        <td class=nowrap>上次登入IP:</td><td colspan=2>{{.User.DataIP}}</td>
     </tr>
 
     <form method="POST" action="/user">

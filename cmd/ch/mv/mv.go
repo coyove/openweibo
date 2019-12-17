@@ -40,9 +40,9 @@ type Article struct {
 	Parent      string            `json:"P"`
 	ReplyChain  string            `json:"Rc"`
 	NextReplyID string            `json:"R"`
-	NextID      string            `json:"N"`
-	Cmd         Cmd               `json:"K"`
-	Extras      map[string]string `json:"X"`
+	NextID      string            `json:"N,omitempty"`
+	Cmd         Cmd               `json:"K,omitempty"`
+	Extras      map[string]string `json:"X,omitempty"`
 	ReferID     string            `json:"ref,omitempty"`
 }
 
@@ -73,29 +73,36 @@ type User struct {
 	Session           string
 	Role              string
 	PasswordHash      []byte
-	Email             string    `json:"e"`
-	Avatar            string    `json:"a"`
-	TotalPosts        int       `json:"tp"`
-	Followers         int       `json:"F"`
-	Followings        int       `json:"f"`
-	FollowingChain    string    `json:"FC"`
-	FollowerChain     string    `json:"FrC"`
-	BlockingChain     string    `json:"BC"`
-	Unread            int       `json:"ur"`
-	Signup            time.Time `json:"st"`
-	SignupIP          string    `json:"sip"`
-	Login             time.Time `json:"lt"`
-	LoginIP           string    `json:"lip"`
-	Banned            bool      `json:"ban"`
-	NoReplyInTimeline bool      `json:"nrit,omitempty"`
-	NoPostInMaster    bool      `json:"npim,omitempty"`
-	AutoNSFW          bool      `json:"autonsfw,omitempty"`
-	Kimochi           byte      `json:"kmc,omitempty"`
+	Email             string `json:"e"`
+	Avatar            string `json:"a"`
+	TotalPosts        int32  `json:"tp"`
+	Followers         int32  `json:"F"`
+	Followings        int32  `json:"f"`
+	Unread            int32  `json:"ur"`
+	FollowingChain    string `json:"FC,omitempty"`
+	FollowerChain     string `json:"FrC,omitempty"`
+	BlockingChain     string `json:"BC,omitempty"`
+	DataIP            string `json:"sip"`
+	TSignup           uint32 `json:"st"`
+	TLogin            uint32 `json:"lt"`
+	Banned            bool   `json:"ban,omitempty"`
+	NoReplyInTimeline bool   `json:"nrit,omitempty"`
+	NoPostInMaster    bool   `json:"npim,omitempty"`
+	AutoNSFW          bool   `json:"autonsfw,omitempty"`
+	Kimochi           byte   `json:"kmc,omitempty"`
 }
 
 func (u User) Marshal() []byte {
 	b, _ := json.Marshal(u)
 	return b
+}
+
+func (u User) Signup() time.Time {
+	return time.Unix(int64(u.TSignup), 0)
+}
+
+func (u User) Login() time.Time {
+	return time.Unix(int64(u.TLogin), 0)
 }
 
 func (u User) IsMod() bool {

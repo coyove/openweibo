@@ -49,6 +49,12 @@
                 <style>
                     .gbutton.image { height: 100%; }
                     .gbutton.image span { display: none; }
+                    .gbutton.image img {
+                        display: block;
+                        max-width: 100px;
+                        max-height: 100px;
+                        border-radius: 3px;
+                    }
                     .gbutton.image .info {
                         position: absolute;
                         width: 100%;
@@ -77,7 +83,7 @@
                             }
                             img.onload = function() {
                                 img.onload = null;
-                                var canvas = document.createElement("canvas"), throt = 1.2 * 1000 * 1000, f = 1,
+                                var canvas = document.createElement("canvas"), throt = 1.4 * 1000 * 1000, f = 1,
                                     success = function() {
                                         sel("#post-image-base64").value = img.src;
                                         sel('#reply-submit').removeAttribute("disabled");
@@ -85,13 +91,10 @@
                                         var div = document.createElement("div");
                                         var span = document.createElement("div");
                                         img2.src = img.src;
-                                        img2.style.maxWidth = "100px";
-                                        img2.style.maxHeight = "100px";
-                                        img2.style.display = "block";
                                         div.style.position = 'relative';
                                         span.className = 'info';
                                         span.innerText += (img.src.length / 1.33 / 1024).toFixed(0) + "KB";
-                                        span.innerText += (f == 1) ? "" : "/" + (f * 100).toFixed(0) + "q";
+                                        span.innerText += (f == 1) ? "" : "/" + (f).toFixed(1);
                                         div.appendChild(img2);
                                         div.appendChild(span);
                                         btn.appendChild(div);

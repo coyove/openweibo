@@ -67,7 +67,7 @@ func IsCrawler(g *gin.Context) bool {
 //	log.Println("[writeCounterToDB] sched:", count)
 //}
 
-func dec0(a *int) {
+func dec0(a *int32) {
 	*a--
 	if *a < 0 {
 		*a = 0

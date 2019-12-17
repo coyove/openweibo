@@ -301,7 +301,7 @@ func (m *Manager) GetFollowingList(chain string, u *mv.User, cursor string, n in
 	if chain == "" {
 		if cursor != "" {
 			if u, _ := m.GetUser(lastElemInCompID(cursor)); u != nil {
-				return []FollowingState{{ID: u.ID, Time: u.Signup}}, ""
+				return []FollowingState{{ID: u.ID, Time: u.Signup()}}, ""
 			}
 		}
 		return nil, ""
@@ -330,7 +330,7 @@ func (m *Manager) GetFollowingList(chain string, u *mv.User, cursor string, n in
 		if err != nil {
 			if cursor == startCursor {
 				if u, _ := m.GetUser(lastElemInCompID(cursor)); u != nil {
-					res = append(res, FollowingState{ID: u.ID, Time: u.Signup})
+					res = append(res, FollowingState{ID: u.ID, Time: u.Signup()})
 				}
 			}
 			log.Println("[GetFollowingList]", cursor, err)

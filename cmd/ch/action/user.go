@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -87,13 +88,11 @@ func User(g *gin.Context) {
 			Session:      genSession(),
 			Email:        email,
 			PasswordHash: pwdHash.Sum(nil),
-			SignupIP:     ip,
-			Signup:       time.Now(),
-			LoginIP:      ip,
-			Login:        time.Now(),
+			DataIP:       "{" + ip + "}",
+			TSignup:      uint32(time.Now().Unix()),
+			TLogin:       uint32(time.Now().Unix()),
 		}
 	case "login":
-
 		if ret := checkToken(g); ret != "" {
 			redir("error", ret)
 			return
@@ -109,9 +108,17 @@ func User(g *gin.Context) {
 			return
 		}
 		u.Session = genSession()
-		u.Login = time.Now()
-		u.LoginIP = ip
+		u.TLogin = uint32(time.Now().Unix())
+		if ips := append(strings.Split(u.DataIP, ","), ip); len(ips) > 5 {
+			u.DataIP = strings.Join(append(ips[:1], ips[len(ips)-4:]...), ",")
+		} else {
+			u.DataIP = strings.Join(ips, ",")
+		}
 	case "logout":
+		m.UpdateUser_unlock(username, func(u *mv.User) error {
+			u.Session = genSession()
+			return nil
+		})
 		u = &mv.User{}
 		g.SetCookie("id", mv.MakeUserToken(u), 365*86400, "", "", false, false)
 		g.Redirect(302, "/")
@@ -145,6 +152,9 @@ func User(g *gin.Context) {
 		}
 
 		if err := m.UpdateUser_unlock(username, func(u *mv.User) error {
+			if u.IsAdmin() {
+				return fmt.Errorf("ban/admin-really")
+			}
 			u.Banned = g.PostForm("ban") != ""
 			return nil
 		}); err != nil {
