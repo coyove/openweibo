@@ -1,0 +1,26 @@
+<div class="status">
+    <div class=title>
+        <b>@{{.ID}}</b>
+        {{if .IsMod}}<span class=mod>Mod</span>{{end}}
+        {{if .Banned}}/ 封禁{{end}}
+        <a href="/user"><i class="icon-cog"></i></a>
+    </div>
+    <div class=title>
+        <a href="/user/blacklist"><i class="icon-block"></i></a>
+        &emsp;<b>{{template "kimochi.html" .}}</b>
+        &emsp;{{if .Unread}}
+        <a href="/t/:in"><b style="color:#f52" class="icon-mail-alt">{{.Unread}}</b></a>
+        {{else}}
+        <a href="/t/:in"><i class="icon-mail-alt"></i></a>
+        {{end}}
+    </div>
+    <span>
+        <a href="/user/followings"><b>{{.Followings}}</b><br><span style="color:black">关注</span></a>
+    </span>
+    <span>
+        <a href="/user/followers"><b>{{.Followers}}</b><br><span style="color:black">粉丝</span></a>
+    </span>
+    <span>
+        <a href="/t/{{.ID}}"><b>{{.TotalPosts}}</b><br><span style="color:black">状态</span></a>
+    </span>
+</div>

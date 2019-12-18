@@ -61,6 +61,7 @@ func UserList(g *gin.Context) {
 		EError   string
 		Next     string
 		ListType string
+		You      *mv.User
 		User     *mv.User
 	}{
 		EError:   g.Query("error"),
@@ -68,17 +69,23 @@ func UserList(g *gin.Context) {
 	}
 
 	p.UUID, _ = ident.MakeToken(g)
-
-	u, _ := g.Get("user")
-	p.User, _ = u.(*mv.User)
-
-	if p.User == nil {
+	p.You = getUser(g)
+	if p.You == nil {
 		g.Redirect(302, "/user")
 		return
 	}
 
+	p.User, _ = m.GetUser(g.Param("uid"))
+	if p.User == nil {
+		p.User = p.You
+	}
+
 	switch p.ListType {
 	case "blacklist":
+		if p.User != p.You {
+			g.Redirect(302, "/user/blacklist")
+			return
+		}
 		p.List, p.Next = m.GetFollowingList(p.User.BlockingChain, p.User, g.Query("n"), int(config.Cfg.PostsPerPage))
 	case "followers":
 		p.List, p.Next = m.GetFollowingList(p.User.FollowerChain, p.User, g.Query("n"), int(config.Cfg.PostsPerPage))

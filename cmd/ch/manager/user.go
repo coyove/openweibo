@@ -15,6 +15,9 @@ import (
 )
 
 func (m *Manager) GetUser(id string) (*mv.User, error) {
+	if id == "" {
+		return nil, mv.ErrNotExisted
+	}
 	if u := m.weakUsers.Get(id); u != nil {
 		return (*mv.User)(u), nil
 	}

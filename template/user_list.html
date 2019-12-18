@@ -1,15 +1,31 @@
 {{template "header.html" .}}
+{{$own := eq $.You.ID $.User.ID}}
 
-<div style="margin: 0.5em 0">
+<div style="margin: 0.5em 0; text-align:center">
     {{if eq .ListType "followings"}}
-    <script>sel('#nav-followings').className = "selected"</script>
-    <title>我的关注</title>
+        <script>sel('#nav-followings').className = "selected"</script>
+        {{if $own}}
+            <title>我的关注</title>
+            {{template "user_private.html" .User}}
+        {{else}}
+            <script>sel('#nav-followings a span').innerText = "@{{.User.ID}}"</script>
+            <title>{{.User.ID}}的关注</title>
+            {{template "user_public.html" .User}}
+        {{end}}
     {{else if eq .ListType "blacklist"}}
-    <script>sel('#nav-blacklist').className = "selected"</script>
-    <title>黑名单</title>
+        <script>sel('#nav-blacklist').className = "selected"</script>
+        <title>黑名单</title>
+        {{template "user_private.html" .User}}
     {{else}}
-    <script>sel('#nav-followers').className = "selected"</script>
-    <title>我的粉丝</title>
+        <script>sel('#nav-followers').className = "selected"</script>
+        {{if $own}}
+            <title>我的粉丝</title>
+            {{template "user_private.html" .User}}
+        {{else}}
+            <script>sel('#nav-followers a span').innerText = "@{{.User.ID}}"</script>
+            <title>{{.User.ID}}的粉丝</title>
+            {{template "user_public.html" .User}}
+        {{end}}
     {{end}}
 </div>
 
@@ -26,6 +42,8 @@
         <td colspan=3>{{template "error_i18n.html" .EError}}</td>
     </tr>
     {{end}}
+
+    {{if $own}}
     <tr style="border-bottom:dotted 1px #ccc">
         <td class=nowrap>
             <b>
@@ -50,6 +68,7 @@
             </td>
         </form>
     </tr>
+    {{end}}
 
     {{range .List}}
     <tr>
@@ -60,36 +79,42 @@
             <form method="POST" action="/user">
                 <input type=hidden name=uuid value="{{$.UUID}}">
                 <input type=hidden name=username value="{{$.User.ID}}">
-                <input type=hidden name=method value="block">
                 <input type=hidden name=to value="{{.ID}}">
                 {{if .Blocked}}
-                <button class="gbutton" type=submit>解除黑名单</button>
+                    <button class="gbutton" name=method value=block type=submit>解除黑名单</button>
                 {{else}}
                 <input type=hidden name=block value="1">
-                <button class="gbutton" type=submit style="color:#f52">拉入黑名单</button>
+                <button class="gbutton" name=method value=block type=submit style="color:#f52">拉入黑名单</button>
                 {{end}}
             </form>
             {{else if eq $.ListType "followers"}}
                 {{if not .RevFollowed}}
                     <button class=gbutton disabled>已解除关注</button>
                 {{else}}
+                    {{if $own}}
                     <form method="POST" action="/user/followers">
                         <input type=hidden name=uuid value="{{$.UUID}}">
                         <input type=hidden name=to value="{{.ID}}">
                         <button class="gbutton" type=submit style="color:#f52">拉入黑名单</button>
                     </form>
+                    {{else}}
+                    <button class=gbutton disabled>正在关注</button>
+                    {{end}}
                 {{end}}
             {{else}}
             <form method="POST" action="/user">
                 <input type=hidden name=uuid value="{{$.UUID}}">
                 <input type=hidden name=username value="{{$.User.ID}}">
-                <input type=hidden name=method value="follow">
                 <input type=hidden name=to value="{{.ID}}">
-                {{if .Followed}}
-                <button class="gbutton" type=submit>取消关注</button>
+                {{if $own}}
+                    {{if .Followed}}
+                    <button class="gbutton" name=method value=follow type=submit>取消关注</button>
+                    {{else}}
+                    <input type=hidden name=follow value="1">
+                    <button class="gbutton" name=method value=follow type=submit>关注</button>
+                    {{end}}
                 {{else}}
-                <input type=hidden name=follow value="1">
-                <button class="gbutton" type=submit>关注</button>
+                    <button class=gbutton disabled>{{if .Followed}}正在关注{{else}}已解除关注{{end}}</button>
                 {{end}}
             </form>
             {{end}}
@@ -99,9 +124,11 @@
 
     <tr>
         <td colspan=3 style="text-align:center">
-            <a href="?n={{.Next}}" class=gbutton>
-                下一页 &raquo;
-            </a>
+            {{if .Next}}
+            <a href="?n={{.Next}}" class=gbutton>下一页 &raquo;</a>
+            {{else}}
+            <a href="" class=gbutton style="color:#aaa">没有更多结果</a>
+            {{end}}
         </td>
     </tr>
 </table>

@@ -132,6 +132,7 @@ func main() {
 	r.Handle("POST", "/tag/:tag", view.Index)
 	r.Handle("GET", "/user", view.User)
 	r.Handle("GET", "/user/:type", view.UserList)
+	r.Handle("GET", "/user/:type/:uid", view.UserList)
 	r.Handle("GET", "/t", view.Timeline)
 	r.Handle("GET", "/t/:user", view.Timeline)
 	r.Handle("POST", "/t", view.Timeline)
