@@ -1,19 +1,19 @@
 
 <style>
-emoji {
+.emoji {
 	position: relative;
 	display: inline-block;
     line-height: 2em;
     cursor: pointer;
 }
 
-emoji li:hover, emoji li:hover a {
+.emoji li:hover, .emoji li:hover a {
     text-decoration: none !important;
     border-radius: 3px;
 	background-color: #f1f2f3;
 }
 
-emoji > ul {
+.emoji > ul {
 	display: none;
     background: white;
 	position: absolute;
@@ -22,19 +22,19 @@ emoji > ul {
     overflow-y: scroll;
 }
 
-emoji:hover {
+.emoji:hover {
     display: block;
     width: 100%;
 }
 
-emoji:hover > ul {
+.emoji:hover > ul {
 	display: flex;
     width: 100%;
     flex-wrap: wrap;
     z-index: 100;
 }
 
-emoji ul li {
+.emoji ul li {
     min-width: 64px;
 	float: none;
 	display: list-item;
@@ -45,7 +45,7 @@ emoji ul li {
     overflow: hidden;
 }
 
-emoji a {
+.emoji a {
     -webkit-appearance: none;
     -moz-appearance:    none;
     background :transparent;
@@ -58,7 +58,25 @@ emoji a {
 }
 </style>
 
-<emoji>
+<div class=emoji onmouseover="
+        sel('.emoji > ul').style.display = null;
+if (this.getAttribute('tags') === '1') return;
+
+                 try {
+var f = this.querySelector('ul li'), _this = this.querySelector('ul');
+       JSON.parse(window.localStorage.getItem('presets') || '[]').filter(function(t){return t}).forEach(function(t) {
+    var li = document.createElement('li');
+    var a = document.createElement('a');
+    li.appendChild(a);
+    a.onclick = function() { insertEmoji(t + ' '); }
+    a.innerText = t;
+    _this.insertBefore(li, f);
+});
+                 } catch (e) {
+                    window.localStorage.setItem('presets', '');
+                 }
+this.setAttribute('tags', '1');
+">
 <div class=gbutton>( ﾟ∀ﾟ)</div>
 <ul>
     <li><a  href="javascript:insertEmoji('|∀ﾟ')">|∀ﾟ</a></li>
@@ -149,10 +167,12 @@ emoji a {
     <li><a  href="javascript:insertEmoji('⊂彡☆))∀`)')">⊂彡☆))∀`)</a></li>
     <li><a  href="javascript:insertEmoji('(´∀((☆ミつ')">(´∀((☆ミつ</a></li>
 </ul>
-</emoji>
+</div>
 
 <script>
     function insertEmoji(e) {
         sel("#content").value += e;
+        sel("#content").focus();
+        sel(".emoji > ul").style.display = 'none';
     }
 </script>

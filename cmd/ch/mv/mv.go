@@ -89,6 +89,7 @@ type User struct {
 	NoReplyInTimeline bool   `json:"nrit,omitempty"`
 	NoPostInMaster    bool   `json:"npim,omitempty"`
 	AutoNSFW          bool   `json:"autonsfw,omitempty"`
+	FoldImages        bool   `json:"foldi,omitempty"`
 	Kimochi           byte   `json:"kmc,omitempty"`
 }
 

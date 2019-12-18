@@ -161,6 +161,7 @@ func User(g *gin.Context) {
 		u.NoReplyInTimeline = g.PostForm("nrit") != ""
 		u.NoPostInMaster = g.PostForm("npim") != ""
 		u.AutoNSFW = g.PostForm("autonsfw") != ""
+		u.FoldImages = g.PostForm("foldimg") != ""
 	case "ban-user":
 		if u == nil {
 			redir("error", "internal/error")

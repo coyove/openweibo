@@ -14,6 +14,7 @@ type ArticleView struct {
 	IDDOM       string
 	Parent      *ArticleView
 	Author      *mv.User
+	You         *mv.User
 	Cmd         string
 	Replies     int
 	Locked      bool
@@ -56,6 +57,10 @@ func (a *ArticleView) from(a2 *mv.Article, opt uint64, u *mv.User) *ArticleView 
 		a.Author = &mv.User{
 			ID: "?",
 		}
+	}
+	a.You = u
+	if a.You == nil {
+		a.You = &mv.User{}
 	}
 
 	if p := strings.SplitN(a2.Media, ":", 2); len(p) == 2 {

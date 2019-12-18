@@ -37,11 +37,13 @@
 
     {{if eq .MediaType "IMG"}}
     <div style="margin-top:0.5em">
-    {{if .NSFW}}
+    {{if or .NSFW .You.FoldImages}}
     <button
-        style="color:#f90"
+        style="color:{{if .NSFW}}#f90{{else}}#098{{end}}"
         onclick="this.style.display='none';this.nextElementSibling.querySelector('img').src='{{.Media}}'"
-        class="gbutton nsfw-clicker">展开NSFW内容</button>
+        class="gbutton nsfw-clicker">
+        {{if .NSFW}}展开NSFW图片{{else}}展开图片{{end}}
+    </button>
     <a href="{{.Media}}" target=_blank>
         <img
     {{else}}

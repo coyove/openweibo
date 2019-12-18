@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	rxSan        = regexp.MustCompile(`(?m)(^>.+|<|https?://[^\s<>"']+)`)
+	rxSan        = regexp.MustCompile(`(?m)(^>.+|<|https?://[^\s<>"'#]+|@\S+|#\S+)`)
 	rxFirstImage = regexp.MustCompile(`(?i)https?://\S+\.(png|jpg|gif|webp|jpeg)`)
 	rxMentions   = regexp.MustCompile(`((@|#)\S+)`)
 )
@@ -43,17 +43,16 @@ func sanText(in string) string {
 		if strings.HasPrefix(in, ">") {
 			return "<code>" + strings.TrimSpace(in[1:]) + "</code>"
 		}
+		if len(in) > 0 {
+			s := SafeStringForCompressString(template.HTMLEscapeString(in[1:]))
+			if in[0] == '#' {
+				return "<a href='/tag/" + s + "'>" + in + "</a>"
+			}
+			if in[0] == '@' {
+				return "<a href='/t/" + s + "'>" + in + "</a>"
+			}
+		}
 		return "<a href='" + in + "' target=_blank>" + in + "</a>"
-	})
-	in = rxMentions.ReplaceAllStringFunc(in, func(in string) string {
-		if len(in) < 2 {
-			return in
-		}
-		s := SafeStringForCompressString(template.HTMLEscapeString(in[1:]))
-		if in[0] == '#' {
-			return "<a href='/tag/" + s + "'>" + in + "</a>"
-		}
-		return "<a href='/t/" + s + "'>" + in + "</a>"
 	})
 	return in
 }

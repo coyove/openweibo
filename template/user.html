@@ -63,6 +63,13 @@
         </td>
     </tr>
     <tr>
+        <td class=nowrap></td>
+        <td colspan=2> 
+            <input name=foldimg type=checkbox {{if .User.FoldImages}}checked{{end}} id=foldimg>
+            <label for= foldimg>收起图片（减少流量）</label>
+        </td>
+    </tr>
+    <tr>
         <td colspan=2>
             {{if .EError}}{{template "error_i18n.html" .EError}}{{end}}
         </td>
