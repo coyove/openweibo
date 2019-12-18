@@ -13,8 +13,8 @@
             var el = document.querySelectorAll(q);
             return el.length === 1 ? el[0] : el;
         }
-        function isInViewport(el) {
-            var top = el.offsetTop, height = el.offsetHeight, h = window.innerHeight, s = 3;
+        function isInViewport(el, scale) {
+            var top = el.offsetTop, height = el.offsetHeight, h = window.innerHeight, s = scale || 0;
             while (el.offsetParent) {
                 el = el.offsetParent;
                 top += el.offsetTop;

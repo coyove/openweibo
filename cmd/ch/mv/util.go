@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	rxSan        = regexp.MustCompile(`(?m)(^>.+|<|https?://\S+)`)
+	rxSan        = regexp.MustCompile(`(?m)(^>.+|<|https?://[^\s<>"']+)`)
 	rxFirstImage = regexp.MustCompile(`(?i)https?://\S+\.(png|jpg|gif|webp|jpeg)`)
 	rxMentions   = regexp.MustCompile(`((@|#)\S+)`)
 )

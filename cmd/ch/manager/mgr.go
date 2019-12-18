@@ -10,10 +10,12 @@ import (
 	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/manager/kv"
 	"github.com/coyove/iis/cmd/ch/mv"
+	"github.com/coyove/iis/cmd/ch/weak_cache"
 )
 
 type Manager struct {
-	db KeyValueOp
+	db        KeyValueOp
+	weakUsers *weak_cache.Cache
 }
 
 func New(path string) *Manager {
@@ -26,6 +28,7 @@ func New(path string) *Manager {
 	}
 
 	m := &Manager{db: db}
+	m.weakUsers = weak_cache.NewCache(65536, time.Second)
 	return m
 }
 

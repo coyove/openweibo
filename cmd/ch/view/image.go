@@ -64,8 +64,8 @@ func Image(g *gin.Context) {
 	hash := sha1.Sum(img)
 	cachepath := fmt.Sprintf("tmp/images/%x/%x", hash[0], hash[1:])
 
-	m.LockUserID(cachepath)
-	defer m.UnlockUserID(cachepath)
+	m.Lock(cachepath)
+	defer m.Unlock(cachepath)
 
 	if _, err := os.Stat(cachepath); err == nil {
 		http.ServeFile(g.Writer, g.Request, cachepath)

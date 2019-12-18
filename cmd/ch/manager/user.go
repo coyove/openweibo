@@ -7,6 +7,7 @@ import (
 	"log"
 	"strconv"
 	"time"
+	"unsafe"
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
@@ -14,11 +15,28 @@ import (
 )
 
 func (m *Manager) GetUser(id string) (*mv.User, error) {
+	if u := m.weakUsers.Get(id); u != nil {
+		return (*mv.User)(u), nil
+	}
+
 	p, err := m.db.Get("u/" + id)
 	if err != nil {
 		return nil, err
 	}
-	return mv.UnmarshalUser(p)
+	u, err := mv.UnmarshalUser(p)
+	if u != nil {
+		u2 := *u
+		m.weakUsers.Add(u.ID, unsafe.Pointer(&u2))
+	}
+	return u, err
+}
+
+func (m *Manager) SetUser(u *mv.User) error {
+	if u.ID == "" {
+		return nil
+	}
+	m.weakUsers.Delete(u.ID)
+	return m.db.Set("u/"+u.ID, u.Marshal())
 }
 
 func (m *Manager) GetUserByToken(tok string) (*mv.User, error) {
@@ -60,18 +78,11 @@ func (m *Manager) IsBanned(id string) bool {
 	return u.Banned
 }
 
-func (m *Manager) SetUser(u *mv.User) error {
-	if u.ID == "" {
-		return nil
-	}
-	return m.db.Set("u/"+u.ID, u.Marshal())
-}
-
-func (m *Manager) LockUserID(id string) {
+func (m *Manager) Lock(id string) {
 	m.db.Lock(id)
 }
 
-func (m *Manager) UnlockUserID(id string) {
+func (m *Manager) Unlock(id string) {
 	m.db.Unlock(id)
 }
 

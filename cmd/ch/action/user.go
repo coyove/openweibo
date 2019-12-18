@@ -59,8 +59,8 @@ func User(g *gin.Context) {
 		return
 	}
 
-	m.LockUserID(username)
-	defer m.UnlockUserID(username)
+	m.Lock(username)
+	defer m.Unlock(username)
 
 	pwdHash := hmac.New(sha256.New, config.Cfg.KeyBytes)
 	pwdHash.Write([]byte(password))
@@ -253,8 +253,8 @@ func UserFollowers(g *gin.Context) {
 		return
 	}
 
-	m.LockUserID(u.ID)
-	defer m.UnlockUserID(u.ID)
+	m.Lock(u.ID)
+	defer m.Unlock(u.ID)
 
 	if g.PostForm("search") != "" {
 		if _, err := m.GetUser(to); err != nil {

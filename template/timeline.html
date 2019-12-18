@@ -128,7 +128,7 @@
 
 <div class=paging>
     {{if .Next}}
-    <button value="{{.Next}}" class=gbutton onclick="loadMore(this)">更多...</button>
+    <button id=next value="{{.Next}}" class=gbutton onclick="loadMore(this)">更多...</button>
     <script>
         function loadMore(el) {
             el.setAttribute("disabled", "disabled")
@@ -144,6 +144,7 @@
                     var pl = JSON.parse(h);
                     if (pl.EOT) {
                         el.innerText = "没有更多内容了";
+                        el.setAttribute("eot", "true");
                         el.style.color = "#aaa";
                         el.onclick = function() { location.reload() }
                     } else {
@@ -167,24 +168,15 @@
             })
 
          //   console.log(document.documentElement.scrollTop);
-            var rows = sel("#timeline .row");
-            for (var i = 0 ; i < rows.length - (window.MAX_ROWS || 100); i++) {
-                var c = rows[i];
-                if (c.className && c.className.match(/row/) && !c.ERASED) {
-                    c.style.height = c.offsetHeight + "px";
-                    c.innerHTML = "";
-                    c.ERASED = true;
-                }
-            }
         }
 
         window.addEventListener('scroll', function(e) {
             if (!window.ticking) {
                 window.requestAnimationFrame(function() {
-                    var rows = sel("#timeline .row");
+                    var rows = sel("#timeline .row"), nextBtn = sel("#next");
                     for (var i = 0 ; i < rows.length; i++) {
                         var c = rows[i];
-                        if (isInViewport(c)) {
+                        if (isInViewport(c, 3)) {
                             if (c.childNodes.length == 0) {
                                 c.innerHTML = c.__html;
                                 c.style.height = "";
@@ -196,6 +188,11 @@
                                 c.innerHTML = "";
                             }
                         }
+                    }
+                    if (isInViewport(nextBtn) &&
+                        !nextBtn.getAttribute("disabled") && nextBtn.getAttribute("eot") !== "true") {
+                        console.log("Load next");
+                        nextBtn.click();
                     }
                     window.ticking = false;
                 });
