@@ -17,14 +17,12 @@
 .emoji > ul {
     top: 0;
     background: white;
-	position: absolute;
-    box-shadow: 0 1px 5px rgba(0, 0, 0, .3);
     max-height: 128px;
     overflow-y: scroll;
 	display: flex;
+    padding: 0.33em;
     width: 100%;
     flex-wrap: wrap;
-    z-index: 100;
 }
 
 .emoji ul li {
@@ -52,7 +50,11 @@
 </style>
 
 <div id="emoji" class="emoji" style="display:none">
-<div class=gbutton>( ﾟ∀ﾟ)</div>
+    <div style="position: absolute;
+    z-index: 1000;
+    right: 0;
+    margin: 0.5em 1em;
+    text-align: center;"><a href="javascript:closeEmoji()"><i class="icon-cancel-circled"></i></a></div>
 <ul>
     <li><a  href="javascript:insertEmoji('|∀ﾟ')">|∀ﾟ</a></li>
     <li><a  href="javascript:insertEmoji('(´ﾟДﾟ`)')">(´ﾟДﾟ`)</a></li>
@@ -155,6 +157,11 @@
         el.value = el.value.replace(/@\S+$/, "") + "@" + e + " ";
         el.focus();
     }
+
+function closeEmoji() {
+    sel("#emoji").style.display = 'none';
+    sel("#content").focus();
+}
 
 try {
     var f = sel("#emoji").querySelector('ul li'), _this = sel("#emoji ul");
