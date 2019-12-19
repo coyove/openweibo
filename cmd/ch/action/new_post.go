@@ -134,7 +134,7 @@ func Reply(g *gin.Context) {
 		return
 	}
 
-	if g.PostForm("nsfw") != "" {
+	if g.PostForm("make-nsfw") != "" {
 		u := u.(*mv.User)
 		err := m.UpdateArticle(reply, func(a *mv.Article) error {
 			if u.ID != a.Author && !u.IsMod() {

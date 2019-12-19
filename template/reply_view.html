@@ -1,4 +1,4 @@
-<form id="reply-view" method="POST" action="{{if .ReplyTo}}/reply{{else}}/new{{end}}" onsubmit="return onPost(this)">
+<form id="reply-view" method="POST" action="{{if .ReplyTo}}/reply{{else}}/new{{end}}">
         {{if .CanDelete}}
     <table class="articles" style="width: 100%;margin:1em 0 2em;box-shadow: 0 1px 3px rgba(0, 0, 0,.2);text-align:left">
         <tr class=sep>
@@ -16,7 +16,7 @@
                 <label for=nsfw-confirm>标记该状态为NSFW（仅图片）</label>
             </td>
             <td class=nowrap>
-                <button class="gbutton" type=submit name=nsfw value=1 style="color:#f90">标记</a>
+                <button class="gbutton" type=submit name=make-nsfw value=1 style="color:#f90">标记</a>
             </td>
         </tr>
     </table>
@@ -44,8 +44,6 @@
                 <a class="gbutton" id=post-image-button onclick="sel('#post-image').click()">
                     <span class=icon-picture></span><span class="pic">图片</span>
                 </a>
-                &nbsp;<input type=checkbox name=nsfw id=nsfw>
-                <label for=nsfw>NSFW</label>
 
                 <style>
                     .gbutton.image { height: 100%; }
@@ -66,10 +64,14 @@
                         color: white;
                         background: rgba(0,0,0,0.3)
                     }
+                    #reply-submit-nsfw, #reply-button {
+                        display: block;
+                    }
                 </style>
 
             </td>
-            <td class="nowrap">
+            <td class="nowrap" style="text-align:center">
+                <button id=reply-submit-nsfw name=nsfw class=gbutton type=submit style="color:#f90;display:none">发布NSFW</button>
                 {{if .ReplyTo}}
                 <input type=hidden name=reply value="{{.ReplyTo}}">
                 <button id=reply-submit class="gbutton" type=submit>回复</button>
@@ -90,18 +92,31 @@
 </form>
 
 <script>
-    function onPost(el) {
-        var submits = el.querySelectorAll('button[type=submit]');
-        for (var i = 0; i < submits.length; i++) $wait(submits[i]);
+    (function() {
+        var submits = sel('#reply-view button[type=submit]');
+        for (var i = 0; i < submits.length; i++) {
+            submits[i].onclick = function() {
+                var c = document.createElement("input")
+                c.setAttribute("name", this.getAttribute("name"));
+                c.setAttribute("value", "1");
+                c.style.display = "none";
+                sel("#reply-view").appendChild(c);
+            }
+        }
 
-        var res = sel("#content").value.match(/((@|#)\S+)/g);
-        if (!res) return;
-        var e = JSON.parse(window.localStorage.getItem("presets") || "[]");
-        e = e.concat(res);
-        e = e.filter(function(el, i) { return e.indexOf(el) == i; });
-        if (e.length > 16) e = e.slice(e.length - 16);
-        window.localStorage.setItem("presets", JSON.stringify(e));
-    }
+        sel("#reply-view").addEventListener("submit", function () {
+            for (var i = 0; i < submits.length; i++) $wait(submits[i]);
+
+            var res = sel("#content").value.match(/((@|#)\S+)/g);
+            if (!res) return;
+
+            var e = JSON.parse(window.localStorage.getItem("presets") || "[]");
+            e = e.concat(res);
+            e = e.filter(function(el, i) { return e.indexOf(el) == i; });
+            if (e.length > 16) e = e.slice(e.length - 16);
+            window.localStorage.setItem("presets", JSON.stringify(e));
+        })
+    })();
 
 function onContentObserved(el) {
     sel("#emoji").style.display = null; 
@@ -138,6 +153,7 @@ function onImageChanged(el) {
     btn.className = btn.className.replace(/image/, "")
     btn.querySelector('div') ? btn.removeChild(btn.querySelector('div')) : 0;
     sel("#post-image-base64").value = "";
+    sel("#reply-submit-nsfw").style.display = "none";
 
     if (!el.value) return;
 
@@ -153,6 +169,7 @@ function onImageChanged(el) {
                 success = function() {
                     sel("#post-image-base64").value = img.src;
                     sel('#reply-submit').removeAttribute("disabled");
+                    sel("#reply-submit-nsfw").style.display = null;
                     var img2 = document.createElement("img");
                     var div = document.createElement("div");
                     var span = document.createElement("div");
