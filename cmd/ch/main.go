@@ -142,6 +142,7 @@ func main() {
 
 	r.Handle("POST", "/user", action.User)
 	r.Handle("POST", "/api/user/kimochi", action.APIUserKimochi)
+	r.Handle("POST", "/api/user/search", action.APISearchUsers)
 	r.Handle("POST", "/user/followers", action.UserFollowers)
 	r.Handle("POST", "/new", action.New)
 	r.Handle("POST", "/reply", action.Reply)

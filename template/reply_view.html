@@ -33,6 +33,7 @@
                     placeholder="正文"
                     rows={{if .ReplyTo}}6{{else}}10{{end}}
                     name="content"
+                    onkeyup="onContentObserved(this)"
                     style="padding:0.5em;border:none">{{.Content}}</textarea>
             </td>
         </tr>
@@ -89,7 +90,14 @@
 </form>
 
 <script>
+    sel("#content").addEventListener("blur", function() {
+        setTimeout(function() { sel("#emoji").style.display = 'none';  }, 1000);
+    }, true);
+
     function onPost(el) {
+        var submits = el.querySelectorAll('button[type=submit]');
+        for (var i = 0; i < submits.length; i++) $wait(submits[i]);
+
         var res = sel("#content").value.match(/((@|#)\S+)/g);
         if (!res) return;
         var e = JSON.parse(window.localStorage.getItem("presets") || "[]");
@@ -98,64 +106,95 @@
         if (e.length > 16) e = e.slice(e.length - 16);
         window.localStorage.setItem("presets", JSON.stringify(e));
     }
-    function onImageChanged(el) {
-        var btn = sel('#post-image-button');
-        btn.className = btn.className.replace(/image/, "")
-        btn.querySelector('div') ? btn.removeChild(btn.querySelector('div')) : 0;
-        sel("#post-image-base64").value = "";
 
-        if (!el.value) return;
+function onContentObserved(el) {
+    sel("#emoji").style.display = null; 
+    var autos = sel("#emoji ul li.auto", true);
+    for (var i = 0; i < autos.length; i++) sel("#emoji ul").removeChild(autos[i]);
 
-        var reader = new FileReader();
-        reader.readAsDataURL(el.files[0]);
-        reader.onload = function () {
-            var img = new Image();
-            img.onerror = function() {
+    var res = el.value.match(/(@\S+)$/g);
+    if (!res || res.length !== 1 || window.REQUESTING) return;
+    window.REQUESTING = true;
+
+    $post("/api/user/search", "id=" + res[0].substring(1), function(h) {
+        try {
+            var results = JSON.parse(h), ul = sel("#emoji ul"), f = sel("#emoji ul li:first-child");
+            if (results && results.length) {
+                results.forEach(function(t) {
+                    var li = document.createElement('li');
+                    var a = document.createElement('a');
+                    li.appendChild(a);
+                    li.className = "auto";
+                    a.onclick = function() { insertMention(t); }
+                    a.innerText = '@' + t;
+                    ul.insertBefore(li, f);
+                });
             }
-            img.onload = function() {
-                img.onload = null;
-                var canvas = document.createElement("canvas"), throt = 1.4 * 1000 * 1000, f = 1,
-                    success = function() {
-                        sel("#post-image-base64").value = img.src;
-                        sel('#reply-submit').removeAttribute("disabled");
-                        var img2 = document.createElement("img");
-                        var div = document.createElement("div");
-                        var span = document.createElement("div");
-                        img2.src = img.src;
-                        div.style.position = 'relative';
-                        span.className = 'info';
-                        span.innerText += (img.src.length / 1.33 / 1024).toFixed(0) + "KB";
-                        span.innerText += (f == 1) ? "" : "/" + (f).toFixed(1);
-                        div.appendChild(img2);
-                        div.appendChild(span);
-                        btn.appendChild(div);
-                        btn.className += " image";
-                    };
+        } catch(e) {}
+        window.REQUESTING = false;
+    }, function() {
+        window.REQUESTING = false;
+    })
+}
+
+function onImageChanged(el) {
+    var btn = sel('#post-image-button');
+    btn.className = btn.className.replace(/image/, "")
+    btn.querySelector('div') ? btn.removeChild(btn.querySelector('div')) : 0;
+    sel("#post-image-base64").value = "";
+
+    if (!el.value) return;
+
+    var reader = new FileReader();
+    reader.readAsDataURL(el.files[0]);
+    reader.onload = function () {
+        var img = new Image();
+        img.onerror = function() {
+        }
+        img.onload = function() {
+            img.onload = null;
+            var canvas = document.createElement("canvas"), throt = 1.4 * 1000 * 1000, f = 1,
+                success = function() {
+                    sel("#post-image-base64").value = img.src;
+                    sel('#reply-submit').removeAttribute("disabled");
+                    var img2 = document.createElement("img");
+                    var div = document.createElement("div");
+                    var span = document.createElement("div");
+                    img2.src = img.src;
+                    div.style.position = 'relative';
+                    span.className = 'info';
+                    span.innerText += (img.src.length / 1.33 / 1024).toFixed(0) + "KB";
+                    span.innerText += (f == 1) ? "" : "/" + (f).toFixed(1);
+                    div.appendChild(img2);
+                    div.appendChild(span);
+                    btn.appendChild(div);
+                    btn.className += " image";
+                };
 
 
-                sel('#reply-submit').setAttribute("disabled", "disabled");
-                if (img.src.length > throt) {
-                    if (img.src.match(/image\/gif/)) {
-                        img.onerror();
+            sel('#reply-submit').setAttribute("disabled", "disabled");
+            if (img.src.length > throt) {
+                if (img.src.match(/image\/gif/)) {
+                    img.onerror();
+                    return;
+                }
+                var ctx = canvas.getContext('2d');
+                canvas.width = img.width; canvas.height = img.height;
+                ctx.drawImage(img,0,0);
+                for (f = 0.8; f > 0; f -= 0.2) {
+                    var res = canvas.toDataURL("image/jpeg", f);
+                    if (res.length <= throt) {
+                        img.src = res;
+                        success();
                         return;
                     }
-                    var ctx = canvas.getContext('2d');
-                    canvas.width = img.width; canvas.height = img.height;
-                    ctx.drawImage(img,0,0);
-                    for (f = 0.8; f > 0; f -= 0.1) {
-                        var res = canvas.toDataURL("image/jpeg", f);
-                        if (res.length <= throt) {
-                            img.src = res;
-                            success();
-                            return;
-                        }
-                    }
-                    img.onerror();
-                } else {
-                    success();
                 }
+                img.onerror();
+            } else {
+                success();
             }
-            img.src = reader.result;
-        };
-    }
+        }
+        img.src = reader.result;
+    };
+}
 </script>

@@ -9,9 +9,9 @@
     <!--<link href="https://fonts.proxy.ustclug.org/css?family=Roboto:400,700&display=swap" rel="stylesheet">-->
     <!--<script src="/s/js/pica.min.js"></script>-->
     <script>
-        function sel(q) {
+        function sel(q, multi) {
             var el = document.querySelectorAll(q);
-            return el.length === 1 ? el[0] : el;
+            return el.length === 1 && !multi ? el[0] : el;
         }
         function isInViewport(el, scale) {
             var top = el.offsetTop, height = el.offsetHeight, h = window.innerHeight, s = scale || 0;
@@ -21,6 +21,20 @@
             }
             return top < (window.pageYOffset + h + h*s) && (top + height) > window.pageYOffset - h*s;
         } 
+        function $wait(el) {
+            el.setAttribute("disabled", "disabled");
+            var waiting = 0,
+                oldHTML = el.innerHTML;
+                timer = setInterval(function () {
+                waiting++;
+                el.innerHTML = "|/-\\|/-\\".charAt(waiting % 8);
+            }, 100);
+            return function() {
+                el.removeAttribute("disabled");
+                clearInterval(timer);
+                el.innerHTML = oldHTML;
+            }
+        }
         function $post(url, data, cb, errorcb) {
             var xmlHttp = new XMLHttpRequest();
             xmlHttp.onreadystatechange = function() {

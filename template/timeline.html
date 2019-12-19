@@ -97,15 +97,9 @@
     <button id=next value="{{.Next}}" class=gbutton onclick="loadMore(this)">更多...</button>
     <script>
         function loadMore(el) {
-            el.setAttribute("disabled", "disabled")
-            var tl = sel("#timeline"), waiting = 0;
-            var timer = setInterval(function () {
-                waiting++;
-                el.innerText = "|/-\\|/-\\".charAt(waiting % 8);
-            }, 100);
-
+            var tl = sel("#timeline"), stop = $wait(el);
             $post(location.href, 'api=1&cursors=' + encodeURIComponent(el.getAttribute("value")), function(h) {
-                clearInterval(timer);
+                stop();
                 try {
                     var pl = JSON.parse(h);
                     if (pl.EOT) {
@@ -125,14 +119,8 @@
                         }
                     }
                 } catch (e) {}
-                el.removeAttribute("disabled")
                 expandNSFW();
-            }, function() {
-                el.removeAttribute("disabled")
-                el.innerText = "重试...";
-                clearInterval(timer);
-            })
-
+            }, stop);
          //   console.log(document.documentElement.scrollTop);
         }
 
@@ -166,9 +154,7 @@
             }
         });
     </script>
-    {{end}}
-
-    {{if not .Next}}
+    {{else}}
         <a class=gbutton style="color:#aaa"
         {{if .IsUserTimeline}}
             href="/t/{{.User.ID}}">没有更多{{.User.ID}}的状态了</a>

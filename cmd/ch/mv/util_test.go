@@ -14,3 +14,11 @@ func BenchmarkUserUnmarshal(b *testing.B) {
 		UnmarshalUser(buf)
 	}
 }
+
+func TestSearchUsers(t *testing.T) {
+	UnmarshalUser([]byte(`{"ID":"aaa"}`))
+	UnmarshalUser([]byte(`{"ID":"bbb"}`))
+	UnmarshalUser([]byte(`{"ID":"aabb"}`))
+	UnmarshalUser([]byte(`{"ID":"aababbab"}`))
+	t.Log(SearchUsers("Ab", 3))
+}

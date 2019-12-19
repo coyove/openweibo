@@ -2,9 +2,10 @@
 <style>
 .emoji {
 	position: relative;
-	display: inline-block;
     line-height: 2em;
     cursor: pointer;
+    display: block;
+    width: 100%;
 }
 
 .emoji li:hover, .emoji li:hover a {
@@ -14,20 +15,12 @@
 }
 
 .emoji > ul {
-	display: none;
+    top: 0;
     background: white;
 	position: absolute;
     box-shadow: 0 1px 5px rgba(0, 0, 0, .3);
     max-height: 128px;
     overflow-y: scroll;
-}
-
-.emoji:hover {
-    display: block;
-    width: 100%;
-}
-
-.emoji:hover > ul {
 	display: flex;
     width: 100%;
     flex-wrap: wrap;
@@ -58,25 +51,7 @@
 }
 </style>
 
-<div class=emoji onmouseover="
-        sel('.emoji > ul').style.display = null;
-if (this.getAttribute('tags') === '1') return;
-
-                 try {
-var f = this.querySelector('ul li'), _this = this.querySelector('ul');
-       JSON.parse(window.localStorage.getItem('presets') || '[]').filter(function(t){return t}).forEach(function(t) {
-    var li = document.createElement('li');
-    var a = document.createElement('a');
-    li.appendChild(a);
-    a.onclick = function() { insertEmoji(t + ' '); }
-    a.innerText = t;
-    _this.insertBefore(li, f);
-});
-                 } catch (e) {
-                    window.localStorage.setItem('presets', '');
-                 }
-this.setAttribute('tags', '1');
-">
+<div id="emoji" class="emoji" style="display:none">
 <div class=gbutton>( ﾟ∀ﾟ)</div>
 <ul>
     <li><a  href="javascript:insertEmoji('|∀ﾟ')">|∀ﾟ</a></li>
@@ -173,6 +148,26 @@ this.setAttribute('tags', '1');
     function insertEmoji(e) {
         sel("#content").value += e;
         sel("#content").focus();
-        sel(".emoji > ul").style.display = 'none';
     }
+
+    function insertMention(e) {
+        var el = sel("#content");
+        el.value = el.value.replace(/@\S+$/, "") + "@" + e + " ";
+        el.focus();
+    }
+
+try {
+    var f = sel("#emoji").querySelector('ul li'), _this = sel("#emoji ul");
+    JSON.parse(window.localStorage.getItem('presets') || '[]').filter(function(t){return t}).forEach(function(t) {
+        var li = document.createElement('li');
+        var a = document.createElement('a');
+        li.appendChild(a);
+        a.onclick = function() { insertEmoji(t + ' '); }
+        a.innerText = t;
+        _this.insertBefore(li, f);
+    });
+} catch (e) {
+    console.log(window.localStorage.getItem('presets'), e);
+    window.localStorage.setItem('presets', '');
+}
 </script>

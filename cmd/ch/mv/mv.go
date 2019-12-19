@@ -40,6 +40,7 @@ type Article struct {
 	Parent      string            `json:"P"`
 	ReplyChain  string            `json:"Rc"`
 	NextReplyID string            `json:"R"`
+	EOC         string            `json:"EO,omitempty"`
 	NextID      string            `json:"N,omitempty"`
 	Cmd         Cmd               `json:"K,omitempty"`
 	Extras      map[string]string `json:"X,omitempty"`
@@ -114,8 +115,6 @@ func (u User) IsAdmin() bool {
 	return u.Role == "admin" || u.ID == config.Cfg.AdminName
 }
 
-var usCache [65536][16]rune
-
 func UnmarshalUser(b []byte) (*User, error) {
 	a := &User{}
 	err := json.Unmarshal(b, a)
@@ -133,51 +132,6 @@ func UnmarshalUser(b []byte) (*User, error) {
 	usCache[hash] = bs
 
 	return a, err
-}
-
-func SearchUser(id string) string {
-	m := map[uint32]bool{}
-	idr := []rune(id)
-
-	if len(idr) < 2 {
-		return ""
-	}
-
-	for i := 0; i < len(idr)-1; i++ {
-		m[uint32(uint16(idr[i]))<<16|uint32(uint16(idr[i+1]))] = true
-	}
-
-	bigram := func(a [16]rune) int {
-		s := 0
-		for i := 0; i < len(a)-1; i++ {
-			v := uint32(uint16(a[i]))<<16 | uint32(uint16(a[i+1]))
-			if v == 0 {
-				break
-			}
-			if m[v] {
-				s++
-			}
-		}
-		return s
-	}
-
-	maxScore := 0
-	res := [16]rune{}
-
-	for _, id2 := range usCache {
-		score := bigram(id2)
-		if score > maxScore {
-			maxScore = score
-			res = id2
-		}
-	}
-
-	for i := range res {
-		if res[i] == 0 {
-			return string(res[:i])
-		}
-	}
-	return ""
 }
 
 func MakeUserToken(u *User) string {

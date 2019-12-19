@@ -194,7 +194,9 @@ func User(g *gin.Context) {
 
 		if g.PostForm("search") != "" {
 			if _, err := m.GetUser(to); err != nil {
-				to = mv.SearchUser(to)
+				if res := mv.SearchUsers(to, 1); len(res) > 0 {
+					to = res[0]
+				}
 			}
 
 			if to == "" {
@@ -259,7 +261,9 @@ func UserFollowers(g *gin.Context) {
 
 	if g.PostForm("search") != "" {
 		if _, err := m.GetUser(to); err != nil {
-			to = mv.SearchUser(to)
+			if res := mv.SearchUsers(to, 1); len(res) > 0 {
+				to = res[0]
+			}
 		}
 
 		if to == "" {
@@ -304,4 +308,8 @@ func APIUserKimochi(g *gin.Context) {
 		return
 	}
 	g.String(200, "ok")
+}
+
+func APISearchUsers(g *gin.Context) {
+	g.JSON(200, mv.SearchUsers(g.PostForm("id"), 10))
 }
