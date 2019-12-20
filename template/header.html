@@ -27,7 +27,7 @@
                 oldHTML = el.innerHTML;
                 timer = setInterval(function () {
                 waiting++;
-                el.innerHTML = "|/-\\|/-\\".charAt(waiting % 8);
+                    el.innerHTML = "<b style='font-family:monospace'>" + "|/-\\".charAt(waiting % 4) + "</b>";
             }, 100);
             return function() {
                 el.removeAttribute("disabled");

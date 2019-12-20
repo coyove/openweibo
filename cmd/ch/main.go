@@ -126,6 +126,7 @@ func main() {
 	r.NoRoute(view.NotFound)
 	r.Handle("GET", "/", view.Home)
 	r.Handle("GET", "/img/:img", view.Image)
+	r.Handle("GET", "/i/:img", view.I)
 	r.Handle("GET", "/master", view.Index)
 	r.Handle("POST", "/master", view.Index)
 	r.Handle("GET", "/tag/:tag", view.Index)

@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -48,17 +49,6 @@ func Home(g *gin.Context) {
 var imgClient = &http.Client{Timeout: 1 * time.Second}
 
 func Image(g *gin.Context) {
-
-	if config.Cfg.Key == "0123456789abcdef" {
-		// debug
-		imgClient.Transport = &http.Transport{
-			Proxy: func(*http.Request) (*url.URL, error) {
-				return url.Parse("socks5://127.0.0.1:1080")
-			},
-		}
-		imgClient.Timeout = 0
-	}
-
 	img, _ := base64.StdEncoding.DecodeString(strings.TrimRight(g.Param("img"), ".jpg"))
 
 	hash := sha1.Sum(img)
@@ -107,7 +97,15 @@ func Image(g *gin.Context) {
 	}
 }
 
+func I(g *gin.Context) {
+	img := strings.TrimRight(g.Param("img"), ".jpg")
+	cachepath := fmt.Sprintf("tmp/images/%s/%s", img[:2], img)
+	http.ServeFile(g.Writer, g.Request, cachepath)
+}
+
 func init() {
+	dirMaxSize := config.Cfg.MaxImagesCache * 1024 * 1024 * 1024 / (64 * 64)
+
 	go func() {
 		for {
 			dirs, _ := ioutil.ReadDir("tmp/images")
@@ -124,11 +122,32 @@ func init() {
 				path := filepath.Join("tmp/images", dir.Name())
 				files, _ := ioutil.ReadDir(path)
 
+				totalSize := 0
 				for _, f := range files {
-					if time.Since(f.ModTime()).Seconds() > 86400*3 {
+					totalSize += int(f.Size())
+				}
+
+				if totalSize > dirMaxSize {
+					// too many files, purging the oldest
+					start, old := time.Now(), totalSize
+
+					sort.Slice(files, func(i, j int) bool {
+						return files[i].ModTime().Before(files[j].ModTime())
+					})
+
+					for _, f := range files {
 						path := filepath.Join(path, f.Name())
+						totalSize -= int(f.Size())
 						os.Remove(path)
+
+						if totalSize <= dirMaxSize {
+							break
+						}
 					}
+
+					log.Println("Image Purger:", path, "old size:", old, dirMaxSize, "purged in", time.Since(start))
+				} else {
+					log.Println("Image Purger OK:", path, "size:", totalSize, dirMaxSize)
 				}
 
 				time.Sleep(time.Minute)

@@ -13,23 +13,23 @@ import (
 )
 
 var Cfg = struct {
-	Key          string   `yaml:"Key"`
-	TokenTTL     int64    `yaml:"TokenTTL"`
-	IDTokenTTL   int64    `yaml:"IDTokenTTL"`
-	MaxContent   int64    `yaml:"MaxContent"`
-	MinContent   int64    `yaml:"MinContent"`
-	AdminName    string   `yaml:"AdminName"`
-	PostsPerPage int      `yaml:"PostsPerPage"`
-	Tags         []string `yaml:"Tags"`
-	Domain       string   `yaml:"Domain"`
-	IPBlacklist  []string `yaml:"IPBlacklist"`
-	Cooldown     int      `yaml:"Cooldown"`
-	NeedID       bool     `yaml:"NeedID"`
-	MaxMentions  int      `yaml:"MaxMentions"`
-	DyRegion     string   `yaml:"DyRegion"`
-	CwRegion     string   `yaml:"CwRegion"`
-	DyAccessKey  string   `yaml:"DyAccessKey"`
-	DySecretKey  string   `yaml:"DySecretKey"`
+	Key            string   `yaml:"Key"`
+	Cooldown       int      `yaml:"Cooldown"`   // minute
+	TokenTTL       int64    `yaml:"TokenTTL"`   // minute
+	IDTokenTTL     int64    `yaml:"IDTokenTTL"` // second
+	MaxContent     int64    `yaml:"MaxContent"` // byte
+	MinContent     int64    `yaml:"MinContent"` // byte
+	AdminName      string   `yaml:"AdminName"`
+	PostsPerPage   int      `yaml:"PostsPerPage"`
+	MaxImagesCache int      `yaml:"MaxImagesCache"` // GB
+	Tags           []string `yaml:"Tags"`
+	Domain         string   `yaml:"Domain"`
+	IPBlacklist    []string `yaml:"IPBlacklist"`
+	MaxMentions    int      `yaml:"MaxMentions"`
+	DyRegion       string   `yaml:"DyRegion"`
+	CwRegion       string   `yaml:"CwRegion"`
+	DyAccessKey    string   `yaml:"DyAccessKey"`
+	DySecretKey    string   `yaml:"DySecretKey"`
 
 	// inited after config being read
 	Blk               cipher.Block
@@ -39,16 +39,17 @@ var Cfg = struct {
 	PublicString      string
 	PrivateString     string
 }{
-	TokenTTL:     10,
-	IDTokenTTL:   600,
-	Key:          "0123456789abcdef",
-	AdminName:    "zzzz",
-	MaxContent:   4096,
-	MinContent:   8,
-	PostsPerPage: 30,
-	Tags:         []string{},
-	Cooldown:     5,
-	MaxMentions:  3,
+	TokenTTL:       10,
+	IDTokenTTL:     600,
+	Key:            "0123456789abcdef",
+	AdminName:      "zzzz",
+	MaxContent:     4096,
+	MinContent:     8,
+	PostsPerPage:   30,
+	Tags:           []string{},
+	Cooldown:       5,
+	MaxMentions:    3,
+	MaxImagesCache: 10,
 }
 
 func MustLoad() {

@@ -67,7 +67,11 @@ func (a *ArticleView) from(a2 *mv.Article, opt uint64, u *mv.User) *ArticleView 
 		a.MediaType, a.Media = p[0], p[1]
 		switch a.MediaType {
 		case "IMG":
-			a.Media = "/img/" + base64.StdEncoding.EncodeToString([]byte(a.Media)) + ".jpg"
+			if strings.HasPrefix(a.Media, "LOCAL:") {
+				a.Media = "/i/" + a.Media[6:] + ".jpg"
+			} else {
+				a.Media = "/img/" + base64.StdEncoding.EncodeToString([]byte(a.Media)) + ".jpg"
+			}
 		}
 	}
 

@@ -56,7 +56,7 @@ func New(g *gin.Context) {
 	}
 
 	if image != "" {
-		if image, err = uploadImgur(image); err != nil {
+		if image, err = writeImage(image); err != nil {
 			redir("error", err.Error())
 			return
 		}
@@ -152,7 +152,7 @@ func Reply(g *gin.Context) {
 	}
 
 	if image != "" {
-		image, err = uploadImgur(image)
+		image, err = writeImage(image)
 		if err != nil {
 			redir("error", err.Error())
 			return
