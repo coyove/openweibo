@@ -1,7 +1,9 @@
 package manager
 
 import (
+	"crypto/sha1"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -74,8 +76,20 @@ func dec0(a *int32) {
 	}
 }
 
-func makeFollowID(from, to string) string {
-	return "u/" + from + "/follow/" + to
+func MakeID(mth string, a, b string) string {
+	switch mth {
+	case "follow":
+		return MakeFollowID(a, b)
+	case "followed":
+		return makeFollowedID(a, b)
+	default:
+		return makeBlockID(a, b)
+	}
+}
+
+func MakeFollowID(from, to string) string {
+	h := sha1.Sum([]byte(to))
+	return "u/" + from + "/follow/" + strconv.Itoa(int(h[0]))
 }
 
 func makeFollowedID(from, to string) string {
@@ -92,4 +106,14 @@ func makeVoteID(from, aid string) string {
 
 func lastElemInCompID(id string) string {
 	return id[strings.LastIndex(id, "/")+1:]
+}
+
+func atoi64(a string) int64 {
+	v, _ := strconv.ParseInt(a, 10, 64)
+	return v
+}
+
+func atob(a string) bool {
+	v, _ := strconv.ParseBool(a)
+	return v
 }

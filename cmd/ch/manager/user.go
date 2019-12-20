@@ -5,7 +5,9 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 	"unsafe"
 
@@ -180,7 +182,9 @@ func (m *Manager) FollowUser_unlock(from, to string, following bool) (E error) {
 	}
 	root := u.FollowingChain
 
-	followID := makeFollowID(from, to)
+	followID := MakeFollowID(from, to)
+	m.db.Lock(followID)
+	defer m.db.Unlock(followID)
 
 	if following && m.IsBlocking(to, from) {
 		// "from" wants "to" follow "to" but "to" blocked "from"
@@ -213,23 +217,16 @@ func (m *Manager) FollowUser_unlock(from, to string, following bool) (E error) {
 		}()
 	}()
 
+	state := strconv.FormatBool(following) + "," + strconv.FormatInt(time.Now().Unix(), 10)
 	if a, _ := m.GetArticle(followID); a != nil {
-		state := strconv.FormatBool(following)
-		if a.Extras["follow"] == state {
-			return nil
-		}
-
-		a.Extras["follow"] = state
+		a.Extras[to] = state
 		return m.db.Set(a.ID, a.Marshal())
 	}
 
 	if err := m.insertArticle(root, &mv.Article{
-		ID:  followID,
-		Cmd: mv.CmdFollow,
-		Extras: map[string]string{
-			"to":     to,
-			"follow": strconv.FormatBool(following),
-		},
+		ID:         followID,
+		Cmd:        mv.CmdFollow,
+		Extras:     map[string]string{to: state},
 		CreateTime: time.Now(),
 	}, false); err != nil {
 		return err
@@ -293,6 +290,8 @@ func (m *Manager) BlockUser_unlock(from, to string, blocking bool) (E error) {
 	}
 
 	followID := makeBlockID(from, to)
+	m.db.Lock(followID)
+	defer m.db.Unlock(followID)
 
 	if a, _ := m.GetArticle(followID); a != nil {
 		state := strconv.FormatBool(blocking)
@@ -326,20 +325,15 @@ type FollowingState struct {
 	Blocked     bool
 }
 
-func (m *Manager) GetFollowingList(chain string, u *mv.User, cursor string, n int) ([]FollowingState, string) {
+func (m *Manager) GetFollowingList(chain string, cursor string, n int) ([]FollowingState, string) {
 	if chain == "" {
-		if cursor != "" {
-			if u, _ := m.GetUser(lastElemInCompID(cursor)); u != nil {
-				return []FollowingState{{ID: u.ID, Time: u.Signup()}}, ""
-			}
-		}
 		return nil, ""
 	}
 
 	if cursor == "" {
 		a, err := m.GetArticle(chain)
 		if err != nil {
-			log.Println("[GetFollowingList] Failed to get chain", u, "[", chain, "]")
+			log.Println("[GetFollowingList] Failed to get chain [", chain, "]")
 			return nil, ""
 		}
 		cursor = a.NextID
@@ -347,44 +341,51 @@ func (m *Manager) GetFollowingList(chain string, u *mv.User, cursor string, n in
 
 	res := []FollowingState{}
 	start := time.Now()
-	startCursor := cursor
 
 	for len(res) < n && cursor != "" {
 		if time.Since(start).Seconds() > 0.2 {
-			log.Println("[GetFollowingList] Break out slow walk", u.ID, "[", cursor, "]")
+			log.Println("[GetFollowingList] Break out slow walk [", cursor, "]")
 			break
 		}
 
 		a, err := m.GetArticle(cursor)
 		if err != nil {
-			if cursor == startCursor {
-				if u, _ := m.GetUser(lastElemInCompID(cursor)); u != nil {
-					res = append(res, FollowingState{ID: u.ID, Time: u.Signup()})
-				}
-			}
 			log.Println("[GetFollowingList]", cursor, err)
 			break
 		}
 
-		if a.Extras["follow"] == "true" {
-			res = append(res, FollowingState{ID: a.Extras["to"], Time: a.CreateTime, Followed: true})
-		} else if a.Extras["block"] == "true" {
-			res = append(res, FollowingState{ID: a.Extras["to"], Time: a.CreateTime, Blocked: true})
-		} else if a.Extras["followed"] == "true" {
-			res = append(res, FollowingState{ID: a.Extras["to"], Time: a.CreateTime, RevFollowed: true})
-		} else if cursor == startCursor {
-			res = append(res, FollowingState{ID: a.Extras["to"], Time: a.CreateTime})
+		if a.Cmd == mv.CmdFollow {
+			for k, v := range a.Extras {
+				p := strings.Split(v, ",")
+				if len(p) != 2 {
+					continue
+				}
+				res = append(res, FollowingState{
+					ID:       k,
+					Time:     time.Unix(atoi64(p[1]), 0),
+					Followed: atob(p[0]),
+				})
+			}
+		} else {
+			res = append(res, FollowingState{
+				ID:          a.Extras["to"],
+				Time:        a.CreateTime,
+				Blocked:     a.Extras["block"] == "true",
+				RevFollowed: a.Extras["followed"] == "true",
+			})
 		}
 
 		cursor = a.NextID
 	}
 
+	sort.Slice(res, func(i, j int) bool { return res[i].Time.After(res[j].Time) })
+
 	return res, cursor
 }
 
 func (m *Manager) IsFollowing(from, to string) bool {
-	p, _ := m.GetArticle(makeFollowID(from, to))
-	return p != nil && p.Extras["follow"] == "true"
+	p, _ := m.GetArticle(MakeFollowID(from, to))
+	return p != nil && strings.HasPrefix(p.Extras[to], "true")
 }
 
 func (m *Manager) IsBlocking(from, to string) bool {

@@ -86,11 +86,11 @@ func UserList(g *gin.Context) {
 			g.Redirect(302, "/user/blacklist")
 			return
 		}
-		p.List, p.Next = m.GetFollowingList(p.User.BlockingChain, p.User, g.Query("n"), int(config.Cfg.PostsPerPage))
+		p.List, p.Next = m.GetFollowingList(p.User.BlockingChain, g.Query("n"), int(config.Cfg.PostsPerPage))
 	case "followers":
-		p.List, p.Next = m.GetFollowingList(p.User.FollowerChain, p.User, g.Query("n"), int(config.Cfg.PostsPerPage))
+		p.List, p.Next = m.GetFollowingList(p.User.FollowerChain, g.Query("n"), int(config.Cfg.PostsPerPage))
 	default:
-		p.List, p.Next = m.GetFollowingList(p.User.FollowingChain, p.User, g.Query("n"), int(config.Cfg.PostsPerPage))
+		p.List, p.Next = m.GetFollowingList(p.User.FollowingChain, g.Query("n"), int(config.Cfg.PostsPerPage))
 	}
 
 	g.HTML(200, "user_list.html", p)

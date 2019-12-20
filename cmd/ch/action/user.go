@@ -12,6 +12,7 @@ import (
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
+	"github.com/coyove/iis/cmd/ch/manager"
 	"github.com/coyove/iis/cmd/ch/mv"
 	"github.com/gin-gonic/gin"
 )
@@ -194,6 +195,7 @@ func User(g *gin.Context) {
 
 		if g.PostForm("search") != "" {
 			if _, err := m.GetUser(to); err != nil {
+				to = ""
 				if res := mv.SearchUsers(to, 1); len(res) > 0 {
 					to = res[0]
 				}
@@ -202,13 +204,13 @@ func User(g *gin.Context) {
 			if to == "" {
 				redir("error", "user/not-found")
 			} else {
-				redir("n", "u/"+u.ID+"/"+mth+"/"+to)
+				g.Redirect(302, "/t/"+to)
 			}
 			return
 		}
 
 		if ret := checkToken(g); ret != "" {
-			redir("error", ret, "n", "u/"+u.ID+"/"+mth+"/"+to)
+			redir("error", ret, "n", manager.MakeID(mth, u.ID, to))
 			return
 		}
 
@@ -222,7 +224,7 @@ func User(g *gin.Context) {
 		if err != nil {
 			redir("error", err.Error())
 		} else {
-			redir("error", "ok", "n", "u/"+u.ID+"/"+mth+"/"+to)
+			redir("error", "ok", "n", manager.MakeID(mth, u.ID, to))
 		}
 		return
 	}

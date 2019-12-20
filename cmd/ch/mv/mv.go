@@ -80,7 +80,7 @@ type User struct {
 	Followers         int32  `json:"F"`
 	Followings        int32  `json:"f"`
 	Unread            int32  `json:"ur"`
-	FollowingChain    string `json:"FC,omitempty"`
+	FollowingChain    string `json:"FC2,omitempty"`
 	FollowerChain     string `json:"FrC,omitempty"`
 	BlockingChain     string `json:"BC,omitempty"`
 	DataIP            string `json:"sip"`
