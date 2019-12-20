@@ -98,7 +98,7 @@ func Image(g *gin.Context) {
 }
 
 func I(g *gin.Context) {
-	img := strings.TrimRight(g.Param("img"), ".jpg")
+	img := strings.Replace(g.Param("img"), ".jpg", "", 1)
 	cachepath := fmt.Sprintf("tmp/images/%s/%s", img[:2], img)
 	http.ServeFile(g.Writer, g.Request, cachepath)
 }
