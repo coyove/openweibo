@@ -5,6 +5,12 @@
 <title>@{{.User.ID}}</title>
 
     <script>sel('#nav-user-info').className = "selected"</script>
+    
+    <style>
+.articles tr td:last-child {
+    word-break: break-all;
+}
+    </style>
 
 <form method="POST" action="/user">
 <table class="articles" style="margin: 0.5em 0">

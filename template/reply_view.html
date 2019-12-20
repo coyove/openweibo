@@ -39,7 +39,7 @@
         </tr>
         <tr class=sep>
             <td>
-                <input type=file id=post-image style="display:none" onchange="onImageChanged(this)" accept=".jpg,.jpeg,.png,.gif">
+                <input type=file id=post-image style="display:none" onchange="onImageChanged(this)">
                 <input type=hidden id=post-image-base64 name=image64>
                 <a class="gbutton" id=post-image-button onclick="sel('#post-image').click()">
                     <span class=icon-picture></span><span class="pic">图片</span>
@@ -71,13 +71,16 @@
 
             </td>
             <td class="nowrap" style="text-align:center">
-                <button id=reply-submit-nsfw name=nsfw class=gbutton type=submit style="color:#f90;display:none">发布NSFW</button>
                 {{if .ReplyTo}}
                 <input type=hidden name=reply value="{{.ReplyTo}}">
                 <button id=reply-submit class="gbutton" type=submit>回复</button>
                 {{else}}
                 <button id=reply-submit class="gbutton" type=submit>发布</button>
                 {{end}}
+
+                <button id=reply-submit-nsfw name=nsfw class=gbutton type=submit style="color:#f90;display:none">
+                    {{if .ReplyTo}}回复{{else}}发布{{end}}为NSFW内容
+                </button>
             </td>
         </tr>
 {{if .Error}}
@@ -93,7 +96,7 @@
 
 <script>
     (function() {
-        var submits = sel('#reply-view button[type=submit]');
+        var submits = sel('#reply-view button[type=submit]', true);
         for (var i = 0; i < submits.length; i++) {
             submits[i].onclick = function() {
                 var c = document.createElement("input")
