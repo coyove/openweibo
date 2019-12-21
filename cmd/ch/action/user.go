@@ -191,9 +191,10 @@ func User(g *gin.Context) {
 
 		if g.PostForm("search") != "" {
 			if _, err := m.GetUser(to); err != nil {
-				to = ""
 				if res := mv.SearchUsers(to, 1); len(res) > 0 {
 					to = res[0]
+				} else {
+					to = ""
 				}
 			}
 
@@ -261,6 +262,8 @@ func UserFollowers(g *gin.Context) {
 		if _, err := m.GetUser(to); err != nil {
 			if res := mv.SearchUsers(to, 1); len(res) > 0 {
 				to = res[0]
+			} else {
+				to = ""
 			}
 		}
 
