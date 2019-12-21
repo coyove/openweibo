@@ -97,7 +97,7 @@ func Timeline(g *gin.Context) {
 		pl.IsUserTimeline = true
 		pl.User, _ = m.GetUser(uid)
 		if pl.User == nil {
-			Error(404, "USER NOT FOUND", g)
+			NotFound(g)
 			return
 		}
 		if pl.You != nil {
@@ -201,7 +201,7 @@ func Replies(g *gin.Context) {
 
 	parent, err := m.Get(pid)
 	if err != nil || parent.ID == "" {
-		Error(404, "NOT FOUND", g)
+		NotFound(g)
 		log.Println(pid, err)
 		return
 	}
@@ -213,7 +213,7 @@ func Replies(g *gin.Context) {
 		pl.ReplyView.CanDelete = u.(*mv.User).ID == pl.ParentArticle.Author.ID || u.(*mv.User).IsMod()
 		pl.ReplyView.NSFW = pl.ParentArticle.NSFW
 		if m.IsBlocking(pl.ParentArticle.Author.ID, u.(*mv.User).ID) {
-			Error(404, "NOT FOUND", g)
+			NotFound(g)
 			return
 		}
 	}

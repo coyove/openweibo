@@ -1,5 +1,5 @@
 {{template "header.html" .}}
 <title>错误</title>
-<div style="margin:1em">
-{{.Message}}
+<div style="padding:1em;text-align:center" class=row>
+{{template "error_i18n.html" .Message}}
 </div>

@@ -102,7 +102,7 @@ func (id ID) Header() IDTag {
 }
 
 func UnmarshalID(p []byte) ID {
-	if len(p) < 6 {
+	if len(p) == 0 {
 		return ID{}
 	}
 

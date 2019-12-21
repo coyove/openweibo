@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	rxSan        = regexp.MustCompile(`(?m)(^>.+|<|https?://[^\s<>"'#]+|@\S+|#\S+)`)
-	rxFirstImage = regexp.MustCompile(`(?i)https?://\S+\.(png|jpg|gif|webp|jpeg)`)
+	rxSan        = regexp.MustCompile(`(?m)(\[img\]https?://\S+\[/img\]|\[code\][\s\S]+\[/code\]|<|https?://[^\s<>"'#\[\]]+|@\S+|#\S+)`)
+	rxFirstImage = regexp.MustCompile(`(?i)(https?://\S+\.(png|jpg|gif|webp|jpeg)|\[img\]https?://\S+\[/img\])`)
 	rxMentions   = regexp.MustCompile(`((@|#)\S+)`)
 )
 
@@ -41,8 +41,11 @@ func sanText(in string) string {
 		if in == "<" {
 			return "&lt;"
 		}
-		if strings.HasPrefix(in, ">") {
-			return "<code>" + strings.TrimSpace(in[1:]) + "</code>"
+		if strings.HasPrefix(in, "[code]") && strings.HasSuffix(in, "[/code]") {
+			return "<code>" + strings.TrimSpace(in[6:len(in)-7]) + "</code>"
+		}
+		if strings.HasPrefix(in, "[img]") && strings.HasSuffix(in, "[/img]") {
+			return ""
 		}
 		if len(in) > 0 {
 			s := SafeStringForCompressString(template.HTMLEscapeString(in[1:]))
@@ -85,6 +88,9 @@ AGAIN: // TODO
 func ExtractFirstImage(in string) string {
 	m := rxFirstImage.FindAllString(in, 1)
 	if len(m) > 0 {
+		if strings.HasPrefix(m[0], "[img]") && strings.HasSuffix(m[0], "[/img]") {
+			return m[0][5 : len(m[0])-6]
+		}
 		return m[0]
 	}
 	return ""

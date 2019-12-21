@@ -26,10 +26,6 @@ func User(g *gin.Context) {
 		password2 = mv.SoftTrunc(g.PostForm("password2"), 32)
 		mth       = g.PostForm("method")
 		redir     = func(a, b string, ext ...string) {
-			if mth == "login" && a == "error" {
-				a = "login-error"
-			}
-
 			q := EncodeQuery(append([]string{a, b, "username", username, "email", email, "password", ident.MakeTempToken(password)}, ext...)...)
 
 			switch mth {

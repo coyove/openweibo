@@ -4,7 +4,6 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
-	"html/template"
 	"io"
 	"io/ioutil"
 	"log"
@@ -18,31 +17,24 @@ import (
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
-	"github.com/coyove/iis/cmd/ch/manager"
+	"github.com/coyove/iis/cmd/ch/mv"
 	"github.com/gin-gonic/gin"
 )
 
 func Home(g *gin.Context) {
-	id, _ := g.Cookie("id")
-
 	var p = struct {
-		ID        string
-		IsCrawler bool
-		IsAdmin   bool
-		Config    template.HTML
-		Tags      []string
+		User       *mv.User
+		UUID       string
+		RUsername  string
+		RPassword  string
+		LoginError string
 	}{
-		id,
-		manager.IsCrawler(g),
-		ident.IsAdmin(g),
-		template.HTML(config.Cfg.PublicString),
-		config.Cfg.Tags,
+		User:       getUser(g),
+		RUsername:  g.Query("username"),
+		RPassword:  ident.ParseTempToken(g.Query("password")),
+		LoginError: g.Query("error"),
 	}
-
-	if ident.IsAdmin(g) {
-		p.Config = template.HTML(config.Cfg.PrivateString)
-	}
-
+	p.UUID, _ = ident.MakeToken(g)
 	g.HTML(200, "home.html", p)
 }
 

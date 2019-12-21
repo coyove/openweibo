@@ -6,6 +6,7 @@ import (
 
 func TestFirstImage(t *testing.T) {
 	t.Log(ExtractFirstImage("http://1.jp http://1.qjpg http://2.jpg"))
+	t.Log(ExtractFirstImage("[img]http://1.jp[/img] http://1.qjpg http://2.jpg"))
 }
 
 func BenchmarkUserUnmarshal(b *testing.B) {

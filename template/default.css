@@ -348,6 +348,8 @@ img.avatar {
     border-radius:3px;display:inline-block;vertical-align:middle;margin-right:0.75em;max-width:36px;max-height:36px;overflow:hidden
 }
 
+.icon-flow-merge:before { margin-left: 0 !important }
+
 @media only screen and (max-width: 540px) {
     .row {
         margin-right: 0.1em;

@@ -116,6 +116,12 @@ func (m *Manager) WalkMulti(n int, cursors ...ident.ID) (a []*mv.Article, next [
 
 		p, err := m.GetArticle(latest.String())
 		if err == nil {
+			if latest.IsRoot() {
+				*latest = ident.ParseID(p.NextID)
+				log.Println("[mgr.WalkMulti] Continue with breaked root walk", latest.String(), "next:", p.NextID)
+				continue
+			}
+
 			a = append(a, p)
 			*latest = ident.ParseID(p.NextID)
 		} else {
@@ -125,6 +131,7 @@ func (m *Manager) WalkMulti(n int, cursors ...ident.ID) (a []*mv.Article, next [
 		}
 	}
 
+	log.Println(cursors)
 	return a, cursors
 }
 

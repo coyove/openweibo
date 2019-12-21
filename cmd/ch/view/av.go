@@ -55,7 +55,7 @@ func (a *ArticleView) from(a2 *mv.Article, opt uint64, u *mv.User) *ArticleView 
 	a.Author, _ = m.GetUser(a2.Author)
 	if a.Author == nil {
 		a.Author = &mv.User{
-			ID: "?",
+			ID: a2.Author + "?",
 		}
 	}
 	a.You = u

@@ -2,12 +2,18 @@ package ident
 
 import (
 	"math/rand"
+	"strconv"
 	"testing"
+
+	"github.com/coyove/iis/cmd/ch/mv"
 )
 
 func TestID(t *testing.T) {
+	t.Log(ParseID("L75mSN4-"))
+	return
+
 	for i := 0; i < 1e6; i++ {
-		tag := SafeStringForCompressString(randomString())
+		tag := mv.SafeStringForCompressString(strconv.Itoa(rand.Int()))
 
 		id := NewID(IDTagAuthor).SetTag(tag)
 		if rand.Intn(2) == 0 {

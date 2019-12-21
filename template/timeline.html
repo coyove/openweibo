@@ -82,12 +82,8 @@
         {{end}}
 
 <div class="rows" id=timeline>
-    {{if len .Articles}}
     {{range .Articles}}
         {{template "row_content.html" .}}
-    {{end}}
-    {{else}}
-    <div class=row style="text-align:center;padding:1em">无内容</div>
     {{end}}
 </div>
 

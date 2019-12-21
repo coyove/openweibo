@@ -5,14 +5,43 @@
     <div style="text-align:left">
     1. 注册后的用户名如果包含了非法字符，会被替换为英文下划线，但登录的话依旧可以使用输入的原用户名<br>
     2. 不知道看什么？点击MASTER进入全局时间线<br>
-    3. 上传图片最大不超过1M，正文内容最大不超过1024字节
-    </div>
+    3. 上传图片最大不超过1M (.jpg, .png, .gif)，正文内容最大不超过1024字节
 
     <!--[if lte IE 9]> 
         <div style="color:red">
         本站不支持IE9及以下版本
         </div>
     <![endif]-->
+
+    {{if not .User}}
+    <form method="POST" action="/user" style="margin-top: 1em">
+        <table class="articles">
+            <input type=hidden name=uuid value="{{.UUID}}">
+            <input type=hidden name=method value="login">
+            <tr>
+                <td class=nowrap>用户名:</td>
+                <td><input autofocus class=t name=username value="{{.RUsername}}" required></td>
+            </tr>
+            <tr>
+                <td class=nowrap>密码:</td>
+                <td><input type=password class=t name=password value="{{.RPassword}}" required></td>
+            </tr>
+            {{if .LoginError}}
+            <tr>
+                <td></td><td>{{template "error_i18n.html" .LoginError}}</td>
+            </tr>
+            {{end}}
+            <tr>
+                <td>
+                </td> 
+                <td style="text-align:right">
+                    <button class="gbutton" type=submit>登入</button>
+                </td>
+            </tr>
+        </table>
+    </form>
+    {{end}}
+    </div>
 </div>
 
 
