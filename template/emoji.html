@@ -148,13 +148,15 @@
 
 <script>
     function insertEmoji(e) {
-        sel("#content").value += e;
+        if (e.startsWith("@")) insertMention(e.substring(1))
+        else if (e.startsWith("#")) insertMention(e.substring(1), "#")
+        else sel("#content").value += e;
         sel("#content").focus();
     }
 
-    function insertMention(e) {
+    function insertMention(e, tag) {
         var el = sel("#content");
-        el.value = el.value.replace(/@\S+$/, "") + "@" + e + " ";
+        el.value = el.value.replace(/(@|#)\S+$/, "") + (tag||"@") + e + " ";
         el.focus();
     }
 

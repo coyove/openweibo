@@ -197,14 +197,6 @@ func (m *Manager) FollowUser_unlock(from, to string, following bool) (E error) {
 		}
 
 		go func() {
-			m.UpdateUser(to, func(u *mv.User) error {
-				if following {
-					u.Followers++
-				} else {
-					dec0(&u.Followers)
-				}
-				return nil
-			})
 			m.UpdateUser(from, func(u *mv.User) error {
 				if following {
 					u.Followings++
@@ -213,7 +205,9 @@ func (m *Manager) FollowUser_unlock(from, to string, following bool) (E error) {
 				}
 				return nil
 			})
-			m.fromFollowToNotifyTo(from, to, following)
+			if !strings.HasPrefix(to, "#") {
+				m.fromFollowToNotifyTo(from, to, following)
+			}
 		}()
 	}()
 
@@ -244,6 +238,16 @@ func (m *Manager) fromFollowToNotifyTo(from, to string, following bool) (E error
 		return err
 	}
 
+	if following {
+		u.Followers++
+	} else {
+		dec0(&u.Followers)
+	}
+
+	if err := m.SetUser(u); err != nil {
+		return err
+	}
+
 	if u.FollowerChain == "" {
 		if err := m.createUserChain(u, mv.CmdFollowed); err != nil {
 			return err
@@ -251,6 +255,9 @@ func (m *Manager) fromFollowToNotifyTo(from, to string, following bool) (E error
 	}
 
 	followID := makeFollowedID(to, from)
+	m.db.Lock(followID)
+	defer m.db.Unlock(followID)
+
 	if a, _ := m.GetArticle(followID); a != nil {
 		a.Extras["followed"] = strconv.FormatBool(following)
 		return m.db.Set(a.ID, a.Marshal())

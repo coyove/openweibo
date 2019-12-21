@@ -3,6 +3,7 @@ package view
 import (
 	"encoding/base64"
 	"log"
+	"strings"
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/engine"
@@ -24,6 +25,7 @@ type ArticlesTimelineView struct {
 	IsUserTimeline         bool
 	IsUserTimelineFollowed bool
 	IsUserTimelineBlocked  bool
+	IsTagTimelineFollowed  bool
 	IsGlobalTimeline       bool
 	IsTagTimeline          bool
 	ShowNewPost            bool
@@ -47,12 +49,17 @@ func Index(g *gin.Context) {
 	var pl ArticlesTimelineView
 	var cursor ident.ID
 	pl.Tag = g.Param("tag")
+	pl.You = getUser(g)
 
 	if pl.Tag == "" {
 		pl.Tag = "master"
 		pl.IsGlobalTimeline = true
 	} else {
 		pl.IsTagTimeline = true
+		if pl.You != nil {
+			pl.ReplyView = makeReplyView(g, "")
+			pl.IsTagTimelineFollowed = m.IsFollowing(pl.You.ID, "#"+pl.Tag)
+		}
 		a, _ := m.GetArticle(ident.NewID(ident.IDTagTag).SetTag(pl.Tag).String())
 		if a != nil {
 			pl.PostsUnderTag = int32(a.Replies)
@@ -119,6 +126,19 @@ func Timeline(g *gin.Context) {
 
 	cursors := []ident.ID{}
 	pendingFCursor := ""
+	readCursorsAndPendingFCursor := func(start string) {
+		list, next := m.GetFollowingList(pl.User.FollowingChain, start, 1e6)
+		for _, id := range list {
+			if id.Followed {
+				if strings.HasPrefix(id.ID, "#") {
+					cursors = append(cursors, ident.NewID(ident.IDTagTag).SetTag(id.ID[1:]))
+				} else {
+					cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(id.ID))
+				}
+			}
+		}
+		pendingFCursor = next
+	}
 
 	if pl.IsUserTimeline || pl.IsInbox {
 		if g.Request.Method == "POST" {
@@ -135,25 +155,12 @@ func Timeline(g *gin.Context) {
 		cursors, payload = ident.SplitIDs(g.PostForm("cursors"))
 
 		if len(payload) > 0 {
-			list, next := m.GetFollowingList(pl.User.FollowingChain, string(payload), 1e6)
-			for _, id := range list {
-				if id.Followed {
-					cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(id.ID))
-				}
-			}
-			pendingFCursor = next
+			readCursorsAndPendingFCursor(string(payload))
 		}
 	} else {
 		pl.ShowNewPost = true
-
-		list, next := m.GetFollowingList(pl.User.FollowingChain, "", 1e6)
-		for _, id := range list {
-			if id.Followed {
-				cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(id.ID))
-			}
-		}
+		readCursorsAndPendingFCursor("")
 		cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(pl.User.ID))
-		pendingFCursor = next
 	}
 
 	a, next := m.WalkMulti(int(config.Cfg.PostsPerPage), cursors...)

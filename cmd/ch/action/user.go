@@ -190,6 +190,10 @@ func User(g *gin.Context) {
 		}
 
 		if g.PostForm("search") != "" {
+			if strings.HasPrefix(to, "#") {
+				g.Redirect(302, "/tag/"+to[1:])
+				return
+			}
 			if _, err := m.GetUser(to); err != nil {
 				if res := mv.SearchUsers(to, 1); len(res) > 0 {
 					to = res[0]
@@ -197,7 +201,6 @@ func User(g *gin.Context) {
 					to = ""
 				}
 			}
-
 			if to == "" {
 				redir("error", "user/not-found")
 			} else {

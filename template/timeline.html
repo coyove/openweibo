@@ -68,6 +68,30 @@
 {{else if .IsTagTimeline}}
     <title>#{{.Tag}}</title>
     <script>sel('#nav-other a').innerText = "#{{.Tag}} ({{.PostsUnderTag}})"; sel('#nav-other').className = "selected"</script>
+
+<div style="text-align:center;line-height:2em">
+    {{if .You}}
+    <div>
+    <form method="POST" action="/user" style="display:inline-block">
+            <input type=hidden name=uuid value="{{.ReplyView.UUID}}">
+            <input type=hidden name=username value="{{.You.ID}}">
+            <input type=hidden name=method value="follow">
+            <input type=hidden name=to value="#{{.Tag}}">
+            {{if .IsTagTimelineFollowed}}
+            <button class="gbutton" type=submit>取消关注</button>
+            {{else}}
+            <input type=hidden name=follow value="1">
+            <button class="gbutton" type=submit>关注</button>
+            {{end}}
+    </form>
+
+    {{if .ReplyView.Error}}
+    <div style="display:inline-block">{{template "error_i18n.html" .ReplyView.Error}}</div>
+    {{end}}
+    </div>
+    {{end}}
+</div>
+
 {{else}}
 <div style="text-align:center">
         <title>我的时间线</title>
