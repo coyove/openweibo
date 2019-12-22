@@ -64,11 +64,11 @@ func UserList(g *gin.Context) {
 		You      *mv.User
 		User     *mv.User
 	}{
+		UUID:     ident.MakeUUID(g, nil),
 		EError:   g.Query("error"),
 		ListType: g.Param("type"),
 	}
 
-	p.UUID, _ = ident.MakeToken(g)
 	p.You = getUser(g)
 	if p.You == nil {
 		g.Redirect(302, "/user")

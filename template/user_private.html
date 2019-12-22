@@ -6,13 +6,15 @@
         <a href="/user"><i class="icon-cog"></i></a>
     </div>
     <div class=title>
-        <a href="/user/blacklist"><i class="icon-block"></i></a>
-        &emsp;<b>{{template "kimochi.html" .}}</b>
-        &emsp;{{if .Unread}}
+        <span><a href="/user/blacklist"><i class="icon-block"></i></a></span>
+        <span><b>{{template "kimochi.html" .}}</b></span>
+        <span>
+            {{if .Unread}}
         <a href="/t/:in"><b style="color:#f52" class="icon-mail-alt">{{.Unread}}</b></a>
         {{else}}
         <a href="/t/:in"><i class="icon-mail-alt"></i></a>
         {{end}}
+        </span>
     </div>
     <span>
         <a href="/user/followings"><b>{{.Followings}}</b><br><span style="color:black">关注</span></a>

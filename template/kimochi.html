@@ -76,7 +76,7 @@ kimochi img {
             a.appendChild(img);
             a.onclick = (function(i) {
                 return function() {
-                    $post('/api/user/kimochi', 'k=' + i, function(resp) { if (resp === 'ok') location.reload(); });
+                    $post('/api/user_kimochi', 'k=' + i, function(resp) { if (resp === 'ok') location.reload(); });
                 }
             })(i)
             li.appendChild(a);

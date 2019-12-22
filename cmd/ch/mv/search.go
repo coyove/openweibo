@@ -22,17 +22,17 @@ func AddTagToSearch(id string) {
 }
 
 func addImpl(cache *usCache, id string) {
-	hash := 0
+	hash := uint(0)
 	hdr := (*reflect.StringHeader)(unsafe.Pointer(&id))
 	for i := 0; i < hdr.Len; i++ {
-		hash = hash*31 + int(*(*byte)(unsafe.Pointer(hdr.Data + uintptr(i))))
+		hash = hash*31 + uint(*(*byte)(unsafe.Pointer(hdr.Data + uintptr(i))))
 	}
 	// for _, r := range id {
 	// 	hash = hash*31 + int(r)
 	// }
 	bs := [16]rune{}
 	copy(bs[:], []rune(id))
-	(*cache)[hash%len(*cache)] = bs
+	(*cache)[hash%uint(len(*cache))] = bs
 }
 
 func SearchUsers(id string, n int) []string {

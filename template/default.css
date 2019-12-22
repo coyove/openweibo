@@ -339,6 +339,11 @@ a.unread {
     margin:-0.5em 0 0.5em;line-height:2.25em;border-bottom:dotted 1px #ccc;
 }
 
+.status .title > span {
+    display: inline-block;
+    width: 64px;
+}
+
 span.mod {
     color: #673ab7;
     font-weight: bold;

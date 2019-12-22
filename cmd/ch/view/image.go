@@ -29,12 +29,12 @@ func Home(g *gin.Context) {
 		RPassword  string
 		LoginError string
 	}{
+		UUID:       ident.MakeUUID(g, nil),
 		User:       getUser(g),
 		RUsername:  g.Query("username"),
 		RPassword:  ident.ParseTempToken(g.Query("password")),
 		LoginError: g.Query("error"),
 	}
-	p.UUID, _ = ident.MakeToken(g)
 	g.HTML(200, "home.html", p)
 }
 

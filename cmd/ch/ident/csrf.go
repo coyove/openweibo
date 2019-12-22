@@ -18,6 +18,12 @@ import (
 var Dedup = lru.NewCache(1024)
 
 func MakeToken(g *gin.Context) (string, string) {
+	var x [4]byte
+	uuid := MakeUUID(g, &x)
+	return uuid, generateCaptcha(x)
+}
+
+func MakeUUID(g *gin.Context, x *[4]byte) string {
 	var p [16]byte
 	exp := time.Now().Add(time.Minute * time.Duration(config.Cfg.TokenTTL)).Unix()
 	binary.BigEndian.PutUint32(p[:], uint32(exp))
@@ -30,11 +36,12 @@ func MakeToken(g *gin.Context) (string, string) {
 	}
 	rand.Read(p[10:])
 
-	var x [4]byte
-	copy(x[:], p[10:])
+	if x != nil {
+		copy((*x)[:], p[10:])
+	}
 
 	config.Cfg.Blk.Encrypt(p[:], p[:])
-	return hex.EncodeToString(p[:]), generateCaptcha(x)
+	return hex.EncodeToString(p[:])
 }
 
 func ParseToken(g *gin.Context, tok string) (r []byte, ok bool) {

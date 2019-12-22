@@ -173,9 +173,22 @@
     <tr>
         <td></td>
         <td>
-            <button name=refresh value=1 type=submit class=none>
-                <img src="data:image/png;base64,{{.Challenge}}">
-            </button>
+            <a href="javascript:refreshCaptcha()">
+                <img id=captcha src="data:image/png;base64,{{.Challenge}}">
+            </a>
+    <script>
+        function refreshCaptcha() {
+            var stop = $wait(sel("button[type=submit]"))
+            $post('/api/new_captcha','',function(h) {
+                try {
+                    var r = JSON.parse(h);
+                    sel("#captcha").src = "data:image/png;base64," + r.Challenge;
+                    sel("[name=uuid]").value = r.UUID;
+                } catch(e) {}
+                stop();
+            }, stop)
+        }
+    </script>
         </td>
     </tr>
     <tr>

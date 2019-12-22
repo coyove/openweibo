@@ -38,7 +38,7 @@ type ReplyView struct {
 
 func makeReplyView(g *gin.Context, reply string) ReplyView {
 	r := ReplyView{}
-	r.UUID, _ = ident.MakeToken(g)
+	r.UUID = ident.MakeUUID(g, nil)
 	r.Content = g.Query("content")
 	r.Error = g.Query("error")
 	r.ReplyTo = reply

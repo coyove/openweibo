@@ -142,7 +142,8 @@ func main() {
 	r.Handle("GET", "/avatar/:id", view.Avatar)
 
 	r.Handle("POST", "/user", action.User)
-	r.Handle("POST", "/api/user/kimochi", action.APIUserKimochi)
+	r.Handle("POST", "/api/user_kimochi", action.APIUserKimochi)
+	r.Handle("POST", "/api/new_captcha", action.APINewCaptcha)
 	r.Handle("POST", "/api/search", action.APISearch)
 	r.Handle("POST", "/user/followers", action.UserFollowers)
 	r.Handle("POST", "/new", action.New)

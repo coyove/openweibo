@@ -325,3 +325,12 @@ func APISearch(g *gin.Context) {
 	}
 	g.JSON(200, uids)
 }
+
+func APINewCaptcha(g *gin.Context) {
+	var p struct {
+		UUID      string
+		Challenge string
+	}
+	p.UUID, p.Challenge = ident.MakeToken(g)
+	g.JSON(200, p)
+}
