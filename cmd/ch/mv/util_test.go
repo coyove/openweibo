@@ -1,7 +1,9 @@
 package mv
 
 import (
+	"strconv"
 	"testing"
+	"time"
 )
 
 func TestFirstImage(t *testing.T) {
@@ -13,6 +15,13 @@ func BenchmarkUserUnmarshal(b *testing.B) {
 	buf := (User{ID: "awdasd"}).Marshal()
 	for i := 0; i < b.N; i++ {
 		UnmarshalUser(buf)
+	}
+}
+
+func BenchmarkAddSearch(b *testing.B) {
+	id := strconv.Itoa(int(time.Now().Unix()))
+	for i := 0; i < b.N; i++ {
+		AddUserToSearch(id)
 	}
 }
 

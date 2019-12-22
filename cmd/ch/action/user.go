@@ -314,6 +314,14 @@ func APIUserKimochi(g *gin.Context) {
 	g.String(200, "ok")
 }
 
-func APISearchUsers(g *gin.Context) {
-	g.JSON(200, mv.SearchUsers(g.PostForm("id"), 10))
+func APISearch(g *gin.Context) {
+	uids := mv.SearchUsers(g.PostForm("id"), 10)
+	for i := range uids {
+		uids[i] = "@" + uids[i]
+	}
+	tags := mv.SearchTags(g.PostForm("id"), 10)
+	for _, t := range tags {
+		uids = append(uids, "#"+t)
+	}
+	g.JSON(200, uids)
 }

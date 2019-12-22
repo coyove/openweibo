@@ -99,6 +99,9 @@ func Timeline(g *gin.Context) {
 	pl.You = getUser(g)
 
 	switch uid := g.Param("user"); {
+	case strings.HasPrefix(uid, "#"):
+		g.Redirect(302, "/tag/"+uid[1:])
+		return
 	case uid != "" && uid != ":in":
 		// View someone's timeline
 		pl.IsUserTimeline = true
@@ -186,7 +189,7 @@ func Timeline(g *gin.Context) {
 func apiWrapper(g *gin.Context, next string, articles []ArticleView) {
 	p := struct {
 		EOT      bool
-		Articles []string
+		Articles [][2]string
 		Next     string
 	}{}
 
@@ -197,7 +200,7 @@ func apiWrapper(g *gin.Context, next string, articles []ArticleView) {
 	for _, a := range articles {
 		tmp.Reset()
 		engine.Engine.HTMLRender.Instance("row_content.html", a).Render(&tmp)
-		p.Articles = append(p.Articles, tmp.String())
+		p.Articles = append(p.Articles, [2]string{a.ID, tmp.String()})
 	}
 	g.JSON(200, p)
 }

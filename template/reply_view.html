@@ -126,11 +126,11 @@ function onContentObserved(el) {
     var autos = sel("#emoji ul li.auto", true);
     for (var i = 0; i < autos.length; i++) sel("#emoji ul").removeChild(autos[i]);
 
-    var res = el.value.match(/(@\S+)$/g);
+    var res = el.value.match(/(@\S+|#\S+)$/g);
     if (!res || res.length !== 1 || window.REQUESTING) return;
     window.REQUESTING = true;
 
-    $post("/api/user/search", "id=" + res[0].substring(1), function(h) {
+    $post("/api/search", "id=" + res[0].substring(1), function(h) {
         try {
             var results = JSON.parse(h), ul = sel("#emoji ul"), f = sel("#emoji ul li:first-child");
             if (results && results.length) {
@@ -140,7 +140,7 @@ function onContentObserved(el) {
                     li.appendChild(a);
                     li.className = "auto";
                     a.onclick = function() { insertMention(t); }
-                    a.innerText = '@' + t;
+                    a.innerText = t;
                     ul.insertBefore(li, f);
                 });
             }

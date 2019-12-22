@@ -122,15 +122,7 @@ func UnmarshalUser(b []byte) (*User, error) {
 		return nil, fmt.Errorf("failed to unmarshal: %q", b)
 	}
 
-	hash := uint16(0)
-	for _, r := range a.ID {
-		hash = hash*31 + uint16(r)
-	}
-
-	bs := [16]rune{}
-	copy(bs[:], []rune(a.ID))
-	usCache[hash] = bs
-
+	AddUserToSearch(a.ID)
 	return a, err
 }
 

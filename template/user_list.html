@@ -73,7 +73,7 @@
     {{range .List}}
     <tr>
         <td class=nowrap>{{.Time.Format "2006-01-02"}}</td>
-        <td><b><a href="/t/{{.ID}}">{{.ID}}</a></b></td>
+        <td><b><a href="/t/{{urlquery .ID}}">{{.ID}}</a></b></td>
         <td class=nowrap>
             {{if eq $.ListType "blacklist"}}
             <form method="POST" action="/user">

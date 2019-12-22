@@ -85,6 +85,7 @@ func (m *Manager) WalkMulti(n int, cursors ...ident.ID) (a []*mv.Article, next [
 		}
 	}
 
+	idm := map[string]bool{}
 	for len(a) < n {
 		if time.Since(startTime).Seconds() > 1 {
 			log.Println("[mgr.WalkMulti] Break out slow walk at", cursors)
@@ -122,7 +123,11 @@ func (m *Manager) WalkMulti(n int, cursors ...ident.ID) (a []*mv.Article, next [
 				continue
 			}
 
-			a = append(a, p)
+			if !idm[p.ID] && p.Content != mv.DeletionMarker {
+				a = append(a, p)
+				idm[p.ID] = true
+			}
+
 			*latest = ident.ParseID(p.NextID)
 		} else {
 			log.Println("[mgr.WalkMulti] Failed to get:", latest.String(), err)
@@ -131,7 +136,6 @@ func (m *Manager) WalkMulti(n int, cursors ...ident.ID) (a []*mv.Article, next [
 		}
 	}
 
-	log.Println(cursors)
 	return a, cursors
 }
 

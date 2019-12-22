@@ -55,6 +55,9 @@ func New(region, accessKey, secretKey, group, stream string) *Logger {
 
 	l.nextSeqToken, err = l.getNextSeqToken()
 	if err != nil {
+		if os.Getenv("CW") == "0" {
+			return l
+		}
 		panic(err)
 	}
 

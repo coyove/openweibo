@@ -141,6 +141,7 @@ func (m *Manager) MentionUserAndTags(a *mv.Article, ids []string, tags []string)
 		}, false); err != nil {
 			return err
 		}
+		mv.AddTagToSearch(tag)
 	}
 	return nil
 }

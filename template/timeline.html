@@ -133,8 +133,13 @@
                     if (pl.Articles) {
                         el.setAttribute("value", pl.Next);
                         for (var i = 0; i < pl.Articles.length; i++) {
+                            var dedup = sel("[data-id='" + pl.Articles[i][0] + "']", true);
+                            if (dedup && dedup.length) {
+                                console.log("dedup:", pl.Articles[i][0])
+                                continue;
+                            }
                             var div = document.createElement("div");
-                            div.innerHTML = pl.Articles[i];
+                            div.innerHTML = pl.Articles[i][1];
                             tl.appendChild(div.firstChild);
                         }
                     }
