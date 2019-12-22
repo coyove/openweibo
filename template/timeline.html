@@ -1,7 +1,7 @@
 {{template "header.html" .}}
 
 {{if .IsUserTimeline}}
-<div style="text-align:center;line-height:2em">
+<div class="status-box">
     <title>@{{.User.ID}} 的时间线</title>
 
     <div>
@@ -69,7 +69,7 @@
     <title>#{{.Tag}}</title>
     <script>sel('#nav-other a').innerText = "#{{.Tag}} ({{.PostsUnderTag}})"; sel('#nav-other').className = "selected"</script>
 
-<div style="text-align:center;line-height:2em">
+<div class="status-box">
     {{if .You}}
     <div>
     <form method="POST" action="/user" style="display:inline-block">
@@ -93,7 +93,7 @@
 </div>
 
 {{else}}
-<div style="text-align:center">
+<div class="status-box">
         <title>我的时间线</title>
     <div>
         <script>sel('#nav-own').className = "selected"</script>

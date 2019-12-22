@@ -20,6 +20,7 @@ kimochi > ul {
     background: white;
 	position: absolute;
     box-shadow: 0 1px 5px rgba(0, 0, 0, .3);
+    border-radius: 5px;
     max-height: 200px;
     overflow-y: scroll;
 }
@@ -55,6 +56,31 @@ kimochi img {
     display: block;
     margin: 0.33em auto;
 }
+
+kimochi > div.tri {
+    height: 0;
+    width: 0;
+    position: absolute;
+    border: solid 8px black;
+    border-color: transparent transparent white;
+    bottom: 0;
+    margin-left: -8px;
+    left: 50%;
+    z-index: 1000;
+    display: none;
+}
+
+kimochi > div.tri.shadow {
+    box-shadow: 0 0 5px rgba(0, 0, 0, 1);
+    z-index: 0;
+    top: 100%;
+    transform: rotate(45deg);
+}
+
+kimochi:hover > div.tri {
+    display: block;
+}
+
 </style>
 
 <kimochi
@@ -82,6 +108,8 @@ kimochi img {
             li.appendChild(a);
             ul.appendChild(li);
 }">
+<div class="tri"></div>
+<div class="tri shadow"></div>
 <img
     id="current-kimochi"
     src="/s/emoji/emoji{{.Kimochi}}.png"

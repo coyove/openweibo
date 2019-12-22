@@ -1,9 +1,9 @@
 <div class="status">
     <div class=title>
         <b>@{{.ID}}</b>
-        {{if .IsMod}}<span class=mod>Mod</span>{{end}}
+        {{if .IsMod}}<b><span class=mod>Mod</span></b>{{end}}
         {{if .Banned}}/ 封禁{{end}}
-        <a href="/user"><i class="icon-cog"></i></a>
+        <a href="/user" style="position:absolute;right:0"><i class="icon-cog"></i></a>
     </div>
     <div class=title>
         <span><a href="/user/blacklist"><i class="icon-block"></i></a></span>

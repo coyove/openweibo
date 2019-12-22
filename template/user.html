@@ -12,12 +12,12 @@
 }
     </style>
 
+    <div class="status-box">
+        <div>{{template "user_private.html" .User}}</div>
+    </div>
+
 <form method="POST" action="/user">
 <table class="articles" style="margin: 0.5em 0">
-    <tr>
-        <td>用户名:</td>
-        <td colspan=2>{{.User.ID}}</td>
-    </tr>
     <tr>
         <td>上次登入:</td>
             <td>{{.User.Login.Format "2006-01-02 15:04:05"}}</td>
