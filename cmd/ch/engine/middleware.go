@@ -168,7 +168,7 @@ func New(prod bool) *gin.Engine {
 	// 	},
 	// }
 
-	if prod {
+	if prod && os.Getenv("CW") != "0" {
 		gin.SetMode(gin.ReleaseMode)
 
 		gin.DefaultWriter = ioutil.Discard

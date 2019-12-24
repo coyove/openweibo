@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"strconv"
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/mv"
@@ -29,35 +28,39 @@ func hashIP(g *gin.Context) string {
 	return ip.String()
 }
 
-func New(g *gin.Context) {
+func APINew(g *gin.Context) {
+	if g.PostForm("parent") != "" {
+		doReply(g)
+		return
+	}
+
 	var (
 		ip      = hashIP(g)
 		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		image   = g.PostForm("image64")
 		nsfw    = g.PostForm("nsfw") != ""
-		redir   = func(a, b string) { g.Redirect(302, "/t"+EncodeQuery(a, b, "content", content)) }
 		err     error
 	)
 
-	u, ok := g.Get("user")
-	if !ok {
-		redir("error", "user/not-logged-in")
+	u := m.GetUserByContext(g)
+	if u == nil {
+		g.String(200, "user/not-logged-in")
 		return
 	}
 
 	if len(content) < 3 && image == "" {
-		redir("error", "content/too-short")
+		g.String(200, "content/too-short")
 		return
 	}
 
-	if ret := checkToken(g); ret != "" {
-		redir("error", ret)
+	if ret := checkIP(g); ret != "" {
+		g.String(200, ret)
 		return
 	}
 
 	if image != "" {
 		if image, err = writeImage(image); err != nil {
-			redir("error", err.Error())
+			g.String(200, err.Error())
 			return
 		}
 		image = "IMG:" + image
@@ -70,72 +73,60 @@ func New(g *gin.Context) {
 		NSFW:    nsfw,
 	}
 
-	for i := 1; i <= 8; i++ {
-		key := "poll" + strconv.Itoa(i)
-		poll := mv.SoftTrunc(g.PostForm(key), 64)
-		if poll == "" {
-			break
-		}
-		if a.Extras == nil {
-			a.Extras = map[string]string{}
-			a.Extras["poll"] = "true"
-		}
-		a.Extras[key] = poll
-	}
-
-	aid, err := m.Post(a, u.(*mv.User))
+	aid, err := m.Post(a, u)
 	if err != nil {
 		log.Println(aid, err)
-		redir("error", "internal/error")
+		g.String(200, "internal/error")
 		return
 	}
 
 	content = ""
-	redir("", "")
+	g.String(200, "ok")
 }
 
-func Reply(g *gin.Context) {
+func doReply(g *gin.Context) {
 	var (
-		reply   = g.PostForm("reply")
+		reply   = g.PostForm("parent")
 		ip      = hashIP(g)
 		content = mv.SoftTrunc(g.PostForm("content"), int(config.Cfg.MaxContent))
 		image   = g.PostForm("image64")
 		nsfw    = g.PostForm("nsfw") != ""
-		redir   = func(a, b string) { g.Redirect(302, "/p/"+reply+EncodeQuery(a, b, "content", content)) }
 		err     error
 	)
 
-	u, ok := g.Get("user")
-	if !ok {
-		redir("error", "user/not-logged-in")
+	u := m.GetUserByContext(g)
+	if u == nil {
+		g.String(200, "user/not-logged-in")
 		return
 	}
 
-	if ret := checkToken(g); ret != "" {
-		redir("error", ret)
+	if ret := checkIP(g); ret != "" {
+		g.String(200, ret)
 		return
 	}
 
-	if g.PostForm("delete") != "" && g.PostForm("delete-confirm") != "" {
-		u := u.(*mv.User)
-		err := m.UpdateArticle(reply, func(a *mv.Article) error {
-			if u.ID != a.Author && !u.IsMod() {
-				return fmt.Errorf("user/can-not-delete")
+	if g.PostForm("delete") != "" {
+		if g.PostForm("delete-confirm") != "" {
+			err := m.UpdateArticle(reply, func(a *mv.Article) error {
+				if u.ID != a.Author && !u.IsMod() {
+					return fmt.Errorf("user/can-not-delete")
+				}
+				a.Content = mv.DeletionMarker
+				a.Media = ""
+				return nil
+			})
+			if err != nil {
+				g.String(200, err.Error())
+			} else {
+				g.String(200, "ok")
 			}
-			a.Content = mv.DeletionMarker
-			a.Media = ""
-			return nil
-		})
-		if err != nil {
-			redir("error", err.Error())
 		} else {
-			redir("", "")
+			g.String(200, "ok")
 		}
 		return
 	}
 
 	if g.PostForm("make-nsfw") != "" {
-		u := u.(*mv.User)
 		err := m.UpdateArticle(reply, func(a *mv.Article) error {
 			if u.ID != a.Author && !u.IsMod() {
 				return fmt.Errorf("user/can-not-delete")
@@ -144,9 +135,9 @@ func Reply(g *gin.Context) {
 			return nil
 		})
 		if err != nil {
-			redir("error", err.Error())
+			g.String(200, err.Error())
 		} else {
-			redir("", "")
+			g.String(200, "ok")
 		}
 		return
 	}
@@ -154,18 +145,17 @@ func Reply(g *gin.Context) {
 	if image != "" {
 		image, err = writeImage(image)
 		if err != nil {
-			redir("error", err.Error())
+			g.String(200, err.Error())
 			return
 		}
 		image = "IMG:" + image
 	}
 
-	if _, err := m.PostReply(reply, content, image, u.(*mv.User), ip, nsfw); err != nil {
+	if _, err := m.PostReply(reply, content, image, u, ip, nsfw); err != nil {
 		log.Println(err)
-		redir("error", "error/can-not-reply")
+		g.String(200, "error/can-not-reply")
 		return
 	}
 
-	content = ""
-	redir("", "")
+	g.String(200, "ok")
 }

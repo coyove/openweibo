@@ -5,37 +5,25 @@
     <title>@{{.User.ID}} 的时间线</title>
 
     <div>
-    <script>sel('#nav-other a').innerText = "@{{.User.ID}}"; sel('#nav-other').className = "selected"</script>
+    <script>$q('#nav-other a').innerText = "@{{.User.ID}}"; $q('#nav-other').className = "selected"</script>
         {{template "user_public.html" .User}}
     </div>
 
     {{if .You}}
     <div>
     {{if ne .You.ID .User.ID}}
-    <form method="POST" action="/user" style="display:inline-block">
-            <input type=hidden name=uuid value="{{.ReplyView.UUID}}">
-            <input type=hidden name=username value="{{.You.ID}}">
-            <input type=hidden name=method value="follow">
-            <input type=hidden name=to value="{{.User.ID}}">
-            {{if .IsUserTimelineFollowed}}
-            <button class="gbutton" type=submit>取消关注</button>
-            {{else}}
-            <input type=hidden name=follow value="1">
-            <button class="gbutton" type=submit>关注</button>
-            {{end}}
-    </form>
-    <form method="POST" action="/user" style="display:inline-block">
-            <input type=hidden name=uuid value="{{.ReplyView.UUID}}">
-            <input type=hidden name=username value="{{.You.ID}}">
-            <input type=hidden name=method value="block">
-            <input type=hidden name=to value="{{.User.ID}}">
-            {{if .IsUserTimelineBlocked}}
-            <button class="gbutton" type=submit>解除黑名单</button>
-            {{else}}
-            <input type=hidden name=block value="1">
-            <button class="gbutton" type=submit style="color:#f52">拉入黑名单</button>
-            {{end}}
-    </form>
+        {{if .IsUserTimelineFollowed}}
+        <button class="gbutton" value onclick="followBlock(this,'follow','{{.User.ID}}')">取消关注</button>
+        {{else}}
+        <button class="gbutton" value=1 onclick="followBlock(this,'follow','{{.User.ID}}')">关注</button>
+        {{end}}
+
+        {{if .IsUserTimelineBlocked}}
+        <button class="gbutton" value onclick="followBlock(this,'block','{{.User.ID}}')">解除黑名单</button>
+        {{else}}
+        <button class="gbutton" value=1 onclick="followBlock(this,'block','{{.User.ID}}')">拉入黑名单</button>
+        {{end}}
+
     {{end}}
 
     {{if .You.IsAdmin}}
@@ -43,66 +31,46 @@
     {{end}}
 
     {{if .You.IsMod}}
-    <form method="POST" action="/user" style="display:inline">
-        <input type=hidden name=uuid value="{{.ReplyView.UUID}}">
-        <input type=hidden name=method value="ban-user">
-        <input type=hidden name=ban value="{{if not .User.Banned}}1{{end}}">
-        <input type=hidden name=username value="{{.User.ID}}">
-        <button class="gbutton" type=submit>{{if .User.Banned}}解封{{else}}封禁{{end}}</button>
-    </form>
+        <button class="gbutton" onclick="$postReload(this,'/api/ban',{to:'{{.User.ID}}'})">
+            {{if .User.Banned}}解封{{else}}封禁{{end}}
+        </button>
     {{end}}
 
-    {{if .ReplyView.Error}}
-    <div style="display:inline-block">{{template "error_i18n.html" .ReplyView.Error}}</div>
-    {{end}}
     </div>
 
     {{end}}
 </div>
 {{else if .IsInbox}}
     <title>我的提醒</title>
-    <script>sel('#nav-inbox').className = "selected"</script>
-{{else if .IsGlobalTimeline}}
+    <script>$q('#nav-inbox').className = "selected"</script>
+{{else if eq .User.ID "master"}}
     <title>全局时间线</title>
-    <script>sel('#nav-master').className = "selected"</script>
+    <script>$q('#nav-master').className = "selected"</script>
 {{else if .IsUserLikeTimeline}}
 <div class="status-box">
         {{template "user_public.html" .User}}
 </div>
     <title>@{{.User.ID}}的收藏</title>
-    <script>sel('#nav-likes a span').innerText = "@{{.User.ID}}";sel('#nav-likes').className = "selected"</script>
+    <script>$q('#nav-likes a span').innerText = "@{{.User.ID}}";$q('#nav-likes').className = "selected"</script>
 {{else if .IsTagTimeline}}
     <title>#{{.Tag}}</title>
-    <script>sel('#nav-other a').innerText = "#{{.Tag}} ({{.PostsUnderTag}})"; sel('#nav-other').className = "selected"</script>
+    <script>$q('#nav-other a').innerText = "#{{.Tag}} ({{.PostsUnderTag}})"; $q('#nav-other').className = "selected"</script>
 
 <div class="status-box">
-    {{if .You}}
     <div>
-    <form method="POST" action="/user" style="display:inline-block">
-            <input type=hidden name=uuid value="{{.ReplyView.UUID}}">
-            <input type=hidden name=username value="{{.You.ID}}">
-            <input type=hidden name=method value="follow">
-            <input type=hidden name=to value="#{{.Tag}}">
-            {{if .IsTagTimelineFollowed}}
-            <button class="gbutton" type=submit>取消关注</button>
-            {{else}}
-            <input type=hidden name=follow value="1">
-            <button class="gbutton" type=submit>关注</button>
-            {{end}}
-    </form>
-
-    {{if .ReplyView.Error}}
-    <div style="display:inline-block">{{template "error_i18n.html" .ReplyView.Error}}</div>
-    {{end}}
+        {{if .IsTagTimelineFollowed}}
+        <button class="gbutton" value onclick="followBlock(this,'follow','#{{.Tag}}')">取消关注</button>
+        {{else}}
+        <button class="gbutton" value=1 onclick="followBlock(this,'follow','#{{.Tag}}')">关注</button>
+        {{end}}
     </div>
-    {{end}}
 </div>
 
 {{else}}
 <div class="status-box">
         <title>我的时间线</title>
     <div>
-        <script>sel('#nav-own').className = "selected"</script>
+        <script>$q('#nav-own').className = "selected"</script>
         {{template "user_private.html" .User}}
     </div>
     {{if .ShowNewPost}}
@@ -123,33 +91,33 @@
     <button id=next value="{{.Next}}" class=gbutton onclick="loadMore(this)">更多...</button>
     <script>
         function loadMore(el) {
-            var tl = sel("#timeline"), stop = $wait(el);
-            $post(location.href, 'api=1&cursors=' + encodeURIComponent(el.getAttribute("value")), function(h) {
+            var tl = $q("#timeline"), stop = $wait(el);
+            $post('/api/timeline', {
+                cursors: el.getAttribute("value"),
+                {{if .IsUserLikeTimeline}}likes: 1,{{end}}
+            }, function(pl) {
                 stop();
-                try {
-                    var pl = JSON.parse(h);
-                    if (pl.EOT) {
-                        el.innerText = "没有更多内容了";
-                        el.setAttribute("eot", "true");
-                        el.style.color = "#aaa";
-                        el.onclick = function() { location.reload() }
-                    } else {
-                        el.innerText = "更多...";
-                    }
-                    if (pl.Articles) {
-                        el.setAttribute("value", pl.Next);
-                        for (var i = 0; i < pl.Articles.length; i++) {
-                            var dedup = sel("[data-id='" + pl.Articles[i][0] + "']", true);
-                            if (dedup && dedup.length) {
-                                console.log("dedup:", pl.Articles[i][0])
-                                continue;
-                            }
-                            var div = document.createElement("div");
-                            div.innerHTML = pl.Articles[i][1];
-                            tl.appendChild(div.firstChild);
+                if (pl.EOT) {
+                    el.innerText = "没有更多内容了";
+                    el.setAttribute("eot", "true");
+                    el.style.color = "#aaa";
+                    el.onclick = function() { location.reload() }
+                } else {
+                    el.innerText = "更多...";
+                }
+                if (pl.Articles) {
+                    el.setAttribute("value", pl.Next);
+                    pl.Articles.forEach(function(a) {
+                        var dedup = $q("[data-id='" + a[0] + "']", true);
+                        if (dedup && dedup.length) {
+                            console.log("dedup:", a[0])
+                            return;
                         }
-                    }
-                } catch (e) {}
+                        var div = document.createElement("div");
+                        div.innerHTML = a[1];
+                        tl.appendChild(div.firstChild);
+                    })
+                }
                 expandNSFW();
             }, stop);
          //   console.log(document.documentElement.scrollTop);
@@ -158,9 +126,7 @@
         window.addEventListener('scroll', function(e) {
             if (!window.ticking) {
                 window.requestAnimationFrame(function() {
-                    var rows = sel("#timeline .row"), nextBtn = sel("#next");
-                    for (var i = 0 ; i < rows.length; i++) {
-                        var c = rows[i];
+                    $q("#timeline .row", true).forEach(function(c) {
                         if (isInViewport(c, 3)) {
                             if (c.childNodes.length == 0) {
                                 c.innerHTML = c.__html;
@@ -173,7 +139,8 @@
                                 c.innerHTML = "";
                             }
                         }
-                    }
+                    })
+                    var nextBtn = $q("#next");
                     if (isInViewport(nextBtn) &&
                         !nextBtn.getAttribute("disabled") && nextBtn.getAttribute("eot") !== "true") {
                         console.log("Load next");
@@ -191,8 +158,8 @@
             href="/t/{{.User.ID}}">没有更多{{.User.ID}}的状态了</a>
         {{else if .IsInbox}}
             href="/t/:in">没有更多提醒了</a>
-        {{else if .IsGlobalTimeline}}
-            href="/master">没有更多状态了</a>
+        {{else if eq .User.ID "master"}}
+            href="/t/master">没有更多状态了</a>
         {{else}}
             href="/t">没有更多状态了</a>
         {{end}}

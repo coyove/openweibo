@@ -150,74 +150,6 @@ func User(g *gin.Context) {
 		u.NoPostInMaster = g.PostForm("npim") != ""
 		u.AutoNSFW = g.PostForm("autonsfw") != ""
 		u.FoldImages = g.PostForm("foldimg") != ""
-	case "ban-user":
-		if u == nil {
-			redir("error", "internal/error")
-			return
-		}
-
-		if !u.IsMod() {
-			g.Redirect(302, "/")
-			return
-		}
-
-		if err := m.UpdateUser_unlock(username, func(u *mv.User) error {
-			if u.IsAdmin() {
-				return fmt.Errorf("ban/admin-really")
-			}
-			u.Banned = g.PostForm("ban") != ""
-			return nil
-		}); err != nil {
-			redir("error", err.Error())
-		} else {
-			g.Redirect(302, "/t/"+username)
-		}
-		return
-	case "follow", "block":
-		to := g.PostForm("to")
-		if u == nil || to == "" || u.ID == to {
-			redir("error", "internal/error")
-			return
-		}
-
-		if g.PostForm("search") != "" {
-			if strings.HasPrefix(to, "#") {
-				g.Redirect(302, "/tag/"+to[1:])
-				return
-			}
-			if _, err := m.GetUser(to); err != nil {
-				if res := mv.SearchUsers(to, 1); len(res) > 0 {
-					to = res[0]
-				} else {
-					to = ""
-				}
-			}
-			if to == "" {
-				redir("error", "user/not-found")
-			} else {
-				g.Redirect(302, "/t/"+to)
-			}
-			return
-		}
-
-		if ret := checkToken(g); ret != "" {
-			redir("error", ret, "n", manager.MakeID(mth, u.ID, to))
-			return
-		}
-
-		var err error
-		if mth == "block" {
-			err = m.BlockUser_unlock(u.ID, to, g.PostForm(mth) != "")
-		} else {
-			err = m.FollowUser_unlock(u.ID, to, g.PostForm(mth) != "")
-		}
-
-		if err != nil {
-			redir("error", err.Error())
-		} else {
-			redir("error", "ok", "n", manager.MakeID(mth, u.ID, to))
-		}
-		return
 	}
 
 	if err := m.SetUser(u); err != nil {
@@ -232,53 +164,6 @@ func User(g *gin.Context) {
 		redir("error", "ok/username-changed")
 	} else {
 		redir("error", "ok")
-	}
-}
-
-func UserFollowers(g *gin.Context) {
-	redir := func(a ...string) {
-		g.Redirect(302, "/user/followers"+EncodeQuery(a...))
-	}
-
-	user, _ := g.Get("user")
-	u, _ := user.(*mv.User)
-	to := g.PostForm("to")
-
-	if u == nil || to == "" || u.ID == to {
-		redir("error", "internal/error")
-		return
-	}
-
-	m.Lock(u.ID)
-	defer m.Unlock(u.ID)
-
-	if g.PostForm("search") != "" {
-		if _, err := m.GetUser(to); err != nil {
-			if res := mv.SearchUsers(to, 1); len(res) > 0 {
-				to = res[0]
-			} else {
-				to = ""
-			}
-		}
-
-		if to == "" {
-			redir("error", "user/not-found")
-		} else {
-			redir("n", "u/"+u.ID+"/followed/"+to)
-		}
-		return
-	}
-
-	if ret := checkToken(g); ret != "" {
-		redir("error", ret, "n", "u/"+u.ID+"/followed/"+to)
-		return
-	}
-
-	err := m.BlockUser_unlock(u.ID, to, true)
-	if err != nil {
-		redir("error", err.Error())
-	} else {
-		redir("error", "ok", "n", "u/"+u.ID+"/followed/"+to)
 	}
 }
 
@@ -360,8 +245,7 @@ func APILike(g *gin.Context) {
 }
 
 func APILogout(g *gin.Context) {
-	u, _ := m.GetUserByToken(g.PostForm("api2_uid"))
-
+	u := m.GetUserByContext(g)
 	if u != nil {
 		m.UpdateUser(u.ID, func(u *mv.User) error {
 			u.Session = genSession()
@@ -370,6 +254,88 @@ func APILogout(g *gin.Context) {
 		u = &mv.User{}
 		g.SetCookie("id", mv.MakeUserToken(u), 365*86400, "", "", false, false)
 	}
-
 	g.Status(200)
+}
+
+func APIFollowBlock(g *gin.Context) {
+	u, to := m.GetUserByContext(g), g.PostForm("to")
+	if u == nil || to == "" || u.ID == to {
+		g.String(200, "internal/error")
+		return
+	}
+
+	if ret := checkIP(g); ret != "" {
+		g.String(200, ret)
+		return
+	}
+
+	m.Lock(u.ID)
+	defer m.Unlock(u.ID)
+
+	var err error
+	if g.PostForm("method") == "follow" {
+		err = m.FollowUser_unlock(u.ID, to, g.PostForm("follow") != "")
+	} else {
+		err = m.BlockUser_unlock(u.ID, to, g.PostForm("block") != "")
+	}
+
+	if err != nil {
+		g.String(200, err.Error())
+	} else {
+		g.String(200, "ok")
+	}
+	return
+}
+
+func APIFollowBlockSearch(g *gin.Context) {
+	u := m.GetUserByContext(g)
+	if u == nil {
+		g.String(200, "/user")
+		return
+	}
+
+	q := g.PostForm("q")
+	if strings.HasPrefix(q, "#") {
+		g.String(200, "/tag/"+q[1:])
+		return
+	}
+
+	id := manager.MakeID(g.PostForm("method"), u.ID, q)
+	if a, _ := m.GetArticle(id); a != nil {
+		g.String(200, "/user")
+		return
+	}
+
+	if _, err := m.GetUser(q); err != nil {
+		if res := mv.SearchUsers(q, 1); len(res) > 0 {
+			q = res[0]
+		} else {
+			q = ""
+		}
+	}
+	g.String(200, "/t/"+q)
+}
+
+func APIBan(g *gin.Context) {
+	u := m.GetUserByContext(g)
+	if u == nil || !u.IsMod() {
+		g.String(200, "internal/error")
+		return
+	}
+
+	to := g.PostForm("to")
+	m.Lock(to)
+	defer m.Unlock(to)
+
+	if err := m.UpdateUser_unlock(to, func(u *mv.User) error {
+		if u.IsAdmin() {
+			return fmt.Errorf("ban/admin-really")
+		}
+		u.Banned = !u.Banned
+		return nil
+	}); err != nil {
+		g.String(200, err.Error())
+	} else {
+		g.String(200, "ok")
+	}
 }

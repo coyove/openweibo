@@ -83,36 +83,9 @@ kimochi:hover > div.tri {
 
 </style>
 
-<kimochi
-    onmouseover="
-    var ul = this.querySelector('ul');
-    var m = sel('#current-kimochi');
-    if (ul.childNodes.length) return;
-
-    for(var i = 0; i <= 44; i++){
-        var li = document.createElement('li'),
-            a = document.createElement('a'),
-            img = document.createElement('img');
-            img.src = '/s/emoji/emoji' + i + '.png';
-            if (i == 0) {
-                img.style.border = 'dashed 1px #233';
-                img.style.borderRadius = '50%';
-            }
-
-            a.appendChild(img);
-            a.onclick = (function(i) {
-                return function() {
-                    $post('/api/user_kimochi', 'k=' + i, function(resp) { if (resp === 'ok') location.reload(); });
-                }
-            })(i)
-            li.appendChild(a);
-            ul.appendChild(li);
-}">
+<kimochi onmouseover="loadKimochi(this)">
 <div class="tri"></div>
 <div class="tri shadow"></div>
-<img
-    id="current-kimochi"
-    src="/s/emoji/emoji{{.Kimochi}}.png"
-    style="{{if not .Kimochi}}border:dashed 1px #233;border-radius:50%{{end}}">
+<img src="/s/emoji/emoji{{.Kimochi}}.png" style="{{if not .Kimochi}}border:dashed 1px #233;border-radius:50%{{end}}">
 <ul></ul>
 </kimochi>

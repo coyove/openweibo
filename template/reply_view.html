@@ -1,22 +1,22 @@
-<form id="reply-view" method="POST" action="{{if .ReplyTo}}/reply{{else}}/new{{end}}">
+<div id="reply-view">
         {{if .CanDelete}}
     <table class="articles" style="width: 100%;margin:1em 0 2em;box-shadow: 0 1px 3px rgba(0, 0, 0,.2);text-align:left">
         <tr class=sep>
             <td>
-                <input type=checkbox name=delete-confirm id=delete-confirm>
+                <input type=checkbox id=delete-confirm>
                 <label for=delete-confirm>确认删除该状态，该操作不可逆</label>
             </td>
             <td class=nowrap>
-                <button class="gbutton" type=submit name=delete value=1 style="color:#ff5722">删除</a>
+                <button class="gbutton" type=submit style="color:#ff5722" onclick="onPostOption(this,'delete')">删除</a>
             </td>
         </tr>
         <tr>
             <td>
-                <input type=checkbox name=nsfw-confirm id=nsfw-confirm {{if .NSFW}}checked{{end}}>
+                <input type=checkbox id=nsfw-confirm {{if .NSFW}}checked{{end}}>
                 <label for=nsfw-confirm>标记该状态为NSFW（仅图片）</label>
             </td>
             <td class=nowrap>
-                <button class="gbutton" type=submit name=make-nsfw value=1 style="color:#f90">标记</a>
+                <button class="gbutton" type=submit style="color:#f90" onclick="onPostOption(this,'make-nsfw')">标记</a>
             </td>
         </tr>
     </table>
@@ -41,7 +41,7 @@
             <td>
                 <input type=file id=post-image style="display:none" onchange="onImageChanged(this)">
                 <input type=hidden id=post-image-base64 name=image64>
-                <a class="gbutton" id=post-image-button onclick="sel('#post-image').click()">
+                <a class="gbutton" id=post-image-button onclick="$q('#post-image').click()">
                     <span class=icon-picture></span><span class="pic">图片</span>
                 </a>
 
@@ -71,80 +71,77 @@
 
             </td>
             <td class="nowrap" style="text-align:center">
-                {{if .ReplyTo}}
-                <input type=hidden name=reply value="{{.ReplyTo}}">
-                <button id=reply-submit class="gbutton" type=submit>回复</button>
-                {{else}}
-                <button id=reply-submit class="gbutton" type=submit>发布</button>
-                {{end}}
-
-                <button id=reply-submit-nsfw name=nsfw class=gbutton type=submit style="color:#f90;display:none">
+                <button id=reply-submit class="gbutton" onclick="onPost(this)">
+                    {{if .ReplyTo}}回复{{else}}发布{{end}}
+                </button>
+                <button id=reply-submit-nsfw class=gbutton style="color:#f90;display:none" onclick="onPost(this, true)">
                     {{if .ReplyTo}}回复{{else}}发布{{end}}NSFW内容
                 </button>
             </td>
         </tr>
-{{if .Error}}
-        <tr class=sep style="background:#f1f2f3;cursor:pointer" >
-            <td onclick="this.parentNode.style.display='none'" colspan=2>{{template "error_i18n.html" .Error}}</td>
-        </tr>
-{{end}}
         <tr>
             <td colspan=2 style="padding:0">{{template "emoji.html" .}}</td>
         </tr>
     </table>
-</form>
+</div>
 
 <script>
-    (function() {
-        var submits = sel('#reply-view button[type=submit]', true);
-        for (var i = 0; i < submits.length; i++) {
-            submits[i].onclick = function() {
-                var c = document.createElement("input")
-                c.setAttribute("name", this.getAttribute("name"));
-                c.setAttribute("value", "1");
-                c.style.display = "none";
-                sel("#reply-view").appendChild(c);
-            }
-        }
+function onPost(el, nsfw) {
+    var res = $q("#content").value.match(/((@|#)\S+)/g);
+    if (res) {
+        var e = JSON.parse(window.localStorage.getItem("presets") || "[]");
+        e = e.concat(res);
+        e = e.filter(function(el, i) { return e.indexOf(el) == i; });
+        if (e.length > 16) e = e.slice(e.length - 16);
+        window.localStorage.setItem("presets", JSON.stringify(e));
+    }
+    var stop = $wait(el);
+    $post("/api2/new", {
+        content: $q("#content").value,
+        image64: $q("#post-image-base64").value,
+        nsfw: nsfw ? "1" : "",
+        {{if .ReplyTo}}parent: {{.ReplyTo}},{{end}}
+    }, function (res) {
+        stop();
+        if (res != "ok") return res;
+        location.reload();
+    }, stop)
+}
 
-        sel("#reply-view").addEventListener("submit", function () {
-            for (var i = 0; i < submits.length; i++) $wait(submits[i]);
-
-            var res = sel("#content").value.match(/((@|#)\S+)/g);
-            if (!res) return;
-
-            var e = JSON.parse(window.localStorage.getItem("presets") || "[]");
-            e = e.concat(res);
-            e = e.filter(function(el, i) { return e.indexOf(el) == i; });
-            if (e.length > 16) e = e.slice(e.length - 16);
-            window.localStorage.setItem("presets", JSON.stringify(e));
-        })
-    })();
+function onPostOption(el, text) {
+    var stop = $wait(el), obj = { parent: {{.ReplyTo}} };
+    obj[text] = "1";
+    obj['delete-confirm'] = $q("#delete-confirm").checked ? "1" : ""
+    obj['nsfw-confirm'] = $q("#nsfw-confirm").checked ? "1" : ""
+    $post("/api2/new", obj, function (res) {
+        stop();
+        if (res != "ok") return res;
+        location.reload();
+    }, stop)
+}
 
 function onContentObserved(el) {
-    sel("#emoji").style.display = null; 
-    var autos = sel("#emoji ul li.auto", true);
-    for (var i = 0; i < autos.length; i++) sel("#emoji ul").removeChild(autos[i]);
+    $q("#emoji").style.display = null; 
+    var autos = $q("#emoji ul li.auto", true);
+    for (var i = 0; i < autos.length; i++) $q("#emoji ul").removeChild(autos[i]);
 
     var res = el.value.match(/(@\S+|#\S+)$/g);
     if (!res || res.length !== 1 || window.REQUESTING) return;
     window.REQUESTING = true;
 
-    $post("/api/search", "id=" + res[0].substring(1), function(h) {
-        try {
-            var results = JSON.parse(h), ul = sel("#emoji ul"), f = sel("#emoji ul li:first-child");
-            if (results && results.length) {
-                results.forEach(function(t) {
-                    var li = document.createElement('li');
-                    var a = document.createElement('a');
-                    li.appendChild(a);
-                    li.className = "auto";
-                    a.onclick = function() { insertMention(t); }
-                    a.innerText = t;
-                    ul.insertBefore(li, f);
-                });
-            }
-        } catch(e) {}
+    $post("/api/search", {id:res[0].substring(1)}, function(results) {
+        var ul = $q("#emoji ul"), f = $q("#emoji ul li:first-child");
+        if (results && results.length) {
+            results.forEach(function(t) {
+                var li = document.createElement('li');
+                var a = document.createElement('a');
+                li.appendChild(a);
+                li.className = "auto";
+                a.onclick = function() { insertMention(t); }
+                a.innerText = t;
+                ul.insertBefore(li, f);
+            });
+        }
         window.REQUESTING = false;
     }, function() {
         window.REQUESTING = false;
@@ -152,11 +149,11 @@ function onContentObserved(el) {
 }
 
 function onImageChanged(el) {
-    var btn = sel('#post-image-button');
+    var btn = $q('#post-image-button');
     btn.className = btn.className.replace(/image/, "")
     btn.querySelector('div') ? btn.removeChild(btn.querySelector('div')) : 0;
-    sel("#post-image-base64").value = "";
-    sel("#reply-submit-nsfw").style.display = "none";
+    $q("#post-image-base64").value = "";
+    $q("#reply-submit-nsfw").style.display = "none";
 
     if (!el.value) return;
 
@@ -170,9 +167,9 @@ function onImageChanged(el) {
             img.onload = null;
             var canvas = document.createElement("canvas"), throt = 1.4 * 1000 * 1000, f = 1,
                 success = function() {
-                    sel("#post-image-base64").value = img.src;
-                    sel('#reply-submit').removeAttribute("disabled");
-                    sel("#reply-submit-nsfw").style.display = null;
+                    $q("#post-image-base64").value = img.src;
+                    $q('#reply-submit').removeAttribute("disabled");
+                    $q("#reply-submit-nsfw").style.display = null;
                     var img2 = document.createElement("img");
                     var div = document.createElement("div");
                     var span = document.createElement("div");
@@ -188,7 +185,7 @@ function onImageChanged(el) {
                 };
 
 
-            sel('#reply-submit').setAttribute("disabled", "disabled");
+            $q('#reply-submit').setAttribute("disabled", "disabled");
             if (img.src.length > throt) {
                 if (img.src.match(/image\/gif/)) {
                     img.onerror();

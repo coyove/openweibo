@@ -2,84 +2,16 @@
 <html>
     <link href="/s/default.css?ver=10" rel="stylesheet" type="text/css" media="all">
     <link href="/s/fonts/fontello-embedded.css?ver=2" rel="stylesheet" type="text/css" media="all">
+    <script src="/s/js/default.js?ver=2"></script>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
-    <!--<meta http-equiv="Content-Security-Policy" content="script-src 'none'">-->
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="shortcut icon" href="/s/favicon.png">
-    <!--<link href="https://fonts.proxy.ustclug.org/css?family=Roboto:400,700&display=swap" rel="stylesheet">-->
-    <!--<script src="/s/js/pica.min.js"></script>-->
-    <script>
-        function sel(q, multi) {
-            var el = document.querySelectorAll(q);
-            return el.length === 1 && !multi ? el[0] : el;
-        }
-        function isInViewport(el, scale) {
-            var top = el.offsetTop, height = el.offsetHeight, h = window.innerHeight, s = scale || 0;
-            while (el.offsetParent) {
-                el = el.offsetParent;
-                top += el.offsetTop;
-            }
-            return top < (window.pageYOffset + h + h*s) && (top + height) > window.pageYOffset - h*s;
-        } 
-        function $wait(el) {
-            el.setAttribute("disabled", "disabled");
-            var waiting = 0,
-                oldHTML = el.innerHTML;
-                timer = setInterval(function () {
-                waiting++;
-                    el.innerHTML = "<b style='font-family:monospace'>" + "|/-\\".charAt(waiting % 4) + "</b>";
-            }, 100);
-            return function() {
-                el.removeAttribute("disabled");
-                clearInterval(timer);
-                el.innerHTML = oldHTML;
-            }
-        }
-        function likeArticle(el, id) {
-            var v = el.getAttribute("liked") === "true" ? "" : "1",
-                num = el.querySelector('span.num'),
-                icon = el.querySelector('i');
-            var stop = $wait(num);
-            $post("/api2/like_article", "like=" + (v || "") + "&to=" + id, function(res) {
-                stop();
-                if (res !== "ok") {
-                    alert("请求失败: " + res);
-                    return;
-                }
-                if (v) {
-                    el.setAttribute("liked", "true")
-                    icon.className = 'icon-heart-filled';
-                    num.innerText = parseInt(num.innerText) + 1;
-                } else {
-                    el.setAttribute("liked", "false")
-                    icon.className = 'icon-heart-1';
-                    num.innerText = parseInt(num.innerText) ? (parseInt(num.innerText) - 1) : 0;
-                }
-            }, stop);
-        }
-        function $post(url, data, cb, errorcb) {
-            var xmlHttp = new XMLHttpRequest(), m = document.cookie.match(/(^| )id=([^;]+)/);
-            xmlHttp.onreadystatechange = function() {
-                if (xmlHttp.readyState == 4) {
-                    if (xmlHttp.status == 200) {
-                        cb(xmlHttp.responseText);
-                    } else {
-                        errorcb ? errorcb(xmlHttp) : 0;
-                    }
-                }
-            }
-            xmlHttp.onerror = function() { errorcb(xmlHttp) }
-            xmlHttp.open("POST", url, true);
-            xmlHttp.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-            xmlHttp.send("api2_uid=" + (m ? m[2] : "") + "&" + data);
-        }
-    </script>
 <body>
     <div id="container" style="width: 100%; max-width: 800px; margin: 0 auto">
     <nav>
         <ul>
             <li id="nav-own"><a href="/t">我的时间线</a></li>
-            <li id="nav-master"><a href="/master"><i class="icon-flow-merge"></i>MASTER</a></li>
+            <li id="nav-master"><a href="/t/master"><i class="icon-flow-merge"></i>MASTER</a></li>
             <li id="nav-inbox" style="display:none"><a>我的提醒</a></li>
             <li id="nav-user-info" style="display:none"><a>我的设置</a></li>
             <li id="nav-login" style="display:none"><a>注册</a></li>

@@ -14,6 +14,7 @@ import (
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/mv"
+	"github.com/gin-gonic/gin"
 )
 
 func (m *Manager) GetUser(id string) (*mv.User, error) {
@@ -42,6 +43,11 @@ func (m *Manager) SetUser(u *mv.User) error {
 	}
 	m.weakUsers.Delete(u.ID)
 	return m.db.Set("u/"+u.ID, u.Marshal())
+}
+
+func (m *Manager) GetUserByContext(g *gin.Context) *mv.User {
+	u, _ := m.GetUserByToken(g.PostForm("api2_uid"))
+	return u
 }
 
 func (m *Manager) GetUserByToken(tok string) (*mv.User, error) {
@@ -194,8 +200,9 @@ func (m *Manager) FollowUser_unlock(from, to string, following bool) (E error) {
 		return fmt.Errorf("follow/to-blocked")
 	}
 
+	updated := false
 	defer func() {
-		if E != nil {
+		if E != nil || !updated {
 			return
 		}
 
@@ -216,10 +223,14 @@ func (m *Manager) FollowUser_unlock(from, to string, following bool) (E error) {
 
 	state := strconv.FormatBool(following) + "," + strconv.FormatInt(time.Now().Unix(), 10)
 	if a, _ := m.GetArticle(followID); a != nil {
-		a.Extras[to] = state
+		if !strings.HasPrefix(a.Extras[to], strconv.FormatBool(following)) {
+			a.Extras[to] = state
+			updated = true
+		}
 		return m.db.Set(a.ID, a.Marshal())
 	}
 
+	updated = true
 	if err := m.insertArticle(root, &mv.Article{
 		ID:         followID,
 		Cmd:        mv.CmdFollow,
@@ -228,7 +239,6 @@ func (m *Manager) FollowUser_unlock(from, to string, following bool) (E error) {
 	}, false); err != nil {
 		return err
 	}
-
 	return nil
 }
 

@@ -1,7 +1,7 @@
 package view
 
 import (
-	"encoding/base64"
+	"bytes"
 	"log"
 	"strings"
 
@@ -27,7 +27,6 @@ type ArticlesTimelineView struct {
 	IsUserTimelineFollowed bool
 	IsUserTimelineBlocked  bool
 	IsTagTimelineFollowed  bool
-	IsGlobalTimeline       bool
 	IsTagTimeline          bool
 	ShowNewPost            bool
 	User                   *mv.User
@@ -47,50 +46,27 @@ func SetManager(mgr *manager.Manager) {
 }
 
 func Index(g *gin.Context) {
-	var pl ArticlesTimelineView
-	var cursor ident.ID
-	pl.Tag = g.Param("tag")
-	pl.You = getUser(g)
-
-	if pl.Tag == "" {
-		pl.Tag = "master"
-		pl.IsGlobalTimeline = true
-	} else {
-		pl.IsTagTimeline = true
-		if pl.You != nil {
-			pl.ReplyView = makeReplyView(g, "")
-			pl.IsTagTimelineFollowed = m.IsFollowing(pl.You.ID, "#"+pl.Tag)
-		}
-		a, _ := m.GetArticle(ident.NewID(ident.IDTagTag).SetTag(pl.Tag).String())
-		if a != nil {
-			pl.PostsUnderTag = int32(a.Replies)
-		}
+	pl := ArticlesTimelineView{
+		Tag:           g.Param("tag"),
+		You:           getUser(g),
+		User:          &mv.User{},
+		IsTagTimeline: true,
 	}
 
-	if g.Request.Method == "POST" {
-		cbuf, _ := base64.StdEncoding.DecodeString(g.PostForm("cursors"))
-		cursor = ident.UnmarshalID(cbuf)
-	} else {
-		if pl.IsGlobalTimeline {
-			cursor = ident.NewID(ident.IDTagAuthor).SetTag(pl.Tag)
-		} else {
-			cursor = ident.NewID(ident.IDTagTag).SetTag(pl.Tag)
-		}
+	if pl.You != nil {
+		pl.ReplyView = makeReplyView(g, "")
+		pl.IsTagTimelineFollowed = m.IsFollowing(pl.You.ID, "#"+pl.Tag)
 	}
 
-	a, next := m.WalkMulti(int(config.Cfg.PostsPerPage), cursor)
-	fromMultiple(&pl.Articles, a, 0, getUser(g))
-
-	for _, c := range next {
-		pl.Next = base64.StdEncoding.EncodeToString(c.Marshal(nil))
-		break
+	a, _ := m.GetArticle(ident.NewID(ident.IDTagTag).SetTag(pl.Tag).String())
+	if a != nil {
+		pl.PostsUnderTag = int32(a.Replies)
 	}
 
-	if g.PostForm("api") != "" {
-		apiWrapper(g, pl.Next, pl.Articles)
-		return
-	}
+	a2, next := m.WalkMulti(int(config.Cfg.PostsPerPage), ident.NewID(ident.IDTagTag).SetTag(pl.Tag))
+	fromMultiple(&pl.Articles, a2, 0, getUser(g))
 
+	pl.Next = ident.CombineIDs(nil, next...)
 	g.HTML(200, "timeline.html", pl)
 }
 
@@ -103,14 +79,26 @@ func Timeline(g *gin.Context) {
 	case strings.HasPrefix(uid, "#"):
 		g.Redirect(302, "/tag/"+uid[1:])
 		return
+	case uid == "master":
+		pl.User = &mv.User{
+			ID: "master",
+		}
 	case uid != "" && uid != ":in":
 		// View someone's timeline
 		pl.IsUserTimeline = true
 		pl.User, _ = m.GetUser(uid)
 		if pl.User == nil {
+			if res := mv.SearchUsers(uid, 1); len(res) == 1 {
+				uid = res[0]
+				pl.User, _ = m.GetUser(uid)
+				if pl.User != nil {
+					goto SKIP
+				}
+			}
 			NotFound(g)
 			return
 		}
+	SKIP:
 		if pl.You != nil {
 			pl.IsUserTimelineFollowed = m.IsFollowing(pl.You.ID, uid)
 			pl.IsUserTimelineBlocked = m.IsBlocking(pl.You.ID, uid)
@@ -141,26 +129,15 @@ func Timeline(g *gin.Context) {
 				}
 			}
 		}
-		pendingFCursor = next
+		if next != "" {
+			pendingFCursor = pl.User.FollowingChain + ":" + next
+		}
 	}
 
-	if pl.IsUserTimeline || pl.IsInbox {
-		if g.Request.Method == "POST" {
-			cursors, _ = ident.SplitIDs(g.PostForm("cursors"))
-		} else {
-			if pl.IsUserTimeline {
-				cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(pl.User.ID))
-			} else {
-				cursors = append(cursors, ident.NewID(ident.IDTagInbox).SetTag(pl.User.ID))
-			}
-		}
-	} else if g.Request.Method == "POST" {
-		var payload []byte
-		cursors, payload = ident.SplitIDs(g.PostForm("cursors"))
-
-		if len(payload) > 0 {
-			readCursorsAndPendingFCursor(string(payload))
-		}
+	if pl.IsUserTimeline {
+		cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(pl.User.ID))
+	} else if pl.IsInbox {
+		cursors = append(cursors, ident.NewID(ident.IDTagInbox).SetTag(pl.User.ID))
 	} else {
 		pl.ShowNewPost = true
 		readCursorsAndPendingFCursor("")
@@ -178,23 +155,48 @@ func Timeline(g *gin.Context) {
 	}
 
 	pl.Next = ident.CombineIDs([]byte(pendingFCursor), next...)
-
-	if g.PostForm("api") != "" {
-		apiWrapper(g, pl.Next, pl.Articles)
-		return
-	}
-
 	g.HTML(200, "timeline.html", pl)
 }
 
-func apiWrapper(g *gin.Context, next string, articles []ArticleView) {
+func APITimeline(g *gin.Context) {
 	p := struct {
 		EOT      bool
 		Articles [][2]string
 		Next     string
 	}{}
 
-	p.Next = next
+	var articles []ArticleView
+	if g.PostForm("likes") != "" {
+		a, next := m.WalkLikes(int(config.Cfg.PostsPerPage), g.PostForm("cursors"))
+		fromMultiple(&articles, a, 0, getUser(g))
+		p.Next = next
+	} else {
+		cursors, payload := ident.SplitIDs(g.PostForm("cursors"))
+
+		var pendingFCursor string
+		log.Println(string(payload))
+		if x := bytes.Split(payload, []byte(":")); len(x) == 2 {
+			list, next := m.GetFollowingList(string(x[0]), string(x[1]), 1e6)
+			for _, id := range list {
+				if !id.Followed {
+					continue
+				}
+				if strings.HasPrefix(id.ID, "#") {
+					cursors = append(cursors, ident.NewID(ident.IDTagTag).SetTag(id.ID[1:]))
+				} else {
+					cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(id.ID))
+				}
+			}
+			if next != "" {
+				pendingFCursor = string(x[0]) + ":" + next
+			}
+		}
+
+		a, next := m.WalkMulti(int(config.Cfg.PostsPerPage), cursors...)
+		fromMultiple(&articles, a, 0, getUser(g))
+		p.Next = ident.CombineIDs([]byte(pendingFCursor), next...)
+	}
+
 	p.EOT = p.Next == ""
 
 	tmp := fakeResponseCatcher{}

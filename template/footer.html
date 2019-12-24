@@ -18,12 +18,12 @@
     <script>
         function expandNSFW() {
 {{if .User.AutoNSFW}}
-            var el = sel(".gbutton.nsfw-clicker");
+            var el = $q(".gbutton.nsfw-clicker");
             for (var i = 0 ; i < el.length; i++) el[i].click();
 {{end}}
         }
         expandNSFW();
-// $wait(sel("button[type=submit]")[0])
+// $wait($q("button[type=submit]")[0])
     </script>
 
 <!-- Global site tag (gtag.js) - Google Analytics -->

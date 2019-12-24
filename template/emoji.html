@@ -148,7 +148,7 @@
 
 <script>
     function insertMention(e) {
-        var el = sel("#content");
+        var el = $q("#content");
         if (e.startsWith("@") || e.startsWith("#"))
             el.value = el.value.replace(/(@|#)\S+$/, "") + e + " ";
         else
@@ -157,12 +157,12 @@
     }
 
 function closeEmoji() {
-    sel("#emoji").style.display = 'none';
-    sel("#content").focus();
+    $q("#emoji").style.display = 'none';
+    $q("#content").focus();
 }
 
 try {
-    var f = sel("#emoji").querySelector('ul li'), _this = sel("#emoji ul");
+    var f = $q("#emoji").querySelector('ul li'), _this = $q("#emoji ul");
     JSON.parse(window.localStorage.getItem('presets') || '[]').filter(function(t){return t}).forEach(function(t) {
         var li = document.createElement('li');
         var a = document.createElement('a');
