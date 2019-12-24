@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
-    <link href="/s/default.css?ver=7" rel="stylesheet" type="text/css" media="all">
-    <link href="/s/fonts/fontello-embedded.css" rel="stylesheet" type="text/css" media="all">
+    <link href="/s/default.css?ver=10" rel="stylesheet" type="text/css" media="all">
+    <link href="/s/fonts/fontello-embedded.css?ver=2" rel="stylesheet" type="text/css" media="all">
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
     <!--<meta http-equiv="Content-Security-Policy" content="script-src 'none'">-->
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -35,8 +35,30 @@
                 el.innerHTML = oldHTML;
             }
         }
+        function likeArticle(el, id) {
+            var v = el.getAttribute("liked") === "true" ? "" : "1",
+                num = el.querySelector('span.num'),
+                icon = el.querySelector('i');
+            var stop = $wait(num);
+            $post("/api2/like_article", "like=" + (v || "") + "&to=" + id, function(res) {
+                stop();
+                if (res !== "ok") {
+                    alert("请求失败: " + res);
+                    return;
+                }
+                if (v) {
+                    el.setAttribute("liked", "true")
+                    icon.className = 'icon-heart-filled';
+                    num.innerText = parseInt(num.innerText) + 1;
+                } else {
+                    el.setAttribute("liked", "false")
+                    icon.className = 'icon-heart-1';
+                    num.innerText = parseInt(num.innerText) ? (parseInt(num.innerText) - 1) : 0;
+                }
+            }, stop);
+        }
         function $post(url, data, cb, errorcb) {
-            var xmlHttp = new XMLHttpRequest();
+            var xmlHttp = new XMLHttpRequest(), m = document.cookie.match(/(^| )id=([^;]+)/);
             xmlHttp.onreadystatechange = function() {
                 if (xmlHttp.readyState == 4) {
                     if (xmlHttp.status == 200) {
@@ -49,7 +71,7 @@
             xmlHttp.onerror = function() { errorcb(xmlHttp) }
             xmlHttp.open("POST", url, true);
             xmlHttp.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-            xmlHttp.send(data);
+            xmlHttp.send("api2_uid=" + (m ? m[2] : "") + "&" + data);
         }
     </script>
 <body>
@@ -62,6 +84,7 @@
             <li id="nav-user-info" style="display:none"><a>我的设置</a></li>
             <li id="nav-login" style="display:none"><a>注册</a></li>
             <li id="nav-followings" style="display:none"><a><span>我</span>的关注</a></li>
+            <li id="nav-likes" style="display:none"><a><span>我</span>的收藏</a></li>
             <li id="nav-blacklist" style="display:none"><a>黑名单</a></li>
             <li id="nav-followers" style="display:none"><a><span>我</span>的粉丝</a></li>
             <li id="nav-other" style="display:none"><a></a></li>

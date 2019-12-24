@@ -22,6 +22,7 @@ const (
 	CmdFollow       = "follow"
 	CmdFollowed     = "followed"
 	CmdBlock        = "block"
+	CmdLike         = "like"
 	CmdVote         = "vote"
 
 	DeletionMarker = "[[b19b8759-391b-460a-beb0-16f5f334c34f]]"
@@ -30,6 +31,7 @@ const (
 type Article struct {
 	ID          string            `json:"id"`
 	Replies     int               `json:"rs,omitempty"`
+	Likes       int32             `json:"like,omitempty"`
 	Locked      bool              `json:"lock,omitempty"`
 	NSFW        bool              `json:"nsfw,omitempty"`
 	Content     string            `json:"content"`
@@ -83,6 +85,7 @@ type User struct {
 	FollowingChain    string `json:"FC2,omitempty"`
 	FollowerChain     string `json:"FrC,omitempty"`
 	BlockingChain     string `json:"BC,omitempty"`
+	LikeChain         string `json:"LC,omitempty"`
 	DataIP            string `json:"sip"`
 	TSignup           uint32 `json:"st"`
 	TLogin            uint32 `json:"lt"`

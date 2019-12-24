@@ -23,6 +23,7 @@ type ArticlesTimelineView struct {
 	IsAdmin                bool
 	IsInbox                bool
 	IsUserTimeline         bool
+	IsUserLikeTimeline     bool
 	IsUserTimelineFollowed bool
 	IsUserTimelineBlocked  bool
 	IsTagTimelineFollowed  bool
@@ -209,7 +210,7 @@ func Replies(g *gin.Context) {
 	var pl ArticleRepliesView
 	var pid = g.Param("parent")
 
-	parent, err := m.Get(pid)
+	parent, err := m.GetArticle(pid)
 	if err != nil || parent.ID == "" {
 		NotFound(g)
 		log.Println(pid, err)

@@ -115,15 +115,6 @@ func User(g *gin.Context) {
 		} else {
 			u.DataIP = strings.Join(ips, ",")
 		}
-	case "logout":
-		m.UpdateUser_unlock(username, func(u *mv.User) error {
-			u.Session = genSession()
-			return nil
-		})
-		u = &mv.User{}
-		g.SetCookie("id", mv.MakeUserToken(u), 365*86400, "", "", false, false)
-		g.Redirect(302, "/")
-		return
 	case "update-password":
 		if ret := checkToken(g); ret != "" {
 			redir("error", ret)
@@ -333,4 +324,52 @@ func APINewCaptcha(g *gin.Context) {
 	}
 	p.UUID, p.Challenge = ident.MakeToken(g)
 	g.JSON(200, p)
+}
+
+func APILike(g *gin.Context) {
+	var (
+		redir = func(b string) { g.String(200, b) }
+		u, _  = m.GetUserByToken(g.PostForm("api2_uid"))
+	)
+
+	if u == nil {
+		redir("internal/error")
+		return
+	}
+
+	if ret := checkIP(g); ret != "" {
+		redir(ret)
+		return
+	}
+
+	m.Lock(u.ID)
+	defer m.Unlock(u.ID)
+
+	to := g.PostForm("to")
+	if to == "" {
+		redir("internal/error")
+		return
+	}
+
+	err := m.LikeArticle_unlock(u.ID, to, g.PostForm("like") != "")
+	if err != nil {
+		redir(err.Error())
+	} else {
+		redir("ok")
+	}
+}
+
+func APILogout(g *gin.Context) {
+	u, _ := m.GetUserByToken(g.PostForm("api2_uid"))
+
+	if u != nil {
+		m.UpdateUser(u.ID, func(u *mv.User) error {
+			u.Session = genSession()
+			return nil
+		})
+		u = &mv.User{}
+		g.SetCookie("id", mv.MakeUserToken(u), 365*86400, "", "", false, false)
+	}
+
+	g.Status(200)
 }

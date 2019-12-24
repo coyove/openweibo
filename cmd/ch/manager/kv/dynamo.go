@@ -58,10 +58,9 @@ func (m *DynamoKV) Unlock(key string) {
 }
 
 func (m *DynamoKV) Get(key string) ([]byte, error) {
-	x, _ := m.cache.Get(key)
+	x, ok := m.cache.Get(key)
 	v, _ := x.([]byte)
-
-	if len(v) > 0 {
+	if ok {
 		return v, nil
 	}
 
@@ -83,9 +82,9 @@ func (m *DynamoKV) Get(key string) ([]byte, error) {
 		v = []byte(*vi.S)
 	}
 
-	if len(v) > 0 {
-		m.cache.Add(key, v)
-	}
+	// if len(v) > 0 {
+	m.cache.Add(key, v)
+	// }
 	return v, err
 }
 

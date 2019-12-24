@@ -65,6 +65,12 @@
 {{else if .IsGlobalTimeline}}
     <title>全局时间线</title>
     <script>sel('#nav-master').className = "selected"</script>
+{{else if .IsUserLikeTimeline}}
+<div class="status-box">
+        {{template "user_public.html" .User}}
+</div>
+    <title>@{{.User.ID}}的收藏</title>
+    <script>sel('#nav-likes a span').innerText = "@{{.User.ID}}";sel('#nav-likes').className = "selected"</script>
 {{else if .IsTagTimeline}}
     <title>#{{.Tag}}</title>
     <script>sel('#nav-other a').innerText = "#{{.Tag}} ({{.PostsUnderTag}})"; sel('#nav-other').className = "selected"</script>

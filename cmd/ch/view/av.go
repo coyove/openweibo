@@ -17,7 +17,9 @@ type ArticleView struct {
 	You         *mv.User
 	Cmd         string
 	Replies     int
+	Likes       int
 	Locked      bool
+	Liked       bool
 	NSFW        bool
 	NoAvatar    bool
 	Content     string
@@ -25,13 +27,6 @@ type ArticleView struct {
 	Media       string
 	MediaType   string
 	CreateTime  time.Time
-	// HasPoll     bool
-	// Polls       [8]struct {
-	// 	Text  string
-	// 	Votes int
-	// 	Ratio byte // 100%
-	// 	Voted bool
-	// }
 }
 
 const (
@@ -48,6 +43,7 @@ func (a *ArticleView) from(a2 *mv.Article, opt uint64, u *mv.User) *ArticleView 
 
 	a.ID = a2.ID
 	a.Replies = a2.Replies
+	a.Likes = int(a2.Likes)
 	a.Locked = a2.Locked
 	a.NSFW = a2.NSFW
 	a.Cmd = string(a2.Cmd)
@@ -61,6 +57,8 @@ func (a *ArticleView) from(a2 *mv.Article, opt uint64, u *mv.User) *ArticleView 
 	a.You = u
 	if a.You == nil {
 		a.You = &mv.User{}
+	} else {
+		a.Liked = m.IsLiking(u.ID, a2.ID)
 	}
 
 	if p := strings.SplitN(a2.Media, ":", 2); len(p) == 2 {

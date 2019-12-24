@@ -163,6 +163,8 @@ func (m *Manager) createUserChain(u *mv.User, cmd mv.Cmd) error {
 			u.BlockingChain, uu.BlockingChain = a.ID, a.ID
 		case mv.CmdFollowed:
 			u.FollowerChain, uu.FollowerChain = a.ID, a.ID
+		case mv.CmdLike:
+			u.LikeChain, uu.LikeChain = a.ID, a.ID
 		default:
 			panic(cmd)
 		}
@@ -255,27 +257,8 @@ func (m *Manager) fromFollowToNotifyTo(from, to string, following bool) (E error
 		}
 	}
 
-	followID := makeFollowedID(to, from)
-	m.db.Lock(followID)
-	defer m.db.Unlock(followID)
-
-	if a, _ := m.GetArticle(followID); a != nil {
-		a.Extras["followed"] = strconv.FormatBool(following)
-		return m.db.Set(a.ID, a.Marshal())
-	}
-
-	if err := m.insertArticle(u.FollowerChain, &mv.Article{
-		ID:  followID,
-		Cmd: mv.CmdFollowed,
-		Extras: map[string]string{
-			"to":       from,
-			"followed": strconv.FormatBool(following),
-		},
-		CreateTime: time.Now(),
-	}, false); err != nil {
-		return err
-	}
-	return nil
+	_, err = m.insertChainOrUpdate(makeFollowedID(to, from), u.FollowerChain, from, mv.CmdFollowed, following)
+	return err
 }
 
 func (m *Manager) BlockUser_unlock(from, to string, blocking bool) (E error) {
@@ -289,7 +272,6 @@ func (m *Manager) BlockUser_unlock(from, to string, blocking bool) (E error) {
 			return err
 		}
 	}
-	root := u.BlockingChain
 
 	if blocking {
 		if err := m.FollowUser_unlock(to, from, false); err != nil {
@@ -297,32 +279,63 @@ func (m *Manager) BlockUser_unlock(from, to string, blocking bool) (E error) {
 		}
 	}
 
-	followID := makeBlockID(from, to)
-	m.db.Lock(followID)
-	defer m.db.Unlock(followID)
+	_, err = m.insertChainOrUpdate(makeBlockID(from, to), u.BlockingChain, to, mv.CmdBlock, blocking)
+	return err
+}
 
-	if a, _ := m.GetArticle(followID); a != nil {
-		state := strconv.FormatBool(blocking)
-		if a.Extras["block"] == state {
-			return nil
-		}
-		a.Extras["block"] = state
-		return m.db.Set(a.ID, a.Marshal())
-	}
-
-	if err := m.insertArticle(root, &mv.Article{
-		ID:  followID,
-		Cmd: mv.CmdBlock,
-		Extras: map[string]string{
-			"to":    to,
-			"block": strconv.FormatBool(blocking),
-		},
-		CreateTime: time.Now(),
-	}, false); err != nil {
+func (m *Manager) LikeArticle_unlock(from, to string, liking bool) (E error) {
+	u, err := m.GetUser(from)
+	if err != nil {
 		return err
 	}
-
+	if u.LikeChain == "" {
+		if err := m.createUserChain(u, mv.CmdLike); err != nil {
+			return err
+		}
+	}
+	updated, err := m.insertChainOrUpdate(makeLikeID(from, to), u.LikeChain, to, mv.CmdLike, liking)
+	if err != nil {
+		return err
+	}
+	if updated {
+		return m.UpdateArticle(to, func(a *mv.Article) error {
+			if liking {
+				a.Likes++
+			} else {
+				dec0(&a.Likes)
+			}
+			return nil
+		})
+	}
 	return nil
+}
+
+func (m *Manager) insertChainOrUpdate(aid, chainid string, to string, cmd mv.Cmd, value bool) (updated bool, E error) {
+	m.db.Lock(aid)
+	defer m.db.Unlock(aid)
+
+	if a, _ := m.GetArticle(aid); a != nil {
+		state := strconv.FormatBool(value)
+		if a.Extras[string(cmd)] == state {
+			return false, nil
+		}
+		if a.Extras == nil {
+			a.Extras = map[string]string{}
+		}
+		a.Extras[string(cmd)] = state
+		return true, m.db.Set(a.ID, a.Marshal())
+	}
+
+	a := &mv.Article{
+		ID:  aid,
+		Cmd: cmd,
+		Extras: map[string]string{
+			"to":        to,
+			string(cmd): strconv.FormatBool(value),
+		},
+		CreateTime: time.Now(),
+	}
+	return true, m.insertArticle(chainid, a, false)
 }
 
 type FollowingState struct {
@@ -330,6 +343,7 @@ type FollowingState struct {
 	Time        time.Time
 	Followed    bool
 	RevFollowed bool
+	Liked       bool
 	Blocked     bool
 }
 
@@ -380,6 +394,7 @@ func (m *Manager) GetFollowingList(chain string, cursor string, n int) ([]Follow
 				Time:        a.CreateTime,
 				Blocked:     a.Extras["block"] == "true",
 				RevFollowed: a.Extras["followed"] == "true",
+				Liked:       a.Extras["like"] == "true",
 			})
 		}
 
@@ -399,4 +414,9 @@ func (m *Manager) IsFollowing(from, to string) bool {
 func (m *Manager) IsBlocking(from, to string) bool {
 	p, _ := m.GetArticle(makeBlockID(from, to))
 	return p != nil && p.Extras["block"] == "true"
+}
+
+func (m *Manager) IsLiking(from, to string) bool {
+	p, _ := m.GetArticle(makeLikeID(from, to))
+	return p != nil && p.Extras["like"] == "true"
 }

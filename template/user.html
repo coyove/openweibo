@@ -20,14 +20,11 @@
 <table class="articles" style="margin: 0.5em 0">
     <tr>
         <td>上次登入:</td>
-            <td>{{.User.Login.Format "2006-01-02 15:04:05"}}</td>
-            <td rowspan=2 class=nowrap>
-                <button style="color:#f52" class="gbutton" type=submit name=method value=logout>注销</button>
-            </td>
+        <td colspan=2>{{.User.Login.Format "2006-01-02 15:04:05"}}</td>
     </tr>
     <tr>
         <td>注册于:</td>
-        <td>{{.User.Signup.Format "2006-01-02 15:04:05"}}</td>
+        <td colspan=2>{{.User.Signup.Format "2006-01-02 15:04:05"}}</td>
     </tr>
     <tr>
         <td class=nowrap>上次登入IP:</td><td colspan=2>{{.User.DataIP}}</td>

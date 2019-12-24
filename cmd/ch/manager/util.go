@@ -100,6 +100,10 @@ func makeBlockID(from, to string) string {
 	return "u/" + from + "/block/" + to
 }
 
+func makeLikeID(from, to string) string {
+	return "u/" + from + "/like/" + to
+}
+
 func makeVoteID(from, aid string) string {
 	return "u/" + from + "/vote/" + aid
 }

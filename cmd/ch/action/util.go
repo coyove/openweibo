@@ -33,14 +33,21 @@ func EncodeQuery(a ...string) string {
 	return "?" + query.Encode()
 }
 
+func checkIP(g *gin.Context) string {
+	if !g.GetBool("ip-ok") {
+		return fmt.Sprintf("guard/cooling-down/%.1fs", float64(config.Cfg.Cooldown)-g.GetFloat64("ip-ok-remain"))
+	}
+	return ""
+}
+
 func checkToken(g *gin.Context) string {
 	var (
 		uuid       = mv.SoftTrunc(g.PostForm("uuid"), 32)
 		_, tokenok = ident.ParseToken(g, uuid)
 	)
 
-	if !g.GetBool("ip-ok") {
-		return fmt.Sprintf("guard/cooling-down/%.1fs", float64(config.Cfg.Cooldown)-g.GetFloat64("ip-ok-remain"))
+	if ret := checkIP(g); ret != "" {
+		return ret
 	}
 
 	if u, ok := g.Get("user"); ok {
@@ -52,17 +59,6 @@ func checkToken(g *gin.Context) string {
 	// Admin still needs token verification
 	if !tokenok {
 		return "guard/token-expired"
-	}
-
-	return ""
-}
-
-func throtUser(g *gin.Context) string {
-	u2, _ := g.Get("user")
-	u, _ := u2.(*mv.User)
-
-	if u == nil || u.Banned {
-		return "guard/id-not-existed"
 	}
 
 	return ""
@@ -80,8 +76,8 @@ func checkCaptcha(g *gin.Context) string {
 		challengePassed   bool
 	)
 
-	if !g.GetBool("ip-ok") {
-		return fmt.Sprintf("guard/cooling-down/%.1fs", float64(config.Cfg.Cooldown)-g.GetFloat64("ip-ok-remain"))
+	if ret := checkIP(g); ret != "" {
+		return ret
 	}
 
 	if !tokenok {

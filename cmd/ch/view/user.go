@@ -102,3 +102,38 @@ func Avatar(g *gin.Context) {
 	g.Writer.Header().Add("Cache-Control", "public")
 	jpeg.Encode(g.Writer, img, &jpeg.Options{Quality: 75})
 }
+
+func UserLikes(g *gin.Context) {
+	p := ArticlesTimelineView{IsUserLikeTimeline: true}
+	p.You = getUser(g)
+	if p.You == nil {
+		g.Redirect(302, "/user")
+		return
+	}
+
+	p.User, _ = m.GetUser(g.Param("uid"))
+	if p.User == nil {
+		p.User = p.You
+	}
+
+	var cursor string
+	if g.Request.Method == "POST" {
+		cursor = g.PostForm("cursors")
+	} else {
+		p, _ := m.GetArticle(p.User.LikeChain)
+		if p != nil {
+			cursor = p.NextID
+		}
+	}
+
+	a, next := m.WalkLikes(int(config.Cfg.PostsPerPage), cursor)
+	fromMultiple(&p.Articles, a, 0, getUser(g))
+	p.Next = next
+
+	if g.PostForm("api") != "" {
+		apiWrapper(g, p.Next, p.Articles)
+		return
+	}
+
+	g.HTML(200, "timeline.html", p)
+}

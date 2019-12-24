@@ -1,7 +1,7 @@
 <div class="status">
     <div class=title>
         <b>@{{.ID}}</b>
-        {{if .IsMod}}<span class=mod>Mod</span>{{end}}
+        {{if .IsMod}}<b><span class=mod>Mod</span></b>{{end}}
         {{if .Banned}}/ 封禁{{end}}
     </div>
     <span>
@@ -11,6 +11,6 @@
         <a href="/user/followers/{{.ID}}"><b>{{.Followers}}</b><br><span style="color:black">粉丝</span></a>
     </span>
     <span>
-        <b>{{.TotalPosts}}</b><br><span style="color:black">状态</span>
+        <a href="/likes/{{.ID}}"><i class="icon-heart-filled"></i><br><span style="color:black">收藏</span></a>
     </span>
 </div>

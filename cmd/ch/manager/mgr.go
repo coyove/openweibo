@@ -155,57 +155,43 @@ func (m *Manager) WalkReply(n int, cursor string) (a []*mv.Article, next string)
 			log.Println("[mgr.WalkReply] Failed to get:", cursor, err)
 			// go m.purgeDeleted(hdr, tag, root.ID)
 		}
+
 		cursor = p.NextReplyID
 	}
 
 	return a, cursor
 }
 
-// func (m *Manager) purgeDeleted(hdr ident.IDTag, tag string, startID string) {
-// 	m.db.Lock(startID)
-// 	defer m.db.Unlock(startID)
-//
-// 	start, err := mv.UnmarshalTimeline(m.kvMustGet(startID))
-// 	if err != nil {
-// 		return
-// 	}
-//
-// 	var next *mv.Timeline
-// 	startTime := time.Now()
-// 	oldNext := start.Next
-//
-// 	for root := start; root.Next != ""; root = next {
-// 		next, err = mv.UnmarshalTimeline(m.kvMustGet(root.Next))
-// 		if err != nil {
-// 			return
-// 		}
-//
-// 		if time.Since(startTime).Seconds() > 10 {
-// 			start.Next = next.ID
-// 			goto SET
-// 		}
-//
-// 		p, err := mv.UnmarshalArticle(m.kvMustGet(next.Ptr))
-// 		if err == nil {
-// 			if tag == "" && next.ID != p.TimelineID {
-// 				// Refer to Walk()
-// 			} else {
-// 				start.Next = next.ID
-// 				goto SET
-// 			}
-// 		}
-// 	}
-//
-// 	start.Next = ""
-//
-// SET:
-// 	if start.Next == oldNext {
-// 		return
-// 	}
-//
-// 	log.Println("[mgr.purgeDeleted] New next of", start, ", old:", oldNext)
-// 	m.db.Set(startID, start.Marshal())
-// }
+func (m *Manager) WalkLikes(n int, cursor string) (a []*mv.Article, next string) {
+	startTime := time.Now()
+
+	for len(a) < n && cursor != "" {
+		if time.Since(startTime).Seconds() > 1 {
+			log.Println("[mgr.WalkLikes] Break out slow walk at", cursor)
+			break
+		}
+
+		p, err := m.GetArticle(cursor)
+		if err == nil {
+			if p.Extras["like"] == "true" {
+				a2, err := m.GetArticle(p.Extras["to"])
+				if err == nil {
+					a2.NextID = p.NextID
+					a = append(a, a2)
+				} else {
+					log.Println("[mgr.WalkLikes] Failed to get:", p.Extras["to"], err)
+				}
+			}
+		} else {
+			log.Println("[mgr.WalkLikes] Failed to get:", cursor, err)
+			// go m.purgeDeleted(hdr, tag, root.ID)
+		}
+
+		cursor = p.NextID
+	}
+
+	return a, cursor
+}
 
 // func (m *Manager) Post(content, media string, author *mv.User, ip string, nsfw bool) (string, error) {
 func (m *Manager) Post(a *mv.Article, author *mv.User) (string, error) {
@@ -276,7 +262,7 @@ func (m *Manager) insertArticle(rootID string, a *mv.Article, asReply bool) erro
 }
 
 func (m *Manager) PostReply(parent string, content, media string, author *mv.User, ip string, nsfw bool) (string, error) {
-	p, err := m.Get(parent)
+	p, err := m.GetArticle(parent)
 	if err != nil {
 		return "", err
 	}
@@ -335,10 +321,6 @@ func (m *Manager) PostReply(parent string, content, media string, author *mv.Use
 	}()
 
 	return a.ID, nil
-}
-
-func (m *Manager) Get(id string) (a *mv.Article, err error) {
-	return m.GetArticle(id)
 }
 
 func (m *Manager) UpdateArticle(aid string, cb func(a *mv.Article) error) error {

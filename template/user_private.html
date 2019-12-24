@@ -3,12 +3,27 @@
         <b>@{{.ID}}</b>
         {{if .IsMod}}<b><span class=mod>Mod</span></b>{{end}}
         {{if .Banned}}/ 封禁{{end}}
-        <a href="/user" style="position:absolute;right:0"><i class="icon-cog"></i></a>
+        
+    </div>
+    <div class=title style="border:none;margin-bottom:0">
+        <span title="我的收藏">
+            <a href="/likes/{{.ID}}"><i class="icon-heart-filled"></i></a>
+        </span>
+        <span title="我的设置">
+            <a href="/user"><i class="icon-cog"></i></a>
+        </span>
+        <span title="登出账号">
+            <a href="javascript:$post('/api2/logout','',function(){location.href='/'})">
+                <i class="icon-logout" style="color:#f52"></i>
+            </a>
+        </span>
     </div>
     <div class=title>
-        <span><a href="/user/blacklist"><i class="icon-block"></i></a></span>
+        <span title="我的黑名单">
+            <a href="/user/blacklist"><i class="icon-block"></i></a>
+        </span>
         <span><b>{{template "kimochi.html" .}}</b></span>
-        <span>
+        <span title="我的提醒">
             {{if .Unread}}
         <a href="/t/:in"><b style="color:#f52" class="icon-mail-alt">{{.Unread}}</b></a>
         {{else}}
