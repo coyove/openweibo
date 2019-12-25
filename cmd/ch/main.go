@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"reflect"
 	"runtime"
 	"strconv"
 	"strings"
@@ -102,6 +103,14 @@ func main() {
 				return s[12 : len(s)-1]
 			}
 			return ""
+		},
+		"isNotReplyPage": func(v interface{}) bool {
+			rv := reflect.ValueOf(v)
+			if rv.Kind() != reflect.Struct {
+				rv = rv.Elem()
+			}
+			_, ok := rv.Type().FieldByName("ParentArticle")
+			return !ok
 		},
 		"formatTime": func(a time.Time) template.HTML {
 			s := time.Since(a).Seconds()

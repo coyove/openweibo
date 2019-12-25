@@ -1,13 +1,15 @@
 <!doctype html>
 <html>
-    <link href="/s/default.css?ver=12" rel="stylesheet" type="text/css" media="all">
+    <link href="/s/css/default.css?ver=12" rel="stylesheet" type="text/css" media="all">
     <link href="/s/fonts/fontello-embedded.css?ver=4" rel="stylesheet" type="text/css" media="all">
-    <script src="/s/js/default.js?ver=3"></script>
+    <script src="/s/js/default.js?ver=5"></script>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="shortcut icon" href="/s/favicon.png">
+    <link rel="shortcut icon" href="/s/css/favicon.png">
+    <style> .close-731:hover { color: #667 !important } </style>
 <body>
     <div id="container" style="width: 100%; max-width: 800px; margin: 0 auto;position:relative">
+        {{if isNotReplyPage .}}
     <nav>
         <ul>
             <li id="nav-own"><a href="/t">我的时间线</a></li>
@@ -22,4 +24,7 @@
             <li id="nav-other" style="display:none"><a></a></li>
         </ul>
     </nav>
+    {{else}}
+    <style> #footer { display: none; } </style>
+    {{end}}
 

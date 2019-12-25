@@ -15,13 +15,6 @@
     <div style="font-size:12px">IIS <script>document.write(new Date().getFullYear())</script> in {{.Render}}ms</div>
 </div>
 
-<div id="close-iframe" style="position: fixed; right: 1em; top: 1em; display: none">
-    <style>.close-731:hover { color: #233 !important}</style>
-    <i class='icon-cancel-circled close-731'
-       style='font-size:24px;color:#aaa;cursor:pointer'
-       onclick='parent.$close(this)'></i>
-</div>
-
     <script>
         function expandNSFW() {
             {{if .User}}
@@ -32,15 +25,7 @@
             {{end}}
         }
 
-expandNSFW();
-
-if (window !== parent) {
-    window.addEventListener('DOMContentLoaded', function (event) {
-        $q("nav").style.display = 'none';
-        $q("#footer").style.display = 'none';
-    });
-    $q("#close-iframe").style.display = null;
-}
+        expandNSFW();
     </script>
 
 <!-- Global site tag (gtag.js) - Google Analytics -->

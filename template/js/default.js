@@ -192,8 +192,8 @@ window.$showReply = function(id) {
     frame.style.border = 'none';
     frame.style.display = 'block';
     frame.style.background = 'rgba(255,255,255,0.75)';
-    frame.style.transition = 'background 1s';
-    frame.style.backgroundImage = 'url(/s/spinner.gif)';
+    frame.style.transition = 'background 0.5s';
+    frame.style.backgroundImage = 'url(/s/css/spinner.gif)';
     frame.style.backgroundRepeat = 'no-repeat';
     frame.style.backgroundPosition = 'center center';
     $q("#container").appendChild(frame);
@@ -202,6 +202,18 @@ window.$showReply = function(id) {
         frame.style.background = 'rgba(255,255,255,0.95)';
         frame.style.backgroundImage = null;
     }
+    var div = $q("<div>");
+    div.style.position = 'fixed';
+    div.style.right = '1em'
+    div.style.top = '1em';
+    div.innerHTML = "<i class='icon-cancel-circled close-731' style='font-size:24px;color:#aaa;cursor:pointer'></i>";
+    div.onclick = function() {
+        frame.parentNode.removeChild(frame);
+        div.parentNode.removeChild(div);
+        if ($q("iframe", true).length === 0)
+            document.body.style.overflow = null;
+    }
+    $q("#container").appendChild(div);
 }
 
 function __i18n(t) {
@@ -230,14 +242,4 @@ function __i18n(t) {
     if (t === "id/too-short")
         return "无效ID";
     return t;
-}
-
-window.$close = function(el) {
-    $q("iframe", true).forEach(function(i) {
-        if (i.contentWindow.document.body.contains(el)) {
-            i.parentNode.removeChild(i) 
-        }
-    })
-    if ($q("iframe", true).length === 0)
-        document.body.style.overflow = null;
 }
