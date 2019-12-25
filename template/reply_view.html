@@ -1,29 +1,5 @@
-<div id="reply-view">
-        {{if .CanDelete}}
-    <table class="articles" style="width: 100%;margin:1em 0 2em;box-shadow: 0 1px 3px rgba(0, 0, 0,.2);text-align:left">
-        <tr class=sep>
-            <td>
-                <input type=checkbox id=delete-confirm>
-                <label for=delete-confirm>确认删除该状态，该操作不可逆</label>
-            </td>
-            <td class=nowrap>
-                <button class="gbutton" type=submit style="color:#ff5722" onclick="onPostOption(this,'delete')">删除</a>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                <input type=checkbox id=nsfw-confirm {{if .NSFW}}checked{{end}}>
-                <label for=nsfw-confirm>标记该状态为NSFW（仅图片）</label>
-            </td>
-            <td class=nowrap>
-                <button class="gbutton" type=submit style="color:#f90" onclick="onPostOption(this,'make-nsfw')">标记</a>
-            </td>
-        </tr>
-    </table>
-        {{end}}
-
+<div id="reply-view" style="background:white">
     <table class="articles" style="width: 100%;margin:1em 0;box-shadow: 0 1px 4px rgba(0, 0, 0,.3);position:relative;text-align:left">
-
         <tr class=sep>
             <td colspan=2 style="padding:0">
                 <input type=hidden name=uuid value="{{.UUID}}">

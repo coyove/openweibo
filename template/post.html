@@ -1,6 +1,6 @@
 {{template "header.html" .}}
 
-<title>查看 {{.ParentArticle.ID}}</title>
+
 
 <div class="rows"> 
     {{template "row_content.html" .ParentArticle}}
@@ -11,7 +11,7 @@
 
     {{if len .Articles}}
     {{range .Articles}}
-        {{template "row_content.html" .}}
+    {{template "row_content.html" .}}
     {{end}}
     {{else}}
     <div class=row style="text-align:center;padding:1em">无回复</div>
@@ -20,9 +20,9 @@
 
 <div class="paging" id="paging">
     {{if .Next}}
-    <a class=gbutton href="?n={{.Next}}">更多回复 &raquo;</a>
+    <a class=gbutton href="?n={{.Next}}&id={{.FrameID}}">更多回复 &raquo;</a>
     {{else}}
-    <a class=gbutton href="?n=" style="color:#aaa">没有更多回复</a>
+    <a class=gbutton href="?n=&id={{.FrameID}}" style="color:#aaa">没有更多回复</a>
     {{end}}
 </div>
 

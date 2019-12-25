@@ -106,32 +106,28 @@ func doReply(g *gin.Context) {
 	}
 
 	if g.PostForm("delete") != "" {
-		if g.PostForm("delete-confirm") != "" {
-			err := m.UpdateArticle(reply, func(a *mv.Article) error {
-				if u.ID != a.Author && !u.IsMod() {
-					return fmt.Errorf("user/can-not-delete")
-				}
-				a.Content = mv.DeletionMarker
-				a.Media = ""
-				return nil
-			})
-			if err != nil {
-				g.String(200, err.Error())
-			} else {
-				g.String(200, "ok")
+		err := m.UpdateArticle(reply, func(a *mv.Article) error {
+			if u.ID != a.Author && !u.IsMod() {
+				return fmt.Errorf("user/can-not-delete")
 			}
+			a.Content = mv.DeletionMarker
+			a.Media = ""
+			return nil
+		})
+		if err != nil {
+			g.String(200, err.Error())
 		} else {
 			g.String(200, "ok")
 		}
 		return
 	}
 
-	if g.PostForm("make-nsfw") != "" {
+	if g.PostForm("makensfw") != "" {
 		err := m.UpdateArticle(reply, func(a *mv.Article) error {
 			if u.ID != a.Author && !u.IsMod() {
 				return fmt.Errorf("user/can-not-delete")
 			}
-			a.NSFW = g.PostForm("nsfw-confirm") != ""
+			a.NSFW = !a.NSFW
 			return nil
 		})
 		if err != nil {

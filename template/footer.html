@@ -1,4 +1,4 @@
-<div style="word-break:break-all;line-height:2em;padding:0.5em;background:#f3f4f5;text-align:center;border-radius:5px" class=row>
+<div id=footer style="word-break:break-all;line-height:2em;padding:0.5em;background:#f3f4f5;text-align:center;border-radius:5px" class=row>
     {{if .User}}
     <a href='/user'>@{{.User.ID}}</a>
     {{if .User.Unread}}
@@ -15,15 +15,32 @@
     <div style="font-size:12px">IIS <script>document.write(new Date().getFullYear())</script> in {{.Render}}ms</div>
 </div>
 
+<div id="close-iframe" style="position: fixed; right: 1em; top: 1em; display: none">
+    <style>.close-731:hover { color: #233 !important}</style>
+    <i class='icon-cancel-circled close-731'
+       style='font-size:24px;color:#aaa;cursor:pointer'
+       onclick='parent.$close(this)'></i>
+</div>
+
     <script>
         function expandNSFW() {
-{{if .User.AutoNSFW}}
+            {{if .User}}
+            {{if .User.AutoNSFW}}
             var el = $q(".gbutton.nsfw-clicker");
             for (var i = 0 ; i < el.length; i++) el[i].click();
-{{end}}
+            {{end}}
+            {{end}}
         }
-        expandNSFW();
-// $wait($q("button[type=submit]")[0])
+
+expandNSFW();
+
+if (window !== parent) {
+    window.addEventListener('DOMContentLoaded', function (event) {
+        $q("nav").style.display = 'none';
+        $q("#footer").style.display = 'none';
+    });
+    $q("#close-iframe").style.display = null;
+}
     </script>
 
 <!-- Global site tag (gtag.js) - Google Analytics -->

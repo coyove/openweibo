@@ -39,7 +39,6 @@ html {
 
 body {
     position: relative;
-    min-height: 100%;
 }
 
 code {
@@ -281,9 +280,6 @@ div.row-header > * {
     display: inline-block;
 }
 
-span.deleted:before {
-}
-
 span.time.sec:after { content: '秒前' }
 span.time.min:after { content: '分钟前' }
 span.time.hour:after { content: '小时前' }
@@ -352,6 +348,12 @@ a.unread {
 }
 
 div.status-box { text-align:center;line-height:2em }
+
+.reply-box {
+    display: inline-block;
+    margin-right: 0.5em;
+    text-decoration: none !important;
+}
 
 span.mod {
     color: #673ab7;

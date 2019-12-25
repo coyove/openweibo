@@ -130,12 +130,35 @@ function likeArticle(el, id) {
         if (v) {
             el.setAttribute("liked", "true")
             icon.className = 'icon-heart-filled';
-            num.innerText = parseInt(num.innerText) + 1;
+            num.innerText = (parseInt(num.innerText) || 0) + 1;
         } else {
             el.setAttribute("liked", "false")
             icon.className = 'icon-heart-1';
             num.innerText = parseInt(num.innerText) ? (parseInt(num.innerText) - 1) : 0;
         }
+    }, stop);
+}
+
+function deleteArticle(el, id) {
+    if (!confirm("是否确认删除该发言？该操作不可逆")) return;
+    var stop = $wait(el);
+    $post("/api2/new", { parent: id, delete: 1 }, function (res) {
+        stop();
+        if (res != "ok") return res;
+        $q("[data-id='" + id + "'] > pre", true).forEach(function(e) {
+            e.innerHTML = "<span class=deleted></span>";
+        });
+    }, stop)
+}
+
+function nsfwArticle(el, id) {
+    var stop = $wait(el);
+    $post("/api2/new", { parent: id, makensfw: 1 }, function (res) {
+        stop();
+        if (res != "ok") return res;
+        el.setAttribute("value", !($value(el) === 'true'))
+        el.style.color = $value(el) === 'true' ? "#f90" : "#bbb"
+        return "ok";
     }, stop);
 }
 
@@ -153,6 +176,32 @@ function followBlock(el, m, id) {
             el.innerText = (obj[m] != "") ? "解除黑名单" : "拉入黑名单";
         }
     }, stop)
+}
+
+window.$showReply = function(id) {
+    if (window !== parent) return parent.$showReply(id);
+
+    var frame = $q("<iframe>");
+    // frame.id = Math.random().toString(36).substr(2, 5);
+    frame.src = "/p/" + id;
+    frame.style.position = "fixed";
+    frame.style.left = "0";
+    frame.style.top = "0";
+    frame.style.width = "100%";
+    frame.style.height = "100%";
+    frame.style.border = 'none';
+    frame.style.display = 'block';
+    frame.style.background = 'rgba(255,255,255,0.75)';
+    frame.style.transition = 'background 1s';
+    frame.style.backgroundImage = 'url(/s/spinner.gif)';
+    frame.style.backgroundRepeat = 'no-repeat';
+    frame.style.backgroundPosition = 'center center';
+    $q("#container").appendChild(frame);
+    document.body.style.overflow = 'hidden';
+    frame.onload = function() {
+        frame.style.background = 'rgba(255,255,255,0.95)';
+        frame.style.backgroundImage = null;
+    }
 }
 
 function __i18n(t) {
@@ -181,4 +230,14 @@ function __i18n(t) {
     if (t === "id/too-short")
         return "无效ID";
     return t;
+}
+
+window.$close = function(el) {
+    $q("iframe", true).forEach(function(i) {
+        if (i.contentWindow.document.body.contains(el)) {
+            i.parentNode.removeChild(i) 
+        }
+    })
+    if ($q("iframe", true).length === 0)
+        document.body.style.overflow = null;
 }

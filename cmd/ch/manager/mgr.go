@@ -150,7 +150,9 @@ func (m *Manager) WalkReply(n int, cursor string) (a []*mv.Article, next string)
 
 		p, err := m.GetArticle(cursor)
 		if err == nil {
-			a = append(a, p)
+			if p.Content != mv.DeletionMarker {
+				a = append(a, p)
+			}
 		} else {
 			log.Println("[mgr.WalkReply] Failed to get:", cursor, err)
 			// go m.purgeDeleted(hdr, tag, root.ID)

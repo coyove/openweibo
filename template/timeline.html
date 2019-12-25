@@ -126,7 +126,7 @@
         window.addEventListener('scroll', function(e) {
             if (!window.ticking) {
                 window.requestAnimationFrame(function() {
-                    $q("#timeline .row", true).forEach(function(c) {
+                    $q("#timeline > .row", true).forEach(function(c) {
                         if (isInViewport(c, 3)) {
                             if (c.childNodes.length == 0) {
                                 c.innerHTML = c.__html;

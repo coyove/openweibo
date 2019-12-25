@@ -37,6 +37,7 @@ type ArticlesTimelineView struct {
 type ArticleRepliesView struct {
 	Articles      []ArticleView
 	ParentArticle ArticleView
+	FrameID       string
 	Next          string
 	ReplyView     ReplyView
 }
@@ -174,7 +175,6 @@ func APITimeline(g *gin.Context) {
 		cursors, payload := ident.SplitIDs(g.PostForm("cursors"))
 
 		var pendingFCursor string
-		log.Println(string(payload))
 		if x := bytes.Split(payload, []byte(":")); len(x) == 2 {
 			list, next := m.GetFollowingList(string(x[0]), string(x[1]), 1e6)
 			for _, id := range list {
@@ -221,6 +221,7 @@ func Replies(g *gin.Context) {
 
 	pl.ParentArticle.from(parent, _RichTime, getUser(g))
 	pl.ReplyView = makeReplyView(g, pid)
+	pl.FrameID = g.Query("id")
 
 	if u, ok := g.Get("user"); ok {
 		pl.ReplyView.CanDelete = u.(*mv.User).ID == pl.ParentArticle.Author.ID || u.(*mv.User).IsMod()

@@ -50,11 +50,11 @@ func sanText(in string) string {
 			s := SafeStringForCompressString(template.HTMLEscapeString(in[1:]))
 			if in[0] == '#' {
 				AddTagToSearch(in[1:])
-				return "<a href='/tag/" + s + "'>" + in + "</a>"
+				return "<a href='/tag/" + s + "' target=_blank>" + in + "</a>"
 			}
 			if in[0] == '@' {
 				AddUserToSearch(in[1:])
-				return "<a href='/t/" + s + "'>" + in + "</a>"
+				return "<a href='/t/" + s + "' target=_blank>" + in + "</a>"
 			}
 		}
 		return "<a href='" + in + "' target=_blank>" + in + "</a>"
