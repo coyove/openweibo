@@ -182,7 +182,6 @@ window.$showReply = function(id) {
     if (window !== parent) return parent.$showReply(id);
 
     var frame = $q("<iframe>");
-    // frame.id = Math.random().toString(36).substr(2, 5);
     frame.src = "/p/" + id;
     frame.style.position = "fixed";
     frame.style.left = "0";
@@ -192,7 +191,7 @@ window.$showReply = function(id) {
     frame.style.border = 'none';
     frame.style.display = 'block';
     frame.style.background = 'rgba(255,255,255,0.75)';
-    frame.style.transition = 'background 0.5s';
+    frame.style.transition = 'background 0.3s';
     frame.style.backgroundImage = 'url(/s/css/spinner.gif)';
     frame.style.backgroundRepeat = 'no-repeat';
     frame.style.backgroundPosition = 'center center';
@@ -203,17 +202,25 @@ window.$showReply = function(id) {
         frame.style.backgroundImage = null;
     }
     var div = $q("<div>");
+    div.id = 'div' + Math.random().toString(36).substr(2, 5);
+    div.className = 'close-731';
     div.style.position = 'fixed';
     div.style.right = '1em'
     div.style.top = '1em';
-    div.innerHTML = "<i class='icon-cancel-circled close-731' style='font-size:24px;color:#aaa;cursor:pointer'></i>";
+    div.innerHTML = "<i class='icon-cancel-circled' style='font-size:24px;color:#aaa;cursor:pointer'></i>";
     div.onclick = function() {
-        frame.parentNode.removeChild(frame);
-        div.parentNode.removeChild(div);
+        if (location.href.indexOf(div.id) > 0)
+            location.href = location.href.replace('#' + div.id, '');
+        if (frame && frame.parentNode)
+            frame.parentNode.removeChild(frame);
+        if (div && div.parentNode) 
+            div.parentNode.removeChild(div);
         if ($q("iframe", true).length === 0)
             document.body.style.overflow = null;
     }
     $q("#container").appendChild(div);
+
+    location.href += "#" + div.id + "#Z"
 }
 
 function __i18n(t) {
@@ -242,4 +249,14 @@ function __i18n(t) {
     if (t === "id/too-short")
         return "无效ID";
     return t;
+}
+
+if (window === parent) {
+    window.onpopstate = function(event) {
+        var closes = $q("div.close-731", true)
+        location.href.split("#").forEach(function(id) {
+            closes = closes.filter(function(c) { return c.id != id })
+        })
+        closes.forEach(function(c) { c.click() })
+    };
 }
