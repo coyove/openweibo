@@ -65,7 +65,7 @@ func Index(g *gin.Context) {
 	}
 
 	a2, next := m.WalkMulti(int(config.Cfg.PostsPerPage), ident.NewID(ident.IDTagTag).SetTag(pl.Tag))
-	fromMultiple(&pl.Articles, a2, 0, getUser(g))
+	fromMultiple(&pl.Articles, a2, _Blank, getUser(g))
 
 	pl.Next = ident.CombineIDs(nil, next...)
 	g.HTML(200, "timeline.html", pl)
@@ -146,7 +146,7 @@ func Timeline(g *gin.Context) {
 	}
 
 	a, next := m.WalkMulti(int(config.Cfg.PostsPerPage), cursors...)
-	fromMultiple(&pl.Articles, a, 0, pl.You)
+	fromMultiple(&pl.Articles, a, _Blank, pl.You)
 
 	if pl.IsInbox {
 		go m.UpdateUser(pl.User.ID, func(u *mv.User) error {
@@ -169,7 +169,7 @@ func APITimeline(g *gin.Context) {
 	var articles []ArticleView
 	if g.PostForm("likes") != "" {
 		a, next := m.WalkLikes(int(config.Cfg.PostsPerPage), g.PostForm("cursors"))
-		fromMultiple(&articles, a, 0, getUser(g))
+		fromMultiple(&articles, a, _Blank, getUser(g))
 		p.Next = next
 	} else {
 		cursors, payload := ident.SplitIDs(g.PostForm("cursors"))
@@ -193,7 +193,7 @@ func APITimeline(g *gin.Context) {
 		}
 
 		a, next := m.WalkMulti(int(config.Cfg.PostsPerPage), cursors...)
-		fromMultiple(&articles, a, 0, getUser(g))
+		fromMultiple(&articles, a, _Blank, getUser(g))
 		p.Next = ident.CombineIDs([]byte(pendingFCursor), next...)
 	}
 
@@ -219,7 +219,7 @@ func Replies(g *gin.Context) {
 		return
 	}
 
-	pl.ParentArticle.from(parent, _RichTime, getUser(g))
+	pl.ParentArticle.from(parent, 0, getUser(g))
 	pl.ReplyView = makeReplyView(g, pid)
 	pl.FrameID = g.Query("id")
 
@@ -238,7 +238,7 @@ func Replies(g *gin.Context) {
 	}
 
 	a, next := m.WalkReply(int(config.Cfg.PostsPerPage), cursor)
-	fromMultiple(&pl.Articles, a, _RichTime|_NoMoreParent|_ShowAvatar, getUser(g))
+	fromMultiple(&pl.Articles, a, _NoMoreParent|_ShowAvatar, getUser(g))
 	pl.Next = next
 	g.HTML(200, "post.html", pl)
 }

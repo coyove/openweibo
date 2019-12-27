@@ -61,7 +61,7 @@
     {{end}}
 
     <div style="padding: 0.5em 0;line-height:1.5em">
-        <a class="reply-box" href="javascript:void(0)" onclick="window.$showReply('{{.ID}}')">
+        <a class="reply-box" href="/p/{{.ID}}" {{if .Blank}}target='_blank'{{end}}>
             <i class="icon-reply-outline"></i> {{if .Replies}}{{.Replies}}{{end}}
         </a>
         <a class="reply-box" href="javascript:void(0)" onclick="likeArticle(this, '{{.ID}}')" liked={{.Liked}}>

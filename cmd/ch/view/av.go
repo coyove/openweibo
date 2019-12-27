@@ -22,6 +22,7 @@ type ArticleView struct {
 	Liked       bool
 	NSFW        bool
 	NoAvatar    bool
+	Blank       bool
 	Content     string
 	ContentHTML template.HTML
 	Media       string
@@ -32,8 +33,8 @@ type ArticleView struct {
 const (
 	_ uint64 = 1 << iota
 	_NoMoreParent
-	_RichTime
 	_ShowAvatar
+	_Blank
 )
 
 func (a *ArticleView) from(a2 *mv.Article, opt uint64, u *mv.User) *ArticleView {
@@ -46,6 +47,7 @@ func (a *ArticleView) from(a2 *mv.Article, opt uint64, u *mv.User) *ArticleView 
 	a.Likes = int(a2.Likes)
 	a.Locked = a2.Locked
 	a.NSFW = a2.NSFW
+	a.Blank = opt&_Blank > 0
 	a.Cmd = string(a2.Cmd)
 	a.CreateTime = a2.CreateTime
 	a.Author, _ = m.GetUser(a2.Author)
