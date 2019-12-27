@@ -179,6 +179,11 @@ function followBlock(el, m, id) {
 }
 
 window.$showReply = function(id) {
+    if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
+        window.open('/p/' + id);
+        return;
+    }
+
     if (window !== parent) return parent.$showReply(id);
 
     var frame = $q("<iframe>");
