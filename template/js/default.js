@@ -14,7 +14,7 @@ function $wait(el) {
     el.setAttribute("disabled", "disabled");
     var waiting = 0,
         oldHTML = el.innerHTML;
-    timer = setInterval(function () {
+    var timer = setInterval(function () {
         waiting++;
         el.innerHTML = "<b style='font-family:monospace'>" + "|/-\\".charAt(waiting % 4) + "</b>";
     }, 100);

@@ -29,7 +29,7 @@ func User(g *gin.Context) {
 			q := EncodeQuery(append([]string{a, b, "username", username, "email", email, "password", ident.MakeTempToken(password)}, ext...)...)
 
 			switch mth {
-			case "login", "follow", "block":
+			case "login":
 				u := g.Request.Referer()
 				if idx := strings.Index(u, "?"); idx > -1 {
 					u = u[:idx]
@@ -115,41 +115,6 @@ func User(g *gin.Context) {
 		} else {
 			u.DataIP = strings.Join(ips, ",")
 		}
-	case "update-password":
-		if ret := checkToken(g); ret != "" {
-			redir("error", ret)
-			return
-		}
-		if u == nil {
-			redir("error", "guard/id-not-existed")
-			return
-		}
-
-		newPassword := mv.SoftTrunc(g.PostForm("new-password"), 32)
-		pwdHash := hmac.New(sha256.New, config.Cfg.KeyBytes)
-		pwdHash.Write([]byte(password))
-		if len(newPassword) == 0 || !bytes.Equal(u.PasswordHash, pwdHash.Sum(nil)) {
-			redir("error", "password/invalid-too-short")
-			return
-		}
-		pwdHash.Reset()
-		pwdHash.Write([]byte(newPassword))
-		u.PasswordHash = pwdHash.Sum(nil)
-	case "update-info":
-		if ret := checkToken(g); ret != "" {
-			redir("error", ret)
-			return
-		}
-		if u == nil {
-			redir("error", "guard/id-not-existed")
-			return
-		}
-		u.Email = email
-		u.Avatar = mv.SoftTrunc(g.PostForm("avatar"), 256)
-		u.NoReplyInTimeline = g.PostForm("nrit") != ""
-		u.NoPostInMaster = g.PostForm("npim") != ""
-		u.AutoNSFW = g.PostForm("autonsfw") != ""
-		u.FoldImages = g.PostForm("foldimg") != ""
 	}
 
 	if err := m.SetUser(u); err != nil {
@@ -338,4 +303,68 @@ func APIBan(g *gin.Context) {
 	} else {
 		g.String(200, "ok")
 	}
+}
+
+func APIUpdateUserSettings(g *gin.Context) {
+	u := m.GetUserByContext(g)
+	if u == nil {
+		g.String(200, "internal/error")
+		return
+	}
+	if err := m.UpdateUser(u.ID, func(u *mv.User) error {
+		if g.PostForm("set-email") != "" {
+			u.Email = mv.SoftTrunc(g.PostForm("email"), 256)
+		}
+		if g.PostForm("set-avatar") != "" {
+			u.Avatar = mv.SoftTrunc(g.PostForm("avatar"), 256)
+		}
+		if g.PostForm("set-nrit") != "" {
+			u.NoReplyInTimeline = g.PostForm("nrit") != ""
+		}
+		if g.PostForm("set-npim") != "" {
+			u.NoPostInMaster = g.PostForm("npim") != ""
+		}
+		if g.PostForm("set-autonsfw") != "" {
+			u.AutoNSFW = g.PostForm("autonsfw") != ""
+		}
+		if g.PostForm("set-foldimg") != "" {
+			u.FoldImages = g.PostForm("foldimg") != ""
+		}
+		return nil
+	}); err != nil {
+		g.String(200, "internal/error")
+		return
+	}
+	g.String(200, "ok")
+}
+
+func APIUpdateUserPassword(g *gin.Context) {
+	u := m.GetUserByContext(g)
+	if u == nil {
+		g.String(200, "internal/error")
+		return
+	}
+	if res := checkIP(g); res != "" {
+		g.String(200, res)
+		return
+	}
+	if err := m.UpdateUser(u.ID, func(u *mv.User) error {
+		oldPassword := mv.SoftTrunc(g.PostForm("old-password"), 32)
+		newPassword := mv.SoftTrunc(g.PostForm("new-password"), 32)
+
+		pwdHash := hmac.New(sha256.New, config.Cfg.KeyBytes)
+		pwdHash.Write([]byte(oldPassword))
+		if len(newPassword) < 3 || !bytes.Equal(u.PasswordHash, pwdHash.Sum(nil)) {
+			return fmt.Errorf("password/invalid-too-short")
+		}
+
+		pwdHash.Reset()
+		pwdHash.Write([]byte(newPassword))
+		u.PasswordHash = pwdHash.Sum(nil)
+		return nil
+	}); err != nil {
+		g.String(200, err.Error())
+		return
+	}
+	g.String(200, "ok")
 }

@@ -153,10 +153,12 @@ func main() {
 	r.Handle("POST", "/api/search", action.APISearch)
 	r.Handle("POST", "/api/follow_block_search", action.APIFollowBlockSearch)
 	r.Handle("POST", "/api/ban", action.APIBan)
+	r.Handle("POST", "/api/user_settings", action.APIUpdateUserSettings)
 	r.Handle("POST", "/api2/follow_block", action.APIFollowBlock)
 	r.Handle("POST", "/api2/like_article", action.APILike)
 	r.Handle("POST", "/api2/logout", action.APILogout)
 	r.Handle("POST", "/api2/new", action.APINew)
+	r.Handle("POST", "/api2/user_password", action.APIUpdateUserPassword)
 
 	r.Handle("GET", "/loaderio-4d068f605f9b693f6ca28a8ca23435c6", func(g *gin.Context) { g.String(200, ("loaderio-4d068f605f9b693f6ca28a8ca23435c6")) })
 
