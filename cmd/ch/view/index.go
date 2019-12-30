@@ -3,7 +3,9 @@ package view
 import (
 	"bytes"
 	"log"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/engine"
@@ -167,9 +169,13 @@ func APITimeline(g *gin.Context) {
 	}{}
 
 	var articles []ArticleView
-	if g.PostForm("likes") != "" {
+	if g.PostForm("likes") == "true" {
 		a, next := m.WalkLikes(int(config.Cfg.PostsPerPage), g.PostForm("cursors"))
 		fromMultiple(&articles, a, _Blank, getUser(g))
+		p.Next = next
+	} else if g.PostForm("reply") == "true" {
+		a, next := m.WalkReply(int(config.Cfg.PostsPerPage), g.PostForm("cursors"))
+		fromMultiple(&articles, a, _NoMoreParent|_ShowAvatar, getUser(g))
 		p.Next = next
 	} else {
 		cursors, payload := ident.SplitIDs(g.PostForm("cursors"))
@@ -208,37 +214,32 @@ func APITimeline(g *gin.Context) {
 	g.JSON(200, p)
 }
 
-func Replies(g *gin.Context) {
+func APIReplies(g *gin.Context) {
 	var pl ArticleRepliesView
 	var pid = g.Param("parent")
 
 	parent, err := m.GetArticle(pid)
 	if err != nil || parent.ID == "" {
-		NotFound(g)
+		g.Status(404)
 		log.Println(pid, err)
 		return
 	}
 
 	pl.ParentArticle.from(parent, 0, getUser(g))
 	pl.ReplyView = makeReplyView(g, pid)
-	pl.FrameID = g.Query("id")
+	pl.FrameID = strconv.FormatInt(time.Now().Unix(), 16)
 
 	if u, ok := g.Get("user"); ok {
-		pl.ReplyView.CanDelete = u.(*mv.User).ID == pl.ParentArticle.Author.ID || u.(*mv.User).IsMod()
-		pl.ReplyView.NSFW = pl.ParentArticle.NSFW
 		if m.IsBlocking(pl.ParentArticle.Author.ID, u.(*mv.User).ID) {
-			NotFound(g)
+			g.Status(404)
 			return
 		}
 	}
 
-	cursor := g.Query("n")
-	if cursor == "" {
-		cursor = parent.ReplyChain
-	}
-
-	a, next := m.WalkReply(int(config.Cfg.PostsPerPage), cursor)
+	a, next := m.WalkReply(int(config.Cfg.PostsPerPage), parent.ReplyChain)
 	fromMultiple(&pl.Articles, a, _NoMoreParent|_ShowAvatar, getUser(g))
 	pl.Next = next
+
+	g.Writer.Header().Add("X-Reply", "true")
 	g.HTML(200, "post.html", pl)
 }

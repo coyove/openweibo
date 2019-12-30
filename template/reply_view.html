@@ -1,25 +1,25 @@
-<div id="reply-view" style="background:white">
+<div id="rv-{{.UUID}}" style="background:white">
     <table class="articles" style="width: 100%;margin:1em 0;box-shadow: 0 1px 4px rgba(0, 0, 0,.3);position:relative;text-align:left">
         <tr class=sep>
             <td colspan=2 style="padding:0">
-                <input type=hidden name=uuid value="{{.UUID}}">
                 <textarea
-                    id="content"
+                    name=content
                     maxlength=1024
                     placeholder="正文"
                     rows={{if .ReplyTo}}6{{else}}10{{end}}
-                    name="content"
                     onkeyup="onContentObserved(this)"
-                    style="padding:0.5em;border:none">{{.Content}}</textarea>
+                    style="padding:0.5em;border:none"></textarea>
             </td>
         </tr>
         <tr class=sep>
             <td>
-                <input type=file id=post-image style="display:none" onchange="onImageChanged(this)">
-                <input type=hidden id=post-image-base64 name=image64>
-                <a class="gbutton" id=post-image-button onclick="$q('#post-image').click()">
+                <!-- Three as a Whole -->
+                <button class="gbutton" onclick="this.nextElementSibling.click()">
                     <span class=icon-picture></span><span class="pic">图片</span>
-                </a>
+                </button>
+                <input type=file style="display:none" onchange="onImageChanged(this)">
+                <input type=hidden name=image64>
+                <!-- Three as a Whole -->
 
                 <style>
                     .gbutton.image { height: 100%; }
@@ -40,150 +40,26 @@
                         color: white;
                         background: rgba(0,0,0,0.3)
                     }
-                    #reply-submit-nsfw, #reply-button {
+                    .reply-submit-nsfw, .reply-button {
                         display: block;
                     }
                 </style>
 
             </td>
             <td class="nowrap" style="text-align:center">
-                <button id=reply-submit class="gbutton" onclick="onPost(this)">
+                <button class="reply-submit gbutton" onclick="onPost('rv-{{.UUID}}', this, '{{.ReplyTo}}')">
                     {{if .ReplyTo}}回复{{else}}发布{{end}}
                 </button>
-                <button id=reply-submit-nsfw class=gbutton style="color:#f90;display:none" onclick="onPost(this, true)">
+                <button
+                    class="reply-submit-nsfw gbutton"
+                    style="color:#f90;display:none"
+                    onclick="onPost('rv-{{.UUID}}',this,'{{.ReplyTo}}',true)">
                     {{if .ReplyTo}}回复{{else}}发布{{end}}NSFW内容
                 </button>
             </td>
         </tr>
         <tr>
-            <td colspan=2 style="padding:0">{{template "emoji.html" .}}</td>
+            <td colspan=2 style="padding:0">{{template "emoji.html" .UUID}}</td>
         </tr>
     </table>
 </div>
-
-<script>
-function onPost(el, nsfw) {
-    var res = $q("#content").value.match(/((@|#)\S+)/g);
-    if (res) {
-        var e = JSON.parse(window.localStorage.getItem("presets") || "[]");
-        e = e.concat(res);
-        e = e.filter(function(el, i) { return e.indexOf(el) == i; });
-        if (e.length > 16) e = e.slice(e.length - 16);
-        window.localStorage.setItem("presets", JSON.stringify(e));
-    }
-    var stop = $wait(el);
-    $post("/api2/new", {
-        content: $q("#content").value,
-        image64: $q("#post-image-base64").value,
-        nsfw: nsfw ? "1" : "",
-        {{if .ReplyTo}}parent: {{.ReplyTo}},{{end}}
-    }, function (res) {
-        stop();
-        if (res != "ok") return res;
-        location.reload();
-    }, stop)
-}
-
-function onPostOption(el, text) {
-    var stop = $wait(el), obj = { parent: {{.ReplyTo}} };
-    obj[text] = "1";
-    obj['delete-confirm'] = $q("#delete-confirm").checked ? "1" : ""
-    obj['nsfw-confirm'] = $q("#nsfw-confirm").checked ? "1" : ""
-    $post("/api2/new", obj, function (res) {
-        stop();
-        if (res != "ok") return res;
-        location.reload();
-    }, stop)
-}
-
-function onContentObserved(el) {
-    $q("#emoji").style.display = null; 
-    var autos = $q("#emoji ul li.auto", true);
-    for (var i = 0; i < autos.length; i++) $q("#emoji ul").removeChild(autos[i]);
-
-    var res = el.value.match(/(@\S+|#\S+)$/g);
-    if (!res || res.length !== 1 || window.REQUESTING) return;
-    window.REQUESTING = true;
-
-    $post("/api/search", {id:res[0].substring(1)}, function(results) {
-        var ul = $q("#emoji ul"), f = $q("#emoji ul li:first-child");
-        if (results && results.length) {
-            results.forEach(function(t) {
-                var li = document.createElement('li');
-                var a = document.createElement('a');
-                li.appendChild(a);
-                li.className = "auto";
-                a.onclick = function() { insertMention(t); }
-                a.innerText = t;
-                ul.insertBefore(li, f);
-            });
-        }
-        window.REQUESTING = false;
-    }, function() {
-        window.REQUESTING = false;
-    })
-}
-
-function onImageChanged(el) {
-    var btn = $q('#post-image-button');
-    btn.className = btn.className.replace(/image/, "")
-    btn.querySelector('div') ? btn.removeChild(btn.querySelector('div')) : 0;
-    $q("#post-image-base64").value = "";
-    $q("#reply-submit-nsfw").style.display = "none";
-
-    if (!el.value) return;
-
-    var reader = new FileReader();
-    reader.readAsDataURL(el.files[0]);
-    reader.onload = function () {
-        var img = new Image();
-        img.onerror = function() {
-        }
-        img.onload = function() {
-            img.onload = null;
-            var canvas = document.createElement("canvas"), throt = 1.4 * 1000 * 1000, f = 1,
-                success = function() {
-                    $q("#post-image-base64").value = img.src;
-                    $q('#reply-submit').removeAttribute("disabled");
-                    $q("#reply-submit-nsfw").style.display = null;
-                    var img2 = document.createElement("img");
-                    var div = document.createElement("div");
-                    var span = document.createElement("div");
-                    img2.src = img.src;
-                    div.style.position = 'relative';
-                    span.className = 'info';
-                    span.innerText += (img.src.length / 1.33 / 1024).toFixed(0) + "KB";
-                    span.innerText += (f == 1) ? "" : "/" + (f).toFixed(1);
-                    div.appendChild(img2);
-                    div.appendChild(span);
-                    btn.appendChild(div);
-                    btn.className += " image";
-                };
-
-
-            $q('#reply-submit').setAttribute("disabled", "disabled");
-            if (img.src.length > throt) {
-                if (img.src.match(/image\/gif/)) {
-                    img.onerror();
-                    return;
-                }
-                var ctx = canvas.getContext('2d');
-                canvas.width = img.width; canvas.height = img.height;
-                ctx.drawImage(img,0,0);
-                for (f = 0.8; f > 0; f -= 0.2) {
-                    var res = canvas.toDataURL("image/jpeg", f);
-                    if (res.length <= throt) {
-                        img.src = res;
-                        success();
-                        return;
-                    }
-                }
-                img.onerror();
-            } else {
-                success();
-            }
-        }
-        img.src = reader.result;
-    };
-}
-</script>

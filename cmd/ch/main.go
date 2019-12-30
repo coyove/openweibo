@@ -143,10 +143,10 @@ func main() {
 	r.Handle("GET", "/likes/:uid", view.UserLikes)
 	r.Handle("GET", "/t", view.Timeline)
 	r.Handle("GET", "/t/:user", view.Timeline)
-	r.Handle("GET", "/p/:parent", view.Replies)
 	r.Handle("GET", "/avatar/:id", view.Avatar)
 
 	r.Handle("POST", "/user", action.User)
+	r.Handle("POST", "/api/p/:parent", view.APIReplies)
 	r.Handle("POST", "/api/timeline", view.APITimeline)
 	r.Handle("POST", "/api/user_kimochi", action.APIUserKimochi)
 	r.Handle("POST", "/api/new_captcha", action.APINewCaptcha)

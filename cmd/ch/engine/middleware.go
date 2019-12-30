@@ -62,17 +62,11 @@ func mwRenderPerf(g *gin.Context) {
 	atomic.AddInt64(&Survey.Written, int64(g.Writer.Size()))
 
 	x := g.Writer.Header().Get("Content-Type")
-	if strings.HasPrefix(x, "text/html") {
-		uuid, _ := ident.MakeToken(g)
+	if strings.HasPrefix(x, "text/html") && g.Writer.Header().Get("X-Reply") != "true" {
 		Engine.HTMLRender.Instance("footer.html", struct {
-			UUID   string
 			Render int64
 			User   *mv.User
-		}{
-			uuid,
-			msec,
-			u,
-		}).Render(g.Writer)
+		}{msec, u}).Render(g.Writer)
 	}
 }
 

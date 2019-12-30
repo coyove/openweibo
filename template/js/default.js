@@ -205,3 +205,123 @@ function __i18n(t) {
         return "无效ID";
     return t;
 }
+
+function loadMore(tlid, el, data) {
+    data.cursors = $value(el);
+    var stop = $wait(el);
+    $post('/api/timeline', data, function(pl) {
+        stop();
+        if (pl.EOT) {
+            el.innerText = "没有更多内容了";
+            el.setAttribute("eot", "true");
+            el.style.color = "#aaa";
+            el.onclick = function() { location.reload() }
+        } else {
+            el.innerText = "更多...";
+        }
+        if (pl.Articles) {
+            el.setAttribute("value", pl.Next);
+            pl.Articles.forEach(function(a) {
+                var dedup = $q('#' + tlid + " > [data-id='" + a[0] + "']");
+                if (dedup && dedup.length) {
+                    console.log("dedup:", a[0])
+                    return;
+                }
+                var div = document.createElement("div");
+                div.innerHTML = a[1];
+                $q('#' + tlid).appendChild(div.firstChild);
+            })
+        }
+        expandNSFW();
+        location.href = location.pathname + "#Z"
+    }, stop);
+    //   console.log(document.documentElement.scrollTop);
+}
+
+function preLoadMore(tlid, nextBtn) {
+    window.addEventListener('scroll', function(e) {
+        if (!window.ticking) {
+            window.requestAnimationFrame(function() {
+                $q("#" + tlid + " > .row", true).forEach(function(c) {
+                    if (isInViewport(c, 3)) {
+                        if (c.childNodes.length == 0) {
+                            c.innerHTML = c.__html;
+                            c.style.height = "";
+                        }
+                    } else {
+                        if (c.childNodes.length) {
+                            c.style.height = c.offsetHeight + "px";
+                            c.__html = c.innerHTML;
+                            c.innerHTML = "";
+                        }
+                    }
+                })
+                if (isInViewport(nextBtn) &&
+                    !nextBtn.getAttribute("disabled") && nextBtn.getAttribute("eot") !== "true") {
+                    console.log("Load next");
+                    nextBtn.click();
+                }
+                window.ticking = false;
+            });
+            window.ticking = true;
+        }
+    });
+}
+
+// Nested replies view
+function showReply(aid) {
+    var div = $q('<div>');
+    div.id = 'Z' + Math.random().toString(36).substr(2, 5);
+    div.className = 'div-inner-reply';
+    div.style.position = 'fixed';
+    div.style.left = '0';
+    div.style.top = '0';
+    div.style.width = '100%';
+    div.style.height = '100%';
+    div.style.backgroundColor = 'rgba(255,255,255,0.95)';
+    div.style.overflowY = 'scroll';
+    div.style.overflowX = 'hidden';
+    div.style.backgroundImage = 'url(/s/css/spinner.gif)';
+    div.style.backgroundRepeat = 'no-repeat';
+    div.style.backgroundPosition = 'center center';
+    $post('/api/p/' + aid, {}, function(h) {
+        div.innerHTML = h;
+        div.style.backgroundImage = null;
+    });
+
+    $q("[data-parent='" + aid + "']", true).forEach(function(e) {
+        e.CLOSER.click();
+    });
+    div.setAttribute('data-parent', aid);
+
+    var divclose = $q("<div>");
+    divclose.style.position = 'fixed';
+    divclose.style.right = '1em';
+    divclose.style.top = '1em';
+    divclose.innerHTML = "<i class='icon-cancel-circled' style='font-size:24px;color:#aaa;cursor:pointer'></i>"
+    divclose.onmouseover = function() { divclose.querySelector('i').style.color = '#677' }
+    divclose.onmouseout = function() { divclose.querySelector('i').style.color = '#aaa' }
+    divclose.onclick = function() {
+        div.parentNode.removeChild(div)
+        divclose.parentNode.removeChild(divclose)
+
+        if ($q('[data-parent]', true).length === 0) {
+            location.href = location.pathname + "#Z"
+            document.body.style.overflow = null;
+        }
+    }
+    div.CLOSER = divclose;
+
+    document.body.appendChild(div);
+    document.body.appendChild(divclose);
+    document.body.style.overflow = 'hidden';
+    location.href += "#" + div.id + "#Z"
+}
+
+window.onpopstate = function(event) {
+    var closes = $q(".div-inner-reply", true)
+    location.href.split("#").forEach(function(id) {
+        closes = closes.filter(function(c) { return c.id != id })
+    })
+    closes.forEach(function(c) { c.CLOSER.click() })
+};

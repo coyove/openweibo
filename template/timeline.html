@@ -85,73 +85,15 @@
     {{end}}
 </div>
 
-
 <div class=paging>
     {{if .Next}}
-    <button id=next value="{{.Next}}" class=gbutton onclick="loadMore(this)">更多...</button>
-    <script>
-        function loadMore(el) {
-            var tl = $q("#timeline"), stop = $wait(el);
-            $post('/api/timeline', {
-                cursors: el.getAttribute("value"),
-                {{if .IsUserLikeTimeline}}likes: 1,{{end}}
-            }, function(pl) {
-                stop();
-                if (pl.EOT) {
-                    el.innerText = "没有更多内容了";
-                    el.setAttribute("eot", "true");
-                    el.style.color = "#aaa";
-                    el.onclick = function() { location.reload() }
-                } else {
-                    el.innerText = "更多...";
-                }
-                if (pl.Articles) {
-                    el.setAttribute("value", pl.Next);
-                    pl.Articles.forEach(function(a) {
-                        var dedup = $q("[data-id='" + a[0] + "']", true);
-                        if (dedup && dedup.length) {
-                            console.log("dedup:", a[0])
-                            return;
-                        }
-                        var div = document.createElement("div");
-                        div.innerHTML = a[1];
-                        tl.appendChild(div.firstChild);
-                    })
-                }
-                expandNSFW();
-            }, stop);
-         //   console.log(document.documentElement.scrollTop);
-        }
+    <button
+        value="{{.Next}}"
+        class="gbutton load-more"
+        onclick="loadMore('timeline',this,{likes:{{.IsUserLikeTimeline}},})">更多...</button>
 
-        window.addEventListener('scroll', function(e) {
-            if (!window.ticking) {
-                window.requestAnimationFrame(function() {
-                    $q("#timeline > .row", true).forEach(function(c) {
-                        if (isInViewport(c, 3)) {
-                            if (c.childNodes.length == 0) {
-                                c.innerHTML = c.__html;
-                                c.style.height = "";
-                            }
-                        } else {
-                            if (c.childNodes.length) {
-                                c.style.height = c.offsetHeight + "px";
-                                c.__html = c.innerHTML;
-                                c.innerHTML = "";
-                            }
-                        }
-                    })
-                    var nextBtn = $q("#next");
-                    if (isInViewport(nextBtn) &&
-                        !nextBtn.getAttribute("disabled") && nextBtn.getAttribute("eot") !== "true") {
-                        console.log("Load next");
-                        nextBtn.click();
-                    }
-                    window.ticking = false;
-                });
-                window.ticking = true;
-            }
-        });
-    </script>
+    <script>preLoadMore("timeline", $q("#timeline + .paging > .load-more"))</script>
+
     {{else}}
         <a class=gbutton style="color:#aaa"
         {{if .IsUserTimeline}}

@@ -1,28 +1,30 @@
-{{template "header.html" .}}
+<div style="width: 100%; max-width: 800px; margin: 0 auto;position:relative">
+    <div class="rows" id="timeline{{.FrameID}}" > 
+        {{template "row_content.html" .ParentArticle}}
 
-<title>#{{.ParentArticle.ID}}</title>
+        <div style="padding:0.33em">
+            {{template "reply_view.html" .ReplyView}}
+        </div>
 
-<div class="rows"> 
-    {{template "row_content.html" .ParentArticle}}
-
-    <div style="padding:0.33em">
-        {{template "reply_view.html" .ReplyView}}
+        {{range .Articles}}
+        {{template "row_content.html" .}}
+        {{end}}
     </div>
 
-    {{if len .Articles}}
-    {{range .Articles}}
-    {{template "row_content.html" .}}
-    {{end}}
-    {{else}}
-    <div class=row style="text-align:center;padding:1em">无回复</div>
-    {{end}}
+    <div class="paging">
+        {{if .Next}}
+        <button
+            value="{{.Next}}"
+            class="gbutton load-more"
+            onclick="loadMore('timeline{{.FrameID}}',this,{reply:true})">更多回复...</button>
+
+        <!--<script>preLoadMore("timeline{{.FrameID}}", $q("#timeline{{.FrameID}} + .paging > .load-more"))</script>-->
+        {{else}}
+        <a class=gbutton href="/" style="color:#aaa">没有更多回复</a>
+        {{end}}
+    </div>
 </div>
 
-<div class="paging" id="paging">
-    {{if .Next}}
-    <a class=gbutton href="?n={{.Next}}&id={{.FrameID}}">更多回复 &raquo;</a>
-    {{else}}
-    <a class=gbutton href="?n=&id={{.FrameID}}" style="color:#aaa">没有更多回复</a>
-    {{end}}
-</div>
+<style>
 
+</style>

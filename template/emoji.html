@@ -37,11 +37,6 @@
 }
 
 .emoji a {
-    -webkit-appearance: none;
-    -moz-appearance:    none;
-    background :transparent;
-    appearance: none;
-    border: none;
     display: block;
     cursor: pointer;
     line-height: 1.5em;
@@ -50,129 +45,98 @@
 </style>
 
 <div id="emoji" class="emoji" style="display:none">
-    <div style="position: absolute;
-    z-index: 1000;
-    right: 0;
-    margin: 0.5em 1em;
-    text-align: center;"><a href="javascript:closeEmoji()"><i class="icon-cancel-circled"></i></a></div>
 <ul>
-    <li><a  href="javascript:insertMention('|∀ﾟ')">|∀ﾟ</a></li>
-    <li><a  href="javascript:insertMention('(´ﾟДﾟ`)')">(´ﾟДﾟ`)</a></li>
-    <li><a  href="javascript:insertMention('(;´Д`)')">(;´Д`)</a></li>
-    <li><a  href="javascript:insertMention('(｀･ω･)')">(｀･ω･)</a></li>
-    <li><a  href="javascript:insertMention('(=ﾟωﾟ)=')">(=ﾟωﾟ)=</a></li>
-    <li><a  href="javascript:insertMention('| ω・´)')">| ω・´)</a></li>
-    <li><a  href="javascript:insertMention('|-` )')">|-` )</a></li>
-    <li><a  href="javascript:insertMention('|д` )')">|д` )</a></li>
-    <li><a  href="javascript:insertMention('|ー` )')">|ー` )</a></li>
-    <li><a  href="javascript:insertMention('|∀` )')">|∀` )</a></li>
-    <li><a  href="javascript:insertMention('(つд⊂)')">(つд⊂)</a></li>
-    <li><a  href="javascript:insertMention('(ﾟДﾟ≡ﾟДﾟ)')">(ﾟДﾟ≡ﾟДﾟ)</a></li>
-    <li><a  href="javascript:insertMention('(＾o＾)ﾉ')">(＾o＾)ﾉ</a></li>
-    <li><a  href="javascript:insertMention('(|||ﾟДﾟ)')">(|||ﾟДﾟ)</a></li>
-    <li><a  href="javascript:insertMention('( ﾟ∀ﾟ)')">( ﾟ∀ﾟ)</a></li>
-    <li><a  href="javascript:insertMention('( ´∀`)')">( ´∀`)</a></li>
-    <li><a  href="javascript:insertMention('(*´∀`)')">(*´∀`)</a></li>
-    <li><a  href="javascript:insertMention('(*ﾟ∇ﾟ)')">(*ﾟ∇ﾟ)</a></li>
-    <li><a  href="javascript:insertMention('(*ﾟーﾟ)')">(*ﾟーﾟ)</a></li>
-    <li><a  href="javascript:insertMention('(　ﾟ 3ﾟ)')">(　ﾟ 3ﾟ)</a></li>
-    <li><a  href="javascript:insertMention('( ´ー`)')">( ´ー`)</a></li>
-    <li><a  href="javascript:insertMention('( ・_ゝ・)')">( ・_ゝ・)</a></li>
-    <li><a  href="javascript:insertMention('( ´_ゝ`)')">( ´_ゝ`)</a></li>
-    <li><a  href="javascript:insertMention('(*´д`)')">(*´д`)</a></li>
-    <li><a  href="javascript:insertMention('(・ー・)')">(・ー・)</a></li>
-    <li><a  href="javascript:insertMention('(・∀・)')">(・∀・)</a></li>
-    <li><a  href="javascript:insertMention('(ゝ∀･)')">(ゝ∀･)</a></li>
-    <li><a  href="javascript:insertMention('(〃∀〃)')">(〃∀〃)</a></li>
-    <li><a  href="javascript:insertMention('(*ﾟ∀ﾟ*)')">(*ﾟ∀ﾟ*)</a></li>
-    <li><a  href="javascript:insertMention('( ﾟ∀。)')">( ﾟ∀。)</a></li>
-    <li><a  href="javascript:insertMention('( `д´)')">( `д´)</a></li>
-    <li><a  href="javascript:insertMention('(`ε´ )')">(`ε´ )</a></li>
-    <li><a  href="javascript:insertMention('(`ヮ´ )')">(`ヮ´ )</a></li>
-    <li><a  href="javascript:insertMention('σ`∀´)')">σ`∀´)</a></li>
-    <li><a  href="javascript:insertMention(' ﾟ∀ﾟ)σ')"> ﾟ∀ﾟ)σ</a></li>
-    <li><a  href="javascript:insertMention('ﾟ ∀ﾟ)ノ')">ﾟ ∀ﾟ)ノ</a></li>
-    <li><a  href="javascript:insertMention('(╬ﾟдﾟ)')">(╬ﾟдﾟ)</a></li>
-    <li><a  href="javascript:insertMention('(|||ﾟдﾟ)')">(|||ﾟдﾟ)</a></li>
-    <li><a  href="javascript:insertMention('( ﾟдﾟ)')">( ﾟдﾟ)</a></li>
-    <li><a  href="javascript:insertMention('Σ( ﾟдﾟ)')">Σ( ﾟдﾟ)</a></li>
-    <li><a  href="javascript:insertMention('( ;ﾟдﾟ)')">( ;ﾟдﾟ)</a></li>
-    <li><a  href="javascript:insertMention('( ;´д`)')">( ;´д`)</a></li>
-    <li><a  href="javascript:insertMention('(　д ) ﾟ ﾟ')">(　д ) ﾟ ﾟ</a></li>
-    <li><a  href="javascript:insertMention('( ☉д⊙)')">( ☉д⊙)</a></li>
-    <li><a  href="javascript:insertMention('(((　ﾟдﾟ)))')">(((　ﾟдﾟ)))</a></li>
-    <li><a  href="javascript:insertMention('( ` ・´)')">( ` ・´)</a></li>
-    <li><a  href="javascript:insertMention('( ´д`)')">( ´д`)</a></li>
-    <li><a  href="javascript:insertMention('( -д-)')">( -д-)</a></li>
-    <li><a  href="javascript:insertMention('(>д<)')">(&gt;д&lt;)</a></li>
-    <li><a  href="javascript:insertMention('･ﾟ( ﾉд`ﾟ)')">･ﾟ( ﾉд`ﾟ)</a></li>
-    <li><a  href="javascript:insertMention('( TдT)')">( TдT)</a></li>
-    <li><a  href="javascript:insertMention('(￣∇￣)')">(￣∇￣)</a></li>
-    <li><a  href="javascript:insertMention('(￣3￣)')">(￣3￣)</a></li>
-    <li><a  href="javascript:insertMention('(￣ｰ￣)')">(￣ｰ￣)</a></li>
-    <li><a  href="javascript:insertMention('(￣ . ￣)')">(￣ . ￣)</a></li>
-    <li><a  href="javascript:insertMention('(￣皿￣)')">(￣皿￣)</a></li>
-    <li><a  href="javascript:insertMention('(￣艸￣)')">(￣艸￣)</a></li>
-    <li><a  href="javascript:insertMention('(￣︿￣)')">(￣︿￣)</a></li>
-    <li><a  href="javascript:insertMention('(￣︶￣)')">(￣︶￣)</a></li>
-    <li><a  href="javascript:insertMention('ヾ(´ωﾟ｀)')">ヾ(´ωﾟ｀)</a></li>
-    <li><a  href="javascript:insertMention('(*´ω`*)')">(*´ω`*)</a></li>
-    <li><a  href="javascript:insertMention('(・ω・)')">(・ω・)</a></li>
-    <li><a  href="javascript:insertMention('( ´・ω)')">( ´・ω)</a></li>
-    <li><a  href="javascript:insertMention('(｀・ω)')">(｀・ω)</a></li>
-    <li><a  href="javascript:insertMention('(´・ω・`)')">(´・ω・`)</a></li>
-    <li><a  href="javascript:insertMention('(`・ω・´)')">(`・ω・´)</a></li>
-    <li><a  href="javascript:insertMention('( `_っ´)')">( `_っ´)</a></li>
-    <li><a  href="javascript:insertMention('( `ー´)')">( `ー´)</a></li>
-    <li><a  href="javascript:insertMention('( ´_っ`)')">( ´_っ`)</a></li>
-    <li><a  href="javascript:insertMention('( ´ρ`)')">( ´ρ`)</a></li>
-    <li><a  href="javascript:insertMention('( ﾟωﾟ)')">( ﾟωﾟ)</a></li>
-    <li><a  href="javascript:insertMention('(oﾟωﾟo)')">(oﾟωﾟo)</a></li>
-    <li><a  href="javascript:insertMention('(　^ω^)')">(　^ω^)</a></li>
-    <li><a  href="javascript:insertMention('(｡◕∀◕｡)')">(｡◕∀◕｡)</a></li>
-    <li><a  href="javascript:insertMention('/( ◕‿‿◕ )\')">/( ◕‿‿◕ )\</a></li>
-    <li><a  href="javascript:insertMention('ヾ(´ε`ヾ)')">ヾ(´ε`ヾ)</a></li>
-    <li><a  href="javascript:insertMention('(ノﾟ∀ﾟ)ノ')">(ノﾟ∀ﾟ)ノ</a></li>
-    <li><a  href="javascript:insertMention('(σﾟдﾟ)σ')">(σﾟдﾟ)σ</a></li>
-    <li><a  href="javascript:insertMention('(σﾟ∀ﾟ)σ')">(σﾟ∀ﾟ)σ</a></li>
-    <li><a  href="javascript:insertMention('|дﾟ )')">|дﾟ )</a></li>
-    <li><a  href="javascript:insertMention('┃電柱┃')">┃電柱┃</a></li>
-    <li><a  href="javascript:insertMention('ﾟ(つд`ﾟ)')">ﾟ(つд`ﾟ)</a></li>
-    <li><a  href="javascript:insertMention('ﾟÅﾟ )　')">ﾟÅﾟ )　</a></li>
-    <li><a  href="javascript:insertMention('⊂彡☆))д`)')">⊂彡☆))д`)</a></li>
-    <li><a  href="javascript:insertMention('⊂彡☆))д´)')">⊂彡☆))д´)</a></li>
-    <li><a  href="javascript:insertMention('⊂彡☆))∀`)')">⊂彡☆))∀`)</a></li>
-    <li><a  href="javascript:insertMention('(´∀((☆ミつ')">(´∀((☆ミつ</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','|∀ﾟ')">|∀ﾟ</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(´ﾟДﾟ`)')">(´ﾟДﾟ`)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(;´Д`)')">(;´Д`)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(｀･ω･)')">(｀･ω･)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(=ﾟωﾟ)=')">(=ﾟωﾟ)=</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','| ω・´)')">| ω・´)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','|-` )')">|-` )</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','|д` )')">|д` )</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','|ー` )')">|ー` )</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','|∀` )')">|∀` )</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(つд⊂)')">(つд⊂)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(ﾟДﾟ≡ﾟДﾟ)')">(ﾟДﾟ≡ﾟДﾟ)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(＾o＾)ﾉ')">(＾o＾)ﾉ</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(|||ﾟДﾟ)')">(|||ﾟДﾟ)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','( ﾟ∀ﾟ)')">( ﾟ∀ﾟ)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','( ´∀`)')">( ´∀`)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(*´∀`)')">(*´∀`)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(*ﾟ∇ﾟ)')">(*ﾟ∇ﾟ)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(*ﾟーﾟ)')">(*ﾟーﾟ)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(　ﾟ 3ﾟ)')">(　ﾟ 3ﾟ)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','( ´ー`)')">( ´ー`)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','( ・_ゝ・)')">( ・_ゝ・)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','( ´_ゝ`)')">( ´_ゝ`)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(*´д`)')">(*´д`)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(・ー・)')">(・ー・)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(・∀・)')">(・∀・)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(ゝ∀･)')">(ゝ∀･)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(〃∀〃)')">(〃∀〃)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(*ﾟ∀ﾟ*)')">(*ﾟ∀ﾟ*)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','( ﾟ∀。)')">( ﾟ∀。)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','( `д´)')">( `д´)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(`ε´ )')">(`ε´ )</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(`ヮ´ )')">(`ヮ´ )</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','σ`∀´)')">σ`∀´)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}',' ﾟ∀ﾟ)σ')"> ﾟ∀ﾟ)σ</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','ﾟ ∀ﾟ)ノ')">ﾟ ∀ﾟ)ノ</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(╬ﾟдﾟ)')">(╬ﾟдﾟ)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(|||ﾟдﾟ)')">(|||ﾟдﾟ)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','( ﾟдﾟ)')">( ﾟдﾟ)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','Σ( ﾟдﾟ)')">Σ( ﾟдﾟ)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','( ;ﾟдﾟ)')">( ;ﾟдﾟ)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','( ;´д`)')">( ;´д`)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(　д ) ﾟ ﾟ')">(　д ) ﾟ ﾟ</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','( ☉д⊙)')">( ☉д⊙)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(((　ﾟдﾟ)))')">(((　ﾟдﾟ)))</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','( ` ・´)')">( ` ・´)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','( ´д`)')">( ´д`)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','( -д-)')">( -д-)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(>д<)')">(&gt;д&lt;)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','･ﾟ( ﾉд`ﾟ)')">･ﾟ( ﾉд`ﾟ)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','( TдT)')">( TдT)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(￣∇￣)')">(￣∇￣)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(￣3￣)')">(￣3￣)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(￣ｰ￣)')">(￣ｰ￣)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(￣ . ￣)')">(￣ . ￣)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(￣皿￣)')">(￣皿￣)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(￣艸￣)')">(￣艸￣)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(￣︿￣)')">(￣︿￣)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(￣︶￣)')">(￣︶￣)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','ヾ(´ωﾟ｀)')">ヾ(´ωﾟ｀)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(*´ω`*)')">(*´ω`*)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(・ω・)')">(・ω・)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','( ´・ω)')">( ´・ω)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(｀・ω)')">(｀・ω)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(´・ω・`)')">(´・ω・`)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(`・ω・´)')">(`・ω・´)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','( `_っ´)')">( `_っ´)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','( `ー´)')">( `ー´)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','( ´_っ`)')">( ´_っ`)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','( ´ρ`)')">( ´ρ`)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','( ﾟωﾟ)')">( ﾟωﾟ)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(oﾟωﾟo)')">(oﾟωﾟo)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(　^ω^)')">(　^ω^)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(｡◕∀◕｡)')">(｡◕∀◕｡)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','/( ◕‿‿◕ )\')">/( ◕‿‿◕ )\</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','ヾ(´ε`ヾ)')">ヾ(´ε`ヾ)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(ノﾟ∀ﾟ)ノ')">(ノﾟ∀ﾟ)ノ</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(σﾟдﾟ)σ')">(σﾟдﾟ)σ</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(σﾟ∀ﾟ)σ')">(σﾟ∀ﾟ)σ</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','|дﾟ )')">|дﾟ )</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','┃電柱┃')">┃電柱┃</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','ﾟ(つд`ﾟ)')">ﾟ(つд`ﾟ)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','ﾟÅﾟ )　')">ﾟÅﾟ )　</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','⊂彡☆))д`)')">⊂彡☆))д`)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','⊂彡☆))д´)')">⊂彡☆))д´)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','⊂彡☆))∀`)')">⊂彡☆))∀`)</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','(´∀((☆ミつ')">(´∀((☆ミつ</a></li>
 </ul>
+
+<div style="position: absolute; right: 0; top: 0; margin: 0.5em 1em; text-align: center;"
+     onclick="this.parentNode.style.display='none';$q('#rv-{{.}} [name=content]').focus();">
+    <i class="icon-cancel-circled"></i>
 </div>
-
-<script>
-    function insertMention(e) {
-        var el = $q("#content");
-        if (e.startsWith("@") || e.startsWith("#"))
-            el.value = el.value.replace(/(@|#)\S+$/, "") + e + " ";
-        else
-            el.value += e;
-        el.focus();
-    }
-
-function closeEmoji() {
-    $q("#emoji").style.display = 'none';
-    $q("#content").focus();
-}
-
-try {
-    var f = $q("#emoji").querySelector('ul li'), _this = $q("#emoji ul");
-    JSON.parse(window.localStorage.getItem('presets') || '[]').filter(function(t){return t}).forEach(function(t) {
-        var li = document.createElement('li');
-        var a = document.createElement('a');
-        li.appendChild(a);
-        a.onclick = function() { insertMention(t); }
-        a.innerText = t;
-        _this.insertBefore(li, f);
-    });
-} catch (e) {
-    console.log(window.localStorage.getItem('presets'), e);
-    window.localStorage.setItem('presets', '');
-}
-</script>
+</div>

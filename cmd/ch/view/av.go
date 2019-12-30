@@ -91,10 +91,12 @@ func (a *ArticleView) from(a2 *mv.Article, opt uint64, u *mv.User) *ArticleView 
 	// 	}
 	// }
 
-	if a2.Parent != "" && opt&_NoMoreParent == 0 {
-		p, _ := m.GetArticle(a2.Parent)
+	if a2.Parent != "" {
 		a.Parent = &ArticleView{}
-		a.Parent.from(p, opt|_NoMoreParent, u)
+		if opt&_NoMoreParent == 0 {
+			p, _ := m.GetArticle(a2.Parent)
+			a.Parent.from(p, opt|_NoMoreParent, u)
+		}
 	}
 
 	a.NoAvatar = opt&_NoMoreParent > 0
