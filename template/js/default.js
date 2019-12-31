@@ -98,13 +98,14 @@ function loadKimochi(el) {
             img.style.borderRadius = '50%';
         }
         a.appendChild(img);
-        a.onclick = (function(i) {
+        a.onclick = (function(i, img) {
             return function() {
+                img.src = '/s/css/spinner.gif';
                 $post('/api/user_kimochi', {k: i}, function(resp) {
                     if (resp === 'ok')  location.reload(); 
                 });
             }
-        })(i)
+        })(i, img)
         li.appendChild(a);
         ul.appendChild(li);
     }

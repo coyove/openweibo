@@ -57,6 +57,10 @@ func (m *DynamoKV) Unlock(key string) {
 	lk.Unlock()
 }
 
+func (m *DynamoKV) ResetCache() {
+	m.cache.Clear()
+}
+
 func (m *DynamoKV) Get(key string) ([]byte, error) {
 	x, ok := m.cache.Get(key)
 	v, _ := x.([]byte)

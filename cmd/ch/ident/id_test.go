@@ -9,6 +9,7 @@ import (
 )
 
 func TestID(t *testing.T) {
+	t.Log(NewID(IDTagFollowChain).SetTag("澜沫"))
 	t.Log(ParseID("L75mSN4-"))
 	return
 

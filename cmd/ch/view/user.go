@@ -80,18 +80,20 @@ func UserList(g *gin.Context) {
 		p.User = p.You
 	}
 
+	var chain ident.ID
 	switch p.ListType {
 	case "blacklist":
 		if p.User != p.You {
 			g.Redirect(302, "/user/blacklist")
 			return
 		}
-		p.List, p.Next = m.GetFollowingList(p.User.BlockingChain, g.Query("n"), int(config.Cfg.PostsPerPage))
+		chain = ident.NewID(ident.IDTagBlockChain).SetTag(p.User.ID)
 	case "followers":
-		p.List, p.Next = m.GetFollowingList(p.User.FollowerChain, g.Query("n"), int(config.Cfg.PostsPerPage))
+		chain = ident.NewID(ident.IDTagFollowerChain).SetTag(p.User.ID)
 	default:
-		p.List, p.Next = m.GetFollowingList(p.User.FollowingChain, g.Query("n"), int(config.Cfg.PostsPerPage))
+		chain = ident.NewID(ident.IDTagFollowChain).SetTag(p.User.ID)
 	}
+	p.List, p.Next = m.GetFollowingList(chain, g.Query("n"), int(config.Cfg.PostsPerPage))
 
 	g.HTML(200, "user_list.html", p)
 }
@@ -117,7 +119,7 @@ func UserLikes(g *gin.Context) {
 	}
 
 	var cursor string
-	if p, _ := m.GetArticle(p.User.LikeChain); p != nil {
+	if p, _ := m.GetArticle(ident.NewID(ident.IDTagLikeChain).SetTag(p.User.ID).String()); p != nil {
 		cursor = p.NextID
 	}
 

@@ -19,6 +19,11 @@ type KeyValueOp interface {
 	Get(string) ([]byte, error)
 	Set(string, []byte) error
 	Delete(string) error
+	ResetCache()
+}
+
+func (m *Manager) ResetCache() {
+	m.db.ResetCache()
 }
 
 func IsCrawler(g *gin.Context) bool {

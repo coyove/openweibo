@@ -12,10 +12,14 @@ import (
 )
 
 const (
-	IDTagGeneral IDTag = 0x07
-	IDTagTag           = 0x06
-	IDTagAuthor        = 0x05
-	IDTagInbox         = 0x04
+	IDTagGeneral       IDTag = 0x07
+	IDTagTag                 = 0x06
+	IDTagAuthor              = 0x05
+	IDTagInbox               = 0x04
+	IDTagFollowerChain       = 0x0A
+	IDTagFollowChain         = 0x0B
+	IDTagBlockChain          = 0x0C
+	IDTagLikeChain           = 0x0D
 )
 
 type IDTag byte

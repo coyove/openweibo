@@ -83,9 +83,6 @@ type User struct {
 	Followings        int32  `json:"f"`
 	Unread            int32  `json:"ur"`
 	FollowingChain    string `json:"FC2,omitempty"`
-	FollowerChain     string `json:"FrC,omitempty"`
-	BlockingChain     string `json:"BC,omitempty"`
-	LikeChain         string `json:"LC,omitempty"`
 	DataIP            string `json:"sip"`
 	TSignup           uint32 `json:"st"`
 	TLogin            uint32 `json:"lt"`

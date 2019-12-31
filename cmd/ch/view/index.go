@@ -1,7 +1,6 @@
 package view
 
 import (
-	"bytes"
 	"log"
 	"strconv"
 	"strings"
@@ -122,7 +121,7 @@ func Timeline(g *gin.Context) {
 	cursors := []ident.ID{}
 	pendingFCursor := ""
 	readCursorsAndPendingFCursor := func(start string) {
-		list, next := m.GetFollowingList(pl.User.FollowingChain, start, 1e6)
+		list, next := m.GetFollowingList(ident.NewID(ident.IDTagFollowChain).SetTag(pl.User.ID), start, 1e6)
 		for _, id := range list {
 			if id.Followed {
 				if strings.HasPrefix(id.ID, "#") {
@@ -132,9 +131,7 @@ func Timeline(g *gin.Context) {
 				}
 			}
 		}
-		if next != "" {
-			pendingFCursor = pl.User.FollowingChain + ":" + next
-		}
+		pendingFCursor = next
 	}
 
 	if pl.IsUserTimeline {
@@ -181,8 +178,8 @@ func APITimeline(g *gin.Context) {
 		cursors, payload := ident.SplitIDs(g.PostForm("cursors"))
 
 		var pendingFCursor string
-		if x := bytes.Split(payload, []byte(":")); len(x) == 2 {
-			list, next := m.GetFollowingList(string(x[0]), string(x[1]), 1e6)
+		if len(payload) > 0 {
+			list, next := m.GetFollowingList(ident.ID{}, string(payload), 1e6)
 			for _, id := range list {
 				if !id.Followed {
 					continue
@@ -193,9 +190,7 @@ func APITimeline(g *gin.Context) {
 					cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(id.ID))
 				}
 			}
-			if next != "" {
-				pendingFCursor = string(x[0]) + ":" + next
-			}
+			pendingFCursor = next
 		}
 
 		a, next := m.WalkMulti(int(config.Cfg.PostsPerPage), cursors...)

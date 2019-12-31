@@ -108,6 +108,13 @@
     </tr>
     {{end}}
 
+    {{if .User.IsAdmin}}
+    <tr>
+        <td class=nowrap></td>
+        <td><button class=gbutton onclick='$postReload(this,"/api2/reset_cache",{})'>重置缓存</button></td>
+    </tr>
+    {{end}}
+
     <tr>
         <td colspan=3><b>修改密码</b></td>
     </tr>
@@ -138,6 +145,10 @@
 <title>注册</title>
 
     <script>$q('#nav-login').className = "selected"</script>
+
+    <div>
+        <a href="/" class=gbutton>已有账号？点此登入</a>
+    </div>
 
 <form method="POST" action="/user">
     <table class="articles">

@@ -32,6 +32,9 @@ func NewBoltKV(path string) *BoltKV {
 	return r
 }
 
+func (m *BoltKV) ResetCache() {
+}
+
 func (m *BoltKV) Lock(key string) {
 	lk := &m.locks[hashString(key)]
 	lk.Lock()

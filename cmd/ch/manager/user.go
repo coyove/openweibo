@@ -33,7 +33,22 @@ func (m *Manager) GetUser(id string) (*mv.User, error) {
 	if u != nil {
 		u2 := *u
 		m.weakUsers.Add(u.ID, unsafe.Pointer(&u2))
+		if u.FollowingChain != "" {
+			go func() {
+				fc, _ := m.GetArticle(u.FollowingChain)
+				if fc != nil {
+					a := &mv.Article{
+						ID:     ident.NewID(ident.IDTagFollowChain).SetTag(u.ID).String(),
+						NextID: fc.NextID,
+					}
+					if _, err := m.GetArticle(a.ID); err == mv.ErrNotExisted {
+						m.db.Set(a.ID, a.Marshal())
+					}
+				}
+			}()
+		}
 	}
+
 	return u, err
 }
 
@@ -152,53 +167,15 @@ func (m *Manager) MentionUserAndTags(a *mv.Article, ids []string, tags []string)
 	return nil
 }
 
-func (m *Manager) createUserChain(u *mv.User, cmd mv.Cmd) error {
-	a := &mv.Article{
-		ID:         ident.NewGeneralID().String(),
-		Cmd:        cmd,
-		CreateTime: time.Now(),
-	}
-	if err := m.db.Set(a.ID, a.Marshal()); err != nil {
-		return err
-	}
-	return m.UpdateUser_unlock(u.ID, func(uu *mv.User) error {
-		switch cmd {
-		case mv.CmdFollow:
-			u.FollowingChain, uu.FollowingChain = a.ID, a.ID
-		case mv.CmdBlock:
-			u.BlockingChain, uu.BlockingChain = a.ID, a.ID
-		case mv.CmdFollowed:
-			u.FollowerChain, uu.FollowerChain = a.ID, a.ID
-		case mv.CmdLike:
-			u.LikeChain, uu.LikeChain = a.ID, a.ID
-		default:
-			panic(cmd)
-		}
-		return nil
-	})
-}
-
 func (m *Manager) FollowUser_unlock(from, to string, following bool) (E error) {
-	u, err := m.GetUser(from)
-	if err != nil {
-		return err
-	}
-
-	if u.FollowingChain == "" {
-		if err := m.createUserChain(u, mv.CmdFollow); err != nil {
-			return err
-		}
-	}
-	root := u.FollowingChain
-
 	followID := MakeFollowID(from, to)
-	m.db.Lock(followID)
-	defer m.db.Unlock(followID)
-
 	if following && m.IsBlocking(to, from) {
 		// "from" wants "to" follow "to" but "to" blocked "from"
 		return fmt.Errorf("follow/to-blocked")
 	}
+
+	m.db.Lock(followID)
+	defer m.db.Unlock(followID)
 
 	updated := false
 	defer func() {
@@ -231,79 +208,62 @@ func (m *Manager) FollowUser_unlock(from, to string, following bool) (E error) {
 	}
 
 	updated = true
-	if err := m.insertArticle(root, &mv.Article{
-		ID:         followID,
-		Cmd:        mv.CmdFollow,
-		Extras:     map[string]string{to: state},
-		CreateTime: time.Now(),
-	}, false); err != nil {
+	if err := m.insertArticle(
+		ident.NewID(ident.IDTagFollowChain).SetTag(from).String(),
+		&mv.Article{
+			ID:         followID,
+			Cmd:        mv.CmdFollow,
+			Extras:     map[string]string{to: state},
+			CreateTime: time.Now(),
+		}, false); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (m *Manager) fromFollowToNotifyTo(from, to string, following bool) (E error) {
-	m.db.Lock(to)
-	defer m.db.Unlock(to)
-
-	u, err := m.GetUser(to)
-	if err != nil {
-		return err
-	}
-
-	if following {
-		u.Followers++
-	} else {
-		dec0(&u.Followers)
-	}
-
-	if err := m.SetUser(u); err != nil {
-		return err
-	}
-
-	if u.FollowerChain == "" {
-		if err := m.createUserChain(u, mv.CmdFollowed); err != nil {
-			return err
+	if err := m.UpdateUser(to, func(u *mv.User) error {
+		if following {
+			u.Followers++
+		} else {
+			dec0(&u.Followers)
 		}
+		return nil
+	}); err != nil {
+		return err
 	}
-
-	_, err = m.insertChainOrUpdate(makeFollowedID(to, from), u.FollowerChain, from, mv.CmdFollowed, following)
+	_, err := m.insertChainOrUpdate(
+		makeFollowedID(to, from),
+		ident.NewID(ident.IDTagFollowerChain).SetTag(to).String(),
+		from,
+		mv.CmdFollowed,
+		following)
 	return err
 }
 
 func (m *Manager) BlockUser_unlock(from, to string, blocking bool) (E error) {
-	u, err := m.GetUser(from)
-	if err != nil {
-		return err
-	}
-
-	if u.BlockingChain == "" {
-		if err := m.createUserChain(u, mv.CmdBlock); err != nil {
-			return err
-		}
-	}
-
 	if blocking {
 		if err := m.FollowUser_unlock(to, from, false); err != nil {
 			log.Println("Block user:", to, "unfollow error:", err)
 		}
 	}
 
-	_, err = m.insertChainOrUpdate(makeBlockID(from, to), u.BlockingChain, to, mv.CmdBlock, blocking)
+	_, err := m.insertChainOrUpdate(
+		makeBlockID(from, to),
+		ident.NewID(ident.IDTagBlockChain).SetTag(from).String(),
+		to,
+		mv.CmdBlock,
+		blocking)
 	return err
 }
 
 func (m *Manager) LikeArticle_unlock(from, to string, liking bool) (E error) {
-	u, err := m.GetUser(from)
-	if err != nil {
-		return err
-	}
-	if u.LikeChain == "" {
-		if err := m.createUserChain(u, mv.CmdLike); err != nil {
-			return err
-		}
-	}
-	updated, err := m.insertChainOrUpdate(makeLikeID(from, to), u.LikeChain, to, mv.CmdLike, liking)
+	updated, err := m.insertChainOrUpdate(
+		makeLikeID(from, to),
+		ident.NewID(ident.IDTagLikeChain).SetTag(from).String(),
+		to,
+		mv.CmdLike,
+		liking)
 	if err != nil {
 		return err
 	}
@@ -357,15 +317,17 @@ type FollowingState struct {
 	Blocked     bool
 }
 
-func (m *Manager) GetFollowingList(chain string, cursor string, n int) ([]FollowingState, string) {
-	if chain == "" {
+func (m *Manager) GetFollowingList(chain ident.ID, cursor string, n int) ([]FollowingState, string) {
+	if !chain.Valid() {
 		return nil, ""
 	}
 
 	if cursor == "" {
-		a, err := m.GetArticle(chain)
+		a, err := m.GetArticle(chain.String())
 		if err != nil {
-			log.Println("[GetFollowingList] Failed to get chain [", chain, "]")
+			if err != mv.ErrNotExisted {
+				log.Println("[GetFollowingList] Failed to get chain [", chain, "]")
+			}
 			return nil, ""
 		}
 		cursor = a.NextID
@@ -374,7 +336,7 @@ func (m *Manager) GetFollowingList(chain string, cursor string, n int) ([]Follow
 	res := []FollowingState{}
 	start := time.Now()
 
-	for len(res) < n && cursor != "" {
+	for len(res) < n && strings.HasPrefix(cursor, "u/") {
 		if time.Since(start).Seconds() > 0.2 {
 			log.Println("[GetFollowingList] Break out slow walk [", cursor, "]")
 			break

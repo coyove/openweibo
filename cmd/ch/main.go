@@ -159,6 +159,7 @@ func main() {
 	r.Handle("POST", "/api2/logout", action.APILogout)
 	r.Handle("POST", "/api2/new", action.APINew)
 	r.Handle("POST", "/api2/user_password", action.APIUpdateUserPassword)
+	r.Handle("POST", "/api2/reset_cache", action.APIResetCache)
 
 	r.Handle("GET", "/loaderio-4d068f605f9b693f6ca28a8ca23435c6", func(g *gin.Context) { g.String(200, ("loaderio-4d068f605f9b693f6ca28a8ca23435c6")) })
 
