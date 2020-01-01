@@ -34,14 +34,14 @@ type Article struct {
 	Likes       int32             `json:"like,omitempty"`
 	Locked      bool              `json:"lock,omitempty"`
 	NSFW        bool              `json:"nsfw,omitempty"`
-	Content     string            `json:"content"`
+	Content     string            `json:"content,omitempty"`
 	Media       string            `json:"M,omitempty"`
-	Author      string            `json:"author"`
-	IP          string            `json:"ip"`
+	Author      string            `json:"author,omitempty"`
+	IP          string            `json:"ip,omitempty"`
 	CreateTime  time.Time         `json:"create,omitempty"`
-	Parent      string            `json:"P"`
-	ReplyChain  string            `json:"Rc"`
-	NextReplyID string            `json:"R"`
+	Parent      string            `json:"P,omitempty"`
+	ReplyChain  string            `json:"Rc,omitempty"`
+	NextReplyID string            `json:"R,omitempty"`
 	EOC         string            `json:"EO,omitempty"`
 	NextID      string            `json:"N,omitempty"`
 	Cmd         Cmd               `json:"K,omitempty"`

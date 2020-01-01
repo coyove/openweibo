@@ -7,7 +7,6 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	"reflect"
 	"runtime"
 	"strconv"
 	"strings"
@@ -18,6 +17,7 @@ import (
 	"github.com/coyove/iis/cmd/ch/action"
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/engine"
+	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/manager"
 	"github.com/coyove/iis/cmd/ch/mv"
 	"github.com/coyove/iis/cmd/ch/view"
@@ -104,13 +104,8 @@ func main() {
 			}
 			return ""
 		},
-		"isNotReplyPage": func(v interface{}) bool {
-			rv := reflect.ValueOf(v)
-			if rv.Kind() != reflect.Struct {
-				rv = rv.Elem()
-			}
-			_, ok := rv.Type().FieldByName("ParentArticle")
-			return !ok
+		"makeID": func(h int, v string) string {
+			return ident.NewID(ident.IDTag(h)).SetTag(v).String()
 		},
 		"formatTime": func(a time.Time) template.HTML {
 			s := time.Since(a).Seconds()

@@ -36,9 +36,19 @@ func (m *Manager) GetUser(id string) (*mv.User, error) {
 		if u.FollowingChain != "" {
 			go func() {
 				fc, _ := m.GetArticle(u.FollowingChain)
+				id := ident.NewID(ident.IDTagFollowChain).SetTag(u.ID).String()
 				if fc != nil {
+					for !strings.HasPrefix(fc.NextID, "u/") {
+						fc2, _ := m.GetArticle(fc.NextID)
+						if fc2 != nil {
+							fc = fc2
+						} else {
+							log.Println(u.ID, "following chain broken")
+							break
+						}
+					}
 					a := &mv.Article{
-						ID:     ident.NewID(ident.IDTagFollowChain).SetTag(u.ID).String(),
+						ID:     id,
 						NextID: fc.NextID,
 					}
 					if _, err := m.GetArticle(a.ID); err == mv.ErrNotExisted {

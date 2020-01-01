@@ -240,8 +240,9 @@ func (m *Manager) insertArticle(rootID string, a *mv.Article, asReply bool) erro
 			return err
 		}
 		root = &mv.Article{
-			ID:  rootID,
-			EOC: a.ID,
+			ID:         rootID,
+			EOC:        a.ID,
+			CreateTime: time.Now(),
 		}
 	}
 
