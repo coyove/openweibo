@@ -59,7 +59,7 @@ func APINew(g *gin.Context) {
 	}
 
 	if image != "" {
-		if image, err = writeImage(image); err != nil {
+		if image, err = writeImage(u, g.PostForm("image_name"), image); err != nil {
 			g.String(200, err.Error())
 			return
 		}
@@ -139,7 +139,7 @@ func doReply(g *gin.Context) {
 	}
 
 	if image != "" {
-		image, err = writeImage(image)
+		image, err = writeImage(u, g.PostForm("image_name"), image)
 		if err != nil {
 			g.String(200, err.Error())
 			return

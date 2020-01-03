@@ -8,10 +8,12 @@ function onPost(cid, el, p, nsfw) {
         if (e.length > 16) e = e.slice(e.length - 16);
         window.localStorage.setItem("presets", JSON.stringify(e));
     }
+
     var stop = $wait(el);
     $post("/api2/new", {
         content: content,
         image64: $q("#" + cid + " [name=image64]").value,
+        image_name: $q("#" + cid + " [name=image64]").IMAGE_NAME || "",
         nsfw: nsfw ? "1" : "",
         parent: p,
     }, function (res) {
@@ -93,6 +95,7 @@ function onImageChanged(el) {
             var canvas = document.createElement("canvas"), throt = 1.4 * 1000 * 1000, f = 1,
                 success = function() {
                     el.nextElementSibling.value = img.src;
+                    el.nextElementSibling.IMAGE_NAME = el.value.split(/(\\|\/)/g).pop();
                     // $q('#reply-submit').removeAttribute("disabled");
                     btnNSFW.style.display = null;
                     var img2 = document.createElement("img");

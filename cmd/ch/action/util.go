@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/coyove/iis/cmd/ch/config"
@@ -123,12 +124,25 @@ func genSession() string {
 	return base64.URLEncoding.EncodeToString(p[:])
 }
 
-func writeImage(image string) (string, error) {
+func writeImage(u *mv.User, imageName, image string) (string, error) {
 	image = image[strings.Index(image, ",")+1:]
 	dec := base64.NewDecoder(base64.StdEncoding, strings.NewReader(image))
 
-	fn := genSession()
-	path := fmt.Sprintf("tmp/images/%s/", fn[:2])
+	hash := uint64(0)
+	for i := len(image) - 1; i >= 0 && i >= len(image)-1024; i-- {
+		hash = hash*31 + uint64(image[i])
+	}
+
+	path := fmt.Sprintf("tmp/images/%d/", hash%1024)
+
+	fn := fmt.Sprintf("%016x", hash)
+	if imageName != "" {
+		imageName = filepath.Base(imageName)
+		imageName = strings.TrimSuffix(imageName, filepath.Ext(imageName))
+		fn += "_" + mv.SafeStringForCompressString(imageName) + "_" + u.ID
+	} else {
+		fn += "_" + u.ID
+	}
 
 	os.MkdirAll(path, 0777)
 	of, err := os.OpenFile(path+fn, os.O_CREATE|os.O_WRONLY, 0777)

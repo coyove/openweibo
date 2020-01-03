@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -90,13 +91,19 @@ func Image(g *gin.Context) {
 }
 
 func I(g *gin.Context) {
-	img := strings.Replace(g.Param("img"), ".jpg", "", 1)
-	cachepath := fmt.Sprintf("tmp/images/%s/%s", img[:2], img)
-	http.ServeFile(g.Writer, g.Request, cachepath)
+	img := strings.TrimSuffix(g.Param("img"), ".jpg")
+	if len(img) > 16 {
+		x, _ := strconv.ParseUint(img[:16], 16, 64)
+		cachepath := fmt.Sprintf("tmp/images/%d/%s", x%1024, img)
+		http.ServeFile(g.Writer, g.Request, cachepath)
+	} else {
+		cachepath := fmt.Sprintf("tmp/images/%s/%s", img[:2], img)
+		http.ServeFile(g.Writer, g.Request, cachepath)
+	}
 }
 
 func init() {
-	dirMaxSize := config.Cfg.MaxImagesCache * 1024 * 1024 * 1024 / (64 * 64)
+	dirMaxSize := config.Cfg.MaxImagesCache * 1024 * 1024 * 1024 / (1024)
 
 	go func() {
 		for {
