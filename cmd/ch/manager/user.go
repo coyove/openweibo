@@ -72,6 +72,9 @@ func (m *Manager) SetUser(u *mv.User) error {
 
 func (m *Manager) GetUserByContext(g *gin.Context) *mv.User {
 	u, _ := m.GetUserByToken(g.PostForm("api2_uid"))
+	if u.Banned {
+		return nil
+	}
 	return u
 }
 

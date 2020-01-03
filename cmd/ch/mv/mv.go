@@ -99,6 +99,13 @@ func (u User) Marshal() []byte {
 	return b
 }
 
+// func (u User) String() string {
+// 	b, _ := json.MarshalIndent(u, "", "")
+// 	b = bytes.TrimLeft(b, " \r\n\t{")
+// 	b = bytes.TrimRight(b, " \r\n\t}")
+// 	return string(b)
+// }
+
 func (u User) Signup() time.Time {
 	return time.Unix(int64(u.TSignup), 0)
 }

@@ -23,18 +23,7 @@
         {{else}}
         <button class="gbutton" value=1 onclick="followBlock(this,'block','{{.User.ID}}')">拉入黑名单</button>
         {{end}}
-
-    {{end}}
-
-    {{if .You.IsAdmin}}
-    <a class=gbutton href="/user?as={{.User.ID}}">SWAP</a>
-    {{end}}
-
-    {{if .You.IsMod}}
-        <button class="gbutton" onclick="$postReload(this,'/api/ban',{to:'{{.User.ID}}'})">
-            {{if .User.Banned}}解封{{else}}封禁{{end}}
-        </button>
-    {{end}}
+    {{end}} 
 
     </div>
 

@@ -22,8 +22,11 @@
         <a href="/t/{{.Author.ID}}">@{{.Author.ID}}</a>
         <span>于 {{formatTime .CreateTime}} @了你</span>
     {{else}}
-    <span><a target=_parent href="/t/{{.Author.ID}}">@{{.Author.ID}}</a>
-        {{if .Author.IsMod}} <span class=mod>Mod</span>{{end}}</span>
+        <span>
+            <a target=_parent href="/t/{{.Author.ID}}">@{{.Author.ID}}</a>
+            {{if .Author.IsMod}} <span class=mod>Mod</span>{{end}}
+            {{if .You.IsMod}} <a href="/mod/user?uid={{.Author.ID}}" target=_blank><i class="icon-export-alt"></i></a>{{end}}
+        </span>
         {{if .Parent}}
             {{if .Content}}
                 <span>回复于 {{formatTime .CreateTime}}</span>

@@ -35,21 +35,7 @@ func User(g *gin.Context) {
 	}
 
 	p.UUID, p.Challenge = ident.MakeToken(g)
-
-	if u, ok := g.Get("user"); ok {
-		p.User = u.(*mv.User)
-
-		if as := g.Query("as"); as != "" && p.User.IsAdmin() {
-			u, err := m.GetUser(as)
-			if err != nil {
-				Error(400, as+" not found", g)
-				return
-			}
-			p.User = u
-			g.SetCookie("id", mv.MakeUserToken(u), 86400, "", "", false, false)
-		}
-
-	}
+	p.User = getUser(g)
 
 	g.HTML(200, "user.html", p)
 }

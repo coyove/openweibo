@@ -17,7 +17,6 @@ import (
 	"github.com/coyove/iis/cmd/ch/action"
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/engine"
-	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/manager"
 	"github.com/coyove/iis/cmd/ch/mv"
 	"github.com/coyove/iis/cmd/ch/view"
@@ -104,9 +103,6 @@ func main() {
 			}
 			return ""
 		},
-		"makeID": func(h int, v string) string {
-			return ident.NewID(ident.IDTag(h)).SetTag(v).String()
-		},
 		"formatTime": func(a time.Time) template.HTML {
 			s := time.Since(a).Seconds()
 			if s < 60 {
@@ -139,6 +135,7 @@ func main() {
 	r.Handle("GET", "/t", view.Timeline)
 	r.Handle("GET", "/t/:user", view.Timeline)
 	r.Handle("GET", "/avatar/:id", view.Avatar)
+	r.Handle("GET", "/mod/user", view.ModUser)
 
 	r.Handle("POST", "/user", action.User)
 	r.Handle("POST", "/api/p/:parent", view.APIReplies)
@@ -148,6 +145,7 @@ func main() {
 	r.Handle("POST", "/api/search", action.APISearch)
 	r.Handle("POST", "/api/follow_block_search", action.APIFollowBlockSearch)
 	r.Handle("POST", "/api/ban", action.APIBan)
+	r.Handle("POST", "/api/promote_mod", action.APIPromoteMod)
 	r.Handle("POST", "/api/user_settings", action.APIUpdateUserSettings)
 	r.Handle("POST", "/api2/follow_block", action.APIFollowBlock)
 	r.Handle("POST", "/api2/like_article", action.APILike)

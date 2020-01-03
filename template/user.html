@@ -96,19 +96,6 @@
             <label for= foldimg>收起图片（减少流量）</label>
         </td>
     </tr>
-
-    <tr>
-        <td class=nowrap>Debug:</td>
-        <td>
-            Author: {{makeID 5 .User.ID}}<br>
-            Inbox: {{makeID 4 .User.ID}}<br>
-            Follower: {{makeID 10 .User.ID}}<br>
-            Follow: {{makeID 11 .User.ID}}<br>
-            Blacklist: {{makeID 12 .User.ID}}<br>
-            Likes: {{makeID 13 .User.ID}}<br>
-        </td>
-    </tr>
-
     {{if .User.IsMod}}
     <tr>
         <td class=nowrap>最大耗时:</td>
