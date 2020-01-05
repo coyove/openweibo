@@ -171,6 +171,7 @@ func (m *Manager) MentionUserAndTags(a *mv.Article, ids []string, tags []string)
 		if err := m.insertArticle(ident.NewID(ident.IDTagTag).SetTag(tag).String(), &mv.Article{
 			ID:         ident.NewGeneralID().String(),
 			ReferID:    a.ID,
+			Media:      a.Media,
 			CreateTime: time.Now(),
 		}, false); err != nil {
 			return err
@@ -331,10 +332,6 @@ type FollowingState struct {
 }
 
 func (m *Manager) GetFollowingList(chain ident.ID, cursor string, n int) ([]FollowingState, string) {
-	if !chain.Valid() {
-		return nil, ""
-	}
-
 	if cursor == "" {
 		a, err := m.GetArticle(chain.String())
 		if err != nil {

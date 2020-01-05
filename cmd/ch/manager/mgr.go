@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"sort"
@@ -32,6 +33,10 @@ func New(path string) *Manager {
 	return m
 }
 
+func (m *Manager) ModKV() KeyValueOp {
+	return m.db
+}
+
 func (m *Manager) GetArticle(id string) (*mv.Article, error) {
 	if id == "" {
 		return nil, fmt.Errorf("empty ID")
@@ -55,44 +60,25 @@ func (m *Manager) GetArticle(id string) (*mv.Article, error) {
 		return nil, err
 	}
 	a2.NextID = a.NextID
+	a2.NextMediaID = a.NextMediaID
 	return a2, nil
 }
 
-func (m *Manager) WalkMulti(n int, cursors ...ident.ID) (a []*mv.Article, next []ident.ID) {
+func (m *Manager) WalkMulti(media bool, n int, cursors ...ident.ID) (a []*mv.Article, next []ident.ID) {
 	if len(cursors) == 0 {
 		return
 	}
 
 	startTime := time.Now()
-	for i, root := range cursors {
-		if time.Since(startTime).Seconds() > 0.5 {
-			log.Println("[mgr.WalkMulti] Break out slow cursor walk", cursors)
-			break
-		}
-
-		if !root.IsRoot() {
-			continue
-		}
-
-		tl, err := m.GetArticle(root.String())
-		if err != nil {
-			if err != mv.ErrNotExisted {
-				log.Println("[mgr.Walk] Get root:", root, err)
-			}
-			cursors[i] = ident.ID{}
-		} else {
-			cursors[i] = ident.ParseID(tl.NextID)
-		}
-	}
-
 	idm := map[string]bool{}
+
 	for len(a) < n {
 		if time.Since(startTime).Seconds() > 1 {
 			log.Println("[mgr.WalkMulti] Break out slow walk at", cursors)
 			break
 		}
 
-	DEDUP:
+	DEDUP: // not some very good dedup code
 		dedup := make(map[ident.ID]bool, len(cursors))
 		for i, c := range cursors {
 			if dedup[c] {
@@ -104,7 +90,11 @@ func (m *Manager) WalkMulti(n int, cursors ...ident.ID) (a []*mv.Article, next [
 
 		sort.Slice(cursors, func(i, j int) bool {
 			if ii, jj := cursors[i].Time(), cursors[j].Time(); ii == jj {
-				return cursors[i].Tag() < cursors[j].Tag()
+				return bytes.Compare(cursors[i].TagBytes(), cursors[j].TagBytes()) < 0
+			} else if cursors[i].IsRoot() { // i is bigger than j
+				return false
+			} else if cursors[j].IsRoot() {
+				return true
 			} else {
 				return ii.Before(jj)
 			}
@@ -117,18 +107,14 @@ func (m *Manager) WalkMulti(n int, cursors ...ident.ID) (a []*mv.Article, next [
 
 		p, err := m.GetArticle(latest.String())
 		if err == nil {
-			if latest.IsRoot() {
-				*latest = ident.ParseID(p.NextID)
-				log.Println("[mgr.WalkMulti] Continue with breaked root walk", latest.String(), "next:", p.NextID)
-				continue
-			}
-
-			if !idm[p.ID] && p.Content != mv.DeletionMarker {
+			if !idm[p.ID] && p.Content != mv.DeletionMarker && !latest.IsRoot() {
+				// 1. 'p' is not duplicated
+				// 2. 'p' is not deleted
+				// 3. 'p' is not a root article
 				a = append(a, p)
 				idm[p.ID] = true
 			}
-
-			*latest = ident.ParseID(p.NextID)
+			*latest = ident.ParseID(p.PickNextID(media))
 		} else {
 			log.Println("[mgr.WalkMulti] Failed to get:", latest.String(), err)
 			// go m.purgeDeleted(hdr, tag, root.ID)
@@ -210,6 +196,7 @@ func (m *Manager) Post(a *mv.Article, author *mv.User) (string, error) {
 		go m.insertArticle(ident.NewID(ident.IDTagAuthor).SetTag("master").String(), &mv.Article{
 			ID:         ident.NewGeneralID().String(),
 			ReferID:    a.ID,
+			Media:      a.Media,
 			CreateTime: time.Now(),
 		}, false)
 	}
@@ -251,6 +238,9 @@ func (m *Manager) insertArticle(rootID string, a *mv.Article, asReply bool) erro
 		root.Replies++
 	} else {
 		a.NextID, root.NextID = root.NextID, a.ID
+		if a.Media != "" {
+			a.NextMediaID, root.NextMediaID = root.NextMediaID, a.ID
+		}
 		root.Replies++
 	}
 

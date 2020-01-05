@@ -53,3 +53,20 @@ func ModUser(g *gin.Context) {
 	p.Raw = fmt.Sprintf("%+v", p.User)
 	g.HTML(200, "mod_user.html", p)
 }
+
+func ModKV(g *gin.Context) {
+	p := struct {
+		You *mv.User
+		Key string
+	}{
+		You: getUser(g),
+		Key: g.Query("key"),
+	}
+
+	if p.You == nil || !p.You.IsAdmin() {
+		NotFound(g)
+		return
+	}
+
+	g.HTML(200, "mod_kv.html", p)
+}

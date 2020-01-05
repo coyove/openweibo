@@ -35,6 +35,11 @@ func EncodeQuery(a ...string) string {
 }
 
 func checkIP(g *gin.Context) string {
+	if u, _ := g.Get("user"); u != nil {
+		if u.(*mv.User).IsMod() {
+			return ""
+		}
+	}
 	if !g.GetBool("ip-ok") {
 		return fmt.Sprintf("guard/cooling-down/%.1fs", float64(config.Cfg.Cooldown)-g.GetFloat64("ip-ok-remain"))
 	}
@@ -132,10 +137,11 @@ func writeImage(u *mv.User, imageName, image string) (string, error) {
 	for i := len(image) - 1; i >= 0 && i >= len(image)-1024; i-- {
 		hash = hash*31 + uint64(image[i])
 	}
+	hash = hash&0xfffffffffffff000 | (uint64(len(image)/4*3/1024) & 0xfff)
 
 	path := fmt.Sprintf("tmp/images/%d/", hash%1024)
-
 	fn := fmt.Sprintf("%016x", hash)
+
 	if imageName != "" {
 		imageName = filepath.Base(imageName)
 		imageName = strings.TrimSuffix(imageName, filepath.Ext(imageName))

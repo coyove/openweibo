@@ -61,3 +61,27 @@ func APIResetCache(g *gin.Context) {
 	m.ResetCache()
 	g.String(200, "ok")
 }
+
+func APIModKV(g *gin.Context) {
+	u := m.GetUserByContext(g)
+	if u == nil || !u.IsAdmin() {
+		g.String(200, "internal/error")
+		return
+	}
+
+	if g.PostForm("method") == "set" {
+		err := m.ModKV().Set(g.PostForm("key"), []byte(g.PostForm("value")))
+		if err != nil {
+			g.String(200, err.Error())
+		} else {
+			g.String(200, "ok")
+		}
+	} else {
+		v, err := m.ModKV().Get(g.PostForm("key"))
+		if err != nil {
+			g.String(200, err.Error())
+		} else {
+			g.String(200, "ok:"+string(v))
+		}
+	}
+}

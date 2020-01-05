@@ -66,7 +66,14 @@
     <div style="padding:0 0.5em">{{template "reply_view.html" .ReplyView}}</div>
     {{end}}
 </div>
-        {{end}}
+{{end}}
+
+<nav>
+    <ul>
+        <li id="nav-own" class="{{if not .MediaOnly}}selected{{end}}"><a href="?media=">全部</a></li>
+        <li id="nav-master" class="{{if .MediaOnly}}selected{{end}}"><a href="?media=1">只看图片</a></li>
+    </ul>
+</nav>
 
 <div class="rows" id=timeline>
     {{range .Articles}}
@@ -79,7 +86,7 @@
     <button
         value="{{.Next}}"
         class="gbutton load-more"
-        onclick="loadMore('timeline',this,{likes:{{.IsUserLikeTimeline}},})">更多...</button>
+        onclick="loadMore('timeline',this,{likes:{{.IsUserLikeTimeline}},media:{{.MediaOnly}},})">更多...</button>
 
     <script>preLoadMore("timeline", $q("#timeline + .paging > .load-more"))</script>
 

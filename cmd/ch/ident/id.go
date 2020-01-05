@@ -87,7 +87,7 @@ func (id ID) Time() time.Time {
 }
 
 func (id ID) IsRoot() bool {
-	return id.ts == 0
+	return id.ts == 0 && id.Valid()
 }
 
 func (id ID) SetTag(tag string) ID {
@@ -99,6 +99,10 @@ func (id ID) SetTag(tag string) ID {
 
 func (id ID) Tag() string {
 	return mv.DecompressString(id.tag[:id.taglen])
+}
+
+func (id ID) TagBytes() []byte {
+	return id.tag[:id.taglen]
 }
 
 func (id ID) Header() IDTag {

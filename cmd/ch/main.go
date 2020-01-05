@@ -136,6 +136,7 @@ func main() {
 	r.Handle("GET", "/t/:user", view.Timeline)
 	r.Handle("GET", "/avatar/:id", view.Avatar)
 	r.Handle("GET", "/mod/user", view.ModUser)
+	r.Handle("GET", "/mod/kv", view.ModKV)
 
 	r.Handle("POST", "/user", action.User)
 	r.Handle("POST", "/api/p/:parent", view.APIReplies)
@@ -146,6 +147,7 @@ func main() {
 	r.Handle("POST", "/api/follow_block_search", action.APIFollowBlockSearch)
 	r.Handle("POST", "/api/ban", action.APIBan)
 	r.Handle("POST", "/api/promote_mod", action.APIPromoteMod)
+	r.Handle("POST", "/api/mod_kv", action.APIModKV)
 	r.Handle("POST", "/api/user_settings", action.APIUpdateUserSettings)
 	r.Handle("POST", "/api2/follow_block", action.APIFollowBlock)
 	r.Handle("POST", "/api2/like_article", action.APILike)

@@ -1,0 +1,90 @@
+{{template "header.html" .}}
+
+<title>KV</title>
+
+<div style="margin: 0.5em 0">
+    <table class=articles id=results>
+        <tr>
+            <td class=nowrap><b>搜索Key</b></td>
+            <td><input value="{{.Key}}" name=key class=t></td>
+            <td class=nowrap><button type=submit class=gbutton onclick="doSearch(this)">搜索</button></td>
+        </tr>
+    </table>
+</div>
+
+<script>
+
+    $q("#results [name=key]").addEventListener("keyup", function(event) {
+        if (event.keyCode === 13) {
+            event.preventDefault();
+            $q("#results button[type=submit]").click()
+        }
+    });
+
+{{if .Key}}
+$q("#results button[type=submit]").click()
+{{end}}
+
+
+function doSearch(el) {
+    var key = $q('[name=key]').value
+    if (!key) return;
+
+    var stop = $wait(el);
+    $post("/api/mod_kv", { key: key }, function(r) {
+        stop();
+        if (!r.match(/^ok:/)) return r;
+        var tr = $q("<tr>"), td1 = $q("<td>"), td2 = $q("<td>"), td3 = $q("<td>")
+        var tr2 = $q("<tr>"), td4 = $q("<td>")
+        var btn = $q("<button>"), code = $q("<textarea>");
+
+        td1.innerHTML = "<b style='word-break:break-all;max-height:60px;overflow:hidden;display:block'>" + key + "</b>";
+        code.ORIGINAL = r.substring(3);
+        code.value = code.ORIGINAL;
+        code.className = 't';
+        code.style.fontFamily = 'monospace';
+        code.setAttribute("rows", "5");
+        code.onkeyup = function() {
+            code.style.backgroundColor = (code.value != code.ORIGINAL) ? '#fcc' : 'white';
+        }
+        td2.appendChild(code);
+        btn.className = 'gbutton';
+        btn.innerText = "更新";
+        btn.onclick = function() {
+            var stop = $wait(btn);
+            $post('/api/mod_kv', { method: 'set', key: key, value: code.value }, function(r) {
+                if (r == 'ok') {
+                    code.ORIGINAL = code.value;
+                    code.onkeyup();
+                }
+                return r;
+            }, stop)
+        }
+        td3.appendChild(btn);
+
+        tr.appendChild(td1);
+        tr.appendChild(td2);
+        tr.appendChild(td3);
+
+        td4.setAttribute("colspan", 3);
+        (r.match(/"([^"]*)"/g) || []).filter(function(r) { return r.length > 6 && r != '"'+key+'"' }).forEach(function(r) {
+            var a = $q("<a>");
+            a.style.display = 'inline-block';
+            a.style.marginRight = '1em';
+            a.innerText = r.substring(1, r.length - 1);
+            a.onclick = function() {
+                $q("#results [name=key]").value = a.innerText;
+                $q("#results button[type=submit]").click()
+            }
+        td4.appendChild(a);
+    });
+
+        tr2.appendChild(td4);
+
+        $q("#results tbody").insertBefore(tr, $q("#results tr:last-child"))
+        $q("#results tbody").insertBefore(tr2, $q("#results tr:last-child"))
+
+        window.scroll(0, 100000);
+    }, stop)
+}
+</script>

@@ -42,8 +42,9 @@ type Article struct {
 	Parent      string            `json:"P,omitempty"`
 	ReplyChain  string            `json:"Rc,omitempty"`
 	NextReplyID string            `json:"R,omitempty"`
-	EOC         string            `json:"EO,omitempty"`
+	NextMediaID string            `json:"MN,omitempty"`
 	NextID      string            `json:"N,omitempty"`
+	EOC         string            `json:"EO,omitempty"`
 	Cmd         Cmd               `json:"K,omitempty"`
 	Extras      map[string]string `json:"X,omitempty"`
 	ReferID     string            `json:"ref,omitempty"`
@@ -55,6 +56,13 @@ func (a *Article) ContentHTML() template.HTML {
 		return "<span class=deleted></span>"
 	}
 	return template.HTML(sanText(a.Content))
+}
+
+func (a *Article) PickNextID(media bool) string {
+	if media {
+		return a.NextMediaID
+	}
+	return a.NextID
 }
 
 func (a *Article) Marshal() []byte {

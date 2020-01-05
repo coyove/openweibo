@@ -30,6 +30,7 @@ type ArticlesTimelineView struct {
 	IsTagTimelineFollowed  bool
 	IsTagTimeline          bool
 	ShowNewPost            bool
+	MediaOnly              bool
 	User                   *mv.User
 	You                    *mv.User
 	ReplyView              ReplyView
@@ -53,6 +54,7 @@ func Index(g *gin.Context) {
 		You:           getUser(g),
 		User:          &mv.User{},
 		IsTagTimeline: true,
+		MediaOnly:     g.Query("media") != "",
 	}
 
 	if pl.You != nil {
@@ -65,7 +67,7 @@ func Index(g *gin.Context) {
 		pl.PostsUnderTag = int32(a.Replies)
 	}
 
-	a2, next := m.WalkMulti(int(config.Cfg.PostsPerPage), ident.NewID(ident.IDTagTag).SetTag(pl.Tag))
+	a2, next := m.WalkMulti(pl.MediaOnly, int(config.Cfg.PostsPerPage), ident.NewID(ident.IDTagTag).SetTag(pl.Tag))
 	fromMultiple(&pl.Articles, a2, _Blank, getUser(g))
 
 	pl.Next = ident.CombineIDs(nil, next...)
@@ -73,9 +75,11 @@ func Index(g *gin.Context) {
 }
 
 func Timeline(g *gin.Context) {
-	var pl ArticlesTimelineView
-	pl.ReplyView = makeReplyView(g, "")
-	pl.You = getUser(g)
+	pl := ArticlesTimelineView{
+		ReplyView: makeReplyView(g, ""),
+		You:       getUser(g),
+		MediaOnly: g.Query("media") != "",
+	}
 
 	switch uid := g.Param("user"); {
 	case strings.HasPrefix(uid, "#"):
@@ -144,7 +148,7 @@ func Timeline(g *gin.Context) {
 		cursors = append(cursors, ident.NewID(ident.IDTagAuthor).SetTag(pl.User.ID))
 	}
 
-	a, next := m.WalkMulti(int(config.Cfg.PostsPerPage), cursors...)
+	a, next := m.WalkMulti(pl.MediaOnly, int(config.Cfg.PostsPerPage), cursors...)
 	fromMultiple(&pl.Articles, a, _Blank, pl.You)
 
 	if pl.IsInbox {
@@ -180,6 +184,7 @@ func APITimeline(g *gin.Context) {
 		var pendingFCursor string
 		if len(payload) > 0 {
 			list, next := m.GetFollowingList(ident.ID{}, string(payload), 1e6)
+			// log.Println(list, next, string(payload))
 			for _, id := range list {
 				if !id.Followed {
 					continue
@@ -193,7 +198,7 @@ func APITimeline(g *gin.Context) {
 			pendingFCursor = next
 		}
 
-		a, next := m.WalkMulti(int(config.Cfg.PostsPerPage), cursors...)
+		a, next := m.WalkMulti(g.PostForm("media") == "true", int(config.Cfg.PostsPerPage), cursors...)
 		fromMultiple(&articles, a, _Blank, getUser(g))
 		p.Next = ident.CombineIDs([]byte(pendingFCursor), next...)
 	}

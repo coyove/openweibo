@@ -237,7 +237,7 @@ function loadMore(tlid, el, data) {
             })
         }
         expandNSFW();
-        location.href = location.pathname + "#Z"
+        location.href = location.pathname + location.search + "#Z"
     }, stop);
     //   console.log(document.documentElement.scrollTop);
 }
@@ -310,7 +310,7 @@ function showReply(aid) {
         divclose.parentNode.removeChild(divclose)
 
         if ($q('[data-parent]', true).length === 0) {
-            location.href = location.pathname + "#Z"
+            location.href = location.pathname + location.search + "#Z"
             document.body.style.overflow = null;
         }
     }
