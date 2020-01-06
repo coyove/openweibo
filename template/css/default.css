@@ -84,9 +84,9 @@ hr {
     line-height: 1.5em;
 }
 
-.articles tr.sep {
-    border-bottom: solid 1px #ddd;
-}
+.articles tr.sep { border-bottom: solid 1px #ddd; }
+
+.articles tr.sep:last-child { border-bottom: none }
 
 .articles th.nowrap, .articles td.nowrap {
     white-space: nowrap;
@@ -259,6 +259,27 @@ div.subreply .row-header {
 
 div.subreply .row {
     margin: 0;
+}
+
+div.rows.replies .row {
+    border-radius: 0;
+    margin: 0 0.5em;
+}
+
+div.rows.replies .row:first-child {
+    border-radius: 5px 5px 0 0;
+    margin-top: 0.5em;
+}
+
+div.rows.replies .row:last-child {
+    border-radius: 0 0 5px 5px;
+    margin-bottom: 0.5em;
+}
+
+div.rows.replies .reply-table {
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: solid 1px #e1e2e3;
 }
 
 div.row {

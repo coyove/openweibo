@@ -237,7 +237,8 @@ function loadMore(tlid, el, data) {
             })
         }
         expandNSFW();
-        location.href = location.pathname + location.search + "#Z"
+        if (!data.reply)
+            location.href = location.pathname + location.search + "#Z"
     }, stop);
     //   console.log(document.documentElement.scrollTop);
 }
@@ -282,7 +283,7 @@ function showReply(aid) {
     div.style.top = '0';
     div.style.width = '100%';
     div.style.height = '100%';
-    div.style.backgroundColor = 'rgba(255,255,255,0.95)';
+    div.style.backgroundColor = 'white';
     div.style.overflowY = 'scroll';
     div.style.overflowX = 'hidden';
     div.style.backgroundImage = 'url(/s/css/spinner.gif)';
