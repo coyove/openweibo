@@ -129,6 +129,8 @@ nav ul li a { border-bottom: solid 2px #ddd; }
 
 nav ul li.selected a { border-color: #088; font-weight: bold;}
 
+nav ul li.selected.secondary a { border-color: #e16 }
+
 nav ul li.selected { display: inline-block !important; }
 
 nav a {

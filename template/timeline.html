@@ -71,8 +71,8 @@
 {{if not .IsInbox}}
 <nav>
     <ul>
-        <li id="nav-own" class="{{if not .MediaOnly}}selected{{end}}"><a href="?media=">全部</a></li>
-        <li id="nav-master" class="{{if .MediaOnly}}selected{{end}}"><a href="?media=1">只看图片</a></li>
+        <li id="nav-own" class="secondary {{if not .MediaOnly}}selected{{end}}"><a href="?media=">全部</a></li>
+        <li id="nav-master" class="secondary {{if .MediaOnly}}selected{{end}}"><a href="?media=1">只看图片</a></li>
     </ul>
 </nav>
 {{end}}

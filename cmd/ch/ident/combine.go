@@ -36,7 +36,7 @@ func CombineIDs(payload []byte, ids ...ID) string {
 		w.Write(payload)
 	}
 
-	if xlen == 0 {
+	if xlen == 0 && len(payload) == 0 {
 		return ""
 	}
 

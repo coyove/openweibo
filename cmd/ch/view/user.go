@@ -92,8 +92,12 @@ func Avatar(g *gin.Context) {
 }
 
 func UserLikes(g *gin.Context) {
-	p := ArticlesTimelineView{IsUserLikeTimeline: true}
-	p.You = getUser(g)
+	p := ArticlesTimelineView{
+		IsUserLikeTimeline: true,
+		MediaOnly:          g.Query("media") != "",
+		You:                getUser(g),
+	}
+
 	if p.You == nil {
 		g.Redirect(302, "/user")
 		return
@@ -105,11 +109,11 @@ func UserLikes(g *gin.Context) {
 	}
 
 	var cursor string
-	if p, _ := m.GetArticle(ident.NewID(ident.IDTagLikeChain).SetTag(p.User.ID).String()); p != nil {
-		cursor = p.NextID
+	if pa, _ := m.GetArticle(ident.NewID(ident.IDTagLikeChain).SetTag(p.User.ID).String()); pa != nil {
+		cursor = pa.PickNextID(p.MediaOnly)
 	}
 
-	a, next := m.WalkLikes(int(config.Cfg.PostsPerPage), cursor)
+	a, next := m.WalkLikes(p.MediaOnly, int(config.Cfg.PostsPerPage), cursor)
 	fromMultiple(&p.Articles, a, 0, getUser(g))
 	p.Next = next
 

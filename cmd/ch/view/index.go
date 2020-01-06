@@ -171,7 +171,7 @@ func APITimeline(g *gin.Context) {
 
 	var articles []ArticleView
 	if g.PostForm("likes") == "true" {
-		a, next := m.WalkLikes(int(config.Cfg.PostsPerPage), g.PostForm("cursors"))
+		a, next := m.WalkLikes(g.PostForm("media") == "true", int(config.Cfg.PostsPerPage), g.PostForm("cursors"))
 		fromMultiple(&articles, a, _Blank, getUser(g))
 		p.Next = next
 	} else if g.PostForm("reply") == "true" {

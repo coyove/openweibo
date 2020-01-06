@@ -135,22 +135,21 @@ func (m *Manager) WalkReply(n int, cursor string) (a []*mv.Article, next string)
 		}
 
 		p, err := m.GetArticle(cursor)
-		if err == nil {
-			if p.Content != mv.DeletionMarker {
-				a = append(a, p)
-			}
-		} else {
+		if err != nil {
 			log.Println("[mgr.WalkReply] Failed to get:", cursor, err)
-			// go m.purgeDeleted(hdr, tag, root.ID)
+			break
 		}
 
+		if p.Content != mv.DeletionMarker {
+			a = append(a, p)
+		}
 		cursor = p.NextReplyID
 	}
 
 	return a, cursor
 }
 
-func (m *Manager) WalkLikes(n int, cursor string) (a []*mv.Article, next string) {
+func (m *Manager) WalkLikes(media bool, n int, cursor string) (a []*mv.Article, next string) {
 	startTime := time.Now()
 
 	for len(a) < n && cursor != "" {
@@ -160,22 +159,22 @@ func (m *Manager) WalkLikes(n int, cursor string) (a []*mv.Article, next string)
 		}
 
 		p, err := m.GetArticle(cursor)
-		if err == nil {
-			if p.Extras["like"] == "true" {
-				a2, err := m.GetArticle(p.Extras["to"])
-				if err == nil {
-					a2.NextID = p.NextID
-					a = append(a, a2)
-				} else {
-					log.Println("[mgr.WalkLikes] Failed to get:", p.Extras["to"], err)
-				}
-			}
-		} else {
+		if err != nil {
 			log.Println("[mgr.WalkLikes] Failed to get:", cursor, err)
-			// go m.purgeDeleted(hdr, tag, root.ID)
+			break
 		}
 
-		cursor = p.NextID
+		if p.Extras["like"] == "true" {
+			a2, err := m.GetArticle(p.Extras["to"])
+			if err == nil {
+				a2.NextID = p.NextID
+				a = append(a, a2)
+			} else {
+				log.Println("[mgr.WalkLikes] Failed to get:", p.Extras["to"], err)
+			}
+		}
+
+		cursor = p.PickNextID(media)
 	}
 
 	return a, cursor

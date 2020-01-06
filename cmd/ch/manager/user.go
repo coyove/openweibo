@@ -319,6 +319,14 @@ func (m *Manager) insertChainOrUpdate(aid, chainid string, to string, cmd mv.Cmd
 		},
 		CreateTime: time.Now(),
 	}
+
+	if cmd == mv.CmdLike {
+		toa, _ := m.GetArticle(to)
+		if toa != nil {
+			a.Media = toa.Media
+		}
+	}
+
 	return true, m.insertArticle(chainid, a, false)
 }
 
