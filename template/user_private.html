@@ -1,28 +1,26 @@
 <div class="status">
-    <div class=title>
-        <b>@{{.ID}}</b>
-        {{if .IsMod}}<b><span class=mod>Mod</span></b>{{end}}
-        {{if .Banned}}/ 封禁{{end}}
-        
+    <div class=title style="text-align:left">
+        <div class="row-header" style="display:flex">
+            <div style="flex:0 1px">
+                <a href="/user">
+                    <img class="avatar" {{if .Avatar}}src="{{.Avatar}}"{{else}}src="/avatar/{{.ID}}.jpg" style="opacity:0.6"{{end}}>
+                </a>
+                <div style="width:20px;height:20px;position:absolute;left:32px;top:6px;">{{template "kimochi.html" .}}</div>
+            </div>
+            <div style="flex:1 100%;text-align:center">
+                <b><a href="/user">@{{.ID}}</a></b>
+                {{if .IsMod}}<b><span class=mod>Mod</span></b>{{end}}
+                {{if .Banned}}/ 封禁{{end}}
+            </div>
+        </div>
     </div>
-    <div class=title style="border:none;margin-bottom:0">
-        <span title="我的收藏">
-            <a href="/likes/{{.ID}}"><i class="icon-heart-filled"></i></a>
-        </span>
-        <span title="我的设置">
-            <a href="/user"><i class="icon-cog"></i></a>
-        </span>
-        <span title="登出账号">
-            <a href="javascript:$post('/api2/logout',{},function(){location.href='/'})">
-                <i class="icon-logout" style="color:#f52"></i>
-            </a>
-        </span>
-    </div>
-    <div class=title>
+    <div class=title style="border-bottom: dotted 1px #ccc">
         <span title="我的黑名单">
             <a href="/user/blacklist"><i class="icon-block"></i></a>
         </span>
-        <span><b>{{template "kimochi.html" .}}</b></span>
+        <span title="我的收藏">
+            <a href="/likes/{{.ID}}"><i class="icon-heart-filled"></i></a>
+        </span>
         <span title="我的提醒">
             {{if .Unread}}
         <a href="/t/:in"><b style="color:#f52" class="icon-mail-alt">{{.Unread}}</b></a>

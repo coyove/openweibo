@@ -303,14 +303,14 @@ function showReply(aid) {
     divreload.style.position = 'fixed';
     divreload.style.right = '1em';
     divreload.style.top = '3.5em';
-    divreload.innerHTML = "<i class='icon-cw-circled'></i>"
+    divreload.innerHTML = "<i class='control icon-cw-circled'></i>"
     divreload.onclick = function() { showReply(aid) }
 
     var divclose = $q("<div>");
     divclose.style.position = 'fixed';
     divclose.style.right = '1em';
     divclose.style.top = '1em';
-    divclose.innerHTML = "<i class='icon-cancel-circled-1'></i>"
+    divclose.innerHTML = "<i class='control icon-cancel-circled-1'></i>"
     divclose.onclick = function() {
         div.parentNode.removeChild(div)
         divclose.parentNode.removeChild(divclose)

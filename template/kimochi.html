@@ -3,10 +3,7 @@
 kimochi {
 	position: relative;
 	display: inline-block;
-    width: 48px;
     cursor: pointer;
-    vertical-align: middle;
-    margin: 0.5em;
 }
 
 kimochi li:hover, kimochi li:hover a {
@@ -27,8 +24,7 @@ kimochi > ul {
 
 kimochi:hover > ul {
     width: 200px;
-    margin-left: -100px;
-    left: 50%;
+    left: -24px;
 	display: flex;
     flex-wrap: wrap;
     z-index: 100;
@@ -42,6 +38,7 @@ kimochi ul li {
     padding: 0.33em 0.66em;
     overflow: hidden;
     flex: 0 33%;
+    text-align: center;
 }
 
 kimochi a {
@@ -54,6 +51,9 @@ kimochi a {
 kimochi img {
     width: 24px; height: 24px;
     display: block;
+}
+
+kimochi a img {
     margin: 0.33em auto;
 }
 
@@ -86,6 +86,7 @@ kimochi:hover > div.tri {
 <kimochi onmouseover="loadKimochi(this)">
 <div class="tri"></div>
 <div class="tri shadow"></div>
-<img src="/s/emoji/emoji{{.Kimochi}}.png" style="{{if not .Kimochi}}border:dashed 1px #233;border-radius:50%{{end}}">
+<img src="/s/emoji/emoji{{.Kimochi}}.png" style="-webkit-filter: drop-shadow(0 0 3px rgba(0,0,0,0.2));
+{{if not .Kimochi}}border:dashed 1px #233;border-radius:50%{{end}}">
 <ul></ul>
 </kimochi>

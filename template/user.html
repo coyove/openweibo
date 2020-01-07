@@ -27,7 +27,8 @@
     </script>
     <tr>
         <td>上次登入:</td>
-        <td colspan=2>{{.User.Login.Format "2006-01-02 15:04:05"}}</td>
+        <td>{{.User.Login.Format "2006-01-02 15:04:05"}}</td>
+        <td><a class=gbutton href="javascript:$post('/api2/logout',{},function(){location.href='/'})">登出</a></td>
     </tr>
     <tr>
         <td>注册于:</td>

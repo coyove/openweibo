@@ -10,8 +10,7 @@
             src="/avatar/{{.Author.ID}}.jpg" style="opacity:0.6"
             {{end}}>
         {{if .Author.Kimochi}}
-        <img src="/s/emoji/emoji{{.Author.Kimochi}}.png"
-            style="width:20px;height:20;position:absolute;left:32px;top:6px;-webkit-filter: drop-shadow(0 0 3px rgba(0,0,0,0.2));">
+        <img class="avatar-kimochi" src="/s/emoji/emoji{{.Author.Kimochi}}.png">
         {{end}}
     {{end}}
 
