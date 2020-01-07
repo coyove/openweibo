@@ -77,6 +77,8 @@
 </nav>
 {{end}}
 
+{{if .ReplyView.PID}}<script>showReply('{{.ReplyView.PID}}');</script>{{end}}
+
 <div class="rows" id=timeline>
     {{range .Articles}}
         {{template "row_content.html" .}}
@@ -90,7 +92,9 @@
         class="gbutton load-more"
         onclick="loadMore('timeline',this,{likes:{{.IsUserLikeTimeline}},media:{{.MediaOnly}},})">更多...</button>
 
-    <script>preLoadMore("timeline", $q("#timeline + .paging > .load-more"))</script>
+    <script>
+        preLoadMore("timeline", $q("#timeline + .paging > .load-more"))
+    </script>
 
     {{else}}
         <a class=gbutton style="color:#aaa"

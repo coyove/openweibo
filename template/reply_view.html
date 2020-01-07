@@ -1,6 +1,6 @@
 <div id="rv-{{.UUID}}" style="background:white">
-    <table class="articles reply-table" style="width: 100%;margin:1em 0;box-shadow: 0 1px 3px rgba(0, 0, 0,.3);position:relative;text-align:left">
-        <tr class=sep>
+    <table class="articles reply-table" style="margin:1em 0;box-shadow: 0 0 3px #d3d4d5;position:relative;text-align:left">
+        <tr>
             <td colspan=2 style="padding:0">
                 <textarea
                     name=content
@@ -10,6 +10,9 @@
                     onkeyup="onContentObserved(this)"
                     style="padding:0.5em;border:none"></textarea>
             </td>
+        </tr>
+        <tr class=sep>
+            <td colspan=2 style="padding:0">{{template "emoji.html" .UUID}}</td>
         </tr>
         <tr class=sep>
             <td>
@@ -58,8 +61,6 @@
                 </button>
             </td>
         </tr>
-        <tr>
-            <td colspan=2 style="padding:0">{{template "emoji.html" .UUID}}</td>
-        </tr>
+        
     </table>
 </div>

@@ -59,7 +59,7 @@ function $post(url, data, cb, errorcb) {
             div.innerHTML = '<i class=icon-ok-circled></i>成功';
         } else {
             div.style.background = "#f52";
-            div.innerHTML = '<i class=icon-cancel-circled></i>' + (cbres || ("错误状态: " + xml.status));
+            div.innerHTML = '<i class=icon-cancel-circled-1></i>' + (cbres || ("错误状态: " + xml.status));
         }
         document.body.appendChild(div);
         setTimeout(function() {
@@ -238,7 +238,7 @@ function loadMore(tlid, el, data) {
         }
         expandNSFW();
         if (!data.reply)
-            location.href = location.pathname + location.search + "#Z"
+            history.pushState("", "", location.pathname + location.search)
     }, stop);
     //   console.log(document.documentElement.scrollTop);
 }
@@ -299,19 +299,25 @@ function showReply(aid) {
     });
     div.setAttribute('data-parent', aid);
 
+    var divreload = $q("<div>");
+    divreload.style.position = 'fixed';
+    divreload.style.right = '1em';
+    divreload.style.top = '3.5em';
+    divreload.innerHTML = "<i class='icon-cw-circled'></i>"
+    divreload.onclick = function() { showReply(aid) }
+
     var divclose = $q("<div>");
     divclose.style.position = 'fixed';
     divclose.style.right = '1em';
     divclose.style.top = '1em';
-    divclose.innerHTML = "<i class='icon-cancel-circled' style='font-size:24px;color:#aaa;cursor:pointer'></i>"
-    divclose.onmouseover = function() { divclose.querySelector('i').style.color = '#677' }
-    divclose.onmouseout = function() { divclose.querySelector('i').style.color = '#aaa' }
+    divclose.innerHTML = "<i class='icon-cancel-circled-1'></i>"
     divclose.onclick = function() {
         div.parentNode.removeChild(div)
         divclose.parentNode.removeChild(divclose)
+        divreload.parentNode.removeChild(divreload)
 
         if ($q('[data-parent]', true).length === 0) {
-            location.href = location.pathname + location.search + "#Z"
+            history.pushState("", "", location.pathname + (window.IS_MEDIA ? '?media=1' : ''));
             document.body.style.overflow = null;
         }
     }
@@ -319,8 +325,11 @@ function showReply(aid) {
 
     document.body.appendChild(div);
     document.body.appendChild(divclose);
+    document.body.appendChild(divreload);
     document.body.style.overflow = 'hidden';
-    location.href += "#" + div.id + "#Z"
+
+    window.IS_MEDIA = window.IS_MEDIA || location.search.indexOf('media') >= 0;
+    history.pushState("", "", location.pathname + "?pid=" + encodeURIComponent(aid) + location.hash + "#" + div.id)
 }
 
 window.onpopstate = function(event) {

@@ -55,10 +55,10 @@ func Index(g *gin.Context) {
 		User:          &mv.User{},
 		IsTagTimeline: true,
 		MediaOnly:     g.Query("media") != "",
+		ReplyView:     makeReplyView(g, ""),
 	}
 
 	if pl.You != nil {
-		pl.ReplyView = makeReplyView(g, "")
 		pl.IsTagTimelineFollowed = m.IsFollowing(pl.You.ID, "#"+pl.Tag)
 	}
 

@@ -6,12 +6,12 @@
     cursor: pointer;
     display: block;
     width: 100%;
+    border-top: solid 1px #ddd;
 }
 
-.emoji li:hover, .emoji li:hover a {
-    text-decoration: none !important;
+.emoji li:hover {
     border-radius: 3px;
-	background-color: #f1f2f3;
+	background-color: rgba(0,0,0,0.07);
 }
 
 .emoji > ul {
@@ -26,25 +26,24 @@
 }
 
 .emoji ul li {
-    min-width: 64px;
 	float: none;
 	display: list-item;
     list-style: none;
 	position: relative;
-    background: white;
-    padding: 0.33em 0.66em;
+    padding: 0.33em 0.75em;
     overflow: hidden;
 }
 
 .emoji a {
     display: block;
+    text-decoration: none !important;
     cursor: pointer;
     line-height: 1.5em;
     width: 100%;
 }
 </style>
 
-<div id="emoji" class="emoji" style="display:none">
+<div class="emoji" style="display:none">
 <ul>
     <li><a  href="javascript:insertMention('{{.}}','|∀ﾟ')">|∀ﾟ</a></li>
     <li><a  href="javascript:insertMention('{{.}}','(´ﾟДﾟ`)')">(´ﾟДﾟ`)</a></li>
@@ -120,7 +119,7 @@
     <li><a  href="javascript:insertMention('{{.}}','(oﾟωﾟo)')">(oﾟωﾟo)</a></li>
     <li><a  href="javascript:insertMention('{{.}}','(　^ω^)')">(　^ω^)</a></li>
     <li><a  href="javascript:insertMention('{{.}}','(｡◕∀◕｡)')">(｡◕∀◕｡)</a></li>
-    <li><a  href="javascript:insertMention('{{.}}','/( ◕‿‿◕ )\')">/( ◕‿‿◕ )\</a></li>
+    <li><a  href="javascript:insertMention('{{.}}','/( ◕‿‿◕ )\\')">/( ◕‿‿◕ )\</a></li>
     <li><a  href="javascript:insertMention('{{.}}','ヾ(´ε`ヾ)')">ヾ(´ε`ヾ)</a></li>
     <li><a  href="javascript:insertMention('{{.}}','(ノﾟ∀ﾟ)ノ')">(ノﾟ∀ﾟ)ノ</a></li>
     <li><a  href="javascript:insertMention('{{.}}','(σﾟдﾟ)σ')">(σﾟдﾟ)σ</a></li>
@@ -137,6 +136,6 @@
 
 <div style="position: absolute; right: 0; top: 0; margin: 0.5em 1em; text-align: center;"
      onclick="this.parentNode.style.display='none';$q('#rv-{{.}} [name=content]').focus();">
-    <i class="icon-cancel-circled"></i>
+    <i class="icon-cancel-circled-1" style="font-size:16px"></i>
 </div>
 </div>

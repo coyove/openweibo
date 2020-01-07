@@ -30,17 +30,15 @@ func getUser(g *gin.Context) *mv.User {
 
 type ReplyView struct {
 	UUID    string
-	Content string
-	Error   string
+	PID     string
 	ReplyTo string
 }
 
 func makeReplyView(g *gin.Context, reply string) ReplyView {
 	r := ReplyView{}
 	r.UUID = strconv.FormatInt(time.Now().Unix(), 16)
-	r.Content = g.Query("content")
-	r.Error = g.Query("error")
 	r.ReplyTo = reply
+	r.PID = g.Query("pid")
 	return r
 }
 
