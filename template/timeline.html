@@ -1,78 +1,68 @@
 {{template "header.html" .}}
 
 {{if .IsUserTimeline}}
+
 <div class="status-box">
     <title>@{{.User.ID}} 的时间线</title>
-
     <div>
-    <script>$q('#nav-other a').innerText = "@{{.User.ID}}"; $q('#nav-other').className = "selected"</script>
+        <script>$q('#nav-other a').innerText = "@{{.User.ID}}"; $q('#nav-other').className = "selected"</script>
         {{template "user_public.html" .User}}
     </div>
-
-    {{if .You}}
-    <div>
-    {{if ne .You.ID .User.ID}}
-        {{if .IsUserTimelineFollowed}}
-        <button class="gbutton" value onclick="followBlock(this,'follow','{{.User.ID}}')">取消关注</button>
-        {{else}}
-        <button class="gbutton" value=1 onclick="followBlock(this,'follow','{{.User.ID}}')">关注</button>
-        {{end}}
-
-        {{if .IsUserTimelineBlocked}}
-        <button class="gbutton" value onclick="followBlock(this,'block','{{.User.ID}}')">解除黑名单</button>
-        {{else}}
-        <button class="gbutton" value=1 onclick="followBlock(this,'block','{{.User.ID}}')">拉入黑名单</button>
-        {{end}}
-    {{end}} 
-
-    </div>
-
-    {{end}}
 </div>
+
 {{else if .IsInbox}}
-    <title>我的提醒</title>
-    <script>$q('#nav-inbox').className = "selected"</script>
+
+<title>我的提醒</title>
+<script>$q('#nav-inbox').className = "selected"</script>
 <div class="status-box">
-        {{template "user_private.html" .You}}
+    {{template "user_private.html" .You}}
 </div>
+
 {{else if eq .User.ID "master"}}
-    <title>全局时间线</title>
-    <script>$q('#nav-master').className = "selected"</script>
+
+<title>全局时间线</title>
+<script>$q('#nav-master').className = "selected"</script>
+
 {{else if .IsUserLikeTimeline}}
+
 <div class="status-box">
     {{if eq .You.ID .User.ID}}
-        {{template "user_private.html" .You}}
+    {{template "user_private.html" .You}}
     {{else}}
-        {{template "user_public.html" .User}}
+    {{template "user_public.html" .User}}
     {{end}}
 </div>
-    <title>@{{.User.ID}}的收藏</title>
-    <script>$q('#nav-likes a span').innerText = "@{{.User.ID}}";$q('#nav-likes').className = "selected"</script>
-{{else if .IsTagTimeline}}
-    <title>#{{.Tag}}</title>
-    <script>$q('#nav-other a').innerText = "#{{.Tag}} ({{.PostsUnderTag}})"; $q('#nav-other').className = "selected"</script>
+<title>@{{.User.ID}}的收藏</title>
+<script>$q('#nav-likes a span').innerText = "@{{.User.ID}}";$q('#nav-likes').className = "selected"</script>
 
-<div class="status-box">
-    <div>
-        {{if .IsTagTimelineFollowed}}
-        <button class="gbutton" value onclick="followBlock(this,'follow','#{{.Tag}}')">取消关注</button>
-        {{else}}
-        <button class="gbutton" value=1 onclick="followBlock(this,'follow','#{{.Tag}}')">关注</button>
-        {{end}}
-    </div>
-</div>
+{{else if .IsTagTimeline}}
+
+<title>#{{.Tag}}</title>
+<script>
+    (function() {
+        $q('#nav-tag a span').innerText = "#{{.Tag}} ({{.PostsUnderTag}})"
+        $q('#nav-tag').className = "selected"
+
+        var el = $q('#nav-tag a b');
+        el.innerHTML = "<i class='{{if .IsTagTimelineFollowed}}icon-heart-broken{{else}}icon-user-plus{{end}}'></i>"
+        el.onclick = function() { followBlock(this,'follow','#{{.Tag}}') }
+        el.setAttribute("value", {{.IsTagTimelineFollowed}})
+    })()
+</script>
 
 {{else}}
+
 <div class="status-box">
-        <title>我的时间线</title>
+    <title>我的时间线</title>
     <div>
         <script>$q('#nav-own').className = "selected"</script>
         {{template "user_private.html" .User}}
     </div>
     {{if .ShowNewPost}}
-    <div style="padding:0 0.5em">{{template "reply_view.html" .ReplyView}}</div>
+    <div style="margin-top:1em">{{template "reply_view.html" .ReplyView}}</div>
     {{end}}
 </div>
+
 {{end}}
 
 {{if not .IsInbox}}
@@ -88,7 +78,7 @@
 
 <div class="rows" id=timeline>
     {{range .Articles}}
-        {{template "row_content.html" .}}
+    {{template "row_content.html" .}}
     {{end}}
 </div>
 
@@ -104,15 +94,15 @@
     </script>
 
     {{else}}
-        <a class=gbutton style="color:#aaa"
-        {{if .IsUserTimeline}}
-            href="/t/{{.User.ID}}">没有更多{{.User.ID}}的状态了</a>
-        {{else if .IsInbox}}
-            href="/t/:in">没有更多提醒了</a>
-        {{else if eq .User.ID "master"}}
-            href="/t/master">没有更多状态了</a>
+    <a class=gbutton style="color:#aaa"
+                     {{if .IsUserTimeline}}
+                     href="/t/{{.User.ID}}">没有更多{{.User.ID}}的状态了</a>
+    {{else if .IsInbox}}
+    href="/t/:in">没有更多提醒了</a>
+{{else if eq .User.ID "master"}}
+href="/t/master">没有更多状态了</a>
         {{else}}
-            href="/t">没有更多状态了</a>
-        {{end}}
+        href="/t">没有更多状态了</a>
+    {{end}}
     {{end}}
 </div>

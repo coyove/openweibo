@@ -125,15 +125,14 @@ nav ul {
 
 nav ul li { display: inline-block; margin: 0 0.5em }
 
-nav ul li a { border-bottom: solid 2px #ddd; }
+nav ul li.selected > a { border-color: #088; font-weight: bold;}
 
-nav ul li.selected a { border-color: #088; font-weight: bold;}
-
-nav ul li.selected.secondary a { border-color: #e16 }
+nav ul li.selected.secondary > a { border-color: #e16 }
 
 nav ul li.selected { display: inline-block !important; }
 
-nav a {
+nav ul li > a {
+    border-bottom: solid 2px #ddd;
     cursor: pointer;
 	display: block;
     color: #233 !important;
@@ -302,6 +301,10 @@ div.row-header > * {
     display: inline-block;
 }
 
+div.row-header.title {
+    text-align:left;margin:-0.5em -0.5em 0.5em
+}
+
 span.time.sec:after { content: '秒前' }
 span.time.min:after { content: '分钟前' }
 span.time.hour:after { content: '小时前' }
@@ -333,42 +336,32 @@ a.unread {
     padding: 0.5em;
     box-shadow: 0 1px 2px rgba(0,0,0,0.2);
     background: #fcfdfe;
-    margin: 0.5em 0;
-}
-
-.status > span {
-    line-height: 1.66em;
-    display: inline-block;
-    width: 64px;
-    border-right: dotted 1px #ccc;
-}
-
-.status span:last-child {
-    border: none;
+    width: 100%;
+    max-width: 360px;
 }
 
 .status span b, .status span a {
-    font-size: 16px;
     text-decoration: none !important;
 }
 
-.status [class^="icon-"] {
-    font-size: 16px;
-}
-
 .status .title {
-    margin:-0.5em 0 0.5em;line-height:2.25em;
+    margin:-0.5em 0 0.5em;
+    line-height:2.25em;
     position: relative;
+    display: flex;
 }
 
 .status .title > span {
     display: inline-block;
-    width: 64px;
-    height: 48px;
     line-height: 48px;
+    flex: 0 33%;
 }
 
-div.status-box { text-align:center;line-height:2em }
+.status .title.small > span {
+    line-height: 1em;
+}
+
+div.status-box { text-align:center;line-height:2em;padding:0.5em }
 
 .reply-box {
     display: inline-block;
@@ -392,6 +385,8 @@ img.avatar + .avatar-kimochi {
 .icon-flow-merge:before { margin-left: 0 !important }
 .control.icon-cancel-circled-1, .control.icon-cw-circled { font-size:24px;color:#aaa;cursor:pointer }
 .control.icon-cancel-circled-1:hover,.control.icon-cw-circled:hover { color: #677 }
+.follow-block .icon-user-plus { color: #098 }
+.follow-block .icon-heart-broken { color: #e16 }
 
 @media only screen and (max-width: 540px) {
     .row {

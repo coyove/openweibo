@@ -1,7 +1,6 @@
 <div class="status">
-    <div class=title style="text-align:left">
-        <div class="row-header" style="display:flex">
-            <div style="flex:0 1px">
+    <div class="title row-header" style="">
+            <div style="flex:0 48px">
                 <a href="/user">
                     <img class="avatar" {{if .Avatar}}src="{{.Avatar}}"{{else}}src="/avatar/{{.ID}}.jpg" style="opacity:0.6"{{end}}>
                 </a>
@@ -12,7 +11,11 @@
                 {{if .IsMod}}<b><span class=mod>Mod</span></b>{{end}}
                 {{if .Banned}}/ 封禁{{end}}
             </div>
-        </div>
+            <div style="flex:0 48px;margin:0">
+                <a class=gbutton href="javascript:$post('/api2/logout',{},function(){location.href='/'})" style="color:black">
+                    <i class="icon-logout"></i>
+                </a>
+            </div>
     </div>
     <div class=title style="border-bottom: dotted 1px #ccc">
         <span title="我的黑名单">
@@ -23,19 +26,26 @@
         </span>
         <span title="我的提醒">
             {{if .Unread}}
-        <a href="/t/:in"><b style="color:#f52" class="icon-mail-alt">{{.Unread}}</b></a>
-        {{else}}
-        <a href="/t/:in"><i class="icon-mail-alt"></i></a>
-        {{end}}
+            <a href="/t/:in"><b style="color:#f52" class="icon-mail-alt">{{.Unread}}</b></a>
+            {{else}}
+            <a href="/t/:in"><i class="icon-mail-alt"></i></a>
+            {{end}}
         </span>
     </div>
-    <span>
-        <a href="/user/followings"><b>{{.Followings}}</b><br><span style="color:black">关注</span></a>
-    </span>
-    <span>
-        <a href="/user/followers"><b>{{.Followers}}</b><br><span style="color:black">粉丝</span></a>
-    </span>
-    <span>
-        <a href="/t/{{.ID}}"><b>{{.TotalPosts}}</b><br><span style="color:black">状态</span></a>
-    </span>
+    <div class=title>
+        <span>
+            <a href="/user/followings"><b>{{.Followings}}</b></a>
+        </span>
+        <span>
+            <a href="/user/followers"><b>{{.Followers}}</b></a>
+        </span>
+        <span>
+            <a href="/t/{{.ID}}"><b>{{.TotalPosts}}</b></a>
+        </span>
+    </div>
+    <div class="title small">
+        <span style="color:black">关注</span>
+        <span style="color:black">粉丝</span>
+        <span style="color:black">状态</span>
+    </div>
 </div>

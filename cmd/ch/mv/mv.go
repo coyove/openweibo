@@ -100,12 +100,28 @@ type User struct {
 	AutoNSFW          bool   `json:"autonsfw,omitempty"`
 	FoldImages        bool   `json:"foldi,omitempty"`
 	Kimochi           byte   `json:"kmc,omitempty"`
+
+	_IsFollowing bool
+	_IsBlocking  bool
+	_IsNotYou    bool
 }
 
 func (u User) Marshal() []byte {
 	b, _ := json.Marshal(u)
 	return b
 }
+
+func (u User) IsFollowing() bool { return u._IsFollowing }
+
+func (u User) IsBlocking() bool { return u._IsBlocking }
+
+func (u User) IsNotYou() bool { return u._IsNotYou }
+
+func (u *User) SetIsFollowing(v bool) { u._IsFollowing = v }
+
+func (u *User) SetIsBlocking(v bool) { u._IsBlocking = v }
+
+func (u *User) SetIsNotYou(v bool) { u._IsNotYou = v }
 
 // func (u User) String() string {
 // 	b, _ := json.MarshalIndent(u, "", "")

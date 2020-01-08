@@ -1,7 +1,7 @@
 {{template "header.html" .}}
 {{$own := eq $.You.ID $.User.ID}}
 
-<div style="margin: 0.5em 0; text-align:center">
+<div class="status-box">
     {{if eq .ListType "followings"}}
         <script>$q('#nav-followings').className = "selected"</script>
         {{if $own}}
@@ -69,28 +69,33 @@
         <td><b><a href="/t/{{urlquery .ID}}">{{.ID}}</a></b></td>
         <td class=nowrap>
             {{if eq $.ListType "blacklist"}}
-                {{if .Blocked}}
-                <button class="gbutton" value onclick="followBlock(this,'block','{{.ID}}')">解除黑名单</button>
-                {{else}}
-                <button class="gbutton" value=1 onclick="followBlock(this,'block','{{.ID}}')">拉入黑名单</button>
-                {{end}}
+                <button
+                    class="gbutton follow-block"
+                    value='{{.Blocked}}'
+                    style="color:{{if .Blocked}}#f52{{else}}#aaa{{end}}"
+                    onclick="followBlock(this,'block','{{.ID}}')">
+                    <i class="icon-block"></i>
+                </button>
             {{else if eq $.ListType "followers"}}
                 {{if not .RevFollowed}}
                     <button class=gbutton disabled>已解除关注</button>
                 {{else}}
                     {{if $own}}
-                    <button class="gbutton" value=1 onclick="followBlock(this,'block','{{.ID}}')">拉入黑名单</button>
+                    <button class="gbutton follow-block" value=false style="color:#aaa" onclick="followBlock(this,'block','{{.ID}}')">
+                        <i class="icon-block"></i>
+                    </button>
                     {{else}}
                     <button class=gbutton disabled>正在关注</button>
                     {{end}}
                 {{end}}
             {{else}}
                 {{if $own}}
-                    {{if .Followed}}
-                    <button class="gbutton" value onclick="followBlock(this,'follow','{{.ID}}')">取消关注</button>
-                    {{else}}
-                    <button class="gbutton" value=1 onclick="followBlock(this,'follow','{{.ID}}')">关注</button>
-                    {{end}}
+                    <button
+                        class="gbutton follow-block"
+                        value={{.Followed}}
+                        onclick="followBlock(this,'follow','{{.ID}}')">
+                        <i class="{{if .Followed}}icon-heart-broken{{else}}icon-user-plus{{end}}"></i>
+                    </button>
                 {{else}}
                     <button class=gbutton disabled>{{if .Followed}}正在关注{{else}}已解除关注{{end}}</button>
                 {{end}}

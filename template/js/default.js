@@ -21,7 +21,7 @@ function $wait(el) {
     return function() {
         el.removeAttribute("disabled");
         clearInterval(timer);
-        el.innerHTML = oldHTML;
+        el.innerHTML = el.PRESET_innerHTML || oldHTML;
     }
 }
 
@@ -49,7 +49,7 @@ function $post(url, data, cb, errorcb) {
         var div = $q("<div>");
         div.style.position = "fixed";
         div.style.top = '0'; div.style.left = '0'; div.style.width = "100%";
-        div.style.opacity = "0.85";
+        div.style.opacity = "0.9";
         div.style.color = "white";
         div.style.lineHeight = "32px";
         div.style.textAlign = "center";
@@ -57,6 +57,9 @@ function $post(url, data, cb, errorcb) {
         if (cbres == 'ok') {
             div.style.background = '#088';
             div.innerHTML = '<i class=icon-ok-circled></i>成功';
+        } else if (cbres.match(/^ok:/)) {
+            div.style.background = '#088';
+            div.innerHTML = '<i class=icon-ok-circled></i>' + cbres.substring(3);
         } else {
             div.style.background = "#f52";
             div.innerHTML = '<i class=icon-cancel-circled-1></i>' + (cbres || ("错误状态: " + xml.status));
@@ -168,16 +171,18 @@ function nsfwArticle(el, id) {
 
 function followBlock(el, m, id) {
     var stop = $wait(el), obj = { method: m };
-    obj[m] = $value(el);
+    obj[m] = $value(el) === "true" ? "" : "1";
     obj['to'] = id;
-    el.setAttribute("value", obj[m] != "" ? "" : "1");
+    el.setAttribute("value", obj[m] == "" ? "false" : "true");
     $post("/api2/follow_block", obj, function(res) {
         stop();
         if (res != "ok") return res;
         if (m == "follow") {
-            el.innerText = (obj[m] != "") ? "取消关注" : "关注";
+            el.PRESET_innerHTML = '<i class=' + ((obj[m] != "") ? "icon-heart-broken" : "icon-user-plus") + "></i>";
+            return "ok:" + ((obj[m] != "") ? "已关注" + id : "已取消关注" + id);
         } else {
-            el.innerText = (obj[m] != "") ? "解除黑名单" : "拉入黑名单";
+            el.style.color = (obj[m] != "") ? "#f52" : "#aaa";
+            return "ok:" + ((obj[m] != "") ? "已拉黑" + id : "已解除" + id + "拉黑状态")
         }
     }, stop)
 }

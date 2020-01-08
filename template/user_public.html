@@ -1,26 +1,55 @@
 <div class="status">
-    <div class=title style="text-align:left">
-        <div class="row-header" style="display:flex">
-            <div style="flex:0 1px">
-                <img class="avatar" {{if .Avatar}}src="{{.Avatar}}"{{else}}src="/avatar/{{.ID}}.jpg" style="opacity:0.6"{{end}}>
-                {{if .Kimochi}}
-                <img class="avatar-kimochi" src="/s/emoji/emoji{{.Kimochi}}.png">
-                {{end}}
-            </div>
-            <div style="flex:1 100%;text-align:center">
-                <b>@{{.ID}}</b>
-                {{if .IsMod}}<b><span class=mod>Mod</span></b>{{end}}
-                {{if .Banned}}/ 封禁{{end}}
-            </div>
+    <div class="row-header title" style="text-align:left">
+        <div style="flex:0 48px">
+            <img class="avatar" {{if .Avatar}}src="{{.Avatar}}"{{else}}src="/avatar/{{.ID}}.jpg" style="opacity:0.6"{{end}}>
+            {{if .Kimochi}}
+            <img class="avatar-kimochi" src="/s/emoji/emoji{{.Kimochi}}.png">
+            {{end}}
         </div>
+        <div style="flex:1 100%;text-align:center">
+            <b>@{{.ID}}</b>
+            {{if .IsMod}}<b><span class=mod>Mod</span></b>{{end}}
+            {{if .Banned}}/ 封禁{{end}}
+        </div>
+
+        <div style="flex-grow:0;white-space:nowrap;margin:0">
+
+        {{if .IsNotYou}}
+        <button
+            class="gbutton follow-block"
+            value='{{.IsFollowing}}'
+            onclick="followBlock(this,'follow','{{.ID}}')">
+            <i class="{{if .IsFollowing}}icon-heart-broken{{else}}icon-user-plus{{end}}"></i>
+        </button>
+
+        <button
+            class="gbutton follow-block"
+            value='{{.IsBlocking}}'
+            style="color:{{if .IsBlocking}}#f52{{else}}#aaa{{end}}"
+            onclick="followBlock(this,'block','{{.ID}}')">
+            <i class="icon-block"></i>
+        </button>
+        {{else}}
+        <button class="gbutton" disabled><i style="color:#ddd" class="icon-heart-broken"></i></button>
+        <button class="gbutton" disabled><i style="color:#ddd" class="icon-block"></i></button>
+        {{end}}
+        </div>
+
     </div>
-    <span>
-        <a href="/user/followings/{{.ID}}"><b>{{.Followings}}</b><br><span style="color:black">关注</span></a>
-    </span>
-    <span>
-        <a href="/user/followers/{{.ID}}"><b>{{.Followers}}</b><br><span style="color:black">粉丝</span></a>
-    </span>
-    <span>
-        <a href="/likes/{{.ID}}"><i class="icon-heart-filled"></i><br><span style="color:black">收藏</span></a>
-    </span>
+    <div class="title">
+        <span>
+            <a href="/user/followings/{{.ID}}"><b>{{.Followings}}</b></a>
+        </span>
+        <span>
+            <a href="/user/followers/{{.ID}}"><b>{{.Followers}}</b></a>
+        </span>
+        <span>
+            <a href="/likes/{{.ID}}"><i class="icon-heart-filled"></i></a>
+        </span>
+    </div>
+    <div class="title small">
+        <span style="color:black">关注</span>
+        <span style="color:black">粉丝</span>
+        <span style="color:black">收藏</span>
+    </div>
 </div>

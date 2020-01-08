@@ -17,23 +17,20 @@ import (
 var m *manager.Manager
 
 type ArticlesTimelineView struct {
-	Articles               []ArticleView
-	Next                   string
-	Tag                    string
-	PostsUnderTag          int32
-	IsAdmin                bool
-	IsInbox                bool
-	IsUserTimeline         bool
-	IsUserLikeTimeline     bool
-	IsUserTimelineFollowed bool
-	IsUserTimelineBlocked  bool
-	IsTagTimelineFollowed  bool
-	IsTagTimeline          bool
-	ShowNewPost            bool
-	MediaOnly              bool
-	User                   *mv.User
-	You                    *mv.User
-	ReplyView              ReplyView
+	Articles              []ArticleView
+	Next                  string
+	Tag                   string
+	PostsUnderTag         int32
+	IsInbox               bool
+	IsUserTimeline        bool
+	IsUserLikeTimeline    bool
+	IsTagTimelineFollowed bool
+	IsTagTimeline         bool
+	ShowNewPost           bool
+	MediaOnly             bool
+	User                  *mv.User
+	You                   *mv.User
+	ReplyView             ReplyView
 }
 
 type ArticleRepliesView struct {
@@ -105,9 +102,10 @@ func Timeline(g *gin.Context) {
 			return
 		}
 	SKIP:
-		if pl.You != nil {
-			pl.IsUserTimelineFollowed = m.IsFollowing(pl.You.ID, uid)
-			pl.IsUserTimelineBlocked = m.IsBlocking(pl.You.ID, uid)
+		if pl.You != nil && pl.You.ID != pl.User.ID {
+			pl.User.SetIsFollowing(m.IsFollowing(pl.You.ID, uid))
+			pl.User.SetIsBlocking(m.IsBlocking(pl.You.ID, uid))
+			pl.User.SetIsNotYou(true)
 		}
 	case uid == ":in":
 		// View my inbox

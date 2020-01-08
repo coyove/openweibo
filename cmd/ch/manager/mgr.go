@@ -290,7 +290,7 @@ func (m *Manager) PostReply(parent string, content, media string, author *mv.Use
 	}
 
 	go func() {
-		if p.Content != mv.DeletionMarker {
+		if p.Content != mv.DeletionMarker && a.Author != p.Author {
 			if err := m.insertArticle(ident.NewID(ident.IDTagInbox).SetTag(p.Author).String(), &mv.Article{
 				ID:  ident.NewGeneralID().String(),
 				Cmd: mv.CmdReply,
