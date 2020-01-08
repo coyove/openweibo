@@ -146,7 +146,7 @@ func init() {
 
 					log.Println("Image Purger:", path, "old size:", old, dirMaxSize, "purged in", time.Since(start))
 				} else {
-					log.Println("Image Purger OK:", path, "size:", totalSize, dirMaxSize)
+					log.Println("Image Purger OK:", path, "size:", totalSize, dirMaxSize, ":", totalSize*100/dirMaxSize, "%")
 				}
 
 				time.Sleep(time.Minute)

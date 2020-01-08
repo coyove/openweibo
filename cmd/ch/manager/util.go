@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -109,8 +110,8 @@ func makeLikeID(from, to string) string {
 	return "u/" + from + "/like/" + to
 }
 
-func makeVoteID(from, aid string) string {
-	return "u/" + from + "/vote/" + aid
+func makeCheckpointID(from string, t time.Time) string {
+	return "u/" + from + "/checkpoint/" + t.Format("2006-01")
 }
 
 func lastElemInCompID(id string) string {

@@ -180,14 +180,12 @@ func (m *Manager) WalkLikes(media bool, n int, cursor string) (a []*mv.Article, 
 	return a, cursor
 }
 
-// func (m *Manager) Post(content, media string, author *mv.User, ip string, nsfw bool) (string, error) {
 func (m *Manager) Post(a *mv.Article, author *mv.User) (string, error) {
 	a.ID = ident.NewGeneralID().String()
 	a.CreateTime = time.Now()
 	a.Author = author.ID
 
 	if err := m.insertArticle(ident.NewID(ident.IDTagAuthor).SetTag(a.Author).String(), a, false); err != nil {
-		// If failed, the article will be visible in timeline and tagline
 		return "", err
 	}
 
@@ -232,16 +230,30 @@ func (m *Manager) insertArticle(rootID string, a *mv.Article, asReply bool) erro
 		}
 	}
 
+	if x, y := ident.ParseID(rootID), ident.ParseID(root.NextID); x.Header() == ident.IDTagAuthor && y.Valid() {
+		now := time.Now()
+		if now.Year() != y.Time().Year() || now.Month() != y.Time().Month() {
+			// The very last article was made before this month, so we will create a checkpoint for long jmp
+			go func() {
+				a := &mv.Article{
+					ID:         makeCheckpointID(x.Tag(), root.CreateTime),
+					ReferID:    root.NextID,
+					CreateTime: time.Now(),
+				}
+				m.db.Set(a.ID, a.Marshal())
+			}()
+		}
+	}
+
 	if asReply {
 		a.NextReplyID, root.ReplyChain = root.ReplyChain, a.ID
-		root.Replies++
 	} else {
 		a.NextID, root.NextID = root.NextID, a.ID
 		if a.Media != "" {
 			a.NextMediaID, root.NextMediaID = root.NextMediaID, a.ID
 		}
-		root.Replies++
 	}
+	root.Replies++
 
 	if err := m.db.Set(a.ID, a.Marshal()); err != nil {
 		return err
