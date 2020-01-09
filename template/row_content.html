@@ -20,9 +20,11 @@
         <span class=post-date>于 {{formatTime .CreateTime}} @了你</span>
     {{else}}
         {{template "display_name.html" .Author}}
+        {{if .You.IsMod}}
         <span>
-            {{if .You.IsMod}} <a href="/mod/user?uid={{.Author.ID}}" target=_blank><i class="icon-export-alt"></i></a>{{end}}
+            <a href="/mod/user?uid={{.Author.ID}}" target=_blank><i class="icon-export-alt"></i></a>
         </span>
+        {{end}}
         {{if .Parent}}
             {{if .Content}}
                 <span class=post-date>回复于 {{formatTime .CreateTime}}</span>

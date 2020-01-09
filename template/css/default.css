@@ -35,6 +35,7 @@
 
 html {
     height: 100%;
+    -webkit-text-size-adjust: 100%;
 }
 
 body {
@@ -47,6 +48,10 @@ code {
 
 input:focus, select:focus, textarea:focus, button:focus {
     outline: none;
+}
+
+input, textarea, select {
+   -webkit-appearance: none;
 }
 
 a, label[for=login] {
@@ -326,7 +331,7 @@ a.unread {
     min-width:20px;
     text-align:center;
     line-height:20px;
-    font-size:14px;
+    font-size:12px;
     vertical-align:middle;
     margin:0 0.33em; 
 }
