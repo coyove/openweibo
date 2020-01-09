@@ -1,46 +1,43 @@
 <div data-id="{{.ID}}" style="padding:0.5em 0.5em 0 0.5em" class="row">
-    {{if .NoAvatar}}
-    <div class="row-header">
-    {{else}}
-    <div class="row-header" style="line-height:36px">
+    <div class="row-header" style="line-height:{{if .NoAvatar}}24px{{else}}36px{{end}};display:flex">
+        {{if not .NoAvatar}}
         <img class="avatar" alt="{{.Author.ID}}"
             {{if .Author.Avatar}}
             src="{{.Author.Avatar}}"
             {{else}}
             src="/avatar/{{.Author.ID}}.jpg" style="opacity:0.6"
             {{end}}>
-        {{if .Author.Kimochi}}
-        <img class="avatar-kimochi" src="/s/emoji/emoji{{.Author.Kimochi}}.png">
+            {{if .Author.Kimochi}}
+            <img class="avatar-kimochi" src="/s/emoji/emoji{{.Author.Kimochi}}.png">
+            {{end}}
         {{end}}
-    {{end}}
 
     {{if eq .Cmd "inbox-reply"}}
-        <a href="/t/{{.Author.ID}}">@{{.Author.ID}}</a>
-        <span>于 {{formatTime .CreateTime}} 回复了你</span>
+        {{template "display_name.html" .Author}}
+        <span class=post-date>于 {{formatTime .CreateTime}} 回复了你</span>
     {{else if eq .Cmd "inbox-mention"}}
-        <a href="/t/{{.Author.ID}}">@{{.Author.ID}}</a>
-        <span>于 {{formatTime .CreateTime}} @了你</span>
+        {{template "display_name.html" .Author}}
+        <span class=post-date>于 {{formatTime .CreateTime}} @了你</span>
     {{else}}
+        {{template "display_name.html" .Author}}
         <span>
-            <a target=_parent href="/t/{{.Author.ID}}">@{{.Author.ID}}</a>
-            {{if .Author.IsMod}} <span class=mod>Mod</span>{{end}}
             {{if .You.IsMod}} <a href="/mod/user?uid={{.Author.ID}}" target=_blank><i class="icon-export-alt"></i></a>{{end}}
         </span>
         {{if .Parent}}
             {{if .Content}}
-                <span>回复于 {{formatTime .CreateTime}}</span>
+                <span class=post-date>回复于 {{formatTime .CreateTime}}</span>
             {{else}}
-                <span>转发于 {{formatTime .CreateTime}}</span>
+                <span class=post-date>转发于 {{formatTime .CreateTime}}</span>
             {{end}}
         {{else}}
-            <span>发布于 {{formatTime .CreateTime}}</span>
+            <span class=post-date>发布于 {{formatTime .CreateTime}}</span>
         {{end}}
     {{end}}
     </div>
 
     {{if eq .MediaType "IMG"}}
     <div style="margin-top:0.5em">
-    {{if or .NSFW .You.FoldImages}}
+    {{if or .NSFW .You.Settings.FoldImages}}
     <button
         style="color:{{if .NSFW}}#f90{{else}}#098{{end}}"
         onclick="this.style.display='none';this.nextElementSibling.querySelector('img').src='{{.Media}}'"

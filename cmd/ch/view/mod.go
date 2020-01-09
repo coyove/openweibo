@@ -22,7 +22,7 @@ func ModUser(g *gin.Context) {
 		return
 	}
 
-	p.User, _ = m.GetUser(g.Query("uid"))
+	p.User, _ = m.GetUserWithSettings(g.Query("uid"))
 	if p.User == nil {
 		NotFound(g)
 		return

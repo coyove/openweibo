@@ -1,6 +1,7 @@
 package mv
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -80,35 +81,39 @@ func UnmarshalArticle(b []byte) (*Article, error) {
 }
 
 type User struct {
-	ID                string
-	Session           string
-	Role              string
-	PasswordHash      []byte
-	Email             string `json:"e"`
-	Avatar            string `json:"a"`
-	TotalPosts        int32  `json:"tp"`
-	Followers         int32  `json:"F"`
-	Followings        int32  `json:"f"`
-	Unread            int32  `json:"ur"`
-	FollowingChain    string `json:"FC2,omitempty"`
-	DataIP            string `json:"sip"`
-	TSignup           uint32 `json:"st"`
-	TLogin            uint32 `json:"lt"`
-	Banned            bool   `json:"ban,omitempty"`
-	NoReplyInTimeline bool   `json:"nrit,omitempty"`
-	NoPostInMaster    bool   `json:"npim,omitempty"`
-	AutoNSFW          bool   `json:"autonsfw,omitempty"`
-	FoldImages        bool   `json:"foldi,omitempty"`
-	Kimochi           byte   `json:"kmc,omitempty"`
+	ID             string
+	Session        string
+	Role           string
+	PasswordHash   []byte
+	Email          string `json:"e"`
+	Avatar         string `json:"a"`
+	CustomName     string `json:"cn"`
+	Followers      int32  `json:"F"`
+	Followings     int32  `json:"f"`
+	Unread         int32  `json:"ur"`
+	FollowingChain string `json:"FC2,omitempty"`
+	DataIP         string `json:"sip"`
+	TSignup        uint32 `json:"st"`
+	TLogin         uint32 `json:"lt"`
+	Banned         bool   `json:"ban,omitempty"`
+	Kimochi        byte   `json:"kmc,omitempty"`
 
 	_IsFollowing bool
 	_IsBlocking  bool
 	_IsNotYou    bool
+	_Settings    UserSettings
 }
 
 func (u User) Marshal() []byte {
 	b, _ := json.Marshal(u)
 	return b
+}
+
+func (u User) DisplayName() string {
+	if u.CustomName == "" {
+		return "@" + u.ID
+	}
+	return u.CustomName + " (@" + u.ID + ")"
 }
 
 func (u User) IsFollowing() bool { return u._IsFollowing }
@@ -117,18 +122,22 @@ func (u User) IsBlocking() bool { return u._IsBlocking }
 
 func (u User) IsNotYou() bool { return u._IsNotYou }
 
+func (u User) Settings() UserSettings { return u._Settings }
+
 func (u *User) SetIsFollowing(v bool) { u._IsFollowing = v }
 
 func (u *User) SetIsBlocking(v bool) { u._IsBlocking = v }
 
 func (u *User) SetIsNotYou(v bool) { u._IsNotYou = v }
 
-// func (u User) String() string {
-// 	b, _ := json.MarshalIndent(u, "", "")
-// 	b = bytes.TrimLeft(b, " \r\n\t{")
-// 	b = bytes.TrimRight(b, " \r\n\t}")
-// 	return string(b)
-// }
+func (u *User) SetSettings(s UserSettings) { u._Settings = s }
+
+func (u User) JSON() string {
+	b, _ := json.MarshalIndent(u, "", "")
+	b = bytes.TrimLeft(b, " \r\n\t{")
+	b = bytes.TrimRight(b, " \r\n\t}")
+	return string(b)
+}
 
 func (u User) Signup() time.Time {
 	return time.Unix(int64(u.TSignup), 0)
@@ -155,6 +164,30 @@ func UnmarshalUser(b []byte) (*User, error) {
 
 	AddUserToSearch(a.ID)
 	return a, err
+}
+
+type UserSettings struct {
+	NoReplyInTimeline bool   `json:"nrit,omitempty"`
+	NoPostInMaster    bool   `json:"npim,omitempty"`
+	AutoNSFW          bool   `json:"autonsfw,omitempty"`
+	FoldImages        bool   `json:"foldi,omitempty"`
+	Description       string `json:"desc,omitempty"`
+}
+
+func (u UserSettings) Marshal() []byte {
+	p, _ := json.Marshal(u)
+	return p
+}
+
+func (u UserSettings) DescHTML() template.HTML {
+	return template.HTML(sanText(u.Description))
+}
+
+// Always return a valid struct, though sometimes being empty
+func UnmarshalUserSettings(b []byte) UserSettings {
+	a := UserSettings{}
+	json.Unmarshal(b, &a)
+	return a
 }
 
 func MakeUserToken(u *User) string {

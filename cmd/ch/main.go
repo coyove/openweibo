@@ -17,6 +17,7 @@ import (
 	"github.com/coyove/iis/cmd/ch/action"
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/engine"
+	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/manager"
 	"github.com/coyove/iis/cmd/ch/mv"
 	"github.com/coyove/iis/cmd/ch/view"
@@ -103,6 +104,13 @@ func main() {
 			}
 			return ""
 		},
+		"getTotalPosts": func(id string) int {
+			a, _ := m.GetArticle(ident.NewID(ident.IDTagAuthor).SetTag(id).String())
+			if a != nil {
+				return a.Replies
+			}
+			return 0
+		},
 		"formatTime": func(a time.Time) template.HTML {
 			s := time.Since(a).Seconds()
 			if s < 60 {
@@ -117,7 +125,7 @@ func main() {
 			if s < 7*86400 {
 				return template.HTML("<span class='time day'>" + strconv.Itoa(int(s)/86400) + "</span>")
 			}
-			return template.HTML("<span class='time'>" + a.Format("2006-01-02 15:04") + "</span>")
+			return template.HTML("<span class='time' data='" + strconv.FormatInt(a.Unix(), 10) + "'>" + a.Format("2006-01-02") + "</span>")
 		},
 	})
 	r.LoadHTMLGlob("template/*.html")

@@ -12,16 +12,16 @@ function $value(el) {
 
 function $wait(el) {
     el.setAttribute("disabled", "disabled");
-    var waiting = 0,
-        oldHTML = el.innerHTML;
-    var timer = setInterval(function () {
+    var waiting = 0, stopped = false, oldHTML = el.innerHTML, timer = setInterval(function () {
         waiting++;
         el.innerHTML = "<b style='font-family:monospace'>" + "|/-\\".charAt(waiting % 4) + "</b>";
     }, 100);
     return function() {
+        if (stopped) return;
+        stopped = true;
         el.removeAttribute("disabled");
         clearInterval(timer);
-        el.innerHTML = el.PRESET_innerHTML || oldHTML;
+        el.innerHTML = oldHTML;
     }
 }
 
@@ -178,7 +178,7 @@ function followBlock(el, m, id) {
         stop();
         if (res != "ok") return res;
         if (m == "follow") {
-            el.PRESET_innerHTML = '<i class=' + ((obj[m] != "") ? "icon-heart-broken" : "icon-user-plus") + "></i>";
+            el.innerHTML = '<i class=' + ((obj[m] != "") ? "icon-heart-broken" : "icon-user-plus") + "></i>";
             return "ok:" + ((obj[m] != "") ? "已关注" + id : "已取消关注" + id);
         } else {
             el.style.color = (obj[m] != "") ? "#f52" : "#aaa";
@@ -344,3 +344,14 @@ window.onpopstate = function(event) {
     })
     closes.forEach(function(c) { c.CLOSER.click() })
 };
+
+function updateSetting(el, field, value) {
+    var data = {}, stop = $wait(el.tagName === 'BUTTON' ? el : el.nextElementSibling)
+    data["set-" + field] = "1";
+    if (field !== 'bio') {
+        data[field] = value;
+    } else {
+        ["description"].forEach(function(id) { data[id] = $q("[name='" + id + "']").value })
+    }
+    $post("/api/user_settings", data, function(h) { return h }, stop)
+}

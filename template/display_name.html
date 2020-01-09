@@ -1,0 +1,11 @@
+<span class=post-author>
+    <a href="/t/{{.ID}}">
+        {{if .CustomName}}
+        <b>{{.CustomName}}</b>
+        <span style="color: #677">@{{.ID}}</span>
+        {{else}}
+        <b>@{{.ID}}</b>
+        {{end}}
+    </a>
+{{if .IsMod}}<b><span class=mod>Mod</span></b>{{end}}
+</span>

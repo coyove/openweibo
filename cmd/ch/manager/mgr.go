@@ -116,8 +116,10 @@ func (m *Manager) WalkMulti(media bool, n int, cursors ...ident.ID) (a []*mv.Art
 			}
 			*latest = ident.ParseID(p.PickNextID(media))
 		} else {
-			log.Println("[mgr.WalkMulti] Failed to get:", latest.String(), err)
-			// go m.purgeDeleted(hdr, tag, root.ID)
+			if err != mv.ErrNotExisted {
+				log.Println("[mgr.WalkMulti] Failed to get:", latest.String(), err)
+			}
+
 			*latest = ident.ID{}
 		}
 	}
@@ -189,7 +191,7 @@ func (m *Manager) Post(a *mv.Article, author *mv.User) (string, error) {
 		return "", err
 	}
 
-	if !author.NoPostInMaster {
+	if !author.Settings().NoPostInMaster {
 		go m.insertArticle(ident.NewID(ident.IDTagAuthor).SetTag("master").String(), &mv.Article{
 			ID:         ident.NewGeneralID().String(),
 			ReferID:    a.ID,
@@ -199,10 +201,6 @@ func (m *Manager) Post(a *mv.Article, author *mv.User) (string, error) {
 	}
 
 	go func() {
-		m.UpdateUser(a.Author, func(u *mv.User) error {
-			u.TotalPosts++
-			return nil
-		})
 		ids, tags := mv.ExtractMentionsAndTags(a.Content)
 		m.MentionUserAndTags(a, ids, tags)
 	}()
@@ -294,7 +292,7 @@ func (m *Manager) PostReply(parent string, content, media string, author *mv.Use
 		return "", err
 	}
 
-	if !author.NoReplyInTimeline {
+	if !author.Settings().NoReplyInTimeline {
 		// Add reply to its timeline
 		if err := m.insertArticle(ident.NewID(ident.IDTagAuthor).SetTag(a.Author).String(), a, false); err != nil {
 			return "", err

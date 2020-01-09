@@ -35,6 +35,25 @@ func SoftTrunc(a string, n int) string {
 	return a + "..."
 }
 
+func SoftTruncDisplayWidth(a string, w int) string {
+	r := []rune(strings.TrimSpace(a))
+	width := 0
+	for i := range r {
+
+		if r[i] > 0x2000 {
+			width += 2
+		} else {
+			width++
+		}
+
+		if width >= w {
+			r = r[:i]
+			break
+		}
+	}
+	return string(r)
+}
+
 func sanText(in string) string {
 	in = rxSan.ReplaceAllStringFunc(in, func(in string) string {
 		if in == "<" {

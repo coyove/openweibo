@@ -62,6 +62,16 @@ func (m *Manager) GetUser(id string) (*mv.User, error) {
 	return u, err
 }
 
+func (m *Manager) GetUserWithSettings(id string) (*mv.User, error) {
+	u, err := m.GetUser(id)
+	if err != nil {
+		return u, err
+	}
+	p, _ := m.db.Get("u/" + id + "/settings")
+	u.SetSettings(mv.UnmarshalUserSettings(p))
+	return u, nil
+}
+
 func (m *Manager) SetUser(u *mv.User) error {
 	if u.ID == "" {
 		return nil
@@ -98,7 +108,7 @@ func (m *Manager) GetUserByToken(tok string) (*mv.User, error) {
 	}
 
 	session, id := parts[0], parts[1]
-	u, err := m.GetUser(string(id))
+	u, err := m.GetUserWithSettings(string(id))
 	if err != nil {
 		return nil, err
 	}
@@ -129,6 +139,18 @@ func (m *Manager) UpdateUser(id string, cb func(u *mv.User) error) error {
 	m.db.Lock(id)
 	defer m.db.Unlock(id)
 	return m.UpdateUser_unlock(id, cb)
+}
+
+func (m *Manager) UpdateUserSettings(id string, cb func(u *mv.UserSettings) error) error {
+	m.db.Lock(id)
+	defer m.db.Unlock(id)
+	sid := "u/" + id + "/settings"
+	p, _ := m.db.Get(sid)
+	s := mv.UnmarshalUserSettings(p)
+	if err := cb(&s); err != nil {
+		return err
+	}
+	return m.db.Set(sid, s.Marshal())
 }
 
 func (m *Manager) UpdateUser_unlock(id string, cb func(u *mv.User) error) error {

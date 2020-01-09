@@ -2,7 +2,7 @@
 
 {{if .User}}
 
-<title>@{{.User.ID}}</title>
+<title>{{.User.DisplayName}}</title>
 
     <script>$q('#nav-user-info').className = "selected"</script>
     
@@ -18,12 +18,7 @@
 
 <table class="articles" style="margin: 0.5em 0">
     <script>
-        function updateSetting(el, field, value) {
-            var data = {}, stop = $wait(el.tagName === 'BUTTON' ? el : el.nextElementSibling)
-            data[field] = value;
-            data["set-" + field] = "1";
-            $post("/api/user_settings", data, function(h) { return h }, stop)
-        }
+        
     </script>
     <tr>
         <td>上次登入:</td>
@@ -36,6 +31,34 @@
     <tr>
         <td class=nowrap>上次登入IP:</td><td colspan=2>{{.User.DataIP}}</td>
     </tr>
+
+    <tr><td colspan=3><b>修改显示名 (非登入ID)</b></td></tr>
+
+    <tr>
+        <td class=nowrap>显示名:</td>
+        <td>
+            <input name=custom-name class=t value="{{.User.CustomName}}">
+        </td>
+        <td class=nowrap>
+            <button class=gbutton onclick="updateSetting(this,'custom-name',$q('[name=custom-name]').value)">更新</button>
+        </td>
+    </tr>
+
+    <!--
+    <tr><td colspan=3><b>个人信息</b></td></tr>
+
+    <tr>
+        <td class=nowrap>描述:</td>
+        <td colspan=2><textarea name=description class=t rows=3>{{.User.Settings.Description}}</textarea></td>
+    </tr>
+    <tr>
+        <td class=nowrap colspan=3 style="text-align:right">
+            <button class=gbutton onclick="updateSetting(this,'bio')">更新我的信息</button>
+        </td>
+    </tr>
+    -->
+
+    <tr><td colspan=3><b>其他设置</b></td></tr>
 
     <tr>
         <td class=nowrap>头像URL:</td>
@@ -63,11 +86,11 @@
         <td class=nowrap>
             <button class=gbutton onclick="updateSetting(this,'email',$q('[name=email]').value)">更新</button>
         </td>
-    </tr>
+    </tr> 
     <tr>
         <td class=nowrap></td>
         <td colspan=2> 
-            <input type=checkbox {{if .User.NoReplyInTimeline}}checked{{end}} id=nrit
+            <input type=checkbox {{if .User.Settings.NoReplyInTimeline}}checked{{end}} id=nrit
             onchange="updateSetting(this,'nrit',this.checked?'1':'')">
             <label for=nrit>不要将我的回复添加至我的时间线</label>
         </td>
@@ -75,7 +98,7 @@
     <tr>
         <td class=nowrap></td>
         <td colspan=2> 
-            <input type=checkbox {{if .User.NoPostInMaster}}checked{{end}} id=npim
+            <input type=checkbox {{if .User.Settings.NoPostInMaster}}checked{{end}} id=npim
             onchange="updateSetting(this,'npim',this.checked?'1':'')">
             <label for= npim>不要将我的状态添加至Master时间线</label>
         </td>
@@ -83,7 +106,7 @@
     <tr>
         <td class=nowrap></td>
         <td colspan=2> 
-            <input type=checkbox {{if .User.AutoNSFW}}checked{{end}} id=autonsfw
+            <input type=checkbox {{if .User.Settings.AutoNSFW}}checked{{end}} id=autonsfw
             onchange="updateSetting(this,'autonsfw',this.checked?'1':'')">
             <label for= autonsfw>自动展开NSFW图片</label>
         </td>
@@ -91,7 +114,7 @@
     <tr>
         <td class=nowrap></td>
         <td colspan=2> 
-            <input type=checkbox {{if .User.FoldImages}}checked{{end}} id=foldimg
+            <input type=checkbox {{if .User.Settings.FoldImages}}checked{{end}} id=foldimg
             onchange="updateSetting(this,'foldimg',this.checked?'1':'')">
             <label for= foldimg>收起图片（减少流量）</label>
         </td>

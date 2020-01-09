@@ -79,7 +79,9 @@ func User(g *gin.Context) {
 			return
 		}
 
-		if username == "master" {
+		if username := strings.ToLower(username); username == "master" ||
+			strings.HasPrefix(username, "admin") ||
+			strings.HasPrefix(username, strings.ToLower(config.Cfg.AdminName)) {
 			redir("error", "id/already-existed")
 			return
 		}
@@ -287,31 +289,53 @@ func APIUpdateUserSettings(g *gin.Context) {
 		g.String(200, "internal/error")
 		return
 	}
-	if err := m.UpdateUser(u.ID, func(u *mv.User) error {
-		if g.PostForm("set-email") != "" {
-			u.Email = mv.SoftTrunc(g.PostForm("email"), 256)
+
+	update1 := func(cb func(u *mv.User)) {
+		if err := m.UpdateUser(u.ID, func(u *mv.User) error {
+			cb(u)
+			return nil
+		}); err != nil {
+			g.String(200, "internal/error")
+		} else {
+			g.String(200, "ok")
 		}
-		if g.PostForm("set-avatar") != "" {
-			u.Avatar = mv.SoftTrunc(g.PostForm("avatar"), 256)
-		}
-		if g.PostForm("set-nrit") != "" {
-			u.NoReplyInTimeline = g.PostForm("nrit") != ""
-		}
-		if g.PostForm("set-npim") != "" {
-			u.NoPostInMaster = g.PostForm("npim") != ""
-		}
-		if g.PostForm("set-autonsfw") != "" {
-			u.AutoNSFW = g.PostForm("autonsfw") != ""
-		}
-		if g.PostForm("set-foldimg") != "" {
-			u.FoldImages = g.PostForm("foldimg") != ""
-		}
-		return nil
-	}); err != nil {
-		g.String(200, "internal/error")
-		return
 	}
-	g.String(200, "ok")
+
+	update2 := func(cb func(u *mv.UserSettings)) {
+		if err := m.UpdateUserSettings(u.ID, func(u *mv.UserSettings) error {
+			cb(u)
+			return nil
+		}); err != nil {
+			g.String(200, "internal/error")
+		} else {
+			g.String(200, "ok")
+		}
+	}
+
+	switch {
+	case g.PostForm("set-email") != "":
+		update1(func(u *mv.User) { u.Email = mv.SoftTrunc(g.PostForm("email"), 256) })
+	case g.PostForm("set-avatar") != "":
+		update1(func(u *mv.User) { u.Avatar = mv.SoftTrunc(g.PostForm("avatar"), 256) })
+	case g.PostForm("set-nrit") != "":
+		update2(func(u *mv.UserSettings) { u.NoReplyInTimeline = g.PostForm("nrit") != "" })
+	case g.PostForm("set-npim") != "":
+		update2(func(u *mv.UserSettings) { u.NoPostInMaster = g.PostForm("npim") != "" })
+	case g.PostForm("set-autonsfw") != "":
+		update2(func(u *mv.UserSettings) { u.AutoNSFW = g.PostForm("autonsfw") != "" })
+	case g.PostForm("set-foldimg") != "":
+		update2(func(u *mv.UserSettings) { u.FoldImages = g.PostForm("foldimg") != "" })
+	case g.PostForm("set-description") != "":
+		update2(func(u *mv.UserSettings) { u.Description = mv.SoftTrunc(g.PostForm("description"), 512) })
+	case g.PostForm("set-custom-name") != "":
+		update1(func(u *mv.User) {
+			name := g.PostForm("custom-name")
+			if name := strings.ToLower(name); strings.Contains(name, "admin") && !u.IsAdmin() {
+				name = strings.Replace(name, "admin", "nimda", -1)
+			}
+			u.CustomName = mv.SoftTruncDisplayWidth(name, 16)
+		})
+	}
 }
 
 func APIUpdateUserPassword(g *gin.Context) {

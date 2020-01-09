@@ -30,7 +30,7 @@
     margin: 0;
     box-sizing: border-box;
     font-family: "Roboto", "Helvetica Neue",Helvetica,Arial,"Hiragino Sans GB","Hiragino Sans GB W3","WenQuanYi Micro Hei",sans-serif;
-    font-size: 16px;
+    font-size: 14px;
 }
 
 html {
@@ -302,7 +302,8 @@ div.row-header > * {
 }
 
 div.row-header.title {
-    text-align:left;margin:-0.5em -0.5em 0.5em
+    text-align:left;margin:-0.5em -0.5em 0.5em;
+    line-height: 36px;
 }
 
 span.time.sec:after { content: '秒前' }
@@ -340,8 +341,9 @@ a.unread {
     max-width: 360px;
 }
 
-.status span b, .status span a {
+.status span b, .status span a, .status span i {
     text-decoration: none !important;
+    font-size: 16px;
 }
 
 .status .title {
@@ -375,11 +377,20 @@ span.mod {
 }
 
 img.avatar {
-    border-radius:3px;display:inline-block;vertical-align:middle;margin-right:0.75em;max-width:36px;max-height:36px;overflow:hidden
+    border-radius:3px;display:inline-block;vertical-align:middle;margin-right:0.75em;max-width:36px;max-height:36px;overflow:hidden;
+    flex-shrink: 0;
 }
 
 img.avatar + .avatar-kimochi {
     width:20px;height:20px;position:absolute;left:32px;top:6px;-webkit-filter: drop-shadow(0 0 3px rgba(0,0,0,0.2));
+}
+
+.post-date {
+    flex-grow: 1; white-space: nowrap;
+}
+
+.post-author {
+    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
 }
 
 .icon-flow-merge:before { margin-left: 0 !important }

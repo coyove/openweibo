@@ -6,17 +6,35 @@
                 </a>
                 <div style="width:20px;height:20px;position:absolute;left:32px;top:6px;">{{template "kimochi.html" .}}</div>
             </div>
-            <div style="flex:1 100%;text-align:center">
-                <b><a href="/user">@{{.ID}}</a></b>
-                {{if .IsMod}}<b><span class=mod>Mod</span></b>{{end}}
+            <div style="flex:1 100%;text-align:center;overflow: hidden;text-overflow: ellipsis">
+                {{template "display_name.html" .}}
                 {{if .Banned}}/ 封禁{{end}}
             </div>
-            <div style="flex:0 48px;margin:0">
-                <a class=gbutton href="javascript:$post('/api2/logout',{},function(){location.href='/'})" style="color:black">
+            <div style="flex:0 48px;margin:0;white-space:nowrap">
+                <a class=gbutton href="/user" style="color:#233">
+                    <i class="icon-cog"></i>
+                </a>
+                <a class=gbutton href="javascript:$post('/api2/logout',{},function(){location.href='/'})" style="color:#233">
                     <i class="icon-logout"></i>
                 </a>
             </div>
     </div>
+
+    <div class=title>
+        <input
+            id="bio-description"
+            style="padding:0 0.5em;margin:0.5em 0;width:100%;border:dotted 1px #ccc;line-height:2em;text-align:left"
+            placeholder="个人简介"
+            data="{{.Settings.Description}}" value="{{.Settings.Description}}">
+    <script>
+        $q("#bio-description").addEventListener("blur", function(e) {
+            if (e.target.getAttribute("data") !== e.target.value) {
+                updateSetting(document.createElement("button"), "description", e.target.value)
+            }
+        }, false)
+    </script>
+    </div>
+
     <div class=title style="border-bottom: dotted 1px #ccc">
         <span title="我的黑名单">
             <a href="/user/blacklist"><i class="icon-block"></i></a>
@@ -32,6 +50,7 @@
             {{end}}
         </span>
     </div>
+
     <div class=title>
         <span>
             <a href="/user/followings"><b>{{.Followings}}</b></a>
@@ -40,7 +59,7 @@
             <a href="/user/followers"><b>{{.Followers}}</b></a>
         </span>
         <span>
-            <a href="/t/{{.ID}}"><b>{{.TotalPosts}}</b></a>
+            <a href="/t/{{.ID}}"><b>{{getTotalPosts .ID}}</b></a>
         </span>
     </div>
     <div class="title small">

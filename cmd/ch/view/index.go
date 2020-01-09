@@ -2,6 +2,7 @@ package view
 
 import (
 	"log"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -89,19 +90,19 @@ func Timeline(g *gin.Context) {
 	case uid != "" && uid != ":in":
 		// View someone's timeline
 		pl.IsUserTimeline = true
-		pl.User, _ = m.GetUser(uid)
+		pl.User, _ = m.GetUserWithSettings(uid)
 		if pl.User == nil {
 			if res := mv.SearchUsers(uid, 1); len(res) == 1 {
-				uid = res[0]
-				pl.User, _ = m.GetUser(uid)
+				pl.User, _ = m.GetUser(res[0])
 				if pl.User != nil {
-					goto SKIP
+					g.Redirect(302, "/t/"+url.PathEscape(pl.User.ID))
+					return
 				}
 			}
 			NotFound(g)
 			return
 		}
-	SKIP:
+
 		if pl.You != nil && pl.You.ID != pl.User.ID {
 			pl.User.SetIsFollowing(m.IsFollowing(pl.You.ID, uid))
 			pl.User.SetIsBlocking(m.IsBlocking(pl.You.ID, uid))
