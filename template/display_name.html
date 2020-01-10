@@ -1,11 +1,11 @@
-<span class=post-author>
-    <a href="/t/{{.ID}}">
+<span class=post-author data="{{.CustomName}}">
+    {{if .Banned}}<span><strong>封禁</strong></span>{{end}}
+    <a href="/t/{{.ID}}" style="color:#233">
         {{if .CustomName}}
-        <b>{{.CustomName}}</b>
-        <span style="color: #677">@{{.ID}}</span>
+        <strong>{{.CustomName}}</strong>
+        <span mod={{.IsMod}} style="color: #677">@{{.ID}}</span>
         {{else}}
-        <b>@{{.ID}}</b>
+        <strong mod={{.IsMod}}>@{{.ID}}</strong>
         {{end}}
     </a>
-{{if .IsMod}}<b><span class=mod>Mod</span></b>{{end}}
 </span>

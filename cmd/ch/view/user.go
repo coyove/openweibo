@@ -1,7 +1,11 @@
 package view
 
 import (
+	"fmt"
 	"image/jpeg"
+	"net/http"
+	"os"
+	"strings"
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/engine"
@@ -85,10 +89,18 @@ func UserList(g *gin.Context) {
 }
 
 func Avatar(g *gin.Context) {
-	img, _ := govatar.GenerateForUsername(govatar.MALE, g.Param("id"))
-	g.Writer.Header().Add("Content-Type", "image/jpeg")
-	g.Writer.Header().Add("Cache-Control", "public")
-	jpeg.Encode(g.Writer, img, &jpeg.Options{Quality: 75})
+	id := strings.TrimSuffix(g.Param("id"), ".jpg")
+	hash := (mv.User{ID: id}).IDHash()
+	path := fmt.Sprintf("tmp/images/%d/%016x@%s", hash%1024, hash, id)
+
+	if _, err := os.Stat(path); err == nil {
+		http.ServeFile(g.Writer, g.Request, path)
+	} else {
+		img, _ := govatar.GenerateForUsername(govatar.MALE, id)
+		g.Writer.Header().Add("Content-Type", "image/jpeg")
+		g.Writer.Header().Add("Cache-Control", "public")
+		jpeg.Encode(g.Writer, img, &jpeg.Options{Quality: 75})
+	}
 }
 
 func UserLikes(g *gin.Context) {

@@ -4,6 +4,7 @@ kimochi {
 	position: relative;
 	display: inline-block;
     cursor: pointer;
+    vertical-align: middle;
 }
 
 kimochi li:hover, kimochi li:hover a {
@@ -58,23 +59,7 @@ kimochi a img {
 }
 
 kimochi > div.tri {
-    height: 0;
-    width: 0;
-    position: absolute;
-    border: solid 8px black;
-    border-color: transparent transparent white;
-    bottom: 0;
-    margin-left: -8px;
-    left: 50%;
-    z-index: 1000;
     display: none;
-}
-
-kimochi > div.tri.shadow {
-    box-shadow: 0 0 5px rgba(0, 0, 0, 1);
-    z-index: 0;
-    top: 100%;
-    transform: rotate(45deg);
 }
 
 kimochi:hover > div.tri {

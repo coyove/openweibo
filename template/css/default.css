@@ -50,7 +50,7 @@ input:focus, select:focus, textarea:focus, button:focus {
     outline: none;
 }
 
-input, textarea, select {
+input[type=text], input.t, textarea, select {
    -webkit-appearance: none;
 }
 
@@ -346,7 +346,7 @@ a.unread {
     max-width: 360px;
 }
 
-.status span b, .status span a, .status span i {
+.status span a b, .status span a i[class^="icon-"] {
     text-decoration: none !important;
     font-size: 16px;
 }
@@ -376,13 +376,20 @@ div.status-box { text-align:center;line-height:2em;padding:0.5em }
     text-decoration: none !important;
 }
 
-span.mod {
-    color: #673ab7;
+[mod=true] {
+    color: #673ab7 !important;
     font-weight: bold;
 }
 
+div.avatar-container {
+    width: 36px;
+    margin-right:0.75em;
+    text-align: center;
+}
+
 img.avatar {
-    border-radius:3px;display:inline-block;vertical-align:middle;margin-right:0.75em;max-width:36px;max-height:36px;overflow:hidden;
+    border-radius:3px;display:inline-block;vertical-align:middle;max-width:36px;max-height:36px;overflow:hidden;
+    margin: 0 auto;
     flex-shrink: 0;
 }
 
@@ -396,6 +403,26 @@ img.avatar + .avatar-kimochi {
 
 .post-author {
     overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    margin: 0 0.33em;
+}
+
+div.tri {
+    height: 0;
+    width: 0;
+    position: absolute;
+    border: solid 8px black;
+    border-color: transparent transparent white;
+    bottom: 0;
+    margin-left: -8px;
+    left: 50%;
+    z-index: 1000;
+}
+
+div.tri.shadow {
+    box-shadow: 0 0 5px rgba(0, 0, 0, 1);
+    z-index: 0;
+    top: 100%;
+    transform: rotate(45deg);
 }
 
 .icon-flow-merge:before { margin-left: 0 !important }

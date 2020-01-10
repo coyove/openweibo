@@ -46,10 +46,10 @@ var staticHeader = http.Header{
 	"Content-Type": []string{"something"},
 }
 
-type fakeResponseCatcher struct {
+type FakeResponseCatcher struct {
 	bytes.Buffer
 }
 
-func (w *fakeResponseCatcher) WriteHeader(code int) {}
+func (w *FakeResponseCatcher) WriteHeader(code int) {}
 
-func (w *fakeResponseCatcher) Header() http.Header { return staticHeader }
+func (w *FakeResponseCatcher) Header() http.Header { return staticHeader }

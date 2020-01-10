@@ -204,7 +204,7 @@ func APITimeline(g *gin.Context) {
 
 	p.EOT = p.Next == ""
 
-	tmp := fakeResponseCatcher{}
+	tmp := FakeResponseCatcher{}
 	for _, a := range articles {
 		tmp.Reset()
 		engine.Engine.HTMLRender.Instance("row_content.html", a).Render(&tmp)

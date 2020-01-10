@@ -6,14 +6,17 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"log"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/coyove/iis/cmd/ch/config"
+	"github.com/coyove/iis/cmd/ch/engine"
 	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/manager"
 	"github.com/coyove/iis/cmd/ch/mv"
+	"github.com/coyove/iis/cmd/ch/view"
 	"github.com/gin-gonic/gin"
 )
 
@@ -315,8 +318,6 @@ func APIUpdateUserSettings(g *gin.Context) {
 	switch {
 	case g.PostForm("set-email") != "":
 		update1(func(u *mv.User) { u.Email = mv.SoftTrunc(g.PostForm("email"), 256) })
-	case g.PostForm("set-avatar") != "":
-		update1(func(u *mv.User) { u.Avatar = mv.SoftTrunc(g.PostForm("avatar"), 256) })
 	case g.PostForm("set-nrit") != "":
 		update2(func(u *mv.UserSettings) { u.NoReplyInTimeline = g.PostForm("nrit") != "" })
 	case g.PostForm("set-npim") != "":
@@ -328,13 +329,26 @@ func APIUpdateUserSettings(g *gin.Context) {
 	case g.PostForm("set-description") != "":
 		update2(func(u *mv.UserSettings) { u.Description = mv.SoftTrunc(g.PostForm("description"), 512) })
 	case g.PostForm("set-custom-name") != "":
+		name := g.PostForm("custom-name")
+		if name := strings.ToLower(name); strings.Contains(name, "admin") && !u.IsAdmin() {
+			name = strings.Replace(name, "admin", "nimda", -1)
+		}
+		name = mv.SoftTruncDisplayWidth(name, 16)
 		update1(func(u *mv.User) {
-			name := g.PostForm("custom-name")
-			if name := strings.ToLower(name); strings.Contains(name, "admin") && !u.IsAdmin() {
-				name = strings.Replace(name, "admin", "nimda", -1)
-			}
-			u.CustomName = mv.SoftTruncDisplayWidth(name, 16)
+			u.CustomName = name
+
+			p := view.FakeResponseCatcher{}
+			engine.Engine.HTMLRender.Instance("display_name.html", u).Render(&p)
+			g.Writer.Header().Add("X-Result", url.PathEscape(p.String()))
+			g.Writer.Header().Add("X-Custom-Name", url.PathEscape(name))
 		})
+	case g.PostForm("set-avatar") != "":
+		_, err := writeAvatar(u, g.PostForm("avatar"))
+		if err != nil {
+			g.String(200, err.Error())
+			return
+		}
+		update1(func(u *mv.User) { u.Avatar++ })
 	}
 }
 

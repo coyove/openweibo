@@ -1,15 +1,12 @@
 <div data-id="{{.ID}}" style="padding:0.5em 0.5em 0 0.5em" class="row">
     <div class="row-header" style="line-height:{{if .NoAvatar}}24px{{else}}36px{{end}};display:flex">
         {{if not .NoAvatar}}
-        <img class="avatar" alt="{{.Author.ID}}"
-            {{if .Author.Avatar}}
-            src="{{.Author.Avatar}}"
-            {{else}}
-            src="/avatar/{{.Author.ID}}.jpg" style="opacity:0.6"
-            {{end}}>
+        <div class=avatar-container>
+            <img class="avatar" alt="{{.Author.ID}}" src="/avatar/{{.Author.ID}}.jpg?q={{.Author.Avatar}}">
             {{if .Author.Kimochi}}
             <img class="avatar-kimochi" src="/s/emoji/emoji{{.Author.Kimochi}}.png">
             {{end}}
+        </div>
         {{end}}
 
     {{if eq .Cmd "inbox-reply"}}

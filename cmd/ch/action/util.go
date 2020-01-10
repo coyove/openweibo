@@ -160,3 +160,25 @@ func writeImage(u *mv.User, imageName, image string) (string, error) {
 	_, err = io.Copy(of, dec)
 	return "LOCAL:" + fn, err
 }
+
+func writeAvatar(u *mv.User, image string) (string, error) {
+	image = image[strings.Index(image, ",")+1:]
+	dec := base64.NewDecoder(base64.StdEncoding, strings.NewReader(image))
+
+	hash := u.IDHash()
+	path := fmt.Sprintf("tmp/images/%d/", hash%1024)
+	fn := fmt.Sprintf("%016x@%s", hash, u.ID)
+
+	os.MkdirAll(path, 0777)
+	of, err := os.OpenFile(path+fn, os.O_CREATE|os.O_WRONLY, 0777)
+	if err != nil {
+		return "", err
+	}
+	defer of.Close()
+
+	_, err = io.CopyN(of, dec, 150*1024)
+	if err == io.EOF {
+		err = nil
+	}
+	return fn, err
+}

@@ -31,53 +31,6 @@
     <tr>
         <td class=nowrap>上次登入IP:</td><td colspan=2>{{.User.DataIP}}</td>
     </tr>
-
-    <tr><td colspan=3><b>修改显示名 (非登入ID)</b></td></tr>
-
-    <tr>
-        <td class=nowrap>显示名:</td>
-        <td>
-            <input name=custom-name class=t value="{{.User.CustomName}}">
-        </td>
-        <td class=nowrap>
-            <button class=gbutton onclick="updateSetting(this,'custom-name',$q('[name=custom-name]').value)">更新</button>
-        </td>
-    </tr>
-
-    <!--
-    <tr><td colspan=3><b>个人信息</b></td></tr>
-
-    <tr>
-        <td class=nowrap>描述:</td>
-        <td colspan=2><textarea name=description class=t rows=3>{{.User.Settings.Description}}</textarea></td>
-    </tr>
-    <tr>
-        <td class=nowrap colspan=3 style="text-align:right">
-            <button class=gbutton onclick="updateSetting(this,'bio')">更新我的信息</button>
-        </td>
-    </tr>
-    -->
-
-    <tr><td colspan=3><b>其他设置</b></td></tr>
-
-    <tr>
-        <td class=nowrap>头像URL:</td>
-        <td>
-            <input class=t name=avatar value="{{.User.Avatar}}" maxlength=256 onkeyup="$q('#avatar-preview').src=this.value">
-        </td>
-        <td class=nowrap>
-            <button class=gbutton onclick="updateSetting(this,'avatar',$q('[name=avatar]').value)">更新</button>
-        </td>
-    </tr>
-    <tr>
-        <td></td>
-        <td>
-            <img src="{{.User.Avatar}}"
-                 style="max-width:100px;max-height:100px;display:block;border:solid 1px #ccc;min-height:32px"
-                 id=avatar-preview>
-        </td>
-        <td></td>
-    </tr>
     <tr>
         <td class=nowrap>Email:</td>
         <td>

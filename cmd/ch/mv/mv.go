@@ -86,7 +86,7 @@ type User struct {
 	Role           string
 	PasswordHash   []byte
 	Email          string `json:"e"`
-	Avatar         string `json:"a"`
+	Avatar         int    `json:"av"`
 	CustomName     string `json:"cn"`
 	Followers      int32  `json:"F"`
 	Followings     int32  `json:"f"`
@@ -139,20 +139,19 @@ func (u User) JSON() string {
 	return string(b)
 }
 
-func (u User) Signup() time.Time {
-	return time.Unix(int64(u.TSignup), 0)
-}
+func (u User) Signup() time.Time { return time.Unix(int64(u.TSignup), 0) }
 
-func (u User) Login() time.Time {
-	return time.Unix(int64(u.TLogin), 0)
-}
+func (u User) Login() time.Time { return time.Unix(int64(u.TLogin), 0) }
 
-func (u User) IsMod() bool {
-	return u.Role == "admin" || u.Role == "mod" || u.ID == config.Cfg.AdminName
-}
+func (u User) IsMod() bool { return u.Role == "mod" || u.ID == config.Cfg.AdminName }
 
-func (u User) IsAdmin() bool {
-	return u.Role == "admin" || u.ID == config.Cfg.AdminName
+func (u User) IsAdmin() bool { return u.Role == "admin" || u.ID == config.Cfg.AdminName }
+
+func (u User) IDHash() (hash uint64) {
+	for _, r := range u.ID {
+		hash = hash*31 + uint64(r)
+	}
+	return
 }
 
 func UnmarshalUser(b []byte) (*User, error) {

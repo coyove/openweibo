@@ -1,14 +1,15 @@
 <div class="status">
     <div class="row-header title" style="text-align:left">
         <div style="flex:0 48px">
-            <img class="avatar" {{if .Avatar}}src="{{.Avatar}}"{{else}}src="/avatar/{{.ID}}.jpg" style="opacity:0.6"{{end}}>
+            <div class=avatar-container>
+                <img class="avatar" src="/avatar/{{.ID}}.jpg?q={{.Avatar}}">
             {{if .Kimochi}}
             <img class="avatar-kimochi" src="/s/emoji/emoji{{.Kimochi}}.png">
             {{end}}
+            </div>
         </div>
         <div style="flex:1 100%;text-align:center;overflow: hidden;text-overflow: ellipsis">
             {{template "display_name.html" .}}
-            {{if .Banned}}/ 封禁{{end}}
         </div>
 
         <div style="flex-grow:0;white-space:nowrap;margin:0">
@@ -34,6 +35,7 @@
         {{end}}
         </div>
 
+        <div class=tri></div>
     </div>
 
     {{if .Settings.Description}}

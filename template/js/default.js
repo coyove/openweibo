@@ -36,7 +36,7 @@ function $post(url, data, cb, errorcb) {
                 try { res = JSON.parse(res) } catch(e) {}
             }
 
-            cbres = cb(res)
+            cbres = cb(res, xml)
             if (!cbres) return;
 
             // callback returns error
@@ -45,7 +45,6 @@ function $post(url, data, cb, errorcb) {
         xml.onerror();
     }
     xml.onerror = function() {
-        if (errorcb) errorcb(xml)
         var div = $q("<div>");
         div.style.position = "fixed";
         div.style.top = '0'; div.style.left = '0'; div.style.width = "100%";
@@ -57,10 +56,11 @@ function $post(url, data, cb, errorcb) {
         if (cbres == 'ok') {
             div.style.background = '#088';
             div.innerHTML = '<i class=icon-ok-circled></i>成功';
-        } else if (cbres.match(/^ok:/)) {
+        } else if (cbres && cbres.match(/^ok:/)) {
             div.style.background = '#088';
             div.innerHTML = '<i class=icon-ok-circled></i>' + cbres.substring(3);
         } else {
+            if (errorcb) errorcb(xml)
             div.style.background = "#f52";
             div.innerHTML = '<i class=icon-cancel-circled-1></i>' + (cbres || ("错误状态: " + xml.status));
         }
@@ -345,13 +345,20 @@ window.onpopstate = function(event) {
     closes.forEach(function(c) { c.CLOSER.click() })
 };
 
-function updateSetting(el, field, value) {
-    var data = {}, stop = $wait(el.tagName === 'BUTTON' ? el : el.nextElementSibling)
+function updateSetting(el, field, value, cb, errcb) {
+    var data = {}, stop = $wait(el.tagName === 'INPUT' ? el.nextElementSibling : el);
     data["set-" + field] = "1";
     if (field !== 'bio') {
         data[field] = value;
     } else {
         ["description"].forEach(function(id) { data[id] = $q("[name='" + id + "']").value })
     }
-    $post("/api/user_settings", data, function(h) { return h }, stop)
+    $post("/api/user_settings", data, function(h, h2) {
+        stop();
+        if (cb) cb(h, h2);
+        return h
+    }, function() {
+        stop();
+        if (errcb) errcb();
+    })
 }

@@ -1,23 +1,36 @@
 <div class="status">
     <div class="title row-header" style="">
-            <div style="flex:0 48px">
-                <a href="/user">
-                    <img class="avatar" {{if .Avatar}}src="{{.Avatar}}"{{else}}src="/avatar/{{.ID}}.jpg" style="opacity:0.6"{{end}}>
-                </a>
-                <div style="width:20px;height:20px;position:absolute;left:32px;top:6px;">{{template "kimochi.html" .}}</div>
+        <div style="white-space:nowrap">
+            <div style="display:inline-block;position:relative;margin-right:0.5em" class=avatar-container>
+                <img class="avatar" src="/avatar/{{.ID}}.jpg?q={{.Avatar}}" style="cursor:pointer;margin:0"
+                     onclick="this.nextElementSibling.click()">
+                <input type=file style="display:none" onchange="onAvatarChanged(this)">
+                <div style="position: absolute;
+    top: 50%; left: 50%; margin-left: -16px; margin-top: -16px; width: 32px; height: 32px;
+    background: rgba(0,0,0,0.3);
+    line-height: 32px;
+    color: white;
+    text-align: center;
+    pointer-events: none;
+    border-radius: 50%"><i class=icon-camera style="font-size:12px"></i></div>
             </div>
-            <div style="flex:1 100%;text-align:center;overflow: hidden;text-overflow: ellipsis">
+            <div style="display:inline-block">{{template "kimochi.html" .}}</div>
+        </div>
+        <div style="flex:1 100%;text-align:center;overflow:hidden;text-overflow: ellipsis;white-space:nowrap">
+            <span id=change-name onclick="changeName(this)" >
                 {{template "display_name.html" .}}
-                {{if .Banned}}/ 封禁{{end}}
-            </div>
-            <div style="flex:0 48px;margin:0;white-space:nowrap">
-                <a class=gbutton href="/user" style="color:#233">
-                    <i class="icon-cog"></i>
-                </a>
-                <a class=gbutton href="javascript:$post('/api2/logout',{},function(){location.href='/'})" style="color:#233">
-                    <i class="icon-logout"></i>
-                </a>
-            </div>
+                <input class=t style="display:none;border:none;text-align:center" placeholder="输入你的名字">
+            </span>
+        </div>
+        <div style="flex:0 48px;margin:0;white-space:nowrap">
+            <a class=gbutton href="/user" style="color:#233">
+                <i class="icon-cog"></i>
+            </a>
+            <a class=gbutton href="javascript:$post('/api2/logout',{},function(){location.href='/'})" style="color:#233">
+                <i class="icon-logout"></i>
+            </a>
+        </div>
+        <div class=tri></div>
     </div>
 
     <div class=title>
@@ -25,14 +38,8 @@
             id="bio-description"
             style="padding:0 0.5em;margin:0.5em 0;width:100%;border:dotted 1px #ccc;line-height:2em;text-align:left"
             placeholder="个人简介"
+            class=t
             data="{{.Settings.Description}}" value="{{.Settings.Description}}">
-    <script>
-        $q("#bio-description").addEventListener("blur", function(e) {
-            if (e.target.getAttribute("data") !== e.target.value) {
-                updateSetting(document.createElement("button"), "description", e.target.value)
-            }
-        }, false)
-    </script>
     </div>
 
     <div class=title style="border-bottom: dotted 1px #ccc">
@@ -62,9 +69,109 @@
             <a href="/t/{{.ID}}"><b>{{getTotalPosts .ID}}</b></a>
         </span>
     </div>
+
     <div class="title small">
         <span style="color:black">关注</span>
         <span style="color:black">粉丝</span>
         <span style="color:black">状态</span>
     </div>
 </div>
+
+<script>
+    $q("#bio-description").addEventListener("blur", function(e) {
+        if (e.target.getAttribute("data") !== e.target.value) {
+            updateSetting(document.createElement("button"), "description", e.target.value)
+        }
+    }, false)
+
+function changeName(el) {
+    el.querySelector("a").href= 'javascript:void(0)';
+    el.onclick = null;
+
+    var i = el.querySelector("input"), n = el.querySelector("span");
+    var old = decodeURIComponent(n.getAttribute('data'));
+
+    i.value = old;
+    n.style.display = 'none';
+    i.style.display = null;
+    i.focus();
+    i.addEventListener("blur", function(e) {
+        el.onclick =  function() { changeName(el) }
+        var fail = function() {
+            n.style.display = null;
+            i.style.display = 'none';
+        }
+        if (old !== e.target.value) {
+            updateSetting(n, "custom-name", e.target.value, function(h, x) {
+                fail();
+                if (h === 'ok') {
+                    n.innerHTML = decodeURIComponent(x.getResponseHeader("X-Result"));
+                    n.innerHTML = n.querySelector(".post-author").innerHTML;
+                    n.setAttribute('data', decodeURIComponent(x.getResponseHeader("X-Custom-Name")))
+                }
+            }, fail)
+        } else {
+            fail();
+        }
+    }, false)
+}
+
+function onAvatarChanged(el) {
+    if (!el.value) return;
+
+    var reader = new FileReader();
+    reader.readAsDataURL(el.files[0]);
+    reader.onload = function () {
+        var img = new Image();
+        img.onerror = function() {
+            alert("加载头像失败")
+        }
+        img.onload = function() {
+            img.onload = null;
+            var canvas = document.createElement("canvas"), throt = 150 * 1000, f = 1,
+                success = function() {
+                    console.log((img.src.length / 1.33 / 1024).toFixed(0) + "KB", f);
+                    var data = {}, a = el.previousElementSibling;
+                    var stop = function() {
+                        a.src = a.OLD_SRC;
+                        el.parentNode.querySelector("div").style.display = null;
+                    }
+
+                    a.OLD_SRC = a.src;
+                    a.src = '/s/css/spinner.gif'
+                    el.parentNode.querySelector("div").style.display = 'none';
+
+                    data["set-avatar"] = "1";
+                    data["avatar"] = img.src;
+                    $post("/api/user_settings", data, function(h, h2) {
+                        stop();
+                        if (h === 'ok') a.src = a.OLD_SRC + "&random=" + new Date().getTime();
+                        return (h !== 'ok') ? h : "ok:更新成功，由于缓存原因新头像可能不会立即生效";
+                    }, stop)
+                };
+
+            if (img.src.length > throt) {
+                if (img.src.match(/image\/gif/)) {
+                    img.onerror();
+                    return;
+                }
+                var ctx = canvas.getContext('2d');
+                canvas.width = img.width; canvas.height = img.height;
+                ctx.drawImage(img,0,0);
+                for (f = 0.8; f > 0; f -= 0.2) {
+                    var res = canvas.toDataURL("image/jpeg", f);
+                    if (res.length <= throt) {
+                        img.src = res;
+                        success();
+                        return;
+                    }
+                }
+                img.onerror();
+            } else {
+                success();
+            }
+        }
+        img.src = reader.result;
+    };
+}
+</script>
