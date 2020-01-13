@@ -182,16 +182,16 @@ func (m *Manager) WalkLikes(media bool, n int, cursor string) (a []*mv.Article, 
 	return a, cursor
 }
 
-func (m *Manager) Post(a *mv.Article, author *mv.User) (string, error) {
+func (m *Manager) Post(a *mv.Article, author *mv.User, noMaster bool) (*mv.Article, error) {
 	a.ID = ident.NewGeneralID().String()
 	a.CreateTime = time.Now()
 	a.Author = author.ID
 
 	if err := m.insertArticle(ident.NewID(ident.IDTagAuthor).SetTag(a.Author).String(), a, false); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	if !author.Settings().NoPostInMaster {
+	if !noMaster {
 		go m.insertArticle(ident.NewID(ident.IDTagAuthor).SetTag("master").String(), &mv.Article{
 			ID:         ident.NewGeneralID().String(),
 			ReferID:    a.ID,
@@ -205,7 +205,7 @@ func (m *Manager) Post(a *mv.Article, author *mv.User) (string, error) {
 		m.MentionUserAndTags(a, ids, tags)
 	}()
 
-	return a.ID, nil
+	return a, nil
 }
 
 func (m *Manager) insertArticle(rootID string, a *mv.Article, asReply bool) error {
@@ -263,18 +263,18 @@ func (m *Manager) insertArticle(rootID string, a *mv.Article, asReply bool) erro
 	return nil
 }
 
-func (m *Manager) PostReply(parent string, content, media string, author *mv.User, ip string, nsfw bool) (string, error) {
+func (m *Manager) PostReply(parent string, content, media string, author *mv.User, ip string, nsfw bool, noTimeline bool) (*mv.Article, error) {
 	p, err := m.GetArticle(parent)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if p.Locked {
-		return "", fmt.Errorf("locked parent")
+		return nil, fmt.Errorf("locked parent")
 	}
 
 	if m.IsBlocking(p.Author, author.ID) {
-		return "", fmt.Errorf("author blocked")
+		return nil, fmt.Errorf("author blocked")
 	}
 
 	a := &mv.Article{
@@ -289,13 +289,13 @@ func (m *Manager) PostReply(parent string, content, media string, author *mv.Use
 	}
 
 	if err := m.insertArticle(p.ID, a, true); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	if !author.Settings().NoReplyInTimeline {
+	if !noTimeline {
 		// Add reply to its timeline
 		if err := m.insertArticle(ident.NewID(ident.IDTagAuthor).SetTag(a.Author).String(), a, false); err != nil {
-			return "", err
+			return nil, err
 		}
 	}
 
@@ -322,7 +322,7 @@ func (m *Manager) PostReply(parent string, content, media string, author *mv.Use
 		m.MentionUserAndTags(a, ids, tags)
 	}()
 
-	return a.ID, nil
+	return a, nil
 }
 
 func (m *Manager) UpdateArticle(aid string, cb func(a *mv.Article) error) error {

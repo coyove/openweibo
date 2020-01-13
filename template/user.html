@@ -17,9 +17,8 @@
     </div>
 
 <table class="articles" style="margin: 0.5em 0">
-    <script>
-        
-    </script>
+    <tr><td colspan=3><b>账户信息</b></td></tr>
+
     <tr>
         <td>上次登入:</td>
         <td colspan=2>{{.User.Login.Format "2006-01-02 15:04:05"}}</td>
@@ -31,6 +30,27 @@
     <tr>
         <td class=nowrap>上次登入IP:</td><td colspan=2>{{.User.DataIP}}</td>
     </tr>
+
+    <tr><td colspan=3><b>一般设置</b></td></tr>
+
+    <tr>
+        <td colspan=3> 
+            <input type=checkbox {{if .User.Settings.AutoNSFW}}checked{{end}} id=autonsfw
+            onchange="updateSetting(this,'autonsfw',this.checked?'1':'')">
+            <label for= autonsfw>自动展开NSFW图片</label>
+        </td>
+    </tr>
+
+    <tr>
+        <td colspan=3> 
+            <input type=checkbox {{if .User.Settings.FoldImages}}checked{{end}} id=foldimg
+            onchange="updateSetting(this,'foldimg',this.checked?'1':'')">
+            <label for= foldimg>收起图片（减少流量）</label>
+        </td>
+    </tr>
+
+    <tr><td colspan=3><b>修改邮箱</b></td></tr>
+
     <tr>
         <td class=nowrap>Email:</td>
         <td>
@@ -40,38 +60,7 @@
             <button class=gbutton onclick="updateSetting(this,'email',$q('[name=email]').value)">更新</button>
         </td>
     </tr> 
-    <tr>
-        <td class=nowrap></td>
-        <td colspan=2> 
-            <input type=checkbox {{if .User.Settings.NoReplyInTimeline}}checked{{end}} id=nrit
-            onchange="updateSetting(this,'nrit',this.checked?'1':'')">
-            <label for=nrit>不要将我的回复添加至我的时间线</label>
-        </td>
-    </tr>
-    <tr>
-        <td class=nowrap></td>
-        <td colspan=2> 
-            <input type=checkbox {{if .User.Settings.NoPostInMaster}}checked{{end}} id=npim
-            onchange="updateSetting(this,'npim',this.checked?'1':'')">
-            <label for= npim>不要将我的状态添加至Master时间线</label>
-        </td>
-    </tr>
-    <tr>
-        <td class=nowrap></td>
-        <td colspan=2> 
-            <input type=checkbox {{if .User.Settings.AutoNSFW}}checked{{end}} id=autonsfw
-            onchange="updateSetting(this,'autonsfw',this.checked?'1':'')">
-            <label for= autonsfw>自动展开NSFW图片</label>
-        </td>
-    </tr>
-    <tr>
-        <td class=nowrap></td>
-        <td colspan=2> 
-            <input type=checkbox {{if .User.Settings.FoldImages}}checked{{end}} id=foldimg
-            onchange="updateSetting(this,'foldimg',this.checked?'1':'')">
-            <label for= foldimg>收起图片（减少流量）</label>
-        </td>
-    </tr>
+
     {{if .User.IsMod}}
     <tr>
         <td class=nowrap>最大耗时:</td>
@@ -90,9 +79,8 @@
     </tr>
     {{end}}
 
-    <tr>
-        <td colspan=3><b>修改密码</b></td>
-    </tr>
+    <tr><td colspan=3><b>修改密码</b></td></tr>
+
     <tr>
         <td class=nowrap>原密码:</td>
         <td colspan=2><input name=old-password type=password class=t></td>

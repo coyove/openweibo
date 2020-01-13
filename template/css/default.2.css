@@ -89,9 +89,7 @@ hr {
     line-height: 1.5em;
 }
 
-.articles .sep { border-bottom: solid 1px #ddd; }
-
-.articles .sep:last-child { border-bottom: none }
+.articles .sep { border-top: solid 1px #ddd; }
 
 .articles th.nowrap, .articles td.nowrap {
     white-space: nowrap;
@@ -266,6 +264,10 @@ div.subreply .row {
     margin: 0;
 }
 
+div.subreply .post-author {
+    margin-left: 0;
+}
+
 div.rows.replies .row {
     border-radius: 0;
     margin: 0 0.5em;
@@ -426,6 +428,7 @@ div.tri.shadow {
 }
 
 .icon-flow-merge:before { margin-left: 0 !important }
+.icon-down-dir.right:before { margin-right: 0 !important }
 .control.icon-cancel-circled-1, .control.icon-cw-circled { font-size:24px;color:#aaa;cursor:pointer }
 .control.icon-cancel-circled-1:hover,.control.icon-cw-circled:hover { color: #677 }
 .follow-block .icon-user-plus { color: #098 }

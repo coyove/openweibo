@@ -37,6 +37,16 @@ const (
 	_Blank
 )
 
+func NewTopArticleView(a *mv.Article, you *mv.User) (av ArticleView) {
+	av.from(a, 0, you)
+	return
+}
+
+func NewReplyArticleView(a *mv.Article, you *mv.User) (av ArticleView) {
+	av.from(a, _NoMoreParent|_ShowAvatar, you)
+	return
+}
+
 func (a *ArticleView) from(a2 *mv.Article, opt uint64, u *mv.User) *ArticleView {
 	if a2 == nil {
 		return a

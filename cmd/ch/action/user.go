@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/coyove/iis/cmd/ch/config"
-	"github.com/coyove/iis/cmd/ch/engine"
 	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/manager"
 	"github.com/coyove/iis/cmd/ch/mv"
@@ -318,10 +317,6 @@ func APIUpdateUserSettings(g *gin.Context) {
 	switch {
 	case g.PostForm("set-email") != "":
 		update1(func(u *mv.User) { u.Email = mv.SoftTrunc(g.PostForm("email"), 256) })
-	case g.PostForm("set-nrit") != "":
-		update2(func(u *mv.UserSettings) { u.NoReplyInTimeline = g.PostForm("nrit") != "" })
-	case g.PostForm("set-npim") != "":
-		update2(func(u *mv.UserSettings) { u.NoPostInMaster = g.PostForm("npim") != "" })
 	case g.PostForm("set-autonsfw") != "":
 		update2(func(u *mv.UserSettings) { u.AutoNSFW = g.PostForm("autonsfw") != "" })
 	case g.PostForm("set-foldimg") != "":
@@ -336,10 +331,7 @@ func APIUpdateUserSettings(g *gin.Context) {
 		name = mv.SoftTruncDisplayWidth(name, 16)
 		update1(func(u *mv.User) {
 			u.CustomName = name
-
-			p := view.FakeResponseCatcher{}
-			engine.Engine.HTMLRender.Instance("display_name.html", u).Render(&p)
-			g.Writer.Header().Add("X-Result", url.PathEscape(p.String()))
+			g.Writer.Header().Add("X-Result", url.PathEscape(view.RenderTemplateString("display_name.html", u)))
 			g.Writer.Header().Add("X-Custom-Name", url.PathEscape(name))
 		})
 	case g.PostForm("set-avatar") != "":

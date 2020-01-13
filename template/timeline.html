@@ -59,9 +59,7 @@
         <script>$q('#nav-own').className = "selected"</script>
         {{template "user_private.html" .User}}
     </div>
-    {{if .ShowNewPost}}
-    <div style="margin-top:1em">{{template "reply_view.html" .ReplyView}}</div>
-    {{end}}
+    
 </div>
 
 {{end}}
@@ -77,7 +75,11 @@
 
 {{if .ReplyView.PID}}<script>showReply('{{.ReplyView.PID}}');</script>{{end}}
 
-<div class="rows" id=timeline>
+<div class="rows" id="timeline{{.ReplyView.UUID}}" style="">
+    {{if .ShowNewPost}}
+    {{template "reply_view.html" .ReplyView}}
+    {{end}}
+
     {{range .Articles}}
     {{template "row_content.html" .}}
     {{end}}
@@ -88,10 +90,10 @@
     <button
         value="{{.Next}}"
         class="gbutton load-more"
-        onclick="loadMore('timeline',this,{likes:{{.IsUserLikeTimeline}},media:{{.MediaOnly}},})">更多...</button>
+        onclick="loadMore('timeline{{.ReplyView.UUID}}',this,{likes:{{.IsUserLikeTimeline}},media:{{.MediaOnly}},})">更多...</button>
 
     <script>
-        preLoadMore("timeline", $q("#timeline + .paging > .load-more"))
+        preLoadMore("timeline{{.ReplyView.UUID}}", $q("#timeline{{.ReplyView.UUID}} + .paging > .load-more"))
     </script>
 
     {{else}}

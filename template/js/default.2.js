@@ -7,7 +7,7 @@ function $q(q, multi) {
 }
 
 function $value(el) {
-    return el.getAttribute("value")
+    return el && el.getAttribute && el.getAttribute("value")
 }
 
 function $wait(el) {
@@ -361,4 +361,15 @@ function updateSetting(el, field, value, cb, errcb) {
         stop();
         if (errcb) errcb();
     })
+}
+
+function $check(el) {
+    var i = el.querySelector('i');
+    if (i.className == 'icon-ok-circled2') {
+        i.className = 'icon-ok-circled-1';
+        el.setAttribute("value", "true")
+    } else {
+        i.className = 'icon-ok-circled2';
+        el.setAttribute("value", "")
+    }
 }

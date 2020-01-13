@@ -1,6 +1,10 @@
-function onPost(cid, el, p, nsfw) {
-    var content = $q("#" + cid + " [name=content]").value;
-    var res = content.match(/((@|#)\S+)/g);
+function onPost(uuid, el, p) {
+    var cid = "rv-" + uuid,
+        ta = $q("#" + cid + " [name=content]"),
+        image64 = $q("#" + cid + " [name=image64]"),
+        image = $q("#" + cid + " [type=file]"),
+        res = ta.value.match(/((@|#)\S+)/g);
+
     if (res) {
         var e = JSON.parse(window.localStorage.getItem("presets") || "[]");
         e = e.concat(res);
@@ -11,16 +15,26 @@ function onPost(cid, el, p, nsfw) {
 
     var stop = $wait(el);
     $post("/api2/new", {
-        content: content,
-        image64: $q("#" + cid + " [name=image64]").value,
-        image_name: $q("#" + cid + " [name=image64]").IMAGE_NAME || "",
-        nsfw: nsfw ? "1" : "",
+        content: ta.value,
+        image64: image64.value,
+        image_name: image64.IMAGE_NAME || "",
+        nsfw: $value($q("#" + cid + " [name=isnsfw]")) == 'true' ? "1" : "",
+        no_master: $value($q("#" + cid + " [name=nomaster]")) == 'true' ? "1" : "",
+        no_timeline: $value($q("#" + cid + " [name=notimeline]")) == 'true' ? "1" : "",
         parent: p,
-    }, function (res) {
+    }, function (res, h) {
         stop();
-        if (res != "ok") return res;
-
-        p ? showReply(p) : location.reload();
+        if (res != "ok") {
+            return res;
+        } else {
+            ta.value = "";
+            image64.value = "";
+            image.value = null;
+            image.onchange();
+        }
+        var div = $q("<div>")
+        div.innerHTML = decodeURIComponent(h.getResponseHeader("X-Result"));
+        $q("#timeline" + uuid).insertBefore(div.querySelector("div"), $q("#" + cid).nextSibling)
     }, stop)
 }
 
@@ -76,10 +90,8 @@ function onContentObserved(el) {
 
 function onImageChanged(el) {
     var btn = el.previousElementSibling;
-    var btnNSFW = el.parentNode.parentNode.querySelector(".reply-submit-nsfw");
     btn.className = btn.className.replace(/image/, "")
     btn.querySelector('div') ? btn.removeChild(btn.querySelector('div')) : 0;
-    btnNSFW.style.display = "none";
     el.nextElementSibling.value = "";
 
     if (!el.value) return;
@@ -97,7 +109,6 @@ function onImageChanged(el) {
                     el.nextElementSibling.value = img.src;
                     el.nextElementSibling.IMAGE_NAME = el.value.split(/(\\|\/)/g).pop();
                     // $q('#reply-submit').removeAttribute("disabled");
-                    btnNSFW.style.display = null;
                     var img2 = document.createElement("img");
                     var div = document.createElement("div");
                     var span = document.createElement("div");

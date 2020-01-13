@@ -1,10 +1,8 @@
 <div style="width: 100%; max-width: 800px; margin: 0 auto;position:relative">
-    <div class="rows replies" id="timeline{{.FrameID}}" > 
+    <div class="rows replies" id="timeline{{.ReplyView.UUID}}" > 
         {{template "row_content.html" .ParentArticle}}
 
-        <div style="margin: 0 0.5em">
-            {{template "reply_view.html" .ReplyView}}
-        </div>
+        {{template "reply_view.html" .ReplyView}}
 
         {{range .Articles}}
         {{template "row_content.html" .}}
@@ -16,15 +14,10 @@
         <button
             value="{{.Next}}"
             class="gbutton load-more"
-            onclick="loadMore('timeline{{.FrameID}}',this,{reply:true})">更多回复...</button>
+            onclick="loadMore('timeline{{.ReplyView.UUID}}',this,{reply:true})">更多回复...</button>
 
-        <!--<script>preLoadMore("timeline{{.FrameID}}", $q("#timeline{{.FrameID}} + .paging > .load-more"))</script>-->
         {{else}}
         <a class=gbutton style="color:#aaa">没有更多回复</a>
         {{end}}
     </div>
 </div>
-
-<style>
-
-</style>

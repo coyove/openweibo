@@ -107,6 +107,7 @@ func UserLikes(g *gin.Context) {
 	p := ArticlesTimelineView{
 		IsUserLikeTimeline: true,
 		MediaOnly:          g.Query("media") != "",
+		ReplyView:          makeReplyView(g, ""),
 		You:                getUser(g),
 	}
 

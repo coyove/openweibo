@@ -3,12 +3,9 @@ package view
 import (
 	"log"
 	"net/url"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/coyove/iis/cmd/ch/config"
-	"github.com/coyove/iis/cmd/ch/engine"
 	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/manager"
 	"github.com/coyove/iis/cmd/ch/mv"
@@ -37,7 +34,6 @@ type ArticlesTimelineView struct {
 type ArticleRepliesView struct {
 	Articles      []ArticleView
 	ParentArticle ArticleView
-	FrameID       string
 	Next          string
 	ReplyView     ReplyView
 }
@@ -204,11 +200,8 @@ func APITimeline(g *gin.Context) {
 
 	p.EOT = p.Next == ""
 
-	tmp := FakeResponseCatcher{}
 	for _, a := range articles {
-		tmp.Reset()
-		engine.Engine.HTMLRender.Instance("row_content.html", a).Render(&tmp)
-		p.Articles = append(p.Articles, [2]string{a.ID, tmp.String()})
+		p.Articles = append(p.Articles, [2]string{a.ID, RenderTemplateString("row_content.html", a)})
 	}
 	g.JSON(200, p)
 }
@@ -226,7 +219,6 @@ func APIReplies(g *gin.Context) {
 
 	pl.ParentArticle.from(parent, 0, getUser(g))
 	pl.ReplyView = makeReplyView(g, pid)
-	pl.FrameID = strconv.FormatInt(time.Now().Unix(), 16)
 
 	if u, ok := g.Get("user"); ok {
 		if m.IsBlocking(pl.ParentArticle.Author.ID, u.(*mv.User).ID) {

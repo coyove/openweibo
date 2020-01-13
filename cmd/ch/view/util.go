@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/coyove/iis/cmd/ch/config"
+	"github.com/coyove/iis/cmd/ch/engine"
 	"github.com/coyove/iis/cmd/ch/mv"
 	"github.com/gin-gonic/gin"
 )
@@ -46,10 +47,16 @@ var staticHeader = http.Header{
 	"Content-Type": []string{"something"},
 }
 
-type FakeResponseCatcher struct {
+type fakeResponseCatcher struct {
 	bytes.Buffer
 }
 
-func (w *FakeResponseCatcher) WriteHeader(code int) {}
+func (w *fakeResponseCatcher) WriteHeader(code int) {}
 
-func (w *FakeResponseCatcher) Header() http.Header { return staticHeader }
+func (w *fakeResponseCatcher) Header() http.Header { return staticHeader }
+
+func RenderTemplateString(name string, v interface{}) string {
+	p := fakeResponseCatcher{}
+	engine.Engine.HTMLRender.Instance(name, v).Render(&p)
+	return p.String()
+}

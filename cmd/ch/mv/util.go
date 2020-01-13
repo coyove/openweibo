@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	rxSan        = regexp.MustCompile(`(?m)(\[img\]https?://\S+\[/img\]|\[code\][\s\S]+\[/code\]|<|https?://[^\s<>"'#\[\]]+|@\S+|#\S+)`)
+	rxSan        = regexp.MustCompile(`(?m)(\n|\[img\]https?://\S+\[/img\]|\[code\][\s\S]+\[/code\]|<|https?://[^\s<>"'#\[\]]+|@\S+|#\S+)`)
 	rxFirstImage = regexp.MustCompile(`(?i)(https?://\S+\.(png|jpg|gif|webp|jpeg)|\[img\]https?://\S+\[/img\])`)
 	rxMentions   = regexp.MustCompile(`((@|#)\S+)`)
 )
@@ -55,7 +55,15 @@ func SoftTruncDisplayWidth(a string, w int) string {
 }
 
 func sanText(in string) string {
+	newLines := 0
 	in = rxSan.ReplaceAllStringFunc(in, func(in string) string {
+		if in == "\n" {
+			if newLines++; newLines < 10 {
+				// We allow 10 new lines in an article at max
+				return in
+			}
+			return " "
+		}
 		if in == "<" {
 			return "&lt;"
 		}

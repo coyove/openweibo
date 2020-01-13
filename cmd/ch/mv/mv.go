@@ -166,11 +166,9 @@ func UnmarshalUser(b []byte) (*User, error) {
 }
 
 type UserSettings struct {
-	NoReplyInTimeline bool   `json:"nrit,omitempty"`
-	NoPostInMaster    bool   `json:"npim,omitempty"`
-	AutoNSFW          bool   `json:"autonsfw,omitempty"`
-	FoldImages        bool   `json:"foldi,omitempty"`
-	Description       string `json:"desc,omitempty"`
+	AutoNSFW    bool   `json:"autonsfw,omitempty"`
+	FoldImages  bool   `json:"foldi,omitempty"`
+	Description string `json:"desc,omitempty"`
 }
 
 func (u UserSettings) Marshal() []byte {

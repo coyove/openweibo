@@ -54,8 +54,8 @@ func main() {
 				NSFW:    true,
 			}, &mv.User{
 				ID: names[rand.Intn(len(names))],
-			})
-			ids = append(ids, aid)
+			}, false)
+			ids = append(ids, aid.ID)
 		}
 
 		wg := sync.WaitGroup{}
@@ -77,8 +77,8 @@ func main() {
 					}
 					aid, _ := m.PostReply(parent, "BENCH "+strconv.Itoa(i)+" reply", "", &mv.User{
 						ID: names[rand.Intn(len(names))],
-					}, "127.0.0.0", false)
-					ids = append(ids, aid)
+					}, "127.0.0.0", false, false)
+					ids = append(ids, aid.ID)
 
 					if i%10 == 0 {
 						log.Println("Progress", i)

@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"net/url"
 
 	"github.com/coyove/iis/cmd/ch/config"
 	"github.com/coyove/iis/cmd/ch/mv"
+	"github.com/coyove/iis/cmd/ch/view"
 	"github.com/gin-gonic/gin"
 )
 
@@ -73,14 +75,15 @@ func APINew(g *gin.Context) {
 		NSFW:    nsfw,
 	}
 
-	aid, err := m.Post(a, u)
+	a2, err := m.Post(a, u, g.PostForm("no_master") == "1")
 	if err != nil {
-		log.Println(aid, err)
+		log.Println(a2, err)
 		g.String(200, "internal/error")
 		return
 	}
 
-	content = ""
+	g.Writer.Header().Add("X-Result", url.PathEscape(view.RenderTemplateString("row_content.html",
+		view.NewTopArticleView(a2, u))))
 	g.String(200, "ok")
 }
 
@@ -147,11 +150,14 @@ func doReply(g *gin.Context) {
 		image = "IMG:" + image
 	}
 
-	if _, err := m.PostReply(reply, content, image, u, ip, nsfw); err != nil {
-		log.Println(err)
+	a2, err := m.PostReply(reply, content, image, u, ip, nsfw, g.PostForm("no_timeline") == "1")
+	if err != nil {
+		log.Println(a2, err)
 		g.String(200, "error/can-not-reply")
 		return
 	}
 
+	g.Writer.Header().Add("X-Result", url.PathEscape(view.RenderTemplateString("row_content.html",
+		view.NewReplyArticleView(a2, u))))
 	g.String(200, "ok")
 }

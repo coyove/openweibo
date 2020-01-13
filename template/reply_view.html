@@ -1,5 +1,5 @@
-<div id="rv-{{.UUID}}" style="background:white">
-    <table class="articles reply-table" style="box-shadow: 0 0 3px #d0d0d0;position:relative;text-align:left">
+<div id="rv-{{.UUID}}" style="background:white;margin:0 0.5em">
+    <table class="articles reply-table" style="box-shadow: 0 0 3px #ccc;position:relative;text-align:left">
         <tr>
             <td colspan=2 style="padding:0">
                 <textarea
@@ -11,9 +11,7 @@
                     style="padding:0.5em;border:none"></textarea>
             </td>
         </tr>
-        <tr class=sep>
-            <td colspan=2 style="padding:0">{{template "emoji.html" .UUID}}</td>
-        </tr>
+
         <tr class=sep>
             <td>
                 <!-- Three as a Whole -->
@@ -43,24 +41,58 @@
                         color: white;
                         background: rgba(0,0,0,0.3)
                     }
-                    .reply-submit-nsfw, .reply-button {
+                    .post-options {
+                        display: inline-block;
+                        position: relative;
+                    }
+                    .post-options ul {
+                        display: none;
+                        position: absolute;
+                        right: 0;
+                        background: #fafbfc;
+                        box-shadow: 0 1px 5px rgba(0, 0, 0, .3);
+                        list-style: none;
+                        text-align:left;
+                    }
+                    .post-options ul li {
+                        padding: 0.5em 1em;
+                        cursor: pointer;
+                    }
+                    .post-options:hover ul {
                         display: block;
+                        z-index: 1000;
+                    }
+                    .post-options ul li:hover {
+                        background: #bdf;
                     }
                 </style>
 
             </td>
             <td class="nowrap" style="text-align:center">
-                <button class="reply-submit gbutton" onclick="onPost('rv-{{.UUID}}', this, '{{.ReplyTo}}')">
+                <div class="post-options">
+                    <button class=gbutton>选项<i class="icon-down-dir right"></i></button>
+                    <ul>
+                        <li>
+                            {{if .ReplyTo}}
+                            <span name=notimeline onclick="$check(this)"><i class=icon-ok-circled2></i>不同步至我的时间线</span>
+                            {{else}}
+                            <span name=nomaster onclick="$check(this)"><i class=icon-ok-circled2></i>不同步至Master时间线</span>
+                            {{end}}
+                        </li>
+                        <li>
+                            <span name=isnsfw onclick="$check(this)"><i class=icon-ok-circled2></i>标记图片为NSFW内容</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <button class="gbutton" onclick="onPost('{{.UUID}}', this, '{{.ReplyTo}}')">
                     {{if .ReplyTo}}回复{{else}}发布{{end}}
-                </button>
-                <button
-                    class="reply-submit-nsfw gbutton"
-                    style="color:#f90;display:none"
-                    onclick="onPost('rv-{{.UUID}}',this,'{{.ReplyTo}}',true)">
-                    {{if .ReplyTo}}回复{{else}}发布{{end}}NSFW内容
                 </button>
             </td>
         </tr>
-        
+
+        <tr class=sep>
+            <td colspan=2 style="padding:0">{{template "emoji.html" .UUID}}</td>
+        </tr>       
     </table>
 </div>
