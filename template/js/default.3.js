@@ -238,7 +238,7 @@ function loadMore(tlid, el, data) {
                 }
                 var div = document.createElement("div");
                 div.innerHTML = a[1];
-                $q('#' + tlid).appendChild(div.firstChild);
+                $q('#' + tlid).appendChild(div.querySelector("div"));
             })
         }
         expandNSFW();
