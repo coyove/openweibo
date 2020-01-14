@@ -1,3 +1,5 @@
+{{$isInboxLike := eq .Cmd "inbox-like"}}
+
 <div data-id="{{.ID}}" style="padding:0.5em 0.5em 0 0.5em" class="row">
     <div class="row-header" style="line-height:{{if .NoAvatar}}24px{{else}}36px{{end}};display:flex">
         {{if not .NoAvatar}}
@@ -9,14 +11,15 @@
         </div>
         {{end}}
 
+    {{template "display_name.html" .Author}}
+
     {{if eq .Cmd "inbox-reply"}}
-        {{template "display_name.html" .Author}}
         <span class=post-date>于 {{formatTime .CreateTime}} 回复了你</span>
     {{else if eq .Cmd "inbox-mention"}}
-        {{template "display_name.html" .Author}}
         <span class=post-date>于 {{formatTime .CreateTime}} @了你</span>
+    {{else if $isInboxLike}}
+        <span class=post-date>于 {{formatTime .CreateTime}} 收藏了你的状态</span>
     {{else}}
-        {{template "display_name.html" .Author}}
         {{if .You.IsMod}}
         <span>
             <a href="/mod/user?uid={{.Author.ID}}" target=_blank><i class="icon-export-alt"></i></a>
@@ -58,6 +61,7 @@
     <pre style="padding:0.66em 0 0">{{.ContentHTML}}</pre>
     {{end}}
 
+    {{if not $isInboxLike}}
     <div style="padding: 0.5em 0;line-height:1.5em">
         <a class="reply-box" href="javascript:showReply('{{.ID}}')">
             <i class="icon-reply-outline"></i> {{if .Replies}}{{.Replies}}{{end}}
@@ -77,10 +81,11 @@
         </a>
         {{end}}
     </div>
+    {{end}}
 
     {{if .Parent}}
     {{if .Parent.ID}}
-    <div style="position:relative;margin:0 -0.5em; border-top:dotted 1px #aaa">
+    <div style="position:relative;margin:0 -0.5em;{{if not $isInboxLike}}border-top:dotted 1px #aaa{{end}}">
         <i style="position: absolute; left: -12px; top: -1px; border-color: #aaa transparent transparent; display: block; border-width: 12px; border-style: solid;"></i>
     </div>
 

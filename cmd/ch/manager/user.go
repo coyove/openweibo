@@ -304,14 +304,36 @@ func (m *Manager) LikeArticle_unlock(from, to string, liking bool) (E error) {
 		return err
 	}
 	if updated {
-		return m.UpdateArticle(to, func(a *mv.Article) error {
-			if liking {
-				a.Likes++
-			} else {
-				dec0(&a.Likes)
-			}
-			return nil
-		})
+		go func() {
+			m.UpdateArticle(to, func(a *mv.Article) error {
+				if liking {
+					a.Likes++
+				} else {
+					dec0(&a.Likes)
+				}
+
+				if m.IsFollowing(a.Author, from) {
+					// if the author followed 'from', notify the author that his articles has been liked by 'from'
+					go func() {
+						m.insertArticle(ident.NewID(ident.IDTagInbox).SetTag(a.Author).String(), &mv.Article{
+							ID:  ident.NewGeneralID().String(),
+							Cmd: mv.CmdILike,
+							Extras: map[string]string{
+								"from":       from,
+								"article_id": a.ID,
+							},
+							CreateTime: time.Now(),
+						}, false)
+						m.UpdateUser(a.Author, func(u *mv.User) error {
+							u.Unread++
+							return nil
+						})
+					}()
+				}
+
+				return nil
+			})
+		}()
 	}
 	return nil
 }

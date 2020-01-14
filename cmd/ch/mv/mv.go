@@ -20,6 +20,7 @@ const (
 	CmdNone     Cmd = ""
 	CmdReply        = "inbox-reply"
 	CmdMention      = "inbox-mention"
+	CmdILike        = "inbox-like"
 	CmdFollow       = "follow"
 	CmdFollowed     = "followed"
 	CmdBlock        = "block"

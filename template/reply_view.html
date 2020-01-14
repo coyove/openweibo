@@ -23,13 +23,19 @@
                 <!-- Three as a Whole -->
 
                 <style>
-                    .gbutton.image { height: 100%; }
+                    .gbutton.image {
+                        height: 100px;
+                        width: 100px;
+                        padding: 0;
+                    }
                     .gbutton.image span { display: none; }
                     .gbutton.image img {
                         display: block;
                         max-width: 100px;
                         max-height: 100px;
+                        object-fit: contain;
                         border-radius: 3px;
+                        margin: auto;
                     }
                     .gbutton.image .info {
                         position: absolute;

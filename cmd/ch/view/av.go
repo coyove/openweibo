@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/coyove/iis/cmd/ch/ident"
 	"github.com/coyove/iis/cmd/ch/mv"
 )
 
@@ -92,15 +93,6 @@ func (a *ArticleView) from(a2 *mv.Article, opt uint64, u *mv.User) *ArticleView 
 	a.Content = a2.Content
 	a.ContentHTML = a2.ContentHTML()
 
-	// if a2.Extras["poll"] == "true" {
-	// 	for i := range a.Polls {
-	// 		a.Polls[i].Text = a2.Extras["poll"+strconv.Itoa(i+1)]
-	// 		if a.Polls[i].Text != "" {
-	// 			a.HasPoll = true
-	// 		}
-	// 	}
-	// }
-
 	if a2.Parent != "" {
 		a.Parent = &ArticleView{}
 		if opt&_NoMoreParent == 0 {
@@ -117,8 +109,27 @@ func (a *ArticleView) from(a2 *mv.Article, opt uint64, u *mv.User) *ArticleView 
 	switch a2.Cmd {
 	case mv.CmdReply, mv.CmdMention:
 		p, _ := m.GetArticle(a2.Extras["article_id"])
+		if p == nil {
+			return a
+		}
+
 		a.from(p, opt, u)
 		a.Cmd = string(a2.Cmd)
+	case mv.CmdILike:
+		p, _ := m.GetArticle(a2.Extras["article_id"])
+
+		if p == nil {
+			return a
+		}
+
+		dummy := &mv.Article{
+			ID:         ident.NewGeneralID().String(),
+			CreateTime: p.CreateTime,
+			Cmd:        mv.CmdILike,
+			Author:     a2.Extras["from"],
+			Parent:     p.ID,
+		}
+		a.from(dummy, opt, u)
 	}
 
 	return a

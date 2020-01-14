@@ -77,7 +77,9 @@
 
 <div class="rows" id="timeline{{.ReplyView.UUID}}" style="">
     {{if .ShowNewPost}}
+    {{if ne .User.ID "master"}}
     {{template "reply_view.html" .ReplyView}}
+    {{end}}
     {{end}}
 
     {{range .Articles}}
