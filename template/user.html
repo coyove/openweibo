@@ -17,7 +17,7 @@
     </div>
 
 <table class="articles" style="margin: 0.5em 0">
-    <tr><td colspan=3><b>账户信息</b></td></tr>
+    <tr><td colspan=3><b>用户信息</b></td></tr>
 
     <tr>
         <td>上次登入:</td>
@@ -61,24 +61,6 @@
         </td>
     </tr> 
 
-    {{if .User.IsMod}}
-    <tr>
-        <td class=nowrap>最大耗时:</td>
-        <td>{{.Survey.Max}}ms</td>
-    </tr>
-    <tr>
-        <td class=nowrap>流出流量:</td>
-        <td>{{.Survey.Written}}b</td>
-    </tr>
-    {{end}}
-
-    {{if .User.IsAdmin}}
-    <tr>
-        <td class=nowrap></td>
-        <td><button class=gbutton onclick='$postReload(this,"/api2/reset_cache",{})'>重置缓存</button></td>
-    </tr>
-    {{end}}
-
     <tr><td colspan=3><b>修改密码</b></td></tr>
 
     <tr>
@@ -100,6 +82,17 @@
                 }, function(h) { return h })">更新</button>
         </td>
     </tr>
+
+    {{if .User.IsMod}}
+    <tr>
+        <td class=nowrap>最大耗时:</td>
+        <td>{{.Survey.Max}}ms</td>
+    </tr>
+    <tr>
+        <td class=nowrap>流出流量:</td>
+        <td>{{.Survey.Written}}b</td>
+    </tr>
+    {{end}}
 </table>
 
 
