@@ -6,14 +6,13 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/coyove/iis/common"
-	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/dal"
+	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
 	"github.com/gin-gonic/gin"
 )
@@ -22,16 +21,6 @@ var m *dal.Manager
 
 func SetManager(mgr *dal.Manager) {
 	m = mgr
-}
-
-func EncodeQuery(a ...string) string {
-	query := url.Values{}
-	for i := 0; i < len(a); i += 2 {
-		if a[i] != "" {
-			query.Add(a[i], a[i+1])
-		}
-	}
-	return "?" + query.Encode()
 }
 
 func checkIP(g *gin.Context) string {

@@ -29,7 +29,7 @@ func ModUser(g *gin.Context) {
 	}
 
 	if g.Query("swap") == "1" && p.You.IsAdmin() {
-		g.SetCookie("id", model.MakeUserToken(p.User), 86400, "", "", false, false)
+		g.SetCookie("id", ik.MakeUserToken(p.User), 86400, "", "", false, false)
 	}
 
 	getter := func(h ik.IDTag) string {

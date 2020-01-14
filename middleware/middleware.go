@@ -1,4 +1,4 @@
-package engine
+package middleware
 
 import (
 	"io"
@@ -11,11 +11,10 @@ import (
 	"time"
 
 	"github.com/coyove/iis/common"
-	"github.com/coyove/iis/ik"
-	"github.com/coyove/iis/logs"
+	"github.com/coyove/iis/common/logs"
 	"github.com/coyove/iis/dal"
+	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
-	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 )
 
@@ -102,65 +101,6 @@ func mwIPThrot(g *gin.Context) {
 }
 
 func New(prod bool) *gin.Engine {
-	// os.MkdirAll("tmp/logs", 0700)
-	// logf, err := rotatelogs.New("tmp/logs/access_log.%Y%m%d%H%M", rotatelogs.WithLinkName("tmp/logs/access_log"), rotatelogs.WithMaxAge(7*24*time.Hour))
-	// //logerrf, err := rotatelogs.New("tmp/logs/error_log.%Y%m%d%H%M", rotatelogs.WithLinkName("error_log"), rotatelogs.WithMaxAge(7*24*time.Hour))
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// mwLoggerConfig := gin.LoggerConfig{
-	// 	Formatter: func(params gin.LogFormatterParams) string {
-	// 		buf := strings.Builder{}
-	// 		itoa := func(i int, wid int) {
-	// 			var b [20]byte
-	// 			bp := len(b) - 1
-	// 			for i >= 10 || wid > 1 {
-	// 				wid--
-	// 				q := i / 10
-	// 				b[bp] = byte('0' + i - q*10)
-	// 				bp--
-	// 				i = q
-	// 			}
-	// 			// i < 10
-	// 			b[bp] = byte('0' + i)
-	// 			buf.Write(b[bp:])
-	// 		}
-
-	// 		itoa(params.TimeStamp.Year(), 4)
-	// 		buf.WriteByte('/')
-	// 		itoa(int(params.TimeStamp.Month()), 2)
-	// 		buf.WriteByte('/')
-	// 		itoa(params.TimeStamp.Day(), 2)
-	// 		buf.WriteByte(' ')
-	// 		itoa(params.TimeStamp.Hour(), 2)
-	// 		buf.WriteByte(':')
-	// 		itoa(params.TimeStamp.Minute(), 2)
-	// 		buf.WriteByte(':')
-	// 		itoa(params.TimeStamp.Second(), 2)
-	// 		buf.WriteByte(' ')
-	// 		buf.WriteString(params.ClientIP)
-	// 		buf.WriteByte(' ')
-	// 		buf.WriteString(params.Method)
-	// 		buf.WriteByte(' ')
-	// 		buf.WriteByte('[')
-	// 		if params.StatusCode >= 400 {
-	// 			buf.WriteString(strconv.Itoa(params.StatusCode))
-	// 		}
-	// 		buf.WriteByte(']')
-	// 		buf.WriteByte(' ')
-	// 		buf.WriteString(params.Path)
-	// 		buf.WriteByte(' ')
-	// 		buf.WriteByte('[')
-	// 		buf.WriteString(strconv.FormatFloat(float64(params.BodySize)/1024, 'f', 3, 64))
-	// 		buf.WriteByte(']')
-	// 		buf.WriteByte(' ')
-	// 		buf.WriteString(params.ErrorMessage)
-	// 		buf.WriteByte('\n')
-	// 		return buf.String()
-	// 	},
-	// }
-
 	if prod && os.Getenv("CW") != "0" {
 		gin.SetMode(gin.ReleaseMode)
 
@@ -174,7 +114,7 @@ func New(prod bool) *gin.Engine {
 	log.SetFlags(log.Lshortfile | log.Ltime | log.Ldate)
 
 	r := gin.New()
-	r.Use(gin.Recovery(), gzip.Gzip(gzip.BestSpeed), mwRenderPerf, mwIPThrot)
+	r.Use(gin.Recovery(), mwRenderPerf, mwIPThrot)
 
 	loadTrafficCounter()
 

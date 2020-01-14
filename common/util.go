@@ -2,6 +2,7 @@ package common
 
 import (
 	"html/template"
+	"net/url"
 	"regexp"
 	"strings"
 )
@@ -115,4 +116,14 @@ func ExtractFirstImage(in string) string {
 		return m[0]
 	}
 	return ""
+}
+
+func EncodeQuery(a ...string) string {
+	query := url.Values{}
+	for i := 0; i < len(a); i += 2 {
+		if a[i] != "" {
+			query.Add(a[i], a[i+1])
+		}
+	}
+	return "?" + query.Encode()
 }

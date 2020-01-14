@@ -12,40 +12,24 @@ import (
 	"time"
 
 	"github.com/coyove/iis/common"
-	"github.com/coyove/iis/engine"
-	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/dal"
+	"github.com/coyove/iis/ik"
+	"github.com/coyove/iis/middleware"
 	"github.com/coyove/iis/model"
 	"github.com/gin-gonic/gin"
 )
 
-func User(g *gin.Context) {
+func Signup(g *gin.Context) {
 	var (
 		ip        = hashIP(g)
 		username  = sanUsername(g.PostForm("username"))
 		email     = common.SoftTrunc(g.PostForm("email"), 64)
 		password  = common.SoftTrunc(g.PostForm("password"), 32)
 		password2 = common.SoftTrunc(g.PostForm("password2"), 32)
-		mth       = g.PostForm("method")
 		redir     = func(a, b string, ext ...string) {
-			q := EncodeQuery(append([]string{a, b, "username", username, "email", email, "password", ik.MakeTempToken(password)}, ext...)...)
-
-			switch mth {
-			case "login":
-				u := g.Request.Referer()
-				if idx := strings.Index(u, "?"); idx > -1 {
-					u = u[:idx]
-				}
-				g.Redirect(302, u+q)
-			default:
-				g.Redirect(302, "/user"+q)
-			}
+			q := common.EncodeQuery(append([]string{a, b, "username", username, "email", email, "password", ik.MakeTempToken(password)}, ext...)...)
+			g.Redirect(302, "/user"+q)
 		}
-		u = func() *model.User {
-			u, _ := g.Get("user")
-			u2, _ := u.(*model.User)
-			return u2
-		}()
 	)
 
 	if g.PostForm("cancel") != "" || g.PostForm("refresh") != "" {
@@ -64,61 +48,36 @@ func User(g *gin.Context) {
 	pwdHash := hmac.New(sha256.New, common.Cfg.KeyBytes)
 	pwdHash.Write([]byte(password))
 
-	switch mth {
-	case "signup":
-		if ret := checkCaptcha(g); ret != "" {
-			redir("error", ret)
-			return
-		}
+	if ret := checkCaptcha(g); ret != "" {
+		redir("error", ret)
+		return
+	}
 
-		if len(password) == 0 || password != password2 {
-			redir("error", "password/invalid-too-short")
-			return
-		}
+	if len(password) == 0 || password != password2 {
+		redir("error", "password/invalid-too-short")
+		return
+	}
 
-		if u, err := m.GetUser(username); err == nil && u.ID == username {
-			redir("error", "id/already-existed")
-			return
-		}
+	if u, err := m.GetUser(username); err == nil && u.ID == username {
+		redir("error", "id/already-existed")
+		return
+	}
 
-		if username := strings.ToLower(username); username == "master" ||
-			strings.HasPrefix(username, "admin") ||
-			strings.HasPrefix(username, strings.ToLower(common.Cfg.AdminName)) {
-			redir("error", "id/already-existed")
-			return
-		}
+	if username := strings.ToLower(username); username == "master" ||
+		strings.HasPrefix(username, "admin") ||
+		strings.HasPrefix(username, strings.ToLower(common.Cfg.AdminName)) {
+		redir("error", "id/already-existed")
+		return
+	}
 
-		u = &model.User{
-			ID:           username,
-			Session:      genSession(),
-			Email:        email,
-			PasswordHash: pwdHash.Sum(nil),
-			DataIP:       "{" + ip + "}",
-			TSignup:      uint32(time.Now().Unix()),
-			TLogin:       uint32(time.Now().Unix()),
-		}
-	case "login":
-		if ret := checkToken(g); ret != "" {
-			redir("error", ret)
-			return
-		}
-		u, _ = m.GetUser(username)
-		if u == nil {
-			redir("error", "guard/id-not-existed")
-			return
-		}
-
-		if !bytes.Equal(u.PasswordHash, pwdHash.Sum(nil)) {
-			redir("error", "internal/error")
-			return
-		}
-		u.Session = genSession()
-		u.TLogin = uint32(time.Now().Unix())
-		if ips := append(strings.Split(u.DataIP, ","), ip); len(ips) > 5 {
-			u.DataIP = strings.Join(append(ips[:1], ips[len(ips)-4:]...), ",")
-		} else {
-			u.DataIP = strings.Join(ips, ",")
-		}
+	u := &model.User{
+		ID:           username,
+		Session:      genSession(),
+		Email:        email,
+		PasswordHash: pwdHash.Sum(nil),
+		DataIP:       "{" + ip + "}",
+		TSignup:      uint32(time.Now().Unix()),
+		TLogin:       uint32(time.Now().Unix()),
 	}
 
 	if err := m.SetUser(u); err != nil {
@@ -127,13 +86,57 @@ func User(g *gin.Context) {
 		return
 	}
 
-	g.SetCookie("id", model.MakeUserToken(u), 365*86400, "", "", false, false)
+	g.SetCookie("id", ik.MakeUserToken(u), 365*86400, "", "", false, false)
+	redir("error", "ok")
+}
 
-	if mth == "signup" && username != g.PostForm("username") {
-		redir("error", "ok/username-changed")
-	} else {
-		redir("error", "ok")
+func APILogin(g *gin.Context) {
+	username := sanUsername(g.PostForm("username"))
+	password := common.SoftTrunc(g.PostForm("password"), 32)
+
+	if len(username) < 3 {
+		g.String(200, "id/too-short")
+		return
 	}
+
+	m.Lock(username)
+	defer m.Unlock(username)
+
+	pwdHash := hmac.New(sha256.New, common.Cfg.KeyBytes)
+	pwdHash.Write([]byte(password))
+
+	if ret := checkIP(g); ret != "" {
+		g.String(200, ret)
+		return
+	}
+
+	u, _ := m.GetUser(username)
+	if u == nil {
+		g.String(200, "guard/id-not-existed")
+		return
+	}
+
+	if !bytes.Equal(u.PasswordHash, pwdHash.Sum(nil)) {
+		g.String(200, "internal/error")
+		return
+	}
+
+	u.Session = genSession()
+	u.TLogin = uint32(time.Now().Unix())
+	if ips := append(strings.Split(u.DataIP, ","), hashIP(g)); len(ips) > 5 {
+		u.DataIP = strings.Join(append(ips[:1], ips[len(ips)-4:]...), ",")
+	} else {
+		u.DataIP = strings.Join(ips, ",")
+	}
+
+	if err := m.SetUser(u); err != nil {
+		log.Println(u, err)
+		g.String(200, "internal/error")
+		return
+	}
+
+	g.SetCookie("id", ik.MakeUserToken(u), 365*86400, "", "", false, false)
+	g.String(200, "ok")
 }
 
 func APIUserKimochi(g *gin.Context) {
@@ -221,7 +224,7 @@ func APILogout(g *gin.Context) {
 			return nil
 		})
 		u = &model.User{}
-		g.SetCookie("id", model.MakeUserToken(u), 365*86400, "", "", false, false)
+		g.SetCookie("id", ik.MakeUserToken(u), 365*86400, "", "", false, false)
 	}
 	g.Status(200)
 }
@@ -331,7 +334,7 @@ func APIUpdateUserSettings(g *gin.Context) {
 		name = common.SoftTruncDisplayWidth(name, 16)
 		update1(func(u *model.User) {
 			u.CustomName = name
-			g.Writer.Header().Add("X-Result", url.PathEscape(engine.RenderTemplateString("display_name.html", u)))
+			g.Writer.Header().Add("X-Result", url.PathEscape(middleware.RenderTemplateString("display_name.html", u)))
 			g.Writer.Header().Add("X-Custom-Name", url.PathEscape(name))
 		})
 	case g.PostForm("set-avatar") != "":

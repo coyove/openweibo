@@ -2,7 +2,6 @@ package model
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -92,7 +91,7 @@ type User struct {
 	Followers      int32  `json:"F"`
 	Followings     int32  `json:"f"`
 	Unread         int32  `json:"ur"`
-	FollowingChain string `json:"FC2,omitempty"`
+	FollowingChain string `json:"FC2,omitempty"` // deprecated
 	DataIP         string `json:"sip"`
 	TSignup        uint32 `json:"st"`
 	TLogin         uint32 `json:"lt"`
@@ -186,22 +185,4 @@ func UnmarshalUserSettings(b []byte) UserSettings {
 	a := UserSettings{}
 	json.Unmarshal(b, &a)
 	return a
-}
-
-func MakeUserToken(u *User) string {
-	if u == nil {
-		return ""
-	}
-
-	length := len(u.ID) + 1 + len(u.Session)
-	length = (length + 7) / 8 * 8
-
-	x := make([]byte, length)
-	copy(x, u.Session)
-	copy(x[len(u.Session)+1:], u.ID)
-
-	for i := 0; i <= len(x)-16; i += 8 {
-		common.Cfg.Blk.Encrypt(x[i:], x[i:])
-	}
-	return base64.StdEncoding.EncodeToString(x)
 }

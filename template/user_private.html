@@ -17,7 +17,19 @@
             <div style="display:inline-block">{{template "kimochi.html" .}}</div>
         </div>
         <div style="flex:1 100%;text-align:center;overflow:hidden;text-overflow: ellipsis;white-space:nowrap">
-            <span id=change-name onclick="changeName(this)" >
+            {{if not .CustomName}}
+<style>
+#change-name .post-author {
+    padding: 0 0.33em;
+    border-left: solid 2px #233;
+    animation: name-blink 1s steps(2, start) infinite;
+}
+      @keyframes name-blink {
+          to { border-left-color: transparent ;}
+      }
+</style>
+{{end}}
+            <span id=change-name onclick="changeName(this)">
                 {{template "display_name.html" .}}
                 <input class=t style="display:none;border:none;text-align:center" placeholder="输入你的名字">
             </span>

@@ -24,7 +24,6 @@ type ArticleView struct {
 	Liked       bool
 	NSFW        bool
 	NoAvatar    bool
-	Blank       bool
 	Content     string
 	ContentHTML template.HTML
 	Media       string
@@ -36,7 +35,6 @@ const (
 	_ uint64 = 1 << iota
 	_NoMoreParent
 	_ShowAvatar
-	_Blank
 )
 
 func NewTopArticleView(a *model.Article, you *model.User) (av ArticleView) {
@@ -59,7 +57,6 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 	a.Likes = int(a2.Likes)
 	a.Locked = a2.Locked
 	a.NSFW = a2.NSFW
-	a.Blank = opt&_Blank > 0
 	a.Cmd = string(a2.Cmd)
 	a.CreateTime = a2.CreateTime
 	a.Author, _ = m.GetUser(a2.Author)

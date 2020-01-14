@@ -32,7 +32,7 @@ function $post(url, data, cb, errorcb) {
         if (xml.readyState != 4) return;
         if (xml.status == 200) {
             var res = xml.responseText;
-            if (xml.getResponseHeader('Content-Type').match(/json/)) {
+            if ((xml.getResponseHeader('Content-Type') || "").match(/json/)) {
                 try { res = JSON.parse(res) } catch(e) {}
             }
 

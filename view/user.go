@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/coyove/iis/common"
-	"github.com/coyove/iis/engine"
-	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/dal"
+	"github.com/coyove/iis/ik"
+	"github.com/coyove/iis/middleware"
 	"github.com/coyove/iis/model"
 	"github.com/gin-gonic/gin"
 	"github.com/o1egl/govatar"
@@ -34,7 +34,7 @@ func User(g *gin.Context) {
 		RUsername:  g.Query("username"),
 		REmail:     g.Query("email"),
 		RPassword:  ik.ParseTempToken(g.Query("password")),
-		Survey:     engine.Survey,
+		Survey:     middleware.Survey,
 		Config:     common.Cfg.PrivateString,
 	}
 

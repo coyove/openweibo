@@ -33,7 +33,7 @@
     {{end}}
 </div>
 
-<title>{{.User.DisplayName}}的收藏</title>
+<title>{{.User.DisplayName}} 的收藏</title>
 <script>$q('#nav-likes a span').innerText = "@{{.User.ID}}";$q('#nav-likes').className = "selected"</script>
 
 {{else if .IsTagTimeline}}

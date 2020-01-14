@@ -7,7 +7,7 @@ import (
 	"net/url"
 
 	"github.com/coyove/iis/common"
-	"github.com/coyove/iis/engine"
+	"github.com/coyove/iis/middleware"
 	"github.com/coyove/iis/model"
 	"github.com/coyove/iis/view"
 	"github.com/gin-gonic/gin"
@@ -83,7 +83,7 @@ func APINew(g *gin.Context) {
 		return
 	}
 
-	g.Writer.Header().Add("X-Result", url.PathEscape(engine.RenderTemplateString("row_content.html",
+	g.Writer.Header().Add("X-Result", url.PathEscape(middleware.RenderTemplateString("row_content.html",
 		view.NewTopArticleView(a2, u))))
 	g.String(200, "ok")
 }
@@ -158,7 +158,7 @@ func doReply(g *gin.Context) {
 		return
 	}
 
-	g.Writer.Header().Add("X-Result", url.PathEscape(engine.RenderTemplateString("row_content.html",
+	g.Writer.Header().Add("X-Result", url.PathEscape(middleware.RenderTemplateString("row_content.html",
 		view.NewReplyArticleView(a2, u))))
 	g.String(200, "ok")
 }

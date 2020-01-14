@@ -16,9 +16,9 @@ import (
 	"github.com/coyove/common/sched"
 	"github.com/coyove/iis/action"
 	"github.com/coyove/iis/common"
-	"github.com/coyove/iis/engine"
-	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/dal"
+	"github.com/coyove/iis/ik"
+	"github.com/coyove/iis/middleware"
 	"github.com/coyove/iis/model"
 	"github.com/coyove/iis/view"
 	"github.com/gin-gonic/autotls"
@@ -39,7 +39,7 @@ func main() {
 	m := dal.New("iis.db")
 	view.SetManager(m)
 	action.SetManager(m)
-	engine.SetManager(m)
+	middleware.SetManager(m)
 
 	if os.Getenv("BENCH") == "1" {
 		ids := []string{}
@@ -90,7 +90,7 @@ func main() {
 		}
 	}
 
-	r := engine.New(common.Cfg.Key != "0123456789abcdef")
+	r := middleware.New(common.Cfg.Key != "0123456789abcdef")
 	r.SetFuncMap(template.FuncMap{
 		"isCDError": func(s string) string {
 			if strings.HasPrefix(s, "guard/cooling-down/") {
@@ -146,7 +146,7 @@ func main() {
 	r.Handle("GET", "/mod/user", view.ModUser)
 	r.Handle("GET", "/mod/kv", view.ModKV)
 
-	r.Handle("POST", "/user", action.User)
+	r.Handle("POST", "/user", action.Signup)
 	r.Handle("POST", "/api/p/:parent", view.APIReplies)
 	r.Handle("POST", "/api/timeline", view.APITimeline)
 	r.Handle("POST", "/api/user_kimochi", action.APIUserKimochi)
@@ -159,6 +159,7 @@ func main() {
 	r.Handle("POST", "/api/user_settings", action.APIUpdateUserSettings)
 	r.Handle("POST", "/api2/follow_block", action.APIFollowBlock)
 	r.Handle("POST", "/api2/like_article", action.APILike)
+	r.Handle("POST", "/api2/login", action.APILogin)
 	r.Handle("POST", "/api2/logout", action.APILogout)
 	r.Handle("POST", "/api2/new", action.APINew)
 	r.Handle("POST", "/api2/user_password", action.APIUpdateUserPassword)

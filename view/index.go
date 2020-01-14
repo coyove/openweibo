@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/coyove/iis/common"
-	"github.com/coyove/iis/engine"
-	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/dal"
+	"github.com/coyove/iis/ik"
+	"github.com/coyove/iis/middleware"
 	"github.com/coyove/iis/model"
 	"github.com/gin-gonic/gin"
 )
@@ -63,7 +63,7 @@ func Index(g *gin.Context) {
 	}
 
 	a2, next := m.WalkMulti(pl.MediaOnly, int(common.Cfg.PostsPerPage), ik.NewID(ik.IDTagTag).SetTag(pl.Tag))
-	fromMultiple(&pl.Articles, a2, _Blank, getUser(g))
+	fromMultiple(&pl.Articles, a2, 0, getUser(g))
 
 	pl.Next = ik.CombineIDs(nil, next...)
 	g.HTML(200, "timeline.html", pl)
@@ -145,7 +145,7 @@ func Timeline(g *gin.Context) {
 	}
 
 	a, next := m.WalkMulti(pl.MediaOnly, int(common.Cfg.PostsPerPage), cursors...)
-	fromMultiple(&pl.Articles, a, _Blank, pl.You)
+	fromMultiple(&pl.Articles, a, 0, pl.You)
 
 	if pl.IsInbox {
 		go m.UpdateUser(pl.User.ID, func(u *model.User) error {
@@ -168,7 +168,7 @@ func APITimeline(g *gin.Context) {
 	var articles []ArticleView
 	if g.PostForm("likes") == "true" {
 		a, next := m.WalkLikes(g.PostForm("media") == "true", int(common.Cfg.PostsPerPage), g.PostForm("cursors"))
-		fromMultiple(&articles, a, _Blank, getUser(g))
+		fromMultiple(&articles, a, 0, getUser(g))
 		p.Next = next
 	} else if g.PostForm("reply") == "true" {
 		a, next := m.WalkReply(int(common.Cfg.PostsPerPage), g.PostForm("cursors"))
@@ -195,14 +195,14 @@ func APITimeline(g *gin.Context) {
 		}
 
 		a, next := m.WalkMulti(g.PostForm("media") == "true", int(common.Cfg.PostsPerPage), cursors...)
-		fromMultiple(&articles, a, _Blank, getUser(g))
+		fromMultiple(&articles, a, 0, getUser(g))
 		p.Next = ik.CombineIDs([]byte(pendingFCursor), next...)
 	}
 
 	p.EOT = p.Next == ""
 
 	for _, a := range articles {
-		p.Articles = append(p.Articles, [2]string{a.ID, engine.RenderTemplateString("row_content.html", a)})
+		p.Articles = append(p.Articles, [2]string{a.ID, middleware.RenderTemplateString("row_content.html", a)})
 	}
 	g.JSON(200, p)
 }
