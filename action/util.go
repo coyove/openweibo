@@ -11,17 +11,10 @@ import (
 	"strings"
 
 	"github.com/coyove/iis/common"
-	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
 	"github.com/gin-gonic/gin"
 )
-
-var m *dal.Manager
-
-func SetManager(mgr *dal.Manager) {
-	m = mgr
-}
 
 func checkIP(g *gin.Context) string {
 	if u, _ := g.Get("user"); u != nil {

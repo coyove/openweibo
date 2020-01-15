@@ -47,10 +47,10 @@
         {{if .NSFW}}展开NSFW图片{{else}}展开图片{{end}}
     </button>
     <a href="{{.Media}}" target=_blank>
-        <img
+        <img class=media
     {{else}}
     <a href="{{.Media}}" target=_blank>
-        <img src="{{.Media}}"
+        <img class=media src="{{.Media}}"
     {{end}}
             style="border-radius:5px;display:block;max-width:300px;max-height:300px">
     </a>

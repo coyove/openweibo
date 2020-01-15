@@ -2,7 +2,6 @@ package kv
 
 import (
 	"net/http"
-	sync "sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -18,7 +17,6 @@ var dyTable = "iis"
 type DynamoKV struct {
 	cache *lru.Cache
 	db    *dynamodb.DynamoDB
-	locks [65536]sync.Mutex
 }
 
 func NewDynamoKV(region, accessKey, secretKey string) *DynamoKV {
@@ -45,20 +43,6 @@ func NewDynamoKV(region, accessKey, secretKey string) *DynamoKV {
 		cache: lru.NewCache(CacheSize),
 	}
 	return r
-}
-
-func (m *DynamoKV) Lock(key string) {
-	lk := &m.locks[hashString(key)]
-	lk.Lock()
-}
-
-func (m *DynamoKV) Unlock(key string) {
-	lk := &m.locks[hashString(key)]
-	lk.Unlock()
-}
-
-func (m *DynamoKV) ResetCache() {
-	m.cache.Clear()
 }
 
 func (m *DynamoKV) Get(key string) ([]byte, error) {

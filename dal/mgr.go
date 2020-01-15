@@ -8,36 +8,35 @@ import (
 	"time"
 
 	"github.com/coyove/iis/common"
-	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/dal/kv"
 	"github.com/coyove/iis/dal/weak_cache"
+	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
 )
 
-type Manager struct {
+var m struct {
 	db        KeyValueOp
 	weakUsers *weak_cache.Cache
 }
 
-func New(path string) *Manager {
+func Init(region string, ak, sk string) {
 	var db KeyValueOp
 
-	if common.Cfg.DyRegion == "" {
-		db = kv.NewBoltKV(path)
+	if region == "" {
+		db = kv.NewDiskKV()
 	} else {
-		db = kv.NewDynamoKV(common.Cfg.DyRegion, common.Cfg.DyAccessKey, common.Cfg.DySecretKey)
+		db = kv.NewDynamoKV(region, ak, sk)
 	}
 
-	m := &Manager{db: db}
+	m.db = db
 	m.weakUsers = weak_cache.NewCache(65536, time.Second)
-	return m
 }
 
-func (m *Manager) ModKV() KeyValueOp {
+func ModKV() KeyValueOp {
 	return m.db
 }
 
-func (m *Manager) GetArticle(id string) (*model.Article, error) {
+func GetArticle(id string) (*model.Article, error) {
 	if id == "" {
 		return nil, fmt.Errorf("empty ID")
 	}
@@ -55,7 +54,7 @@ func (m *Manager) GetArticle(id string) (*model.Article, error) {
 	if a.ReferID == "" {
 		return a, nil
 	}
-	a2, err := m.GetArticle(a.ReferID)
+	a2, err := GetArticle(a.ReferID)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +63,7 @@ func (m *Manager) GetArticle(id string) (*model.Article, error) {
 	return a2, nil
 }
 
-func (m *Manager) WalkMulti(media bool, n int, cursors ...ik.ID) (a []*model.Article, next []ik.ID) {
+func WalkMulti(media bool, n int, cursors ...ik.ID) (a []*model.Article, next []ik.ID) {
 	if len(cursors) == 0 {
 		return
 	}
@@ -105,7 +104,7 @@ func (m *Manager) WalkMulti(media bool, n int, cursors ...ik.ID) (a []*model.Art
 			break
 		}
 
-		p, err := m.GetArticle(latest.String())
+		p, err := GetArticle(latest.String())
 		if err == nil {
 			if !idm[p.ID] && p.Content != model.DeletionMarker && !latest.IsRoot() {
 				// 1. 'p' is not duplicated
@@ -127,7 +126,7 @@ func (m *Manager) WalkMulti(media bool, n int, cursors ...ik.ID) (a []*model.Art
 	return a, cursors
 }
 
-func (m *Manager) WalkReply(n int, cursor string) (a []*model.Article, next string) {
+func WalkReply(n int, cursor string) (a []*model.Article, next string) {
 	startTime := time.Now()
 
 	for len(a) < n && cursor != "" {
@@ -136,7 +135,7 @@ func (m *Manager) WalkReply(n int, cursor string) (a []*model.Article, next stri
 			break
 		}
 
-		p, err := m.GetArticle(cursor)
+		p, err := GetArticle(cursor)
 		if err != nil {
 			log.Println("[mgr.WalkReply] Failed to get:", cursor, err)
 			break
@@ -151,7 +150,7 @@ func (m *Manager) WalkReply(n int, cursor string) (a []*model.Article, next stri
 	return a, cursor
 }
 
-func (m *Manager) WalkLikes(media bool, n int, cursor string) (a []*model.Article, next string) {
+func WalkLikes(media bool, n int, cursor string) (a []*model.Article, next string) {
 	startTime := time.Now()
 
 	for len(a) < n && cursor != "" {
@@ -160,14 +159,14 @@ func (m *Manager) WalkLikes(media bool, n int, cursor string) (a []*model.Articl
 			break
 		}
 
-		p, err := m.GetArticle(cursor)
+		p, err := GetArticle(cursor)
 		if err != nil {
 			log.Println("[mgr.WalkLikes] Failed to get:", cursor, err)
 			break
 		}
 
 		if p.Extras["like"] == "true" {
-			a2, err := m.GetArticle(p.Extras["to"])
+			a2, err := GetArticle(p.Extras["to"])
 			if err == nil {
 				a2.NextID = p.NextID
 				a = append(a, a2)
@@ -182,17 +181,17 @@ func (m *Manager) WalkLikes(media bool, n int, cursor string) (a []*model.Articl
 	return a, cursor
 }
 
-func (m *Manager) Post(a *model.Article, author *model.User, noMaster bool) (*model.Article, error) {
+func Post(a *model.Article, author *model.User, noMaster bool) (*model.Article, error) {
 	a.ID = ik.NewGeneralID().String()
 	a.CreateTime = time.Now()
 	a.Author = author.ID
 
-	if err := m.insertArticle(ik.NewID(ik.IDTagAuthor).SetTag(a.Author).String(), a, false); err != nil {
+	if err := insertArticle(ik.NewID(ik.IDTagAuthor).SetTag(a.Author).String(), a, false); err != nil {
 		return nil, err
 	}
 
 	if !noMaster {
-		go m.insertArticle(ik.NewID(ik.IDTagAuthor).SetTag("master").String(), &model.Article{
+		go insertArticle(ik.NewID(ik.IDTagAuthor).SetTag("master").String(), &model.Article{
 			ID:         ik.NewGeneralID().String(),
 			ReferID:    a.ID,
 			Media:      a.Media,
@@ -202,17 +201,17 @@ func (m *Manager) Post(a *model.Article, author *model.User, noMaster bool) (*mo
 
 	go func() {
 		ids, tags := common.ExtractMentionsAndTags(a.Content)
-		m.MentionUserAndTags(a, ids, tags)
+		MentionUserAndTags(a, ids, tags)
 	}()
 
 	return a, nil
 }
 
-func (m *Manager) insertArticle(rootID string, a *model.Article, asReply bool) error {
-	m.db.Lock(rootID)
-	defer m.db.Unlock(rootID)
+func insertArticle(rootID string, a *model.Article, asReply bool) error {
+	common.LockKey(rootID)
+	defer common.UnlockKey(rootID)
 
-	root, err := m.GetArticle(rootID)
+	root, err := GetArticle(rootID)
 	if err != nil && err != model.ErrNotExisted {
 		return err
 	}
@@ -263,8 +262,8 @@ func (m *Manager) insertArticle(rootID string, a *model.Article, asReply bool) e
 	return nil
 }
 
-func (m *Manager) PostReply(parent string, content, media string, author *model.User, ip string, nsfw bool, noTimeline bool) (*model.Article, error) {
-	p, err := m.GetArticle(parent)
+func PostReply(parent string, content, media string, author *model.User, ip string, nsfw bool, noTimeline bool) (*model.Article, error) {
+	p, err := GetArticle(parent)
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +272,7 @@ func (m *Manager) PostReply(parent string, content, media string, author *model.
 		return nil, fmt.Errorf("locked parent")
 	}
 
-	if m.IsBlocking(p.Author, author.ID) {
+	if IsBlocking(p.Author, author.ID) {
 		return nil, fmt.Errorf("author blocked")
 	}
 
@@ -288,20 +287,20 @@ func (m *Manager) PostReply(parent string, content, media string, author *model.
 		CreateTime: time.Now(),
 	}
 
-	if err := m.insertArticle(p.ID, a, true); err != nil {
+	if err := insertArticle(p.ID, a, true); err != nil {
 		return nil, err
 	}
 
 	if !noTimeline {
 		// Add reply to its timeline
-		if err := m.insertArticle(ik.NewID(ik.IDTagAuthor).SetTag(a.Author).String(), a, false); err != nil {
+		if err := insertArticle(ik.NewID(ik.IDTagAuthor).SetTag(a.Author).String(), a, false); err != nil {
 			return nil, err
 		}
 	}
 
 	go func() {
 		if p.Content != model.DeletionMarker && a.Author != p.Author {
-			if err := m.insertArticle(ik.NewID(ik.IDTagInbox).SetTag(p.Author).String(), &model.Article{
+			if err := insertArticle(ik.NewID(ik.IDTagInbox).SetTag(p.Author).String(), &model.Article{
 				ID:  ik.NewGeneralID().String(),
 				Cmd: model.CmdReply,
 				Extras: map[string]string{
@@ -313,23 +312,23 @@ func (m *Manager) PostReply(parent string, content, media string, author *model.
 				log.Println("PostReply", err)
 			}
 
-			m.UpdateUser(p.Author, func(u *model.User) error {
+			UpdateUser(p.Author, func(u *model.User) error {
 				u.Unread++
 				return nil
 			})
 		}
 		ids, tags := common.ExtractMentionsAndTags(a.Content)
-		m.MentionUserAndTags(a, ids, tags)
+		MentionUserAndTags(a, ids, tags)
 	}()
 
 	return a, nil
 }
 
-func (m *Manager) UpdateArticle(aid string, cb func(a *model.Article) error) error {
-	m.db.Lock(aid)
-	defer m.db.Unlock(aid)
+func UpdateArticle(aid string, cb func(a *model.Article) error) error {
+	common.LockKey(aid)
+	defer common.UnlockKey(aid)
 
-	a, err := m.GetArticle(aid)
+	a, err := GetArticle(aid)
 	if err != nil {
 		return err
 	}

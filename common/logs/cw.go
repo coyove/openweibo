@@ -17,6 +17,10 @@ import (
 
 const batchLimit = 900 * 1024 // CW limit: 1M, we use 900KB for safety
 
+func now() string {
+	return time.Now().Format(time.ANSIC)
+}
+
 type entry struct {
 	ts  int64
 	msg string
@@ -117,17 +121,17 @@ func (l *Logger) worker() {
 
 					l.nextSeqToken, _ = l.getNextSeqToken()
 					if l.nextSeqToken != "" {
-						fmt.Println(time.Now(), "Cloudwatch, retry new token:", l.nextSeqToken)
+						fmt.Println(now(), "Cloudwatch, retry new token:", l.nextSeqToken)
 						goto IMMEDIATE_RETRY
 					}
 				}
 			}
 
-			fmt.Println(time.Now(), "Cloudwatch put fatal:", err)
+			fmt.Println(now(), "Cloudwatch put fatal:", err)
 
 			f, err := os.OpenFile("badcw.log", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0700)
 			if err != nil {
-				fmt.Println(time.Now(), "Cloudwatch second pass fatal error:", err)
+				fmt.Println(now(), "Cloudwatch second pass fatal error:", err)
 			} else {
 				p := bytes.Buffer{}
 				for _, e := range in.LogEvents {

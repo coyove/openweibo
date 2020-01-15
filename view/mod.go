@@ -3,6 +3,7 @@ package view
 import (
 	"fmt"
 
+	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
 	"github.com/gin-gonic/gin"
@@ -22,7 +23,7 @@ func ModUser(g *gin.Context) {
 		return
 	}
 
-	p.User, _ = m.GetUserWithSettings(g.Query("uid"))
+	p.User, _ = dal.GetUserWithSettings(g.Query("uid"))
 	if p.User == nil {
 		NotFound(g)
 		return
@@ -34,7 +35,7 @@ func ModUser(g *gin.Context) {
 
 	getter := func(h ik.IDTag) string {
 		id := ik.NewID(h).SetTag(p.User.ID).String()
-		a, _ := m.GetArticle(id)
+		a, _ := dal.GetArticle(id)
 		if a == nil {
 			return id + " (empty)"
 		}

@@ -17,7 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (m *Manager) GetUser(id string) (*model.User, error) {
+func GetUser(id string) (*model.User, error) {
 	if id == "" {
 		return nil, model.ErrNotExisted
 	}
@@ -35,11 +35,11 @@ func (m *Manager) GetUser(id string) (*model.User, error) {
 		m.weakUsers.Add(u.ID, unsafe.Pointer(&u2))
 		if u.FollowingChain != "" {
 			go func() {
-				fc, _ := m.GetArticle(u.FollowingChain)
+				fc, _ := GetArticle(u.FollowingChain)
 				id := ik.NewID(ik.IDTagFollowChain).SetTag(u.ID).String()
 				if fc != nil {
 					for !strings.HasPrefix(fc.NextID, "u/") {
-						fc2, _ := m.GetArticle(fc.NextID)
+						fc2, _ := GetArticle(fc.NextID)
 						if fc2 != nil {
 							fc = fc2
 						} else {
@@ -51,7 +51,7 @@ func (m *Manager) GetUser(id string) (*model.User, error) {
 						ID:     id,
 						NextID: fc.NextID,
 					}
-					if _, err := m.GetArticle(a.ID); err == model.ErrNotExisted {
+					if _, err := GetArticle(a.ID); err == model.ErrNotExisted {
 						m.db.Set(a.ID, a.Marshal())
 					}
 				}
@@ -62,8 +62,8 @@ func (m *Manager) GetUser(id string) (*model.User, error) {
 	return u, err
 }
 
-func (m *Manager) GetUserWithSettings(id string) (*model.User, error) {
-	u, err := m.GetUser(id)
+func GetUserWithSettings(id string) (*model.User, error) {
+	u, err := GetUser(id)
 	if err != nil {
 		return u, err
 	}
@@ -72,7 +72,7 @@ func (m *Manager) GetUserWithSettings(id string) (*model.User, error) {
 	return u, nil
 }
 
-func (m *Manager) SetUser(u *model.User) error {
+func SetUser(u *model.User) error {
 	if u.ID == "" {
 		return nil
 	}
@@ -80,15 +80,15 @@ func (m *Manager) SetUser(u *model.User) error {
 	return m.db.Set("u/"+u.ID, u.Marshal())
 }
 
-func (m *Manager) GetUserByContext(g *gin.Context) *model.User {
-	u, _ := m.GetUserByToken(g.PostForm("api2_uid"))
+func GetUserByContext(g *gin.Context) *model.User {
+	u, _ := GetUserByToken(g.PostForm("api2_uid"))
 	if u != nil && u.Banned {
 		return nil
 	}
 	return u
 }
 
-func (m *Manager) GetUserByToken(tok string) (*model.User, error) {
+func GetUserByToken(tok string) (*model.User, error) {
 	if tok == "" {
 		return nil, fmt.Errorf("invalid token")
 	}
@@ -108,7 +108,7 @@ func (m *Manager) GetUserByToken(tok string) (*model.User, error) {
 	}
 
 	session, id := parts[0], parts[1]
-	u, err := m.GetUserWithSettings(string(id))
+	u, err := GetUserWithSettings(string(id))
 	if err != nil {
 		return nil, err
 	}
@@ -119,31 +119,23 @@ func (m *Manager) GetUserByToken(tok string) (*model.User, error) {
 	return u, nil
 }
 
-func (m *Manager) IsBanned(id string) bool {
-	u, err := m.GetUser(id)
+func IsBanned(id string) bool {
+	u, err := GetUser(id)
 	if err != nil {
 		return true
 	}
 	return u.Banned
 }
 
-func (m *Manager) Lock(id string) {
-	m.db.Lock(id)
+func UpdateUser(id string, cb func(u *model.User) error) error {
+	common.LockKey(id)
+	defer common.UnlockKey(id)
+	return UpdateUser_unlock(id, cb)
 }
 
-func (m *Manager) Unlock(id string) {
-	m.db.Unlock(id)
-}
-
-func (m *Manager) UpdateUser(id string, cb func(u *model.User) error) error {
-	m.db.Lock(id)
-	defer m.db.Unlock(id)
-	return m.UpdateUser_unlock(id, cb)
-}
-
-func (m *Manager) UpdateUserSettings(id string, cb func(u *model.UserSettings) error) error {
-	m.db.Lock(id)
-	defer m.db.Unlock(id)
+func UpdateUserSettings(id string, cb func(u *model.UserSettings) error) error {
+	common.LockKey(id)
+	defer common.UnlockKey(id)
 	sid := "u/" + id + "/settings"
 	p, _ := m.db.Get(sid)
 	s := model.UnmarshalUserSettings(p)
@@ -153,24 +145,24 @@ func (m *Manager) UpdateUserSettings(id string, cb func(u *model.UserSettings) e
 	return m.db.Set(sid, s.Marshal())
 }
 
-func (m *Manager) UpdateUser_unlock(id string, cb func(u *model.User) error) error {
-	u, err := m.GetUser(id)
+func UpdateUser_unlock(id string, cb func(u *model.User) error) error {
+	u, err := GetUser(id)
 	if err != nil {
 		return err
 	}
 	if err := cb(u); err != nil {
 		return err
 	}
-	return m.SetUser(u)
+	return SetUser(u)
 }
 
-func (m *Manager) MentionUserAndTags(a *model.Article, ids []string, tags []string) error {
+func MentionUserAndTags(a *model.Article, ids []string, tags []string) error {
 	for _, id := range ids {
-		if m.IsBlocking(id, a.Author) {
+		if IsBlocking(id, a.Author) {
 			return fmt.Errorf("author blocked")
 		}
 
-		if err := m.insertArticle(ik.NewID(ik.IDTagInbox).SetTag(id).String(), &model.Article{
+		if err := insertArticle(ik.NewID(ik.IDTagInbox).SetTag(id).String(), &model.Article{
 			ID:  ik.NewGeneralID().String(),
 			Cmd: model.CmdMention,
 			Extras: map[string]string{
@@ -181,7 +173,7 @@ func (m *Manager) MentionUserAndTags(a *model.Article, ids []string, tags []stri
 		}, false); err != nil {
 			return err
 		}
-		if err := m.UpdateUser(id, func(u *model.User) error {
+		if err := UpdateUser(id, func(u *model.User) error {
 			u.Unread++
 			return nil
 		}); err != nil {
@@ -190,7 +182,7 @@ func (m *Manager) MentionUserAndTags(a *model.Article, ids []string, tags []stri
 	}
 
 	for _, tag := range tags {
-		if err := m.insertArticle(ik.NewID(ik.IDTagTag).SetTag(tag).String(), &model.Article{
+		if err := insertArticle(ik.NewID(ik.IDTagTag).SetTag(tag).String(), &model.Article{
 			ID:         ik.NewGeneralID().String(),
 			ReferID:    a.ID,
 			Media:      a.Media,
@@ -203,15 +195,15 @@ func (m *Manager) MentionUserAndTags(a *model.Article, ids []string, tags []stri
 	return nil
 }
 
-func (m *Manager) FollowUser_unlock(from, to string, following bool) (E error) {
+func FollowUser_unlock(from, to string, following bool) (E error) {
 	followID := MakeFollowID(from, to)
-	if following && m.IsBlocking(to, from) {
+	if following && IsBlocking(to, from) {
 		// "from" wants "to" follow "to" but "to" blocked "from"
 		return fmt.Errorf("follow/to-blocked")
 	}
 
-	m.db.Lock(followID)
-	defer m.db.Unlock(followID)
+	common.LockKey(followID)
+	defer common.UnlockKey(followID)
 
 	updated := false
 	defer func() {
@@ -220,7 +212,7 @@ func (m *Manager) FollowUser_unlock(from, to string, following bool) (E error) {
 		}
 
 		go func() {
-			m.UpdateUser(from, func(u *model.User) error {
+			UpdateUser(from, func(u *model.User) error {
 				if following {
 					u.Followings++
 				} else {
@@ -229,13 +221,13 @@ func (m *Manager) FollowUser_unlock(from, to string, following bool) (E error) {
 				return nil
 			})
 			if !strings.HasPrefix(to, "#") {
-				m.fromFollowToNotifyTo(from, to, following)
+				fromFollowToNotifyTo(from, to, following)
 			}
 		}()
 	}()
 
 	state := strconv.FormatBool(following) + "," + strconv.FormatInt(time.Now().Unix(), 10)
-	if a, _ := m.GetArticle(followID); a != nil {
+	if a, _ := GetArticle(followID); a != nil {
 		if !strings.HasPrefix(a.Extras[to], strconv.FormatBool(following)) {
 			a.Extras[to] = state
 			updated = true
@@ -244,7 +236,7 @@ func (m *Manager) FollowUser_unlock(from, to string, following bool) (E error) {
 	}
 
 	updated = true
-	if err := m.insertArticle(
+	if err := insertArticle(
 		ik.NewID(ik.IDTagFollowChain).SetTag(from).String(),
 		&model.Article{
 			ID:         followID,
@@ -257,8 +249,8 @@ func (m *Manager) FollowUser_unlock(from, to string, following bool) (E error) {
 	return nil
 }
 
-func (m *Manager) fromFollowToNotifyTo(from, to string, following bool) (E error) {
-	if err := m.UpdateUser(to, func(u *model.User) error {
+func fromFollowToNotifyTo(from, to string, following bool) (E error) {
+	if err := UpdateUser(to, func(u *model.User) error {
 		if following {
 			u.Followers++
 		} else {
@@ -268,7 +260,7 @@ func (m *Manager) fromFollowToNotifyTo(from, to string, following bool) (E error
 	}); err != nil {
 		return err
 	}
-	_, err := m.insertChainOrUpdate(
+	_, err := insertChainOrUpdate(
 		makeFollowedID(to, from),
 		ik.NewID(ik.IDTagFollowerChain).SetTag(to).String(),
 		from,
@@ -277,14 +269,14 @@ func (m *Manager) fromFollowToNotifyTo(from, to string, following bool) (E error
 	return err
 }
 
-func (m *Manager) BlockUser_unlock(from, to string, blocking bool) (E error) {
+func BlockUser_unlock(from, to string, blocking bool) (E error) {
 	if blocking {
-		if err := m.FollowUser_unlock(to, from, false); err != nil {
+		if err := FollowUser_unlock(to, from, false); err != nil {
 			log.Println("Block user:", to, "unfollow error:", err)
 		}
 	}
 
-	_, err := m.insertChainOrUpdate(
+	_, err := insertChainOrUpdate(
 		makeBlockID(from, to),
 		ik.NewID(ik.IDTagBlockChain).SetTag(from).String(),
 		to,
@@ -293,8 +285,8 @@ func (m *Manager) BlockUser_unlock(from, to string, blocking bool) (E error) {
 	return err
 }
 
-func (m *Manager) LikeArticle_unlock(from, to string, liking bool) (E error) {
-	updated, err := m.insertChainOrUpdate(
+func LikeArticle_unlock(from, to string, liking bool) (E error) {
+	updated, err := insertChainOrUpdate(
 		makeLikeID(from, to),
 		ik.NewID(ik.IDTagLikeChain).SetTag(from).String(),
 		to,
@@ -305,17 +297,17 @@ func (m *Manager) LikeArticle_unlock(from, to string, liking bool) (E error) {
 	}
 	if updated {
 		go func() {
-			m.UpdateArticle(to, func(a *model.Article) error {
+			UpdateArticle(to, func(a *model.Article) error {
 				if liking {
 					a.Likes++
 				} else {
 					dec0(&a.Likes)
 				}
 
-				if m.IsFollowing(a.Author, from) {
+				if IsFollowing(a.Author, from) {
 					// if the author followed 'from', notify the author that his articles has been liked by 'from'
 					go func() {
-						m.insertArticle(ik.NewID(ik.IDTagInbox).SetTag(a.Author).String(), &model.Article{
+						insertArticle(ik.NewID(ik.IDTagInbox).SetTag(a.Author).String(), &model.Article{
 							ID:  ik.NewGeneralID().String(),
 							Cmd: model.CmdILike,
 							Extras: map[string]string{
@@ -324,7 +316,7 @@ func (m *Manager) LikeArticle_unlock(from, to string, liking bool) (E error) {
 							},
 							CreateTime: time.Now(),
 						}, false)
-						m.UpdateUser(a.Author, func(u *model.User) error {
+						UpdateUser(a.Author, func(u *model.User) error {
 							u.Unread++
 							return nil
 						})
@@ -338,11 +330,11 @@ func (m *Manager) LikeArticle_unlock(from, to string, liking bool) (E error) {
 	return nil
 }
 
-func (m *Manager) insertChainOrUpdate(aid, chainid string, to string, cmd model.Cmd, value bool) (updated bool, E error) {
-	m.db.Lock(aid)
-	defer m.db.Unlock(aid)
+func insertChainOrUpdate(aid, chainid string, to string, cmd model.Cmd, value bool) (updated bool, E error) {
+	common.LockKey(aid)
+	defer common.UnlockKey(aid)
 
-	if a, _ := m.GetArticle(aid); a != nil {
+	if a, _ := GetArticle(aid); a != nil {
 		state := strconv.FormatBool(value)
 		if a.Extras[string(cmd)] == state {
 			return false, nil
@@ -365,13 +357,13 @@ func (m *Manager) insertChainOrUpdate(aid, chainid string, to string, cmd model.
 	}
 
 	if cmd == model.CmdLike {
-		toa, _ := m.GetArticle(to)
+		toa, _ := GetArticle(to)
 		if toa != nil {
 			a.Media = toa.Media
 		}
 	}
 
-	return true, m.insertArticle(chainid, a, false)
+	return true, insertArticle(chainid, a, false)
 }
 
 type FollowingState struct {
@@ -383,9 +375,9 @@ type FollowingState struct {
 	Blocked     bool
 }
 
-func (m *Manager) GetFollowingList(chain ik.ID, cursor string, n int) ([]FollowingState, string) {
+func GetFollowingList(chain ik.ID, cursor string, n int) ([]FollowingState, string) {
 	if cursor == "" {
-		a, err := m.GetArticle(chain.String())
+		a, err := GetArticle(chain.String())
 		if err != nil {
 			if err != model.ErrNotExisted {
 				log.Println("[GetFollowingList] Failed to get chain [", chain, "]")
@@ -404,7 +396,7 @@ func (m *Manager) GetFollowingList(chain ik.ID, cursor string, n int) ([]Followi
 			break
 		}
 
-		a, err := m.GetArticle(cursor)
+		a, err := GetArticle(cursor)
 		if err != nil {
 			log.Println("[GetFollowingList]", cursor, err)
 			break
@@ -440,17 +432,17 @@ func (m *Manager) GetFollowingList(chain ik.ID, cursor string, n int) ([]Followi
 	return res, cursor
 }
 
-func (m *Manager) IsFollowing(from, to string) bool {
-	p, _ := m.GetArticle(MakeFollowID(from, to))
+func IsFollowing(from, to string) bool {
+	p, _ := GetArticle(MakeFollowID(from, to))
 	return p != nil && strings.HasPrefix(p.Extras[to], "true")
 }
 
-func (m *Manager) IsBlocking(from, to string) bool {
-	p, _ := m.GetArticle(makeBlockID(from, to))
+func IsBlocking(from, to string) bool {
+	p, _ := GetArticle(makeBlockID(from, to))
 	return p != nil && p.Extras["block"] == "true"
 }
 
-func (m *Manager) IsLiking(from, to string) bool {
-	p, _ := m.GetArticle(makeLikeID(from, to))
+func IsLiking(from, to string) bool {
+	p, _ := GetArticle(makeLikeID(from, to))
 	return p != nil && p.Extras["like"] == "true"
 }

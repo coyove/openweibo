@@ -18,12 +18,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var m *dal.Manager
-
-func SetManager(mgr *dal.Manager) {
-	m = mgr
-}
-
 func mwRenderPerf(g *gin.Context) {
 	ip := net.ParseIP(g.ClientIP())
 	if ip == nil {
@@ -45,7 +39,7 @@ func mwRenderPerf(g *gin.Context) {
 	start := time.Now()
 
 	tok, _ := g.Cookie("id")
-	u, _ := m.GetUserByToken(tok)
+	u, _ := dal.GetUserByToken(tok)
 	if u != nil {
 		g.Set("user", u)
 	}

@@ -65,7 +65,7 @@ func UserList(g *gin.Context) {
 		return
 	}
 
-	p.User, _ = m.GetUser(g.Param("uid"))
+	p.User, _ = dal.GetUser(g.Param("uid"))
 	if p.User == nil {
 		p.User = p.You
 	}
@@ -83,7 +83,7 @@ func UserList(g *gin.Context) {
 	default:
 		chain = ik.NewID(ik.IDTagFollowChain).SetTag(p.User.ID)
 	}
-	p.List, p.Next = m.GetFollowingList(chain, g.Query("n"), int(common.Cfg.PostsPerPage))
+	p.List, p.Next = dal.GetFollowingList(chain, g.Query("n"), int(common.Cfg.PostsPerPage))
 
 	g.HTML(200, "user_list.html", p)
 }
@@ -116,17 +116,17 @@ func UserLikes(g *gin.Context) {
 		return
 	}
 
-	p.User, _ = m.GetUser(g.Param("uid"))
+	p.User, _ = dal.GetUser(g.Param("uid"))
 	if p.User == nil {
 		p.User = p.You
 	}
 
 	var cursor string
-	if pa, _ := m.GetArticle(ik.NewID(ik.IDTagLikeChain).SetTag(p.User.ID).String()); pa != nil {
+	if pa, _ := dal.GetArticle(ik.NewID(ik.IDTagLikeChain).SetTag(p.User.ID).String()); pa != nil {
 		cursor = pa.PickNextID(p.MediaOnly)
 	}
 
-	a, next := m.WalkLikes(p.MediaOnly, int(common.Cfg.PostsPerPage), cursor)
+	a, next := dal.WalkLikes(p.MediaOnly, int(common.Cfg.PostsPerPage), cursor)
 	fromMultiple(&p.Articles, a, 0, getUser(g))
 	p.Next = next
 

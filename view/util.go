@@ -4,16 +4,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/model"
 	"github.com/gin-gonic/gin"
 )
 
 func Error(code int, msg string, g *gin.Context) {
-	g.HTML(code, "error.html", struct {
-		Tags    []string
-		Message string
-	}{common.Cfg.Tags, msg})
+	g.HTML(code, "error.html", struct{ Message string }{msg})
 }
 
 func NotFound(g *gin.Context) {

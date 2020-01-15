@@ -7,19 +7,12 @@ import (
 	"net/url"
 
 	"github.com/coyove/iis/common"
+	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/middleware"
 	"github.com/coyove/iis/model"
 	"github.com/coyove/iis/view"
 	"github.com/gin-gonic/gin"
 )
-
-func getAuthor(g *gin.Context) string {
-	a := common.SoftTrunc(g.PostForm("author"), 32)
-	//if a == "" {
-	//	a = "user/" + hashIP(g)
-	//}
-	return a
-}
 
 func hashIP(g *gin.Context) string {
 	ip := append(net.IP{}, g.MustGet("ip").(net.IP)...)
@@ -45,7 +38,7 @@ func APINew(g *gin.Context) {
 		err     error
 	)
 
-	u := m.GetUserByContext(g)
+	u := dal.GetUserByContext(g)
 	if u == nil {
 		g.String(200, "user/not-logged-in")
 		return
@@ -76,16 +69,15 @@ func APINew(g *gin.Context) {
 		NSFW:    nsfw,
 	}
 
-	a2, err := m.Post(a, u, g.PostForm("no_master") == "1")
+	a2, err := dal.Post(a, u, g.PostForm("no_master") == "1")
 	if err != nil {
 		log.Println(a2, err)
 		g.String(200, "internal/error")
 		return
 	}
 
-	g.Writer.Header().Add("X-Result", url.PathEscape(middleware.RenderTemplateString("row_content.html",
+	g.String(200, "ok:"+url.PathEscape(middleware.RenderTemplateString("row_content.html",
 		view.NewTopArticleView(a2, u))))
-	g.String(200, "ok")
 }
 
 func doReply(g *gin.Context) {
@@ -98,7 +90,7 @@ func doReply(g *gin.Context) {
 		err     error
 	)
 
-	u := m.GetUserByContext(g)
+	u := dal.GetUserByContext(g)
 	if u == nil {
 		g.String(200, "user/not-logged-in")
 		return
@@ -110,7 +102,7 @@ func doReply(g *gin.Context) {
 	}
 
 	if g.PostForm("delete") != "" {
-		err := m.UpdateArticle(reply, func(a *model.Article) error {
+		err := dal.UpdateArticle(reply, func(a *model.Article) error {
 			if u.ID != a.Author && !u.IsMod() {
 				return fmt.Errorf("user/can-not-delete")
 			}
@@ -127,7 +119,7 @@ func doReply(g *gin.Context) {
 	}
 
 	if g.PostForm("makensfw") != "" {
-		err := m.UpdateArticle(reply, func(a *model.Article) error {
+		err := dal.UpdateArticle(reply, func(a *model.Article) error {
 			if u.ID != a.Author && !u.IsMod() {
 				return fmt.Errorf("user/can-not-delete")
 			}
@@ -151,14 +143,13 @@ func doReply(g *gin.Context) {
 		image = "IMG:" + image
 	}
 
-	a2, err := m.PostReply(reply, content, image, u, ip, nsfw, g.PostForm("no_timeline") == "1")
+	a2, err := dal.PostReply(reply, content, image, u, ip, nsfw, g.PostForm("no_timeline") == "1")
 	if err != nil {
 		log.Println(a2, err)
 		g.String(200, "error/can-not-reply")
 		return
 	}
 
-	g.Writer.Header().Add("X-Result", url.PathEscape(middleware.RenderTemplateString("row_content.html",
+	g.String(200, "ok:"+url.PathEscape(middleware.RenderTemplateString("row_content.html",
 		view.NewReplyArticleView(a2, u))))
-	g.String(200, "ok")
 }

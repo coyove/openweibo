@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/coyove/iis/common"
+	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
 )
@@ -59,7 +60,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 	a.NSFW = a2.NSFW
 	a.Cmd = string(a2.Cmd)
 	a.CreateTime = a2.CreateTime
-	a.Author, _ = m.GetUser(a2.Author)
+	a.Author, _ = dal.GetUser(a2.Author)
 	if a.Author == nil {
 		a.Author = &model.User{
 			ID: a2.Author + "?",
@@ -69,7 +70,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 	if a.You == nil {
 		a.You = &model.User{}
 	} else {
-		a.Liked = m.IsLiking(u.ID, a2.ID)
+		a.Liked = dal.IsLiking(u.ID, a2.ID)
 	}
 
 	if p := strings.SplitN(a2.Media, ":", 2); len(p) == 2 {
@@ -94,7 +95,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 	if a2.Parent != "" {
 		a.Parent = &ArticleView{}
 		if opt&_NoMoreParent == 0 {
-			p, _ := m.GetArticle(a2.Parent)
+			p, _ := dal.GetArticle(a2.Parent)
 			a.Parent.from(p, opt|_NoMoreParent, u)
 		}
 	}
@@ -106,7 +107,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 
 	switch a2.Cmd {
 	case model.CmdReply, model.CmdMention:
-		p, _ := m.GetArticle(a2.Extras["article_id"])
+		p, _ := dal.GetArticle(a2.Extras["article_id"])
 		if p == nil {
 			return a
 		}
@@ -114,7 +115,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 		a.from(p, opt, u)
 		a.Cmd = string(a2.Cmd)
 	case model.CmdILike:
-		p, _ := m.GetArticle(a2.Extras["article_id"])
+		p, _ := dal.GetArticle(a2.Extras["article_id"])
 
 		if p == nil {
 			return a

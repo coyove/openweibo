@@ -152,7 +152,7 @@ function deleteArticle(el, id) {
         $q("[data-id='" + id + "'] > pre", true).forEach(function(e) {
             e.innerHTML = "<span class=deleted></span>";
         });
-        $q("[data-id='" + id + "'] img", true).forEach(function(e) {
+        $q("[data-id='" + id + "'] img.media", true).forEach(function(e) {
             e.src = '';
         });
     }, stop)

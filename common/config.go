@@ -22,7 +22,6 @@ var Cfg = struct {
 	AdminName      string   `yaml:"AdminName"`
 	PostsPerPage   int      `yaml:"PostsPerPage"`
 	MaxImagesCache int      `yaml:"MaxImagesCache"` // GB
-	Tags           []string `yaml:"Tags"`
 	Domain         string   `yaml:"Domain"`
 	IPBlacklist    []string `yaml:"IPBlacklist"`
 	MaxMentions    int      `yaml:"MaxMentions"`
@@ -35,7 +34,6 @@ var Cfg = struct {
 	Blk               cipher.Block
 	KeyBytes          []byte
 	IPBlacklistParsed []*net.IPNet
-	TagsMap           map[string]bool
 	PublicString      string
 	PrivateString     string
 }{
@@ -46,7 +44,6 @@ var Cfg = struct {
 	MaxContent:     4096,
 	MinContent:     8,
 	PostsPerPage:   30,
-	Tags:           []string{},
 	Cooldown:       5,
 	MaxMentions:    3,
 	MaxImagesCache: 10,
@@ -64,11 +61,6 @@ func MustLoadConfig() {
 
 	Cfg.Blk, _ = aes.NewCipher([]byte(Cfg.Key))
 	Cfg.KeyBytes = []byte(Cfg.Key)
-	Cfg.TagsMap = map[string]bool{}
-
-	for _, tag := range Cfg.Tags {
-		Cfg.TagsMap[tag] = true
-	}
 
 	for _, addr := range Cfg.IPBlacklist {
 		_, subnet, _ := net.ParseCIDR(addr)

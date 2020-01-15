@@ -24,7 +24,7 @@ function onPost(uuid, el, p) {
         parent: p,
     }, function (res, h) {
         stop();
-        if (res != "ok") {
+        if (res.substring(0, 3) !== "ok:") {
             return res;
         } else {
             ta.value = "";
@@ -33,7 +33,7 @@ function onPost(uuid, el, p) {
             image.onchange();
         }
         var div = $q("<div>")
-        div.innerHTML = decodeURIComponent(h.getResponseHeader("X-Result"));
+        div.innerHTML = decodeURIComponent(res.substring(3));
         $q("#timeline" + uuid).insertBefore(div.querySelector("div"), $q("#" + cid).nextSibling)
     }, stop)
 }

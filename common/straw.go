@@ -21,7 +21,7 @@ func Draw(v string, cands []string) (cand string) {
 	max := -math.MaxFloat64
 
 	for _, n := range cands {
-		s := math.Log(float64(Hash32(n)&0xffff)/65536) / StrawWeight(n)
+		s := math.Log(float64(Hash16(n))/65536) / StrawWeight(n)
 
 		if s > max {
 			max = s
@@ -48,4 +48,8 @@ func Hash32(n string) (h uint32) {
 		h = h ^ uint32(n[i])
 	}
 	return
+}
+
+func Hash16(n string) (h uint16) {
+	return uint16(Hash32(n))
 }

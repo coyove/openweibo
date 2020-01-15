@@ -37,12 +37,6 @@
 {{end}}
 
 <table class="articles z" style="margin: 0.5em 0">
-    {{if .EError}}
-    <tr>
-        <td colspan=3>{{template "error_i18n.html" .EError}}</td>
-    </tr>
-    {{end}}
-
     {{if $own}}
     <tr style="border-bottom:dotted 1px #ccc">
         <td class=nowrap>

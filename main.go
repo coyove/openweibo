@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"html/template"
 	"log"
 	"math/rand"
@@ -13,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/coyove/common/sched"
 	"github.com/coyove/iis/action"
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal"
@@ -21,7 +19,6 @@ import (
 	"github.com/coyove/iis/middleware"
 	"github.com/coyove/iis/model"
 	"github.com/coyove/iis/view"
-	"github.com/gin-gonic/autotls"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,13 +30,9 @@ func main() {
 	rand.Seed(time.Now().Unix())
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	sched.Verbose = false
 	common.MustLoadConfig()
 
-	m := dal.New("iis.db")
-	view.SetManager(m)
-	action.SetManager(m)
-	middleware.SetManager(m)
+	dal.Init(common.Cfg.DyRegion, common.Cfg.DyAccessKey, common.Cfg.DySecretKey)
 
 	if os.Getenv("BENCH") == "1" {
 		ids := []string{}
@@ -48,7 +41,7 @@ func main() {
 
 		for i := 0; i < N; i++ {
 			time.Sleep(time.Second)
-			aid, _ := m.Post(&model.Article{
+			aid, _ := dal.Post(&model.Article{
 				Content: "BENCH " + strconv.Itoa(i) + " post",
 				IP:      "127.0.0.0",
 				NSFW:    true,
@@ -75,7 +68,7 @@ func main() {
 					if rand.Intn(4) == 1 {
 						parent = ids[rand.Intn(len(ids))]
 					}
-					aid, _ := m.PostReply(parent, "BENCH "+strconv.Itoa(i)+" reply", "", &model.User{
+					aid, _ := dal.PostReply(parent, "BENCH "+strconv.Itoa(i)+" reply", "", &model.User{
 						ID: names[rand.Intn(len(names))],
 					}, "127.0.0.0", false, false)
 					ids = append(ids, aid.ID)
@@ -105,7 +98,7 @@ func main() {
 			return ""
 		},
 		"getTotalPosts": func(id string) int {
-			a, _ := m.GetArticle(ik.NewID(ik.IDTagAuthor).SetTag(id).String())
+			a, _ := dal.GetArticle(ik.NewID(ik.IDTagAuthor).SetTag(id).String())
 			if a != nil {
 				return a.Replies
 			}
@@ -166,17 +159,17 @@ func main() {
 
 	r.Handle("GET", "/loaderio-4d068f605f9b693f6ca28a8ca23435c6", func(g *gin.Context) { g.String(200, ("loaderio-4d068f605f9b693f6ca28a8ca23435c6")) })
 
-	if common.Cfg.Domain == "" {
-		log.Fatal(r.Run(":5010"))
-	} else {
-		if !noHTTP {
-			go func() {
-				time.Sleep(time.Second)
-				fmt.Println("HTTP server started on :80")
-				log.Fatal(r.Run(":80"))
-			}()
-		}
-		fmt.Println("HTTPS server started on :443")
-		log.Fatal(autotls.Run(r, common.Cfg.Domain))
-	}
+	// if common.Cfg.Domain == "" {
+	log.Fatal(r.Run(":5010"))
+	// } else {
+	// 	if !noHTTP {
+	// 		go func() {
+	// 			time.Sleep(time.Second)
+	// 			fmt.Println("HTTP server started on :80")
+	// 			log.Fatal(r.Run(":80"))
+	// 		}()
+	// 	}
+	// 	fmt.Println("HTTPS server started on :443")
+	// 	log.Fatal(autotls.Run(r, common.Cfg.Domain))
+	// }
 }

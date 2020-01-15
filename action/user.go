@@ -42,8 +42,8 @@ func Signup(g *gin.Context) {
 		return
 	}
 
-	m.Lock(username)
-	defer m.Unlock(username)
+	common.LockKey(username)
+	defer common.UnlockKey(username)
 
 	pwdHash := hmac.New(sha256.New, common.Cfg.KeyBytes)
 	pwdHash.Write([]byte(password))
@@ -58,16 +58,22 @@ func Signup(g *gin.Context) {
 		return
 	}
 
-	if u, err := m.GetUser(username); err == nil && u.ID == username {
+	if u, err := dal.GetUser(username); err == nil && u.ID == username {
 		redir("error", "id/already-existed")
 		return
 	}
 
 	if username := strings.ToLower(username); username == "master" ||
-		strings.HasPrefix(username, "admin") ||
-		strings.HasPrefix(username, strings.ToLower(common.Cfg.AdminName)) {
+		strings.HasPrefix(username, "admin") {
 		redir("error", "id/already-existed")
 		return
+	}
+
+	if strings.HasPrefix(username, strings.ToLower(common.Cfg.AdminName)) {
+		if admin, _ := dal.GetUser(common.Cfg.AdminName); admin != nil {
+			redir("error", "id/already-existed")
+			return
+		}
 	}
 
 	u := &model.User{
@@ -80,7 +86,7 @@ func Signup(g *gin.Context) {
 		TLogin:       uint32(time.Now().Unix()),
 	}
 
-	if err := m.SetUser(u); err != nil {
+	if err := dal.SetUser(u); err != nil {
 		log.Println(u, err)
 		redir("error", "internal/error")
 		return
@@ -99,8 +105,8 @@ func APILogin(g *gin.Context) {
 		return
 	}
 
-	m.Lock(username)
-	defer m.Unlock(username)
+	common.LockKey(username)
+	defer common.UnlockKey(username)
 
 	pwdHash := hmac.New(sha256.New, common.Cfg.KeyBytes)
 	pwdHash.Write([]byte(password))
@@ -110,7 +116,7 @@ func APILogin(g *gin.Context) {
 		return
 	}
 
-	u, _ := m.GetUser(username)
+	u, _ := dal.GetUser(username)
 	if u == nil {
 		g.String(200, "guard/id-not-existed")
 		return
@@ -129,7 +135,7 @@ func APILogin(g *gin.Context) {
 		u.DataIP = strings.Join(ips, ",")
 	}
 
-	if err := m.SetUser(u); err != nil {
+	if err := dal.SetUser(u); err != nil {
 		log.Println(u, err)
 		g.String(200, "internal/error")
 		return
@@ -148,7 +154,7 @@ func APIUserKimochi(g *gin.Context) {
 		return
 	}
 
-	if err := m.UpdateUser(u.ID, func(u *model.User) error {
+	if err := dal.UpdateUser(u.ID, func(u *model.User) error {
 		k, _ := strconv.Atoi(g.PostForm("k"))
 		if k < 0 || k > 44 {
 			k = 25
@@ -186,7 +192,7 @@ func APINewCaptcha(g *gin.Context) {
 func APILike(g *gin.Context) {
 	var (
 		redir = func(b string) { g.String(200, b) }
-		u, _  = m.GetUserByToken(g.PostForm("api2_uid"))
+		u, _  = dal.GetUserByToken(g.PostForm("api2_uid"))
 	)
 
 	if u == nil {
@@ -199,8 +205,8 @@ func APILike(g *gin.Context) {
 		return
 	}
 
-	m.Lock(u.ID)
-	defer m.Unlock(u.ID)
+	common.LockKey(u.ID)
+	defer common.UnlockKey(u.ID)
 
 	to := g.PostForm("to")
 	if to == "" {
@@ -208,7 +214,7 @@ func APILike(g *gin.Context) {
 		return
 	}
 
-	err := m.LikeArticle_unlock(u.ID, to, g.PostForm("like") != "")
+	err := dal.LikeArticle_unlock(u.ID, to, g.PostForm("like") != "")
 	if err != nil {
 		redir(err.Error())
 	} else {
@@ -217,9 +223,9 @@ func APILike(g *gin.Context) {
 }
 
 func APILogout(g *gin.Context) {
-	u := m.GetUserByContext(g)
+	u := dal.GetUserByContext(g)
 	if u != nil {
-		m.UpdateUser(u.ID, func(u *model.User) error {
+		dal.UpdateUser(u.ID, func(u *model.User) error {
 			u.Session = genSession()
 			return nil
 		})
@@ -230,7 +236,7 @@ func APILogout(g *gin.Context) {
 }
 
 func APIFollowBlock(g *gin.Context) {
-	u, to := m.GetUserByContext(g), g.PostForm("to")
+	u, to := dal.GetUserByContext(g), g.PostForm("to")
 	if u == nil || to == "" || u.ID == to {
 		g.String(200, "internal/error")
 		return
@@ -241,14 +247,14 @@ func APIFollowBlock(g *gin.Context) {
 		return
 	}
 
-	m.Lock(u.ID)
-	defer m.Unlock(u.ID)
+	common.LockKey(u.ID)
+	defer common.UnlockKey(u.ID)
 
 	var err error
 	if g.PostForm("method") == "follow" {
-		err = m.FollowUser_unlock(u.ID, to, g.PostForm("follow") != "")
+		err = dal.FollowUser_unlock(u.ID, to, g.PostForm("follow") != "")
 	} else {
-		err = m.BlockUser_unlock(u.ID, to, g.PostForm("block") != "")
+		err = dal.BlockUser_unlock(u.ID, to, g.PostForm("block") != "")
 	}
 
 	if err != nil {
@@ -260,7 +266,7 @@ func APIFollowBlock(g *gin.Context) {
 }
 
 func APIFollowBlockSearch(g *gin.Context) {
-	u := m.GetUserByContext(g)
+	u := dal.GetUserByContext(g)
 	if u == nil {
 		g.String(200, "/user")
 		return
@@ -273,12 +279,12 @@ func APIFollowBlockSearch(g *gin.Context) {
 	}
 
 	id := dal.MakeID(g.PostForm("method"), u.ID, q)
-	if a, _ := m.GetArticle(id); a != nil {
+	if a, _ := dal.GetArticle(id); a != nil {
 		g.String(200, "/user")
 		return
 	}
 
-	if _, err := m.GetUser(q); err != nil {
+	if _, err := dal.GetUser(q); err != nil {
 		if res := common.SearchUsers(q, 1); len(res) > 0 {
 			q = res[0]
 		} else {
@@ -289,14 +295,14 @@ func APIFollowBlockSearch(g *gin.Context) {
 }
 
 func APIUpdateUserSettings(g *gin.Context) {
-	u := m.GetUserByContext(g)
+	u := dal.GetUserByContext(g)
 	if u == nil {
 		g.String(200, "internal/error")
 		return
 	}
 
 	update1 := func(cb func(u *model.User)) {
-		if err := m.UpdateUser(u.ID, func(u *model.User) error {
+		if err := dal.UpdateUser(u.ID, func(u *model.User) error {
 			cb(u)
 			return nil
 		}); err != nil {
@@ -307,7 +313,7 @@ func APIUpdateUserSettings(g *gin.Context) {
 	}
 
 	update2 := func(cb func(u *model.UserSettings)) {
-		if err := m.UpdateUserSettings(u.ID, func(u *model.UserSettings) error {
+		if err := dal.UpdateUserSettings(u.ID, func(u *model.UserSettings) error {
 			cb(u)
 			return nil
 		}); err != nil {
@@ -348,7 +354,7 @@ func APIUpdateUserSettings(g *gin.Context) {
 }
 
 func APIUpdateUserPassword(g *gin.Context) {
-	u := m.GetUserByContext(g)
+	u := dal.GetUserByContext(g)
 	if u == nil {
 		g.String(200, "internal/error")
 		return
@@ -357,7 +363,7 @@ func APIUpdateUserPassword(g *gin.Context) {
 		g.String(200, res)
 		return
 	}
-	if err := m.UpdateUser(u.ID, func(u *model.User) error {
+	if err := dal.UpdateUser(u.ID, func(u *model.User) error {
 		oldPassword := common.SoftTrunc(g.PostForm("old-password"), 32)
 		newPassword := common.SoftTrunc(g.PostForm("new-password"), 32)
 

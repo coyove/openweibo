@@ -13,8 +13,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var m *dal.Manager
-
 type ArticlesTimelineView struct {
 	Articles              []ArticleView
 	Next                  string
@@ -39,10 +37,6 @@ type ArticleRepliesView struct {
 	ReplyView     ReplyView
 }
 
-func SetManager(mgr *dal.Manager) {
-	m = mgr
-}
-
 func Index(g *gin.Context) {
 	pl := ArticlesTimelineView{
 		Tag:           g.Param("tag"),
@@ -54,15 +48,15 @@ func Index(g *gin.Context) {
 	}
 
 	if pl.You != nil {
-		pl.IsTagTimelineFollowed = m.IsFollowing(pl.You.ID, "#"+pl.Tag)
+		pl.IsTagTimelineFollowed = dal.IsFollowing(pl.You.ID, "#"+pl.Tag)
 	}
 
-	a, _ := m.GetArticle(ik.NewID(ik.IDTagTag).SetTag(pl.Tag).String())
+	a, _ := dal.GetArticle(ik.NewID(ik.IDTagTag).SetTag(pl.Tag).String())
 	if a != nil {
 		pl.PostsUnderTag = int32(a.Replies)
 	}
 
-	a2, next := m.WalkMulti(pl.MediaOnly, int(common.Cfg.PostsPerPage), ik.NewID(ik.IDTagTag).SetTag(pl.Tag))
+	a2, next := dal.WalkMulti(pl.MediaOnly, int(common.Cfg.PostsPerPage), ik.NewID(ik.IDTagTag).SetTag(pl.Tag))
 	fromMultiple(&pl.Articles, a2, 0, getUser(g))
 
 	pl.Next = ik.CombineIDs(nil, next...)
@@ -87,10 +81,10 @@ func Timeline(g *gin.Context) {
 	case uid != "" && uid != ":in":
 		// View someone's timeline
 		pl.IsUserTimeline = true
-		pl.User, _ = m.GetUserWithSettings(uid)
+		pl.User, _ = dal.GetUserWithSettings(uid)
 		if pl.User == nil {
 			if res := common.SearchUsers(uid, 1); len(res) == 1 {
-				pl.User, _ = m.GetUser(res[0])
+				pl.User, _ = dal.GetUser(res[0])
 				if pl.User != nil {
 					g.Redirect(302, "/t/"+url.PathEscape(pl.User.ID))
 					return
@@ -101,8 +95,8 @@ func Timeline(g *gin.Context) {
 		}
 
 		if pl.You != nil && pl.You.ID != pl.User.ID {
-			pl.User.SetIsFollowing(m.IsFollowing(pl.You.ID, uid))
-			pl.User.SetIsBlocking(m.IsBlocking(pl.You.ID, uid))
+			pl.User.SetIsFollowing(dal.IsFollowing(pl.You.ID, uid))
+			pl.User.SetIsBlocking(dal.IsBlocking(pl.You.ID, uid))
 			pl.User.SetIsNotYou(true)
 		}
 	case uid == ":in":
@@ -121,7 +115,7 @@ func Timeline(g *gin.Context) {
 	cursors := []ik.ID{}
 	pendingFCursor := ""
 	readCursorsAndPendingFCursor := func(start string) {
-		list, next := m.GetFollowingList(ik.NewID(ik.IDTagFollowChain).SetTag(pl.User.ID), start, 1e6)
+		list, next := dal.GetFollowingList(ik.NewID(ik.IDTagFollowChain).SetTag(pl.User.ID), start, 1e6)
 		for _, id := range list {
 			if id.Followed {
 				if strings.HasPrefix(id.ID, "#") {
@@ -144,11 +138,11 @@ func Timeline(g *gin.Context) {
 		cursors = append(cursors, ik.NewID(ik.IDTagAuthor).SetTag(pl.User.ID))
 	}
 
-	a, next := m.WalkMulti(pl.MediaOnly, int(common.Cfg.PostsPerPage), cursors...)
+	a, next := dal.WalkMulti(pl.MediaOnly, int(common.Cfg.PostsPerPage), cursors...)
 	fromMultiple(&pl.Articles, a, 0, pl.You)
 
 	if pl.IsInbox {
-		go m.UpdateUser(pl.User.ID, func(u *model.User) error {
+		go dal.UpdateUser(pl.User.ID, func(u *model.User) error {
 			u.Unread = 0
 			return nil
 		})
@@ -167,11 +161,11 @@ func APITimeline(g *gin.Context) {
 
 	var articles []ArticleView
 	if g.PostForm("likes") == "true" {
-		a, next := m.WalkLikes(g.PostForm("media") == "true", int(common.Cfg.PostsPerPage), g.PostForm("cursors"))
+		a, next := dal.WalkLikes(g.PostForm("media") == "true", int(common.Cfg.PostsPerPage), g.PostForm("cursors"))
 		fromMultiple(&articles, a, 0, getUser(g))
 		p.Next = next
 	} else if g.PostForm("reply") == "true" {
-		a, next := m.WalkReply(int(common.Cfg.PostsPerPage), g.PostForm("cursors"))
+		a, next := dal.WalkReply(int(common.Cfg.PostsPerPage), g.PostForm("cursors"))
 		fromMultiple(&articles, a, _NoMoreParent|_ShowAvatar, getUser(g))
 		p.Next = next
 	} else {
@@ -179,7 +173,7 @@ func APITimeline(g *gin.Context) {
 
 		var pendingFCursor string
 		if len(payload) > 0 {
-			list, next := m.GetFollowingList(ik.ID{}, string(payload), 1e6)
+			list, next := dal.GetFollowingList(ik.ID{}, string(payload), 1e6)
 			// log.Println(list, next, string(payload))
 			for _, id := range list {
 				if !id.Followed {
@@ -194,7 +188,7 @@ func APITimeline(g *gin.Context) {
 			pendingFCursor = next
 		}
 
-		a, next := m.WalkMulti(g.PostForm("media") == "true", int(common.Cfg.PostsPerPage), cursors...)
+		a, next := dal.WalkMulti(g.PostForm("media") == "true", int(common.Cfg.PostsPerPage), cursors...)
 		fromMultiple(&articles, a, 0, getUser(g))
 		p.Next = ik.CombineIDs([]byte(pendingFCursor), next...)
 	}
@@ -211,7 +205,7 @@ func APIReplies(g *gin.Context) {
 	var pl ArticleRepliesView
 	var pid = g.Param("parent")
 
-	parent, err := m.GetArticle(pid)
+	parent, err := dal.GetArticle(pid)
 	if err != nil || parent.ID == "" {
 		g.Status(404)
 		log.Println(pid, err)
@@ -222,13 +216,13 @@ func APIReplies(g *gin.Context) {
 	pl.ReplyView = makeReplyView(g, pid)
 
 	if u, ok := g.Get("user"); ok {
-		if m.IsBlocking(pl.ParentArticle.Author.ID, u.(*model.User).ID) {
+		if dal.IsBlocking(pl.ParentArticle.Author.ID, u.(*model.User).ID) {
 			g.Status(404)
 			return
 		}
 	}
 
-	a, next := m.WalkReply(int(common.Cfg.PostsPerPage), parent.ReplyChain)
+	a, next := dal.WalkReply(int(common.Cfg.PostsPerPage), parent.ReplyChain)
 	fromMultiple(&pl.Articles, a, _NoMoreParent|_ShowAvatar, getUser(g))
 	pl.Next = next
 
