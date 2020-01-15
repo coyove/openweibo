@@ -8,18 +8,20 @@ import (
 	"time"
 
 	"github.com/coyove/iis/common"
+	"github.com/coyove/iis/dal/cache"
 	"github.com/coyove/iis/dal/kv"
-	"github.com/coyove/iis/dal/weak_cache"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
 )
 
 var m struct {
 	db        KeyValueOp
-	weakUsers *weak_cache.Cache
+	weakUsers *cache.WeakCache
 }
 
-func Init(region string, ak, sk string) {
+func Init(redisConfig *cache.RedisConfig, region string, ak, sk string) {
+	const CacheSize int64 = 10000
+
 	var db KeyValueOp
 
 	if region == "" {
@@ -28,8 +30,10 @@ func Init(region string, ak, sk string) {
 		db = kv.NewDynamoKV(region, ak, sk)
 	}
 
+	db.SetGlobalCache(cache.NewGlobalCache(CacheSize, redisConfig))
+
 	m.db = db
-	m.weakUsers = weak_cache.NewCache(65536, time.Second)
+	m.weakUsers = cache.NewWeakCache(65536, time.Second)
 }
 
 func ModKV() KeyValueOp {

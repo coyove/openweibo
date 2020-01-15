@@ -8,14 +8,14 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/coyove/common/lru"
+	"github.com/coyove/iis/dal/cache"
 	//sync "github.com/sasha-s/go-deadlock"
 )
 
 var dyTable = "iis"
 
 type DynamoKV struct {
-	cache *lru.Cache
+	cache *cache.GlobalCache
 	db    *dynamodb.DynamoDB
 }
 
@@ -39,15 +39,17 @@ func NewDynamoKV(region, accessKey, secretKey string) *DynamoKV {
 		panic(err)
 	}
 	r := &DynamoKV{
-		db:    db,
-		cache: lru.NewCache(CacheSize),
+		db: db,
 	}
 	return r
 }
 
+func (m *DynamoKV) SetGlobalCache(c *cache.GlobalCache) {
+	m.cache = c
+}
+
 func (m *DynamoKV) Get(key string) ([]byte, error) {
-	x, ok := m.cache.Get(key)
-	v, _ := x.([]byte)
+	v, ok := m.cache.Get(key)
 	if ok {
 		return v, nil
 	}

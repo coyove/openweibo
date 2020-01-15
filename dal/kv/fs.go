@@ -7,13 +7,13 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/coyove/common/lru"
 	"github.com/coyove/iis/common"
+	"github.com/coyove/iis/dal/cache"
 	//sync "github.com/sasha-s/go-deadlock"
 )
 
 type DiskKV struct {
-	cache *lru.Cache
+	cache *cache.GlobalCache
 }
 
 func NewDiskKV() *DiskKV {
@@ -22,9 +22,7 @@ func NewDiskKV() *DiskKV {
 		panic(err)
 	}
 
-	r := &DiskKV{
-		cache: lru.NewCache(CacheSize),
-	}
+	r := &DiskKV{}
 	return r
 }
 
@@ -33,9 +31,12 @@ func calcPath(key string) (string, string) {
 	return dir, dir + "/" + url.PathEscape(key) + ".txt"
 }
 
+func (m *DiskKV) SetGlobalCache(c *cache.GlobalCache) {
+	m.cache = c
+}
+
 func (m *DiskKV) Get(key string) ([]byte, error) {
-	x, _ := m.cache.Get(key)
-	v, ok := x.([]byte)
+	v, ok := m.cache.Get(key)
 
 	if ok {
 		return v, nil
@@ -65,6 +66,7 @@ func (m *DiskKV) Get(key string) ([]byte, error) {
 
 func (m *DiskKV) Set(key string, value []byte) error {
 	m.cache.Remove(key)
+
 	if randomError > 0 && rand.Intn(randomError) == 0 {
 		return fmt.Errorf("1")
 	}

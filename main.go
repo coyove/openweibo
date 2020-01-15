@@ -15,6 +15,7 @@ import (
 	"github.com/coyove/iis/action"
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal"
+	"github.com/coyove/iis/dal/cache"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/middleware"
 	"github.com/coyove/iis/model"
@@ -32,7 +33,9 @@ func main() {
 
 	common.MustLoadConfig()
 
-	dal.Init(common.Cfg.DyRegion, common.Cfg.DyAccessKey, common.Cfg.DySecretKey)
+	dal.Init(&cache.RedisConfig{
+		Addr: common.Cfg.RedisAddr,
+	}, common.Cfg.DyRegion, common.Cfg.DyAccessKey, common.Cfg.DySecretKey)
 
 	if os.Getenv("BENCH") == "1" {
 		ids := []string{}

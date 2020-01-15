@@ -29,6 +29,7 @@ var Cfg = struct {
 	CwRegion       string   `yaml:"CwRegion"`
 	DyAccessKey    string   `yaml:"DyAccessKey"`
 	DySecretKey    string   `yaml:"DySecretKey"`
+	RedisAddr      string   `yaml:"RedisAddr"`
 
 	// inited after common.being read
 	Blk               cipher.Block

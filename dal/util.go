@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/coyove/iis/dal/cache"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,6 +19,7 @@ type KeyValueOp interface {
 	Get(string) ([]byte, error)
 	Set(string, []byte) error
 	Delete(string) error
+	SetGlobalCache(*cache.GlobalCache)
 }
 
 func IsCrawler(g *gin.Context) bool {
