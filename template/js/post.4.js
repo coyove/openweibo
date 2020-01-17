@@ -21,6 +21,7 @@ function onPost(uuid, el, p) {
         nsfw: $value($q("#" + cid + " [name=isnsfw]")) == 'true' ? "1" : "",
         no_master: $value($q("#" + cid + " [name=nomaster]")) == 'true' ? "1" : "",
         no_timeline: $value($q("#" + cid + " [name=notimeline]")) == 'true' ? "1" : "",
+        alone: $value($q("#" + cid + " [name=alone]")) == 'true' ? "1" : "",
         parent: p,
     }, function (res, h) {
         stop();

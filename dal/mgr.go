@@ -246,14 +246,17 @@ func insertArticle(rootID string, a *model.Article, asReply bool) error {
 		}
 	}
 
-	if asReply {
-		a.NextReplyID, root.ReplyChain = root.ReplyChain, a.ID
-	} else {
-		a.NextID, root.NextID = root.NextID, a.ID
-		if a.Media != "" {
-			a.NextMediaID, root.NextMediaID = root.NextMediaID, a.ID
+	if !a.Alone {
+		if asReply {
+			a.NextReplyID, root.ReplyChain = root.ReplyChain, a.ID
+		} else {
+			a.NextID, root.NextID = root.NextID, a.ID
+			if a.Media != "" {
+				a.NextMediaID, root.NextMediaID = root.NextMediaID, a.ID
+			}
 		}
 	}
+
 	root.Replies++
 
 	if err := m.db.Set(a.ID, a.Marshal()); err != nil {

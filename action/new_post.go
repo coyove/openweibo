@@ -34,7 +34,6 @@ func APINew(g *gin.Context) {
 		ip      = hashIP(g)
 		content = common.SoftTrunc(g.PostForm("content"), int(common.Cfg.MaxContent))
 		image   = g.PostForm("image64")
-		nsfw    = g.PostForm("nsfw") != ""
 		err     error
 	)
 
@@ -66,10 +65,16 @@ func APINew(g *gin.Context) {
 		Content: content,
 		Media:   image,
 		IP:      ip,
-		NSFW:    nsfw,
+		NSFW:    g.PostForm("nsfw") != "",
+		Alone:   g.PostForm("alone") != "",
 	}
 
-	a2, err := dal.Post(a, u, g.PostForm("no_master") == "1")
+	noMaster := g.PostForm("no_master") == "1"
+	if a.Alone {
+		noMaster = true
+	}
+
+	a2, err := dal.Post(a, u, noMaster)
 	if err != nil {
 		log.Println(a2, err)
 		g.String(200, "internal/error")

@@ -71,6 +71,12 @@
                     .post-options ul li:hover {
                         background: #bdf;
                     }
+                    .post-options .icon-ok-circled2 {
+                        color: #aaa;
+                    }
+                    .post-options i[class^=icon-ok] {
+                        margin-right: 0.5em;
+                    }
                 </style>
 
             </td>
@@ -78,15 +84,20 @@
                 <div class="post-options">
                     <button class=gbutton>选项<i class="icon-down-dir right"></i></button>
                     <ul>
+                        {{if .ReplyTo}}
                         <li>
-                            {{if .ReplyTo}}
                             <span name=notimeline onclick="$check(this)"><i class=icon-ok-circled2></i>不同步至我的时间线</span>
-                            {{else}}
+                        </li>
+                        {{else}}
+                        <li>
                             <span name=nomaster onclick="$check(this)"><i class=icon-ok-circled2></i>不同步至Master时间线</span>
-                            {{end}}
                         </li>
                         <li>
-                            <span name=isnsfw onclick="$check(this)"><i class=icon-ok-circled2></i>标记图片为NSFW内容</span>
+                            <span name=alone onclick="$check(this)"><i class=icon-ok-circled2></i>不同步至我的时间线</span>
+                        </li>
+                        {{end}}
+                        <li>
+                            <span name=isnsfw onclick="$check(this)" style="color:#f90"><i class=icon-ok-circled2></i>标记图片为NSFW内容</span>
                         </li>
                     </ul>
                 </div>

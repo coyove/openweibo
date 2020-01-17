@@ -15,7 +15,7 @@
         <![endif]-->
 
         {{if not .User}}
-        <div method="POST" action="/user" style="margin-top: 1em">
+        <form method="POST" action="/user" style="margin-top: 1em" onsubmit="return false">
             <table class="articles">
                 <tr>
                     <td class=nowrap>用户名:</td>
@@ -23,26 +23,19 @@
                 </tr>
                 <tr>
                     <td class=nowrap>密码:</td>
-                    <td>
-                        <input type=password class=t name=password value required>
-                        <script>
-                            $q("[name=password]").onkeyup = function(e) {
-                                if (e.keyCode == 13) $q("[name=submit]").click();
-                            }
-                        </script>
-                    </td>
+                    <td><input type=password class=t name=password value required></td>
                 </tr>
                 <tr>
                     <td colspan=2 style="text-align:right">
                         <button class="gbutton"
-                                name=submit
+                                type=submit
                                 onclick="$postReload(this,'/api2/login',{
                                 'username': $q('[name=username]').value,
                                 'password': $q('[name=password]').value})">登入</button>
                     </td>
                 </tr>
             </table>
-        </div>
+        </form>
         {{else}}
         <div style="text-align:center">
             <b style="font-size:120%">{{.User.DisplayName}} 已登入</b>

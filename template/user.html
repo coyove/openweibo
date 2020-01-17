@@ -106,7 +106,19 @@
         <a href="/" class=gbutton>已有账号？点此登入</a>
     </div>
 
-<form method="POST" action="/user">
+<form method="POST" action="/user" onsubmit='
+                    if (($q("[name=username]").value || "").length < 3) {
+                        $popup("用户名过短 (>=3字节)")
+                        return false;
+                    }
+                    if (($q("[name=password]").value || "").length < 3) {
+                        $popup("密码过短 (>=3字节)")
+                        return false;
+                    }
+                    if ($q("[name=password]").value!=$q("[name=password2]").value) {
+                        $popup("两次密码输入不一致")
+                        return false;
+                    }'>
     <table class="articles">
 
     <input type=hidden name=uuid value="{{.UUID}}">

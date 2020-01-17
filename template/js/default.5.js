@@ -25,6 +25,27 @@ function $wait(el) {
     }
 }
 
+function $popup(html, bg) {
+    var div = $q("<div>");
+    div.style.position = "fixed";
+    div.style.top = '0';
+    div.style.left = '0';
+    div.style.width = "100%";
+    div.style.opacity = "0.9";
+    div.style.color = "white";
+    div.style.lineHeight = "32px";
+    div.style.textAlign = "center";
+    div.style.wordBreak = "break-all";
+    div.style.background = bg || '#f52';
+    div.innerHTML = html;
+    document.body.appendChild(div);
+    setTimeout(function() {
+        div.style.transition = "opacity 1s";
+        div.style.opacity = "0";
+        setTimeout(function() {div.parentNode.removeChild(div)}, 1000);
+    }, 1500)
+}
+
 function $post(url, data, cb, errorcb) {
     var xml = new XMLHttpRequest(), m = document.cookie.match(/(^| )id=([^;]+)/);
     var cbres = null;
@@ -45,31 +66,14 @@ function $post(url, data, cb, errorcb) {
         xml.onerror();
     }
     xml.onerror = function() {
-        var div = $q("<div>");
-        div.style.position = "fixed";
-        div.style.top = '0'; div.style.left = '0'; div.style.width = "100%";
-        div.style.opacity = "0.9";
-        div.style.color = "white";
-        div.style.lineHeight = "32px";
-        div.style.textAlign = "center";
-        div.style.wordBreak = "break-all";
         if (cbres == 'ok') {
-            div.style.background = '#088';
-            div.innerHTML = '<i class=icon-ok-circled></i>成功';
+            $popup('<i class=icon-ok-circled></i>成功', '#088');
         } else if (cbres && cbres.match(/^ok:/)) {
-            div.style.background = '#088';
-            div.innerHTML = '<i class=icon-ok-circled></i>' + cbres.substring(3);
+            $popup('<i class=icon-ok-circled></i>' + cbres.substring(3), '#088');
         } else {
             if (errorcb) errorcb(xml)
-            div.style.background = "#f52";
-            div.innerHTML = '<i class=icon-cancel-circled-1></i>' + (cbres || ("错误状态: " + xml.status));
+            $popup('<i class=icon-cancel-circled-1></i>' + (cbres || ("错误状态: " + xml.status)));
         }
-        document.body.appendChild(div);
-        setTimeout(function() {
-            div.style.transition = "opacity 1s";
-            div.style.opacity = "0";
-            setTimeout(function() {div.parentNode.removeChild(div)}, 1000);
-        }, 1500)
     }
     xml.open("POST", url, true);
     xml.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');

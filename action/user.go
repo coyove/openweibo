@@ -21,24 +21,18 @@ import (
 
 func Signup(g *gin.Context) {
 	var (
-		ip        = hashIP(g)
-		username  = sanUsername(g.PostForm("username"))
-		email     = common.SoftTrunc(g.PostForm("email"), 64)
-		password  = common.SoftTrunc(g.PostForm("password"), 32)
-		password2 = common.SoftTrunc(g.PostForm("password2"), 32)
-		redir     = func(a, b string, ext ...string) {
+		ip       = hashIP(g)
+		username = sanUsername(g.PostForm("username"))
+		email    = common.SoftTrunc(g.PostForm("email"), 64)
+		password = common.SoftTrunc(g.PostForm("password"), 32)
+		redir    = func(a, b string, ext ...string) {
 			q := common.EncodeQuery(append([]string{a, b, "username", username, "email", email, "password", ik.MakeTempToken(password)}, ext...)...)
 			g.Redirect(302, "/user"+q)
 		}
 	)
 
-	if g.PostForm("cancel") != "" || g.PostForm("refresh") != "" {
-		redir("", "")
-		return
-	}
-
-	if len(username) < 3 {
-		redir("error", "id/too-short")
+	if len(username) < 3 || len(password) < 3 {
+		redir("error", "internal/error")
 		return
 	}
 
@@ -53,23 +47,16 @@ func Signup(g *gin.Context) {
 		return
 	}
 
-	if len(password) == 0 || password != password2 {
-		redir("error", "password/invalid-too-short")
-		return
-	}
-
 	if u, err := dal.GetUser(username); err == nil && u.ID == username {
 		redir("error", "id/already-existed")
 		return
 	}
 
-	if username := strings.ToLower(username); username == "master" ||
-		strings.HasPrefix(username, "admin") {
+	switch username := strings.ToLower(username); {
+	case strings.HasPrefix(username, "master"), strings.HasPrefix(username, "admin"):
 		redir("error", "id/already-existed")
 		return
-	}
-
-	if strings.HasPrefix(username, strings.ToLower(common.Cfg.AdminName)) {
+	case strings.HasPrefix(username, strings.ToLower(common.Cfg.AdminName)):
 		if admin, _ := dal.GetUser(common.Cfg.AdminName); admin != nil {
 			redir("error", "id/already-existed")
 			return

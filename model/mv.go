@@ -34,6 +34,7 @@ type Article struct {
 	Replies     int               `json:"rs,omitempty"`
 	Likes       int32             `json:"like,omitempty"`
 	Locked      bool              `json:"lock,omitempty"`
+	Alone       bool              `json:"aln,omitempty"`
 	NSFW        bool              `json:"nsfw,omitempty"`
 	Content     string            `json:"content,omitempty"`
 	Media       string            `json:"M,omitempty"`
