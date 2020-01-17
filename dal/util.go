@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coyove/iis/dal/cache"
+	"github.com/coyove/iis/dal/kv/cache"
 	"github.com/gin-gonic/gin"
 )
 

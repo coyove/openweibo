@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/coyove/iis/dal/cache"
+	"github.com/coyove/iis/dal/kv/cache"
 	//sync "github.com/sasha-s/go-deadlock"
 )
 
@@ -79,7 +79,9 @@ func (m *DynamoKV) Get(key string) ([]byte, error) {
 }
 
 func (m *DynamoKV) Set(key string, value []byte) error {
-	m.cache.Remove(key)
+	if err := m.cache.Remove(key); err != nil {
+		return err
+	}
 
 	in := &dynamodb.UpdateItemInput{
 		TableName: &dyTable,

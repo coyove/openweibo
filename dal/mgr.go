@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/coyove/iis/common"
-	"github.com/coyove/iis/dal/cache"
 	"github.com/coyove/iis/dal/kv"
+	"github.com/coyove/iis/dal/kv/cache"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
 )

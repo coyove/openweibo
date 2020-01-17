@@ -6,9 +6,10 @@ import (
 	"math/rand"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/coyove/iis/common"
-	"github.com/coyove/iis/dal/cache"
+	"github.com/coyove/iis/dal/kv/cache"
 	//sync "github.com/sasha-s/go-deadlock"
 )
 
@@ -46,7 +47,8 @@ func (m *DiskKV) Get(key string) ([]byte, error) {
 		return nil, fmt.Errorf("1")
 	}
 
-	// time.Sleep(time.Millisecond * time.Duration(rand.Intn(50)+50))
+	time.Sleep(time.Millisecond * time.Duration(rand.Intn(50)+50))
+
 	_, fn := calcPath(key)
 	_, err := os.Stat(fn)
 
