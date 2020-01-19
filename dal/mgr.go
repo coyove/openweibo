@@ -74,6 +74,7 @@ func WalkMulti(media bool, n int, cursors ...ik.ID) (a []*model.Article, next []
 
 	startTime := time.Now()
 	idm := map[string]bool{}
+	idmp := map[string]bool{} // dedup map for parent articles
 
 	for len(a) < n {
 		if time.Since(startTime).Seconds() > 1 {
@@ -110,12 +111,24 @@ func WalkMulti(media bool, n int, cursors ...ik.ID) (a []*model.Article, next []
 
 		p, err := GetArticle(latest.String())
 		if err == nil {
-			if !idm[p.ID] && p.Content != model.DeletionMarker && !latest.IsRoot() {
-				// 1. 'p' is not duplicated
-				// 2. 'p' is not deleted
-				// 3. 'p' is not a root article
+			ok := !idm[p.ID] && p.Content != model.DeletionMarker && !latest.IsRoot()
+			// 1. 'p' is not duplicated
+			// 2. 'p' is not deleted
+			// 3. 'p' is not a root article
+
+			if p.Parent == "" && idmp[p.ID] {
+				// 4. if 'p' is a top article and has been replied before (presented in 'idmp')
+				//    ignore it to clean the timeline a bit
+				ok = false
+			}
+
+			if ok {
 				a = append(a, p)
+
 				idm[p.ID] = true
+				if p.Parent != "" {
+					idmp[p.Parent] = true
+				}
 			}
 			*latest = ik.ParseID(p.PickNextID(media))
 		} else {

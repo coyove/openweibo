@@ -328,6 +328,14 @@ span.deleted:after {
     color: transparent;
 }
 
+span.abbr:after {
+    content: '...重复内容';
+    font-weight: bold;
+    color: #aaa;
+    display: inline-block;
+    margin-left: 0.5em
+}
+
 a.unread {
     display:inline-block;
     color:white;
@@ -401,6 +409,14 @@ img.avatar {
 
 img.avatar + .avatar-kimochi {
     width:20px;height:20px;position:absolute;left:32px;top:6px;-webkit-filter: drop-shadow(0 0 3px rgba(0,0,0,0.2));
+}
+
+img.media {
+    border-radius:5px;display:block;max-width:300px;max-height:300px
+}
+
+img.media.dedup-true {
+    max-width: 100px; max-height: 100px;
 }
 
 .post-date {

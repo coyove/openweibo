@@ -47,17 +47,16 @@
         {{if .NSFW}}展开NSFW图片{{else}}展开图片{{end}}
     </button>
     <a href="{{.Media}}" target=_blank>
-        <img class=media
+        <img class="media dedup-{{.Deduped}}">
     {{else}}
     <a href="{{.Media}}" target=_blank>
-        <img class=media src="{{.Media}}"
+        <img class="media dedup-{{.Deduped}}" src="{{.Media}}">
     {{end}}
-            style="border-radius:5px;display:block;max-width:300px;max-height:300px">
     </a>
     </div>
     {{end}}
 
-    {{if .Content}}
+    {{if .ContentHTML}}
     <pre style="padding:0.66em 0 0">{{.ContentHTML}}</pre>
     {{end}}
 

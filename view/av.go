@@ -2,6 +2,7 @@ package view
 
 import (
 	"encoding/base64"
+	"html"
 	"html/template"
 	"strings"
 	"time"
@@ -25,6 +26,7 @@ type ArticleView struct {
 	Liked       bool
 	NSFW        bool
 	NoAvatar    bool
+	Deduped     bool
 	Content     string
 	ContentHTML template.HTML
 	Media       string
@@ -136,7 +138,35 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 
 func fromMultiple(a *[]ArticleView, a2 []*model.Article, opt uint64, u *model.User) {
 	*a = make([]ArticleView, len(a2))
+
+	dedup := map[string]*ArticleView{}
+	abbr := func(tmp *ArticleView) {
+		a := strings.TrimSuffix(common.SoftTrunc(tmp.Content, 32), "...")
+
+		if a != tmp.Content {
+			tmp.Content = a
+			tmp.ContentHTML = template.HTML(html.EscapeString(a)) + "<span class=abbr></span>"
+		}
+
+		tmp.Deduped = true
+	}
+
 	for i, v := range a2 {
 		(*a)[i].from(v, opt, u)
+		tmp := &(*a)[i]
+
+		if dedup[tmp.ID] != nil {
+			abbr(tmp)
+		}
+
+		if tmp.Parent != nil && dedup[tmp.Parent.ID] != nil {
+			abbr(tmp.Parent)
+		}
+
+		dedup[tmp.ID] = tmp
+		if tmp.Parent != nil {
+			dedup[tmp.Parent.ID] = tmp.Parent
+		}
 	}
+
 }
