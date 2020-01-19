@@ -5,7 +5,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"fmt"
-	"log"
 	"net/url"
 	"strconv"
 	"strings"
@@ -36,21 +35,13 @@ func Signup(g *gin.Context) {
 		return
 	}
 
-	common.LockKey(username)
-	defer common.UnlockKey(username)
-
-	pwdHash := hmac.New(sha256.New, common.Cfg.KeyBytes)
-	pwdHash.Write([]byte(password))
-
 	if ret := checkCaptcha(g); ret != "" {
 		redir("error", ret)
 		return
 	}
 
-	if u, err := dal.GetUser(username); err == nil && u.ID == username {
-		redir("error", "id/already-existed")
-		return
-	}
+	pwdHash := hmac.New(sha256.New, common.Cfg.KeyBytes)
+	pwdHash.Write([]byte(password))
 
 	switch username := strings.ToLower(username); {
 	case strings.HasPrefix(username, "master"), strings.HasPrefix(username, "admin"):
@@ -63,73 +54,69 @@ func Signup(g *gin.Context) {
 		}
 	}
 
-	u := &model.User{
-		ID:           username,
-		Session:      genSession(),
-		Email:        email,
-		PasswordHash: pwdHash.Sum(nil),
-		DataIP:       "{" + ip + "}",
-		TSignup:      uint32(time.Now().Unix()),
-		TLogin:       uint32(time.Now().Unix()),
-	}
+	var tok string
+	if err := dal.UpdateUser(username, func(u *model.User) error {
+		if u, err := dal.GetUser(username); err == nil && u.ID == username {
+			return fmt.Errorf("id/already-existed")
+		}
 
-	if err := dal.SetUser(u); err != nil {
-		log.Println(u, err)
-		redir("error", "internal/error")
+		u.ID = username
+		u.Session = genSession()
+		u.Email = email
+		u.PasswordHash = pwdHash.Sum(nil)
+		u.DataIP = "{" + ip + "}"
+		u.TSignup = uint32(time.Now().Unix())
+		u.TLogin = uint32(time.Now().Unix())
+
+		tok = ik.MakeUserToken(u)
+		return nil
+	}); err != nil {
+		redir("error", err.Error())
 		return
 	}
 
-	g.SetCookie("id", ik.MakeUserToken(u), 365*86400, "", "", false, false)
+	g.SetCookie("id", tok, 365*86400, "", "", false, false)
 	redir("error", "ok")
 }
 
 func APILogin(g *gin.Context) {
 	username := sanUsername(g.PostForm("username"))
-	password := common.SoftTrunc(g.PostForm("password"), 32)
-
 	if len(username) < 3 {
 		g.String(200, "id/too-short")
 		return
 	}
 
-	common.LockKey(username)
-	defer common.UnlockKey(username)
-
 	pwdHash := hmac.New(sha256.New, common.Cfg.KeyBytes)
-	pwdHash.Write([]byte(password))
+	pwdHash.Write([]byte(common.SoftTrunc(g.PostForm("password"), 32)))
 
 	if ret := checkIP(g); ret != "" {
 		g.String(200, ret)
 		return
 	}
 
-	u, _ := dal.GetUser(username)
-	if u == nil {
-		g.String(200, "guard/id-not-existed")
-		return
-	}
+	var tok string
+	if err := dal.UpdateUser(username, func(u *model.User) error {
+		if !bytes.Equal(u.PasswordHash, pwdHash.Sum(nil)) {
+			return fmt.Errorf("internal/error")
+		}
 
-	if !bytes.Equal(u.PasswordHash, pwdHash.Sum(nil)) {
-		g.String(200, "internal/error")
-		return
-	}
+		u.Session = genSession()
+		u.TLogin = uint32(time.Now().Unix())
 
-	u.Session = genSession()
-	u.TLogin = uint32(time.Now().Unix())
-	if ips := append(strings.Split(u.DataIP, ","), hashIP(g)); len(ips) > 5 {
-		u.DataIP = strings.Join(append(ips[:1], ips[len(ips)-4:]...), ",")
+		if ips := append(strings.Split(u.DataIP, ","), hashIP(g)); len(ips) > 5 {
+			u.DataIP = strings.Join(append(ips[:1], ips[len(ips)-4:]...), ",")
+		} else {
+			u.DataIP = strings.Join(ips, ",")
+		}
+
+		tok = ik.MakeUserToken(u)
+		return nil
+	}); err != nil {
+		g.String(200, err.Error())
 	} else {
-		u.DataIP = strings.Join(ips, ",")
+		g.SetCookie("id", tok, 365*86400, "", "", false, false)
+		g.String(200, "ok")
 	}
-
-	if err := dal.SetUser(u); err != nil {
-		log.Println(u, err)
-		g.String(200, "internal/error")
-		return
-	}
-
-	g.SetCookie("id", ik.MakeUserToken(u), 365*86400, "", "", false, false)
-	g.String(200, "ok")
 }
 
 func APIUserKimochi(g *gin.Context) {
@@ -192,16 +179,13 @@ func APILike(g *gin.Context) {
 		return
 	}
 
-	common.LockKey(u.ID)
-	defer common.UnlockKey(u.ID)
-
 	to := g.PostForm("to")
 	if to == "" {
 		redir("internal/error")
 		return
 	}
 
-	err := dal.LikeArticle_unlock(u.ID, to, g.PostForm("like") != "")
+	err := dal.LikeArticle(u.ID, to, g.PostForm("like") != "")
 	if err != nil {
 		redir(err.Error())
 	} else {
@@ -234,14 +218,11 @@ func APIFollowBlock(g *gin.Context) {
 		return
 	}
 
-	common.LockKey(u.ID)
-	defer common.UnlockKey(u.ID)
-
 	var err error
 	if g.PostForm("method") == "follow" {
-		err = dal.FollowUser_unlock(u.ID, to, g.PostForm("follow") != "")
+		err = dal.FollowUser(u.ID, to, g.PostForm("follow") != "")
 	} else {
-		err = dal.BlockUser_unlock(u.ID, to, g.PostForm("block") != "")
+		err = dal.BlockUser(u.ID, to, g.PostForm("block") != "")
 	}
 
 	if err != nil {

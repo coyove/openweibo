@@ -101,7 +101,7 @@ func main() {
 			return ""
 		},
 		"getTotalPosts": func(id string) int {
-			a, _ := dal.GetArticle(ik.NewID(ik.IDTagAuthor).SetTag(id).String())
+			a, _ := dal.GetArticle(ik.NewID(ik.IDAuthor,id).String())
 			if a != nil {
 				return a.Replies
 			}

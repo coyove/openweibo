@@ -12,20 +12,20 @@ import (
 )
 
 const (
-	IDTagGeneral       IDTag = 0x07
-	IDTagTag                 = 0x06
-	IDTagAuthor              = 0x05
-	IDTagInbox               = 0x04
-	IDTagFollowerChain       = 0x0A
-	IDTagFollowChain         = 0x0B
-	IDTagBlockChain          = 0x0C
-	IDTagLikeChain           = 0x0D
+	IDGeneral   IDHeader = 0x07
+	IDTag                = 0x06
+	IDAuthor             = 0x05
+	IDInbox              = 0x04
+	IDFollower           = 0x0A
+	IDFollowing          = 0x0B
+	IDBlacklist          = 0x0C
+	IDLike               = 0x0D
 )
 
-type IDTag byte
+type IDHeader byte
 
 type ID struct {
-	hdr    IDTag
+	hdr    IDHeader
 	taglen byte
 	ts     uint32
 	tag    [16]byte
@@ -36,14 +36,18 @@ var (
 	idEncoding = base64.NewEncoding("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz~").WithPadding('-')
 )
 
-func NewID(hdr IDTag) ID {
-	return ID{hdr: hdr}
+func NewID(hdr IDHeader, tag string) ID {
+	id := ID{hdr: hdr}
+	buf := common.CompressString(tag)
+	copy(id.tag[:], buf)
+	id.taglen = byte(len(buf))
+	return id
 }
 
 func NewGeneralID() ID {
 	ctr := atomic.AddUint32(&idCounter, 1)
 	return ID{
-		hdr: IDTagGeneral,
+		hdr: IDGeneral,
 		ts:  uint32(time.Now().Unix()),
 		tag: [16]byte{byte(ctr >> 8), byte(ctr), byte(rand.Int()), byte(rand.Int())},
 	}
@@ -53,7 +57,7 @@ func (id ID) Size() int {
 	if !id.Valid() {
 		return 0
 	}
-	if id.hdr == IDTagGeneral {
+	if id.hdr == IDGeneral {
 		return 9
 	}
 	return int(1 + id.taglen)
@@ -68,7 +72,7 @@ func (id ID) Marshal(buf []byte) []byte {
 	}
 
 	buf[0] = byte(id.hdr)<<4 | (id.taglen & 0xf)
-	if id.hdr == IDTagGeneral {
+	if id.hdr == IDGeneral {
 		binary.BigEndian.PutUint32(buf[1:], id.ts)
 		copy(buf[5:], id.tag[:4])
 	} else {
@@ -90,13 +94,6 @@ func (id ID) IsRoot() bool {
 	return id.ts == 0 && id.Valid()
 }
 
-func (id ID) SetTag(tag string) ID {
-	buf := common.CompressString(tag)
-	copy(id.tag[:], buf)
-	id.taglen = byte(len(buf))
-	return id
-}
-
 func (id ID) Tag() string {
 	return common.DecompressString(id.tag[:id.taglen])
 }
@@ -105,7 +102,7 @@ func (id ID) TagBytes() []byte {
 	return id.tag[:id.taglen]
 }
 
-func (id ID) Header() IDTag {
+func (id ID) Header() IDHeader {
 	return id.hdr
 }
 
@@ -115,7 +112,7 @@ func UnmarshalID(p []byte) ID {
 	}
 
 	id := ID{}
-	id.hdr = IDTag(p[0] >> 4)
+	id.hdr = IDHeader(p[0] >> 4)
 	id.taglen = p[0] & 0xf
 
 	if !id.Valid() {
@@ -126,7 +123,7 @@ func UnmarshalID(p []byte) ID {
 		return ID{}
 	}
 
-	if id.hdr == IDTagGeneral {
+	if id.hdr == IDGeneral {
 		copy(id.tag[:4], p[5:])
 		id.ts = binary.BigEndian.Uint32(p[1:])
 	} else {
@@ -142,7 +139,7 @@ func ReadID(r io.Reader) ID {
 	}
 
 	id := ID{}
-	id.hdr = IDTag(p[0] >> 4)
+	id.hdr = IDHeader(p[0] >> 4)
 	id.taglen = p[0] & 0xf
 
 	if !id.Valid() {
@@ -153,7 +150,7 @@ func ReadID(r io.Reader) ID {
 		return ID{}
 	}
 
-	if id.hdr == IDTagGeneral {
+	if id.hdr == IDGeneral {
 		copy(id.tag[:4], p[4:])
 		id.ts = binary.BigEndian.Uint32(p[:4])
 	} else {

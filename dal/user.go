@@ -29,6 +29,11 @@ func GetUser(id string) (*model.User, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	if len(p) == 0 {
+		return nil, model.ErrNotExisted
+	}
+
 	u, err := model.UnmarshalUser(p)
 	if u != nil {
 		u2 := *u
@@ -36,7 +41,7 @@ func GetUser(id string) (*model.User, error) {
 		if u.FollowingChain != "" {
 			go func() {
 				fc, _ := GetArticle(u.FollowingChain)
-				id := ik.NewID(ik.IDTagFollowChain).SetTag(u.ID).String()
+				id := ik.NewID(ik.IDFollowing, u.ID).String()
 				if fc != nil {
 					for !strings.HasPrefix(fc.NextID, "u/") {
 						fc2, _ := GetArticle(fc.NextID)
@@ -70,14 +75,6 @@ func GetUserWithSettings(id string) (*model.User, error) {
 	p, _ := m.db.Get("u/" + id + "/settings")
 	u.SetSettings(model.UnmarshalUserSettings(p))
 	return u, nil
-}
-
-func SetUser(u *model.User) error {
-	if u.ID == "" {
-		return nil
-	}
-	m.weakUsers.Delete(u.ID)
-	return m.db.Set("u/"+u.ID, u.Marshal())
 }
 
 func GetUserByContext(g *gin.Context) *model.User {
@@ -119,18 +116,25 @@ func GetUserByToken(tok string) (*model.User, error) {
 	return u, nil
 }
 
-func IsBanned(id string) bool {
-	u, err := GetUser(id)
-	if err != nil {
-		return true
-	}
-	return u.Banned
-}
-
 func UpdateUser(id string, cb func(u *model.User) error) error {
 	common.LockKey(id)
 	defer common.UnlockKey(id)
-	return UpdateUser_unlock(id, cb)
+	u, err := GetUser(id)
+	if err == model.ErrNotExisted {
+		u = &model.User{ID: id}
+		err = nil
+	}
+	if err != nil {
+		return err
+	}
+	if err := cb(u); err != nil {
+		return err
+	}
+	if u.ID == "" {
+		return nil
+	}
+	m.weakUsers.Delete(u.ID)
+	return m.db.Set("u/"+u.ID, u.Marshal())
 }
 
 func UpdateUserSettings(id string, cb func(u *model.UserSettings) error) error {
@@ -145,24 +149,13 @@ func UpdateUserSettings(id string, cb func(u *model.UserSettings) error) error {
 	return m.db.Set(sid, s.Marshal())
 }
 
-func UpdateUser_unlock(id string, cb func(u *model.User) error) error {
-	u, err := GetUser(id)
-	if err != nil {
-		return err
-	}
-	if err := cb(u); err != nil {
-		return err
-	}
-	return SetUser(u)
-}
-
 func MentionUserAndTags(a *model.Article, ids []string, tags []string) error {
 	for _, id := range ids {
 		if IsBlocking(id, a.Author) {
 			return fmt.Errorf("author blocked")
 		}
 
-		if err := insertArticle(ik.NewID(ik.IDTagInbox).SetTag(id).String(), &model.Article{
+		if err := insertArticle(ik.NewID(ik.IDInbox, id).String(), &model.Article{
 			ID:  ik.NewGeneralID().String(),
 			Cmd: model.CmdMention,
 			Extras: map[string]string{
@@ -182,7 +175,7 @@ func MentionUserAndTags(a *model.Article, ids []string, tags []string) error {
 	}
 
 	for _, tag := range tags {
-		if err := insertArticle(ik.NewID(ik.IDTagTag).SetTag(tag).String(), &model.Article{
+		if err := insertArticle(ik.NewID(ik.IDTag, tag).String(), &model.Article{
 			ID:         ik.NewGeneralID().String(),
 			ReferID:    a.ID,
 			Media:      a.Media,
@@ -195,8 +188,8 @@ func MentionUserAndTags(a *model.Article, ids []string, tags []string) error {
 	return nil
 }
 
-func FollowUser_unlock(from, to string, following bool) (E error) {
-	followID := MakeFollowID(from, to)
+func FollowUser(from, to string, following bool) (E error) {
+	followID := makeFollowID(from, to)
 	if following && IsBlocking(to, from) {
 		// "from" wants "to" follow "to" but "to" blocked "from"
 		return fmt.Errorf("follow/to-blocked")
@@ -237,7 +230,7 @@ func FollowUser_unlock(from, to string, following bool) (E error) {
 
 	updated = true
 	if err := insertArticle(
-		ik.NewID(ik.IDTagFollowChain).SetTag(from).String(),
+		ik.NewID(ik.IDFollowing, from).String(),
 		&model.Article{
 			ID:         followID,
 			Cmd:        model.CmdFollow,
@@ -262,33 +255,33 @@ func fromFollowToNotifyTo(from, to string, following bool) (E error) {
 	}
 	_, err := insertChainOrUpdate(
 		makeFollowedID(to, from),
-		ik.NewID(ik.IDTagFollowerChain).SetTag(to).String(),
+		ik.NewID(ik.IDFollower, to).String(),
 		from,
 		model.CmdFollowed,
 		following)
 	return err
 }
 
-func BlockUser_unlock(from, to string, blocking bool) (E error) {
+func BlockUser(from, to string, blocking bool) (E error) {
 	if blocking {
-		if err := FollowUser_unlock(to, from, false); err != nil {
+		if err := FollowUser(to, from, false); err != nil {
 			log.Println("Block user:", to, "unfollow error:", err)
 		}
 	}
 
 	_, err := insertChainOrUpdate(
 		makeBlockID(from, to),
-		ik.NewID(ik.IDTagBlockChain).SetTag(from).String(),
+		ik.NewID(ik.IDBlacklist, from).String(),
 		to,
 		model.CmdBlock,
 		blocking)
 	return err
 }
 
-func LikeArticle_unlock(from, to string, liking bool) (E error) {
+func LikeArticle(from, to string, liking bool) (E error) {
 	updated, err := insertChainOrUpdate(
 		makeLikeID(from, to),
-		ik.NewID(ik.IDTagLikeChain).SetTag(from).String(),
+		ik.NewID(ik.IDLike, from).String(),
 		to,
 		model.CmdLike,
 		liking)
@@ -307,7 +300,7 @@ func LikeArticle_unlock(from, to string, liking bool) (E error) {
 				if IsFollowing(a.Author, from) {
 					// if the author followed 'from', notify the author that his articles has been liked by 'from'
 					go func() {
-						insertArticle(ik.NewID(ik.IDTagInbox).SetTag(a.Author).String(), &model.Article{
+						insertArticle(ik.NewID(ik.IDInbox, a.Author).String(), &model.Article{
 							ID:  ik.NewGeneralID().String(),
 							Cmd: model.CmdILike,
 							Extras: map[string]string{
@@ -433,7 +426,7 @@ func GetFollowingList(chain ik.ID, cursor string, n int) ([]FollowingState, stri
 }
 
 func IsFollowing(from, to string) bool {
-	p, _ := GetArticle(MakeFollowID(from, to))
+	p, _ := GetArticle(makeFollowID(from, to))
 	return p != nil && strings.HasPrefix(p.Extras[to], "true")
 }
 

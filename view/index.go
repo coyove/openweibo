@@ -51,12 +51,12 @@ func Index(g *gin.Context) {
 		pl.IsTagTimelineFollowed = dal.IsFollowing(pl.You.ID, "#"+pl.Tag)
 	}
 
-	a, _ := dal.GetArticle(ik.NewID(ik.IDTagTag).SetTag(pl.Tag).String())
+	a, _ := dal.GetArticle(ik.NewID(ik.IDTag, pl.Tag).String())
 	if a != nil {
 		pl.PostsUnderTag = int32(a.Replies)
 	}
 
-	a2, next := dal.WalkMulti(pl.MediaOnly, int(common.Cfg.PostsPerPage), ik.NewID(ik.IDTagTag).SetTag(pl.Tag))
+	a2, next := dal.WalkMulti(pl.MediaOnly, int(common.Cfg.PostsPerPage), ik.NewID(ik.IDTag, pl.Tag))
 	fromMultiple(&pl.Articles, a2, 0, getUser(g))
 
 	pl.Next = ik.CombineIDs(nil, next...)
@@ -115,13 +115,13 @@ func Timeline(g *gin.Context) {
 	cursors := []ik.ID{}
 	pendingFCursor := ""
 	readCursorsAndPendingFCursor := func(start string) {
-		list, next := dal.GetFollowingList(ik.NewID(ik.IDTagFollowChain).SetTag(pl.User.ID), start, 1e6)
+		list, next := dal.GetFollowingList(ik.NewID(ik.IDFollowing, pl.User.ID), start, 1e6)
 		for _, id := range list {
 			if id.Followed {
 				if strings.HasPrefix(id.ID, "#") {
-					cursors = append(cursors, ik.NewID(ik.IDTagTag).SetTag(id.ID[1:]))
+					cursors = append(cursors, ik.NewID(ik.IDTag, id.ID[1:]))
 				} else {
-					cursors = append(cursors, ik.NewID(ik.IDTagAuthor).SetTag(id.ID))
+					cursors = append(cursors, ik.NewID(ik.IDAuthor, id.ID))
 				}
 			}
 		}
@@ -129,13 +129,13 @@ func Timeline(g *gin.Context) {
 	}
 
 	if pl.IsUserTimeline {
-		cursors = append(cursors, ik.NewID(ik.IDTagAuthor).SetTag(pl.User.ID))
+		cursors = append(cursors, ik.NewID(ik.IDAuthor, pl.User.ID))
 	} else if pl.IsInbox {
-		cursors = append(cursors, ik.NewID(ik.IDTagInbox).SetTag(pl.User.ID))
+		cursors = append(cursors, ik.NewID(ik.IDInbox, pl.User.ID))
 	} else {
 		pl.ShowNewPost = true
 		readCursorsAndPendingFCursor("")
-		cursors = append(cursors, ik.NewID(ik.IDTagAuthor).SetTag(pl.User.ID))
+		cursors = append(cursors, ik.NewID(ik.IDAuthor, pl.User.ID))
 	}
 
 	a, next := dal.WalkMulti(pl.MediaOnly, int(common.Cfg.PostsPerPage), cursors...)
@@ -180,9 +180,9 @@ func APITimeline(g *gin.Context) {
 					continue
 				}
 				if strings.HasPrefix(id.ID, "#") {
-					cursors = append(cursors, ik.NewID(ik.IDTagTag).SetTag(id.ID[1:]))
+					cursors = append(cursors, ik.NewID(ik.IDTag, id.ID[1:]))
 				} else {
-					cursors = append(cursors, ik.NewID(ik.IDTagAuthor).SetTag(id.ID))
+					cursors = append(cursors, ik.NewID(ik.IDAuthor, id.ID))
 				}
 			}
 			pendingFCursor = next

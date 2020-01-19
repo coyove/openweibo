@@ -77,11 +77,11 @@ func UserList(g *gin.Context) {
 			g.Redirect(302, "/user/blacklist")
 			return
 		}
-		chain = ik.NewID(ik.IDTagBlockChain).SetTag(p.User.ID)
+		chain = ik.NewID(ik.IDBlacklist,p.User.ID)
 	case "followers":
-		chain = ik.NewID(ik.IDTagFollowerChain).SetTag(p.User.ID)
+		chain = ik.NewID(ik.IDFollower,p.User.ID)
 	default:
-		chain = ik.NewID(ik.IDTagFollowChain).SetTag(p.User.ID)
+		chain = ik.NewID(ik.IDFollowing,p.User.ID)
 	}
 	p.List, p.Next = dal.GetFollowingList(chain, g.Query("n"), int(common.Cfg.PostsPerPage))
 
@@ -122,7 +122,7 @@ func UserLikes(g *gin.Context) {
 	}
 
 	var cursor string
-	if pa, _ := dal.GetArticle(ik.NewID(ik.IDTagLikeChain).SetTag(p.User.ID).String()); pa != nil {
+	if pa, _ := dal.GetArticle(ik.NewID(ik.IDLike,p.User.ID).String()); pa != nil {
 		cursor = pa.PickNextID(p.MediaOnly)
 	}
 

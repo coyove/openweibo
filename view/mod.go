@@ -33,8 +33,8 @@ func ModUser(g *gin.Context) {
 		g.SetCookie("id", ik.MakeUserToken(p.User), 86400, "", "", false, false)
 	}
 
-	getter := func(h ik.IDTag) string {
-		id := ik.NewID(h).SetTag(p.User.ID).String()
+	getter := func(h ik.IDHeader) string {
+		id := ik.NewID(h,p.User.ID).String()
 		a, _ := dal.GetArticle(id)
 		if a == nil {
 			return id + " (empty)"
@@ -43,12 +43,12 @@ func ModUser(g *gin.Context) {
 	}
 
 	p.Keys = map[string]string{
-		"Follower": getter(ik.IDTagFollowerChain),
-		"Follow":   getter(ik.IDTagFollowChain),
-		"Block":    getter(ik.IDTagBlockChain),
-		"Like":     getter(ik.IDTagLikeChain),
-		"Timeline": getter(ik.IDTagAuthor),
-		"Inbox":    getter(ik.IDTagInbox),
+		"Follower": getter(ik.IDFollower),
+		"Follow":   getter(ik.IDFollowing),
+		"Block":    getter(ik.IDBlacklist),
+		"Like":     getter(ik.IDLike),
+		"Timeline": getter(ik.IDAuthor),
+		"Inbox":    getter(ik.IDInbox),
 	}
 
 	p.Raw = fmt.Sprintf("%+v", p.User)

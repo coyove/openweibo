@@ -9,14 +9,14 @@ import (
 )
 
 func TestID(t *testing.T) {
-	t.Log(NewID(IDTagFollowChain).SetTag("澜沫"))
+	t.Log(NewID(IDFollowing,"澜沫"))
 	t.Log(ParseID("L75mSN4-"))
 	return
 
 	for i := 0; i < 1e6; i++ {
 		tag := model.SafeStringForCompressString(strconv.Itoa(rand.Int()))
 
-		id := NewID(IDTagAuthor).SetTag(tag)
+		id := NewID(IDAuthor,tag)
 		if rand.Intn(2) == 0 {
 			id = NewGeneralID()
 		}

@@ -80,7 +80,7 @@ func dec0(a *int32) {
 func MakeID(mth string, a, b string) string {
 	switch mth {
 	case "follow":
-		return MakeFollowID(a, b)
+		return makeFollowID(a, b)
 	case "followed":
 		return makeFollowedID(a, b)
 	default:
@@ -88,7 +88,7 @@ func MakeID(mth string, a, b string) string {
 	}
 }
 
-func MakeFollowID(from, to string) string {
+func makeFollowID(from, to string) string {
 	h := sha1.Sum([]byte(to))
 	return "u/" + from + "/follow/" + strconv.Itoa(int(h[0]))
 }

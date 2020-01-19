@@ -203,12 +203,12 @@ func Post(a *model.Article, author *model.User, noMaster bool) (*model.Article, 
 	a.CreateTime = time.Now()
 	a.Author = author.ID
 
-	if err := insertArticle(ik.NewID(ik.IDTagAuthor).SetTag(a.Author).String(), a, false); err != nil {
+	if err := insertArticle(ik.NewID(ik.IDAuthor,a.Author).String(), a, false); err != nil {
 		return nil, err
 	}
 
 	if !noMaster {
-		go insertArticle(ik.NewID(ik.IDTagAuthor).SetTag("master").String(), &model.Article{
+		go insertArticle(ik.NewID(ik.IDAuthor,"master").String(), &model.Article{
 			ID:         ik.NewGeneralID().String(),
 			ReferID:    a.ID,
 			Media:      a.Media,
@@ -244,7 +244,7 @@ func insertArticle(rootID string, a *model.Article, asReply bool) error {
 		}
 	}
 
-	if x, y := ik.ParseID(rootID), ik.ParseID(root.NextID); x.Header() == ik.IDTagAuthor && y.Valid() {
+	if x, y := ik.ParseID(rootID), ik.ParseID(root.NextID); x.Header() == ik.IDAuthor && y.Valid() {
 		now := time.Now()
 		if now.Year() != y.Time().Year() || now.Month() != y.Time().Month() {
 			// The very last article was made before this month, so we will create a checkpoint for long jmp
@@ -313,14 +313,14 @@ func PostReply(parent string, content, media string, author *model.User, ip stri
 
 	if !noTimeline {
 		// Add reply to its timeline
-		if err := insertArticle(ik.NewID(ik.IDTagAuthor).SetTag(a.Author).String(), a, false); err != nil {
+		if err := insertArticle(ik.NewID(ik.IDAuthor,a.Author).String(), a, false); err != nil {
 			return nil, err
 		}
 	}
 
 	go func() {
 		if p.Content != model.DeletionMarker && a.Author != p.Author {
-			if err := insertArticle(ik.NewID(ik.IDTagInbox).SetTag(p.Author).String(), &model.Article{
+			if err := insertArticle(ik.NewID(ik.IDInbox,p.Author).String(), &model.Article{
 				ID:  ik.NewGeneralID().String(),
 				Cmd: model.CmdReply,
 				Extras: map[string]string{
