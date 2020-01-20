@@ -19,7 +19,7 @@ import (
 
 func GetUser(id string) (*model.User, error) {
 	if id == "" {
-		return nil, model.ErrNotExisted
+		return nil, fmt.Errorf("empty user id")
 	}
 	if u := m.weakUsers.Get(id); u != nil {
 		return (*model.User)(u), nil
@@ -116,71 +116,41 @@ func GetUserByToken(tok string) (*model.User, error) {
 	return u, nil
 }
 
-func UpdateUser(id string, cb func(u *model.User) error) error {
-	common.LockKey(id)
-	defer common.UnlockKey(id)
-	u, err := GetUser(id)
-	if err == model.ErrNotExisted {
-		u = &model.User{ID: id}
-		err = nil
-	}
-	if err != nil {
-		return err
-	}
-	if err := cb(u); err != nil {
-		return err
-	}
-	if u.ID == "" {
-		return nil
-	}
-	m.weakUsers.Delete(u.ID)
-	return m.db.Set("u/"+u.ID, u.Marshal())
-}
-
-func UpdateUserSettings(id string, cb func(u *model.UserSettings) error) error {
-	common.LockKey(id)
-	defer common.UnlockKey(id)
-	sid := "u/" + id + "/settings"
-	p, _ := m.db.Get(sid)
-	s := model.UnmarshalUserSettings(p)
-	if err := cb(&s); err != nil {
-		return err
-	}
-	return m.db.Set(sid, s.Marshal())
-}
-
 func MentionUserAndTags(a *model.Article, ids []string, tags []string) error {
 	for _, id := range ids {
 		if IsBlocking(id, a.Author) {
 			return fmt.Errorf("author blocked")
 		}
 
-		if err := insertArticle(ik.NewID(ik.IDInbox, id).String(), &model.Article{
-			ID:  ik.NewGeneralID().String(),
-			Cmd: model.CmdMention,
-			Extras: map[string]string{
-				"from":       a.Author,
-				"article_id": a.ID,
+		if err := Do(NewRequest(DoInsertArticle,
+			"RootID", ik.NewID(ik.IDInbox, id).String(),
+			"Article", model.Article{
+				ID:  ik.NewGeneralID().String(),
+				Cmd: model.CmdMention,
+				Extras: map[string]string{
+					"from":       a.Author,
+					"article_id": a.ID,
+				},
+				CreateTime: time.Now(),
 			},
-			CreateTime: time.Now(),
-		}, false); err != nil {
+		)); err != nil {
 			return err
 		}
-		if err := UpdateUser(id, func(u *model.User) error {
-			u.Unread++
-			return nil
-		}); err != nil {
+		if err := Do(NewRequest(DoUpdateUser, "ID", id, "IncUnread", true)); err != nil {
 			return err
 		}
 	}
 
 	for _, tag := range tags {
-		if err := insertArticle(ik.NewID(ik.IDTag, tag).String(), &model.Article{
-			ID:         ik.NewGeneralID().String(),
-			ReferID:    a.ID,
-			Media:      a.Media,
-			CreateTime: time.Now(),
-		}, false); err != nil {
+		if err := Do(NewRequest(DoInsertArticle,
+			"RootID", ik.NewID(ik.IDTag, tag).String(),
+			"Article", model.Article{
+				ID:         ik.NewGeneralID().String(),
+				ReferID:    a.ID,
+				Media:      a.Media,
+				CreateTime: time.Now(),
+			},
+		)); err != nil {
 			return err
 		}
 		common.AddTagToSearch(tag)
@@ -195,9 +165,6 @@ func FollowUser(from, to string, following bool) (E error) {
 		return fmt.Errorf("follow/to-blocked")
 	}
 
-	common.LockKey(followID)
-	defer common.UnlockKey(followID)
-
 	updated := false
 	defer func() {
 		if E != nil || !updated {
@@ -205,52 +172,44 @@ func FollowUser(from, to string, following bool) (E error) {
 		}
 
 		go func() {
-			UpdateUser(from, func(u *model.User) error {
-				if following {
-					u.Followings++
-				} else {
-					dec0(&u.Followings)
-				}
-				return nil
-			})
+			Do(NewRequest(DoUpdateUser, "ID", from, "IncDecFollowings", following))
 			if !strings.HasPrefix(to, "#") {
 				fromFollowToNotifyTo(from, to, following)
 			}
 		}()
 	}()
 
-	state := strconv.FormatBool(following) + "," + strconv.FormatInt(time.Now().Unix(), 10)
-	if a, _ := GetArticle(followID); a != nil {
-		if !strings.HasPrefix(a.Extras[to], strconv.FormatBool(following)) {
-			a.Extras[to] = state
+	r := NewRequest(DoUpdateArticle,
+		"ID", followID,
+		"SetExtraKey", to,
+		"SetExtraValue", strconv.FormatBool(following)+","+strconv.FormatInt(time.Now().Unix(), 10),
+	)
+	if err := Do(r); err != nil {
+		if err == model.ErrNotExisted {
 			updated = true
+			if err := Do(NewRequest(DoInsertArticle,
+				"RootID", ik.NewID(ik.IDFollowing, from).String(),
+				"Article", model.Article{
+					ID:         followID,
+					Cmd:        model.CmdFollow,
+					Extras:     map[string]string{to: *r.UpdateArticleRequest.SetExtraValue},
+					CreateTime: time.Now(),
+				},
+			)); err != nil {
+				return err
+			}
+			return nil
 		}
-		return m.db.Set(a.ID, a.Marshal())
-	}
-
-	updated = true
-	if err := insertArticle(
-		ik.NewID(ik.IDFollowing, from).String(),
-		&model.Article{
-			ID:         followID,
-			Cmd:        model.CmdFollow,
-			Extras:     map[string]string{to: state},
-			CreateTime: time.Now(),
-		}, false); err != nil {
 		return err
+	}
+	if !strings.HasPrefix(r.UpdateArticleRequest.Response.OldExtraValue, strconv.FormatBool(following)) {
+		updated = true
 	}
 	return nil
 }
 
 func fromFollowToNotifyTo(from, to string, following bool) (E error) {
-	if err := UpdateUser(to, func(u *model.User) error {
-		if following {
-			u.Followers++
-		} else {
-			dec0(&u.Followers)
-		}
-		return nil
-	}); err != nil {
+	if err := Do(NewRequest(DoUpdateUser, "ID", to, "IncDecFollowers", following)); err != nil {
 		return err
 	}
 	_, err := insertChainOrUpdate(
@@ -290,73 +249,56 @@ func LikeArticle(from, to string, liking bool) (E error) {
 	}
 	if updated {
 		go func() {
-			UpdateArticle(to, func(a *model.Article) error {
-				if liking {
-					a.Likes++
-				} else {
-					dec0(&a.Likes)
-				}
+			r := NewRequest(DoUpdateArticle, "ID", to, "IncDecLikes", liking)
+			err := Do(r)
+			if a := r.UpdateArticleRequest.Response.Article; err == nil && IsFollowing(a.Author, from) {
+				// if the author followed 'from', notify the author that his articles has been liked by 'from'
+				Do(NewRequest(DoInsertArticle,
+					"RootID", ik.NewID(ik.IDInbox, a.Author).String(),
+					"Article", model.Article{
+						ID:  ik.NewGeneralID().String(),
+						Cmd: model.CmdILike,
+						Extras: map[string]string{
+							"from":       from,
+							"article_id": a.ID,
+						},
+						CreateTime: time.Now(),
+					}))
+				Do(NewRequest(DoUpdateUser, "ID", a.Author, "IncUnread", true))
+			}
 
-				if IsFollowing(a.Author, from) {
-					// if the author followed 'from', notify the author that his articles has been liked by 'from'
-					go func() {
-						insertArticle(ik.NewID(ik.IDInbox, a.Author).String(), &model.Article{
-							ID:  ik.NewGeneralID().String(),
-							Cmd: model.CmdILike,
-							Extras: map[string]string{
-								"from":       from,
-								"article_id": a.ID,
-							},
-							CreateTime: time.Now(),
-						}, false)
-						UpdateUser(a.Author, func(u *model.User) error {
-							u.Unread++
-							return nil
-						})
-					}()
-				}
-
-				return nil
-			})
 		}()
 	}
 	return nil
 }
 
 func insertChainOrUpdate(aid, chainid string, to string, cmd model.Cmd, value bool) (updated bool, E error) {
-	common.LockKey(aid)
-	defer common.UnlockKey(aid)
+	state := strconv.FormatBool(value)
+	r := NewRequest(DoUpdateArticle, "ID", aid, "SetExtraKey", string(cmd), "SetExtraValue", state)
+	if err := Do(r); err != nil {
+		if err == model.ErrNotExisted {
+			a := &model.Article{
+				ID:  aid,
+				Cmd: cmd,
+				Extras: map[string]string{
+					"to":        to,
+					string(cmd): strconv.FormatBool(value),
+				},
+				CreateTime: time.Now(),
+			}
 
-	if a, _ := GetArticle(aid); a != nil {
-		state := strconv.FormatBool(value)
-		if a.Extras[string(cmd)] == state {
-			return false, nil
+			if cmd == model.CmdLike {
+				toa, _ := GetArticle(to)
+				if toa != nil {
+					a.Media = toa.Media
+				}
+			}
+
+			return true, Do(NewRequest(DoInsertArticle, "RootID", chainid, "Article", *a))
 		}
-		if a.Extras == nil {
-			a.Extras = map[string]string{}
-		}
-		a.Extras[string(cmd)] = state
-		return true, m.db.Set(a.ID, a.Marshal())
+		return false, err
 	}
-
-	a := &model.Article{
-		ID:  aid,
-		Cmd: cmd,
-		Extras: map[string]string{
-			"to":        to,
-			string(cmd): strconv.FormatBool(value),
-		},
-		CreateTime: time.Now(),
-	}
-
-	if cmd == model.CmdLike {
-		toa, _ := GetArticle(to)
-		if toa != nil {
-			a.Media = toa.Media
-		}
-	}
-
-	return true, insertArticle(chainid, a, false)
+	return r.UpdateArticleRequest.Response.OldExtraValue != state, nil
 }
 
 type FollowingState struct {

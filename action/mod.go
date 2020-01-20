@@ -1,10 +1,7 @@
 package action
 
 import (
-	"fmt"
-
 	"github.com/coyove/iis/dal"
-	"github.com/coyove/iis/model"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,13 +12,10 @@ func APIBan(g *gin.Context) {
 		return
 	}
 
-	if err := dal.UpdateUser(g.PostForm("to"), func(u *model.User) error {
-		if u.IsAdmin() {
-			return fmt.Errorf("ban/admin-really")
-		}
-		u.Banned = !u.Banned
-		return nil
-	}); err != nil {
+	if err := dal.Do(dal.NewRequest(dal.DoUpdateUser,
+		"ID", g.PostForm("to"),
+		"ToggleBan", true,
+	)); err != nil {
 		g.String(200, err.Error())
 	} else {
 		g.String(200, "ok")
@@ -35,33 +29,15 @@ func APIPromoteMod(g *gin.Context) {
 		return
 	}
 
-	if err := dal.UpdateUser(g.PostForm("to"), func(u *model.User) error {
-		if u.IsAdmin() {
-			return fmt.Errorf("promote/admin-really")
-		}
-		if u.Role == "mod" {
-			u.Role = ""
-		} else {
-			u.Role = "mod"
-		}
-		return nil
-	}); err != nil {
+	if err := dal.Do(dal.NewRequest(dal.DoUpdateUser,
+		"ID", g.PostForm("to"),
+		"ToggleMod", true,
+	)); err != nil {
 		g.String(200, err.Error())
 	} else {
 		g.String(200, "ok")
 	}
 }
-
-// func APIResetCache(g *gin.Context) {
-// 	u := dal.GetUserByContext(g)
-// 	if u == nil || !u.IsAdmin() {
-// 		g.String(200, "internal/error")
-// 		return
-// 	}
-//
-// 	m.ResetCache()
-// 	g.String(200, "ok")
-// }
 
 func APIModKV(g *gin.Context) {
 	u := dal.GetUserByContext(g)

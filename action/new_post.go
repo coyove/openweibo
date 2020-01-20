@@ -1,7 +1,6 @@
 package action
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"net/url"
@@ -107,15 +106,7 @@ func doReply(g *gin.Context) {
 	}
 
 	if g.PostForm("delete") != "" {
-		err := dal.UpdateArticle(reply, func(a *model.Article) error {
-			if u.ID != a.Author && !u.IsMod() {
-				return fmt.Errorf("user/can-not-delete")
-			}
-			a.Content = model.DeletionMarker
-			a.Media = ""
-			return nil
-		})
-		if err != nil {
+		if err := dal.Do(dal.NewRequest(dal.DoUpdateArticle, "ID", reply, "DeleteBy", *u)); err != nil {
 			g.String(200, err.Error())
 		} else {
 			g.String(200, "ok")
@@ -124,14 +115,7 @@ func doReply(g *gin.Context) {
 	}
 
 	if g.PostForm("makensfw") != "" {
-		err := dal.UpdateArticle(reply, func(a *model.Article) error {
-			if u.ID != a.Author && !u.IsMod() {
-				return fmt.Errorf("user/can-not-delete")
-			}
-			a.NSFW = !a.NSFW
-			return nil
-		})
-		if err != nil {
+		if err := dal.Do(dal.NewRequest(dal.DoUpdateArticle, "ID", reply, "ToggleNSFWBy", *u)); err != nil {
 			g.String(200, err.Error())
 		} else {
 			g.String(200, "ok")

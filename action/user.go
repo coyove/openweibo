@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
-	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -40,9 +39,6 @@ func Signup(g *gin.Context) {
 		return
 	}
 
-	pwdHash := hmac.New(sha256.New, common.Cfg.KeyBytes)
-	pwdHash.Write([]byte(password))
-
 	switch username := strings.ToLower(username); {
 	case strings.HasPrefix(username, "master"), strings.HasPrefix(username, "admin"):
 		redir("error", "id/already-existed")
@@ -54,23 +50,28 @@ func Signup(g *gin.Context) {
 		}
 	}
 
-	var tok string
-	if err := dal.UpdateUser(username, func(u *model.User) error {
-		if u, err := dal.GetUser(username); err == nil && u.ID == username {
-			return fmt.Errorf("id/already-existed")
-		}
+	pwdHash := hmac.New(sha256.New, common.Cfg.KeyBytes)
+	pwdHash.Write([]byte(password))
+	u := &model.User{}
+	u.ID = username
+	u.Session = genSession()
+	u.Email = email
+	u.PasswordHash = pwdHash.Sum(nil)
+	u.DataIP = "{" + ip + "}"
+	u.TSignup = uint32(time.Now().Unix())
+	u.TLogin = uint32(time.Now().Unix())
+	tok := ik.MakeUserToken(u)
 
-		u.ID = username
-		u.Session = genSession()
-		u.Email = email
-		u.PasswordHash = pwdHash.Sum(nil)
-		u.DataIP = "{" + ip + "}"
-		u.TSignup = uint32(time.Now().Unix())
-		u.TLogin = uint32(time.Now().Unix())
-
-		tok = ik.MakeUserToken(u)
-		return nil
-	}); err != nil {
+	if err := dal.Do(dal.NewRequest(dal.DoUpdateUser,
+		"ID", u.ID,
+		"Signup", true,
+		"Session", u.Session,
+		"Email", u.Email,
+		"PasswordHash", u.PasswordHash,
+		"DataIP", u.DataIP,
+		"TSignup", u.TSignup,
+		"TLogin", u.TLogin,
+	)); err != nil {
 		redir("error", err.Error())
 		return
 	}
@@ -80,38 +81,41 @@ func Signup(g *gin.Context) {
 }
 
 func APILogin(g *gin.Context) {
-	username := sanUsername(g.PostForm("username"))
-	if len(username) < 3 {
+	if ret := checkIP(g); ret != "" {
+		g.String(200, ret)
+		return
+	}
+
+	u, _ := dal.GetUser(sanUsername(g.PostForm("username")))
+	if u == nil {
 		g.String(200, "id/too-short")
 		return
 	}
 
 	pwdHash := hmac.New(sha256.New, common.Cfg.KeyBytes)
 	pwdHash.Write([]byte(common.SoftTrunc(g.PostForm("password"), 32)))
-
-	if ret := checkIP(g); ret != "" {
-		g.String(200, ret)
+	if !bytes.Equal(u.PasswordHash, pwdHash.Sum(nil)) {
+		g.String(200, "internal/error")
 		return
 	}
 
-	var tok string
-	if err := dal.UpdateUser(username, func(u *model.User) error {
-		if !bytes.Equal(u.PasswordHash, pwdHash.Sum(nil)) {
-			return fmt.Errorf("internal/error")
-		}
+	u.Session = genSession()
+	u.TLogin = uint32(time.Now().Unix())
 
-		u.Session = genSession()
-		u.TLogin = uint32(time.Now().Unix())
+	if ips := append(strings.Split(u.DataIP, ","), hashIP(g)); len(ips) > 5 {
+		u.DataIP = strings.Join(append(ips[:1], ips[len(ips)-4:]...), ",")
+	} else {
+		u.DataIP = strings.Join(ips, ",")
+	}
 
-		if ips := append(strings.Split(u.DataIP, ","), hashIP(g)); len(ips) > 5 {
-			u.DataIP = strings.Join(append(ips[:1], ips[len(ips)-4:]...), ",")
-		} else {
-			u.DataIP = strings.Join(ips, ",")
-		}
+	tok := ik.MakeUserToken(u)
 
-		tok = ik.MakeUserToken(u)
-		return nil
-	}); err != nil {
+	if err := dal.Do(dal.NewRequest(dal.DoUpdateUser,
+		"ID", u.ID,
+		"Session", u.Session,
+		"TLogin", u.TLogin,
+		"DataIP", u.DataIP,
+	)); err != nil {
 		g.String(200, err.Error())
 	} else {
 		g.SetCookie("id", tok, 365*86400, "", "", false, false)
@@ -120,22 +124,21 @@ func APILogin(g *gin.Context) {
 }
 
 func APIUserKimochi(g *gin.Context) {
-	user, _ := g.Get("user")
-	u, _ := user.(*model.User)
-
+	u := dal.GetUserByContext(g)
 	if u == nil {
 		g.String(200, "internal/error")
 		return
 	}
 
-	if err := dal.UpdateUser(u.ID, func(u *model.User) error {
-		k, _ := strconv.Atoi(g.PostForm("k"))
-		if k < 0 || k > 44 {
-			k = 25
-		}
-		u.Kimochi = byte(k)
-		return nil
-	}); err != nil {
+	k, _ := strconv.Atoi(g.PostForm("k"))
+	if k < 0 || k > 44 {
+		k = 25
+	}
+
+	if err := dal.Do(dal.NewRequest(dal.DoUpdateUser,
+		"ID", u.ID,
+		"Kimochi", byte(k),
+	)); err != nil {
 		g.String(200, "internal/error")
 		return
 	}
@@ -166,7 +169,7 @@ func APINewCaptcha(g *gin.Context) {
 func APILike(g *gin.Context) {
 	var (
 		redir = func(b string) { g.String(200, b) }
-		u, _  = dal.GetUserByToken(g.PostForm("api2_uid"))
+		u     = dal.GetUserByContext(g)
 	)
 
 	if u == nil {
@@ -196,10 +199,10 @@ func APILike(g *gin.Context) {
 func APILogout(g *gin.Context) {
 	u := dal.GetUserByContext(g)
 	if u != nil {
-		dal.UpdateUser(u.ID, func(u *model.User) error {
-			u.Session = genSession()
-			return nil
-		})
+		dal.Do(dal.NewRequest(dal.DoUpdateUser,
+			"ID", u.ID,
+			"Session", genSession(),
+		))
 		u = &model.User{}
 		g.SetCookie("id", ik.MakeUserToken(u), 365*86400, "", "", false, false)
 	}
@@ -269,56 +272,64 @@ func APIUpdateUserSettings(g *gin.Context) {
 		return
 	}
 
-	update1 := func(cb func(u *model.User)) {
-		if err := dal.UpdateUser(u.ID, func(u *model.User) error {
-			cb(u)
-			return nil
-		}); err != nil {
-			g.String(200, "internal/error")
-		} else {
-			g.String(200, "ok")
-		}
-	}
-
-	update2 := func(cb func(u *model.UserSettings)) {
-		if err := dal.UpdateUserSettings(u.ID, func(u *model.UserSettings) error {
-			cb(u)
-			return nil
-		}); err != nil {
-			g.String(200, "internal/error")
-		} else {
-			g.String(200, "ok")
-		}
-	}
-
 	switch {
 	case g.PostForm("set-email") != "":
-		update1(func(u *model.User) { u.Email = common.SoftTrunc(g.PostForm("email"), 256) })
+		if err := dal.Do(dal.NewRequest(dal.DoUpdateUser, "ID", u.ID,
+			"Email", common.SoftTrunc(g.PostForm("email"), 256))); err != nil {
+			g.String(200, err.Error())
+			return
+		}
 	case g.PostForm("set-autonsfw") != "":
-		update2(func(u *model.UserSettings) { u.AutoNSFW = g.PostForm("autonsfw") != "" })
+		if err := dal.Do(dal.NewRequest(dal.DoUpdateUser,
+			"ID", u.ID,
+			"SettingAutoNSFW", g.PostForm("autonsfw") != "",
+		)); err != nil {
+			g.String(200, err.Error())
+			return
+		}
 	case g.PostForm("set-foldimg") != "":
-		update2(func(u *model.UserSettings) { u.FoldImages = g.PostForm("foldimg") != "" })
+		if err := dal.Do(dal.NewRequest(dal.DoUpdateUser,
+			"ID", u.ID,
+			"SettingFoldImages", g.PostForm("foldimg") != "",
+		)); err != nil {
+			g.String(200, err.Error())
+			return
+		}
 	case g.PostForm("set-description") != "":
-		update2(func(u *model.UserSettings) { u.Description = common.SoftTrunc(g.PostForm("description"), 512) })
+		if err := dal.Do(dal.NewRequest(dal.DoUpdateUser,
+			"ID", u.ID,
+			"SettingDescription", common.SoftTrunc(g.PostForm("description"), 512),
+		)); err != nil {
+			g.String(200, err.Error())
+			return
+		}
 	case g.PostForm("set-custom-name") != "":
 		name := g.PostForm("custom-name")
-		if name := strings.ToLower(name); strings.Contains(name, "admin") && !u.IsAdmin() {
+		if strings.Contains(strings.ToLower(name), "admin") && !u.IsAdmin() {
 			name = strings.Replace(name, "admin", "nimda", -1)
 		}
 		name = common.SoftTruncDisplayWidth(name, 16)
-		update1(func(u *model.User) {
-			u.CustomName = name
-			g.Writer.Header().Add("X-Result", url.PathEscape(middleware.RenderTemplateString("display_name.html", u)))
-			g.Writer.Header().Add("X-Custom-Name", url.PathEscape(name))
-		})
+		r := dal.NewRequest(dal.DoUpdateUser, "ID", u.ID, "CustomName", name)
+		if err := dal.Do(r); err != nil {
+			g.String(200, err.Error())
+			return
+		}
+		g.Writer.Header().Add("X-Result",
+			url.PathEscape(middleware.RenderTemplateString("display_name.html",
+				r.UpdateUserRequest.Response.User)))
+		g.Writer.Header().Add("X-Custom-Name", url.PathEscape(name))
 	case g.PostForm("set-avatar") != "":
 		_, err := writeAvatar(u, g.PostForm("avatar"))
 		if err != nil {
 			g.String(200, err.Error())
 			return
 		}
-		update1(func(u *model.User) { u.Avatar++ })
+		if err := dal.Do(dal.NewRequest(dal.DoUpdateUser, "ID", u.ID, "Avatar", uint32(time.Now().Unix()))); err != nil {
+			g.String(200, err.Error())
+			return
+		}
 	}
+	g.String(200, "ok")
 }
 
 func APIUpdateUserPassword(g *gin.Context) {
@@ -331,21 +342,24 @@ func APIUpdateUserPassword(g *gin.Context) {
 		g.String(200, res)
 		return
 	}
-	if err := dal.UpdateUser(u.ID, func(u *model.User) error {
-		oldPassword := common.SoftTrunc(g.PostForm("old-password"), 32)
-		newPassword := common.SoftTrunc(g.PostForm("new-password"), 32)
 
-		pwdHash := hmac.New(sha256.New, common.Cfg.KeyBytes)
-		pwdHash.Write([]byte(oldPassword))
-		if len(newPassword) < 3 || !bytes.Equal(u.PasswordHash, pwdHash.Sum(nil)) {
-			return fmt.Errorf("password/invalid-too-short")
-		}
+	oldPassword := common.SoftTrunc(g.PostForm("old-password"), 32)
+	newPassword := common.SoftTrunc(g.PostForm("new-password"), 32)
 
-		pwdHash.Reset()
-		pwdHash.Write([]byte(newPassword))
-		u.PasswordHash = pwdHash.Sum(nil)
-		return nil
-	}); err != nil {
+	pwdHash := hmac.New(sha256.New, common.Cfg.KeyBytes)
+	pwdHash.Write([]byte(oldPassword))
+	if len(newPassword) < 3 || !bytes.Equal(u.PasswordHash, pwdHash.Sum(nil)) {
+		g.String(200, "password/invalid-too-short")
+		return
+	}
+
+	pwdHash.Reset()
+	pwdHash.Write([]byte(newPassword))
+
+	if err := dal.Do(dal.NewRequest(dal.DoUpdateUser,
+		"ID", u.ID,
+		"PasswordHash", pwdHash.Sum(nil),
+	)); err != nil {
 		g.String(200, err.Error())
 		return
 	}

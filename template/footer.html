@@ -21,8 +21,7 @@
         function expandNSFW() {
             {{if .User}}
             {{if .User.Settings.AutoNSFW}}
-            var el = $q(".gbutton.nsfw-clicker");
-            for (var i = 0 ; i < el.length; i++) el[i].click();
+            $q(".gbutton.nsfw-clicker", true).forEach(function(el) { el.click() });
             {{end}}
             {{end}}
         }

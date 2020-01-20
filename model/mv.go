@@ -87,7 +87,7 @@ type User struct {
 	Role           string
 	PasswordHash   []byte
 	Email          string `json:"e"`
-	Avatar         int    `json:"av"`
+	Avatar         uint32 `json:"av"`
 	CustomName     string `json:"cn"`
 	Followers      int32  `json:"F"`
 	Followings     int32  `json:"f"`

@@ -142,10 +142,10 @@ func Timeline(g *gin.Context) {
 	fromMultiple(&pl.Articles, a, 0, pl.You)
 
 	if pl.IsInbox {
-		go dal.UpdateUser(pl.User.ID, func(u *model.User) error {
-			u.Unread = 0
-			return nil
-		})
+		go dal.Do(dal.NewRequest("UpdateUser",
+			"ID", pl.User.ID,
+			"Unread", int32(0),
+		))
 	}
 
 	pl.Next = ik.CombineIDs([]byte(pendingFCursor), next...)
