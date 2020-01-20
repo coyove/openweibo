@@ -45,7 +45,7 @@ type Request struct {
 		Response struct {
 			OldUser model.User
 			User    model.User
-		} `json:"-"`
+		}
 	}
 	UpdateArticleRequest *struct {
 		ID            string
@@ -54,15 +54,21 @@ type Request struct {
 		IncDecLikes   *bool
 		DeleteBy      *model.User
 		ToggleNSFWBy  *model.User
-		Response      struct {
+		ToggleLockBy  *model.User
+
+		Response struct {
 			OldExtraValue string
 			Article       model.Article
-		} `json:"-"`
+		}
 	}
 	InsertArticleRequest *struct {
 		RootID  string
 		AsReply bool
 		Article model.Article
+
+		Response struct {
+			Article model.Article
+		}
 	}
 	TestRequest *struct {
 		A *int
@@ -255,16 +261,22 @@ func coUpdateArticle(r *Request) error {
 	}
 	if rr.DeleteBy != nil {
 		if rr.DeleteBy.ID != a.Author && !rr.DeleteBy.IsMod() {
-			return fmt.Errorf("user/can-not-delete")
+			return fmt.Errorf("user/not-allowed")
 		}
 		a.Content = model.DeletionMarker
 		a.Media = ""
 	}
 	if rr.ToggleNSFWBy != nil {
 		if rr.ToggleNSFWBy.ID != a.Author && !rr.ToggleNSFWBy.IsMod() {
-			return fmt.Errorf("user/can-not-delete")
+			return fmt.Errorf("user/not-allowed")
 		}
 		a.NSFW = !a.NSFW
+	}
+	if rr.ToggleLockBy != nil {
+		if rr.ToggleLockBy.ID != a.Author && !rr.ToggleLockBy.IsMod() {
+			return fmt.Errorf("user/not-allowed")
+		}
+		a.Locked = !a.Locked
 	}
 	rr.Response.Article = *a
 
@@ -334,6 +346,8 @@ func coInsertArticle(r *Request) error {
 	if err := m.db.Set(root.ID, root.Marshal()); err != nil {
 		return err
 	}
+
+	r.InsertArticleRequest.Response.Article = a
 	return nil
 }
 

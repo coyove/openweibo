@@ -34,6 +34,7 @@ type ArticleRepliesView struct {
 	Articles      []ArticleView
 	ParentArticle ArticleView
 	Next          string
+	ShowReplyBox  bool
 	ReplyView     ReplyView
 }
 
@@ -215,11 +216,12 @@ func APIReplies(g *gin.Context) {
 	pl.ParentArticle.from(parent, 0, getUser(g))
 	pl.ReplyView = makeReplyView(g, pid)
 
-	if u, ok := g.Get("user"); ok {
-		if dal.IsBlocking(pl.ParentArticle.Author.ID, u.(*model.User).ID) {
+	if u := getUser(g); u != nil {
+		if dal.IsBlocking(pl.ParentArticle.Author.ID, u.ID) {
 			g.Status(404)
 			return
 		}
+		pl.ShowReplyBox = u.ID == pl.ParentArticle.Author.ID || !pl.ParentArticle.Locked
 	}
 
 	a, next := dal.WalkReply(int(common.Cfg.PostsPerPage), parent.ReplyChain)

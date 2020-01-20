@@ -59,6 +59,7 @@ kimochi a img {
 }
 
 kimochi > div.tri {
+    z-index: 101;
     display: none;
 }
 
@@ -69,9 +70,9 @@ kimochi:hover > div.tri {
 </style>
 
 <kimochi onmouseover="loadKimochi(this)">
-<div class="tri"></div>
-<div class="tri shadow"></div>
 <img src="/s/emoji/emoji{{.Kimochi}}.png" style="-webkit-filter: drop-shadow(0 0 3px rgba(0,0,0,0.2));
 {{if not .Kimochi}}border:dashed 1px #233;border-radius:50%{{end}}">
 <ul></ul>
+<div class="tri shadow"></div>
+<div class="tri"></div>
 </kimochi>

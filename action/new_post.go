@@ -105,24 +105,6 @@ func doReply(g *gin.Context) {
 		return
 	}
 
-	if g.PostForm("delete") != "" {
-		if err := dal.Do(dal.NewRequest(dal.DoUpdateArticle, "ID", reply, "DeleteBy", *u)); err != nil {
-			g.String(200, err.Error())
-		} else {
-			g.String(200, "ok")
-		}
-		return
-	}
-
-	if g.PostForm("makensfw") != "" {
-		if err := dal.Do(dal.NewRequest(dal.DoUpdateArticle, "ID", reply, "ToggleNSFWBy", *u)); err != nil {
-			g.String(200, err.Error())
-		} else {
-			g.String(200, "ok")
-		}
-		return
-	}
-
 	if image != "" {
 		image, err = writeImage(u, g.PostForm("image_name"), image)
 		if err != nil {
@@ -141,4 +123,61 @@ func doReply(g *gin.Context) {
 
 	g.String(200, "ok:"+url.PathEscape(middleware.RenderTemplateString("row_content.html",
 		view.NewReplyArticleView(a2, u))))
+}
+
+func APIDeleteArticle(g *gin.Context) {
+	u := dal.GetUserByContext(g)
+	if u == nil {
+		g.String(200, "user/not-logged-in")
+		return
+	}
+
+	if ret := checkIP(g); ret != "" {
+		g.String(200, ret)
+		return
+	}
+
+	if err := dal.Do(dal.NewRequest(dal.DoUpdateArticle, "ID", g.PostForm("id"), "DeleteBy", *u)); err != nil {
+		g.String(200, err.Error())
+	} else {
+		g.String(200, "ok")
+	}
+}
+
+func APIToggleNSFWArticle(g *gin.Context) {
+	u := dal.GetUserByContext(g)
+	if u == nil {
+		g.String(200, "user/not-logged-in")
+		return
+	}
+
+	if ret := checkIP(g); ret != "" {
+		g.String(200, ret)
+		return
+	}
+
+	if err := dal.Do(dal.NewRequest(dal.DoUpdateArticle, "ID", g.PostForm("id"), "ToggleNSFWBy", *u)); err != nil {
+		g.String(200, err.Error())
+	} else {
+		g.String(200, "ok")
+	}
+}
+
+func APIToggleLockArticle(g *gin.Context) {
+	u := dal.GetUserByContext(g)
+	if u == nil {
+		g.String(200, "user/not-logged-in")
+		return
+	}
+
+	if ret := checkIP(g); ret != "" {
+		g.String(200, ret)
+		return
+	}
+
+	if err := dal.Do(dal.NewRequest(dal.DoUpdateArticle, "ID", g.PostForm("id"), "ToggleLockBy", *u)); err != nil {
+		g.String(200, err.Error())
+	} else {
+		g.String(200, "ok")
+	}
 }

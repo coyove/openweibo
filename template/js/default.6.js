@@ -150,7 +150,7 @@ function likeArticle(el, id) {
 function deleteArticle(el, id) {
     if (!confirm("是否确认删除该发言？该操作不可逆")) return;
     var stop = $wait(el);
-    $post("/api2/new", { parent: id, delete: 1 }, function (res) {
+    $post("/api2/delete", { id: id }, function (res) {
         stop();
         if (res != "ok") return res;
         $q("[data-id='" + id + "'] > pre", true).forEach(function(e) {
@@ -164,12 +164,26 @@ function deleteArticle(el, id) {
 
 function nsfwArticle(el, id) {
     var stop = $wait(el);
-    $post("/api2/new", { parent: id, makensfw: 1 }, function (res) {
+    $post("/api2/toggle_nsfw", { id: id }, function (res) {
         stop();
         if (res != "ok") return res;
         el.setAttribute("value", !($value(el) === 'true'))
         el.style.color = $value(el) === 'true' ? "#f90" : "#bbb"
         return "ok";
+    }, stop);
+}
+
+function lockArticle(el, id) {
+    var stop = $wait(el);
+    $post("/api2/toggle_lock", { id: id }, function (res) {
+        stop();
+        if (res != "ok") return res;
+
+        var locked = $value(el) !== 'true';
+        el.setAttribute("value", locked)
+        el.querySelector("i").className = locked ? "icon-lock" : "icon-lock-open"
+        el.querySelector("i").style.color = locked ? "#233" : "#aaa"
+        return "ok:" + (locked ? "已锁定该状态，其他人不能回复" : "已解除锁定");
     }, stop);
 }
 
@@ -216,6 +230,8 @@ function __i18n(t) {
         return "ID已存在";
     if (t === "id/too-short")
         return "无效ID";
+    if (t === "user/not-allowed")
+        return "无权限";
     return t;
 }
 

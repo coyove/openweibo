@@ -2,7 +2,15 @@
     <div class="rows replies" id="timeline{{.ReplyView.UUID}}" > 
         {{template "row_content.html" .ParentArticle}}
 
+        {{if .ShowReplyBox}}
         {{template "reply_view.html" .ReplyView}}
+        {{else}}
+        <div class=row>
+            <div style="padding: 0 0.5em 0.5em; text-align:center;color:#aaa">
+                <button class=gbutton disabled>回复已关闭</button>
+            </div>
+        </div>
+        {{end}}
 
         {{range .Articles}}
         {{template "row_content.html" .}}

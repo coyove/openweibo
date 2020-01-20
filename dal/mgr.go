@@ -235,7 +235,7 @@ func PostReply(parent string, content, media string, author *model.User, ip stri
 		return nil, err
 	}
 
-	if p.Locked {
+	if p.Locked && p.Author != author.ID { // The author himself can reply to his own locked articles
 		return nil, fmt.Errorf("locked parent")
 	}
 
@@ -254,9 +254,11 @@ func PostReply(parent string, content, media string, author *model.User, ip stri
 		CreateTime: time.Now(),
 	}
 
-	if err := Do(NewRequest("InsertArticle", "RootID", p.ID, "Article", *a, "AsReply", true)); err != nil {
+	r := NewRequest(DoInsertArticle, "RootID", p.ID, "Article", *a, "AsReply", true)
+	if err := Do(r); err != nil {
 		return nil, err
 	}
+	a = &r.InsertArticleRequest.Response.Article
 
 	if !noTimeline {
 		// Add reply to its timeline
@@ -270,7 +272,7 @@ func PostReply(parent string, content, media string, author *model.User, ip stri
 
 	go func() {
 		if p.Content != model.DeletionMarker && a.Author != p.Author {
-			if err := Do(NewRequest("InsertArticle",
+			if err := Do(NewRequest(DoInsertArticle,
 				"RootID", ik.NewID(ik.IDInbox, p.Author).String(),
 				"Article", model.Article{
 					ID:  ik.NewGeneralID().String(),
@@ -284,9 +286,7 @@ func PostReply(parent string, content, media string, author *model.User, ip stri
 				log.Println("PostReply", err)
 			}
 
-			Do(NewRequest("UpdateUser", "ID", p.Author,
-				"IncUnread", true,
-			))
+			Do(NewRequest("UpdateUser", "ID", p.Author, "IncUnread", true))
 		}
 		ids, tags := common.ExtractMentionsAndTags(a.Content)
 		MentionUserAndTags(a, ids, tags)

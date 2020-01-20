@@ -437,7 +437,6 @@ div.tri {
     bottom: 0;
     margin-left: -8px;
     left: 50%;
-    z-index: 1000;
 }
 
 div.tri.shadow {
