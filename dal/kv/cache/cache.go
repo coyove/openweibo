@@ -147,10 +147,10 @@ func (gc *GlobalCache) Get(k string) ([]byte, bool) {
 	return task.r_value, task.r_ok
 }
 
-func (gc *GlobalCache) Add(k string, v []byte) {
+func (gc *GlobalCache) Add(k string, v []byte) error {
 	if gc.c == nil {
 		gc.local.Add(k, v)
-		return
+		return nil
 	}
 
 	c := gc.c.Get()
@@ -158,7 +158,9 @@ func (gc *GlobalCache) Add(k string, v []byte) {
 
 	if _, err := c.Do("SET", k, append(v, '$')); err != nil {
 		log.Println("[GlobalCache_redis] set:", k, "value:", string(v), "error:", err)
+		return err
 	}
+	return nil
 }
 
 func (gc *GlobalCache) Remove(k string) error {

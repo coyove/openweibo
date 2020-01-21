@@ -1,6 +1,8 @@
 package kv
 
 import (
+	"bytes"
+	"log"
 	"net/http"
 	"time"
 
@@ -49,8 +51,14 @@ func (m *DynamoKV) SetGlobalCache(c *cache.GlobalCache) {
 }
 
 func (m *DynamoKV) Get(key string) ([]byte, error) {
+	nocache := false
+
 	v, ok := m.cache.Get(key)
-	if ok {
+	if bytes.Equal(v, locker) {
+		v = nil
+		nocache = true
+		// continue fetching value from dynamodb
+	} else if ok {
 		return v, nil
 	}
 
@@ -72,14 +80,17 @@ func (m *DynamoKV) Get(key string) ([]byte, error) {
 		v = []byte(*vi.S)
 	}
 
-	// if len(v) > 0 {
-	m.cache.Add(key, v)
-	// }
+	if !nocache {
+		if err := m.cache.Add(key, v); err != nil {
+			log.Println("KV add:", err)
+		}
+	}
+
 	return v, err
 }
 
 func (m *DynamoKV) Set(key string, value []byte) error {
-	if err := m.cache.Remove(key); err != nil {
+	if err := m.cache.Add(key, locker); err != nil {
 		return err
 	}
 
@@ -100,21 +111,25 @@ func (m *DynamoKV) Set(key string, value []byte) error {
 			"#xyzvalue": aws.String("value"),
 		},
 	}
+
 	_, err := m.db.UpdateItem(in)
-	return err
-}
-
-func (m *DynamoKV) Delete(key string) error {
-	m.cache.Remove(key)
-
-	in := &dynamodb.DeleteItemInput{
-		TableName: &dyTable,
-		Key: map[string]*dynamodb.AttributeValue{
-			"id": &dynamodb.AttributeValue{
-				S: &key,
-			},
-		},
+	if err == nil {
+		m.cache.Add(key, value)
 	}
-	_, err := m.db.DeleteItem(in)
 	return err
 }
+
+// func (m *DynamoKV) Delete(key string) error {
+// 	m.cache.Remove(key)
+//
+// 	in := &dynamodb.DeleteItemInput{
+// 		TableName: &dyTable,
+// 		Key: map[string]*dynamodb.AttributeValue{
+// 			"id": &dynamodb.AttributeValue{
+// 				S: &key,
+// 			},
+// 		},
+// 	}
+// 	_, err := m.db.DeleteItem(in)
+// 	return err
+// }

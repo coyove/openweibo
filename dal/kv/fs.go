@@ -1,8 +1,10 @@
 package kv
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"net/url"
 	"os"
@@ -37,9 +39,13 @@ func (m *DiskKV) SetGlobalCache(c *cache.GlobalCache) {
 }
 
 func (m *DiskKV) Get(key string) ([]byte, error) {
-	v, ok := m.cache.Get(key)
+	nocache := false
 
-	if ok {
+	v, ok := m.cache.Get(key)
+	if bytes.Equal(v, locker) {
+		v = nil
+		nocache = true
+	} else if ok {
 		return v, nil
 	}
 
@@ -60,14 +66,18 @@ func (m *DiskKV) Get(key string) ([]byte, error) {
 	}
 
 	if err == nil {
-		m.cache.Add(key, v)
+		if !nocache {
+			m.cache.Add(key, v)
+		}
 	}
 
 	return v, err
 }
 
 func (m *DiskKV) Set(key string, value []byte) error {
-	m.cache.Remove(key)
+	if err := m.cache.Add(key, locker); err != nil {
+		return err
+	}
 
 	if randomError > 0 && rand.Intn(randomError) == 0 {
 		return fmt.Errorf("1")
@@ -78,7 +88,13 @@ func (m *DiskKV) Set(key string, value []byte) error {
 		return err
 	}
 
-	return ioutil.WriteFile(fn, value, 0777)
+	err := ioutil.WriteFile(fn, value, 0777)
+	if err == nil {
+		if err := m.cache.Add(key, value); err != nil {
+			log.Println("KV add:", err)
+		}
+	}
+	return err
 }
 
 func (m *DiskKV) Delete(key string) error {
