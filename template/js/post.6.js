@@ -90,10 +90,12 @@ function onContentObserved(el) {
 }
 
 function onImageChanged(el) {
-    var btn = el.previousElementSibling;
+    var btn = el.previousElementSibling, imageSize = el.parentNode.parentNode.querySelector('.image-size');
+
     btn.className = btn.className.replace(/image/, "")
     btn.querySelector('div') ? btn.removeChild(btn.querySelector('div')) : 0;
     el.nextElementSibling.value = "";
+    imageSize.innerText = "";
 
     if (!el.value) return;
 
@@ -109,17 +111,13 @@ function onImageChanged(el) {
                 success = function() {
                     el.nextElementSibling.value = img.src;
                     el.nextElementSibling.IMAGE_NAME = el.value.split(/(\\|\/)/g).pop();
-                    // $q('#reply-submit').removeAttribute("disabled");
-                    var img2 = document.createElement("img");
-                    var div = document.createElement("div");
-                    var span = document.createElement("div");
+
+                    imageSize.innerText = "(" + (img.src.length / 1.33 / 1024).toFixed(0) + "KB";
+                    imageSize.innerText += (f == 1) ? ")" : "/" + (f * 100).toFixed(0) + "%)";
+
+                    var img2 = $q("<img>"), div = $q("<div>");
                     img2.src = img.src;
-                    div.style.position = 'relative';
-                    span.className = 'info';
-                    span.innerText += (img.src.length / 1.33 / 1024).toFixed(0) + "KB";
-                    span.innerText += (f == 1) ? "" : "/" + (f).toFixed(1);
                     div.appendChild(img2);
-                    div.appendChild(span);
                     btn.appendChild(div);
                     btn.className += " image";
                 };
@@ -158,4 +156,13 @@ function insertMention(id, e) {
     else
         el.value += e;
     el.focus();
+}
+
+function insertTag(id, start, text, end) {
+    var el = typeof id === 'string' ? $q("#rv-" + id + " [name=content]") : id;
+    if (el.value) start = "\n" + start;
+    el.value += start + text + end;
+    el.focus();
+    el.selectionStart = el.value.length - end.length - text.length;
+    el.selectionEnd = el.selectionStart + text.length;
 }

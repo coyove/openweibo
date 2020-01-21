@@ -13,39 +13,66 @@
         </tr>
 
         <tr class=sep>
-            <td>
-                <!-- Three as a Whole -->
-                <button class="gbutton" onclick="this.nextElementSibling.click()">
-                    <span class=icon-picture></span><span class="pic">图片</span>
-                </button>
-                <input type=file style="display:none" onchange="onImageChanged(this)">
-                <input type=hidden name=image64>
-                <!-- Three as a Whole -->
+            <td style="white-space: nowrap">
+                <div class="post-options">
+                    <button class=gbutton>图片<span class='image-size'></span><i class="icon-down-dir right"></i></button>
+                    <ul style="width: 120px; height: 120px">
+                        <!-- Three as a Whole -->
+                        <button class=gbutton style="width: 100%; height: 100%" onclick="this.nextElementSibling.click()">
+                            <span class=icon-picture></span><span>选择</span>
+                        </button>
+                        <input type=file style="display:none" onchange="onImageChanged(this)">
+                        <input type=hidden name=image64>
+                        <!-- Three as a Whole -->
+                    </ul>
+                </div>
+
+                <div class="post-options">
+                    <button class=gbutton>选项<i class="icon-down-dir right"></i></button>
+                    <ul>
+                        <li>
+                            <span onclick="insertTag('{{.UUID}}','[code]','代码块','[/code]')">
+                                <i class=icon-code></i>插入 <span style="font-family:monospace">[code][/code]</span>
+                            </span>
+                        </li>
+                        <li>
+                            <span onclick="insertTag('{{.UUID}}','[img]','图片URL','[/img]')">
+                                <i class=icon-code></i>插入 <span style="font-family:monospace">[img][/img]</span>
+                            </span>
+                        </li>
+                        {{if .ReplyTo}}
+                        <li>
+                            <span name=notimeline onclick="$check(this)"><i class=icon-ok-circled2></i>不同步至我的时间线</span>
+                        </li>
+                        {{else}}
+                        <li>
+                            <span name=nomaster onclick="$check(this)"><i class=icon-ok-circled2></i>不同步至Master时间线</span>
+                        </li>
+                        <li>
+                            <span name=alone onclick="$check(this)"><i class=icon-ok-circled2></i>不同步至我的时间线</span>
+                        </li>
+                        {{end}}
+                        <li>
+                            <span name=isnsfw onclick="$check(this)"><i class=icon-ok-circled2 style="color:#f90"></i>标记图片为NSFW内容</span>
+                        </li>
+                    </ul>
+                </div>
+
 
                 <style>
-                    .gbutton.image {
-                        height: 100px;
-                        width: 100px;
-                        padding: 0;
-                    }
+.gbutton.image {
+    height: 120px;
+    width: 120px;
+    padding: 0;
+}
                     .gbutton.image span { display: none; }
                     .gbutton.image img {
                         display: block;
-                        max-width: 100px;
-                        max-height: 100px;
+                        max-width: 120px;
+                        max-height: 120px;
                         object-fit: contain;
                         border-radius: 3px;
                         margin: auto;
-                    }
-                    .gbutton.image .info {
-                        position: absolute;
-                        width: 100%;
-                        height: 32px;
-                        line-height: 32px;
-                        top: 50%;
-                        margin-top: -16px;
-                        color: white;
-                        background: rgba(0,0,0,0.3)
                     }
                     .post-options {
                         display: inline-block;
@@ -54,11 +81,12 @@
                     .post-options ul {
                         display: none;
                         position: absolute;
-                        right: 0;
+                        left: 0;
                         background: #fafbfc;
                         box-shadow: 0 1px 5px rgba(0, 0, 0, .3);
                         list-style: none;
                         text-align:left;
+                        margin-bottom: 2em;
                     }
                     .post-options ul li {
                         padding: 0.5em 1em;
@@ -74,34 +102,13 @@
                     .post-options .icon-ok-circled2 {
                         color: #aaa;
                     }
-                    .post-options i[class^=icon-ok] {
+                    .post-options li i[class^=icon-] {
                         margin-right: 0.5em;
                     }
                 </style>
 
             </td>
             <td class="nowrap" style="text-align:center">
-                <div class="post-options">
-                    <button class=gbutton>选项<i class="icon-down-dir right"></i></button>
-                    <ul>
-                        {{if .ReplyTo}}
-                        <li>
-                            <span name=notimeline onclick="$check(this)"><i class=icon-ok-circled2></i>不同步至我的时间线</span>
-                        </li>
-                        {{else}}
-                        <li>
-                            <span name=nomaster onclick="$check(this)"><i class=icon-ok-circled2></i>不同步至Master时间线</span>
-                        </li>
-                        <li>
-                            <span name=alone onclick="$check(this)"><i class=icon-ok-circled2></i>不同步至我的时间线</span>
-                        </li>
-                        {{end}}
-                        <li>
-                            <span name=isnsfw onclick="$check(this)" style="color:#f90"><i class=icon-ok-circled2></i>标记图片为NSFW内容</span>
-                        </li>
-                    </ul>
-                </div>
-
                 <button class="gbutton" onclick="onPost('{{.UUID}}', this, '{{.ReplyTo}}')">
                     {{if .ReplyTo}}回复{{else}}发布{{end}}
                 </button>
