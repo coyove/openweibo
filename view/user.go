@@ -18,29 +18,16 @@ import (
 
 func User(g *gin.Context) {
 	p := struct {
-		UUID       string
-		Challenge  string
-		EError     string
-		RUsername  string
-		RPassword  string
-		REmail     string
-		LoginError string
-		Survey     interface{}
-		Config     string
-		User       *model.User
+		UUID      string
+		Challenge string
+		Survey    interface{}
+		User      *model.User
 	}{
-		EError:     g.Query("error"),
-		LoginError: g.Query("login-error"),
-		RUsername:  g.Query("username"),
-		REmail:     g.Query("email"),
-		RPassword:  ik.ParseTempToken(g.Query("password")),
-		Survey:     middleware.Survey,
-		Config:     common.Cfg.PrivateString,
+		Survey: middleware.Survey,
 	}
 
 	p.UUID, p.Challenge = ik.MakeToken(g)
 	p.User = getUser(g)
-
 	g.HTML(200, "user.html", p)
 }
 
@@ -77,11 +64,11 @@ func UserList(g *gin.Context) {
 			g.Redirect(302, "/user/blacklist")
 			return
 		}
-		chain = ik.NewID(ik.IDBlacklist,p.User.ID)
+		chain = ik.NewID(ik.IDBlacklist, p.User.ID)
 	case "followers":
-		chain = ik.NewID(ik.IDFollower,p.User.ID)
+		chain = ik.NewID(ik.IDFollower, p.User.ID)
 	default:
-		chain = ik.NewID(ik.IDFollowing,p.User.ID)
+		chain = ik.NewID(ik.IDFollowing, p.User.ID)
 	}
 	p.List, p.Next = dal.GetFollowingList(chain, g.Query("n"), int(common.Cfg.PostsPerPage))
 
@@ -122,7 +109,7 @@ func UserLikes(g *gin.Context) {
 	}
 
 	var cursor string
-	if pa, _ := dal.GetArticle(ik.NewID(ik.IDLike,p.User.ID).String()); pa != nil {
+	if pa, _ := dal.GetArticle(ik.NewID(ik.IDLike, p.User.ID).String()); pa != nil {
 		cursor = pa.PickNextID(p.MediaOnly)
 	}
 

@@ -17,35 +17,31 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Signup(g *gin.Context) {
+func APISignup(g *gin.Context) {
 	var (
 		ip       = hashIP(g)
 		username = sanUsername(g.PostForm("username"))
 		email    = common.SoftTrunc(g.PostForm("email"), 64)
 		password = common.SoftTrunc(g.PostForm("password"), 32)
-		redir    = func(a, b string, ext ...string) {
-			q := common.EncodeQuery(append([]string{a, b, "username", username, "email", email, "password", ik.MakeTempToken(password)}, ext...)...)
-			g.Redirect(302, "/user"+q)
-		}
 	)
 
 	if len(username) < 3 || len(password) < 3 {
-		redir("error", "internal/error")
+		g.String(200, "internal/error")
 		return
 	}
 
 	if ret := checkCaptcha(g); ret != "" {
-		redir("error", ret)
+		g.String(200, ret)
 		return
 	}
 
 	switch username := strings.ToLower(username); {
 	case strings.HasPrefix(username, "master"), strings.HasPrefix(username, "admin"):
-		redir("error", "id/already-existed")
+		g.String(200, "id/already-existed")
 		return
 	case strings.HasPrefix(username, strings.ToLower(common.Cfg.AdminName)):
 		if admin, _ := dal.GetUser(common.Cfg.AdminName); admin != nil {
-			redir("error", "id/already-existed")
+			g.String(200, "id/already-existed")
 			return
 		}
 	}
@@ -72,12 +68,12 @@ func Signup(g *gin.Context) {
 		"TSignup", u.TSignup,
 		"TLogin", u.TLogin,
 	)); err != nil {
-		redir("error", err.Error())
+		g.String(200, err.Error())
 		return
 	}
 
 	g.SetCookie("id", tok, 365*86400, "", "", false, false)
-	redir("error", "ok")
+	g.String(200, "ok")
 }
 
 func APILogin(g *gin.Context) {

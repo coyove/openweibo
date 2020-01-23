@@ -17,24 +17,15 @@ import (
 	"time"
 
 	"github.com/coyove/iis/common"
-	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
 	"github.com/gin-gonic/gin"
 )
 
 func Home(g *gin.Context) {
 	var p = struct {
-		User       *model.User
-		UUID       string
-		RUsername  string
-		RPassword  string
-		LoginError string
+		User *model.User
 	}{
-		UUID:       ik.MakeUUID(g, nil),
-		User:       getUser(g),
-		RUsername:  g.Query("username"),
-		RPassword:  ik.ParseTempToken(g.Query("password")),
-		LoginError: g.Query("error"),
+		User: getUser(g),
 	}
 	g.HTML(200, "home.html", p)
 }

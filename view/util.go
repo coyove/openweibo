@@ -8,12 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func Error(code int, msg string, g *gin.Context) {
-	g.HTML(code, "error.html", struct{ Message string }{msg})
-}
-
 func NotFound(g *gin.Context) {
-	Error(404, "NOT FOUND", g)
+	g.HTML(404, "error.html", nil)
 }
 
 func getUser(g *gin.Context) *model.User {

@@ -63,7 +63,7 @@ func mwRenderPerf(g *gin.Context) {
 }
 
 func mwIPThrot(g *gin.Context) {
-	if ik.IsAdmin(g) || g.Request.Method != "POST" || strings.HasPrefix(g.Request.URL.Path, "/api/") {
+	if g.Request.Method != "POST" || strings.HasPrefix(g.Request.URL.Path, "/api/") {
 		g.Set("ip-ok", true)
 		g.Next()
 		return

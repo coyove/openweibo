@@ -2,7 +2,6 @@ package ik
 
 import (
 	"bytes"
-	"crypto/cipher"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/binary"
@@ -18,14 +17,10 @@ import (
 
 var Dedup = lru.NewCache(1024)
 
-func generateCaptcha(buf [4]byte) string {
-	return captcha.NewImage(common.Cfg.Key, buf[:], 120, 50).PNGBase64()
-}
-
 func MakeToken(g *gin.Context) (string, string) {
 	var x [4]byte
 	uuid := MakeUUID(g, &x)
-	return uuid, generateCaptcha(x)
+	return uuid, captcha.NewImage(common.Cfg.Key, x[:], 120, 50).PNGBase64()
 }
 
 func MakeUUID(g *gin.Context, x *[4]byte) string {
@@ -50,10 +45,6 @@ func MakeUUID(g *gin.Context, x *[4]byte) string {
 }
 
 func ParseToken(g *gin.Context, tok string) (r []byte, ok bool) {
-	if IsAdmin(tok) {
-		return []byte{0, 0, 0, 0, 0, 0}, true
-	}
-
 	buf, _ := hex.DecodeString(tok)
 	if len(buf) != 16 {
 		return
@@ -86,59 +77,43 @@ func ParseToken(g *gin.Context, tok string) (r []byte, ok bool) {
 	return
 }
 
-func IsAdmin(g interface{}) bool {
-	switch g := g.(type) {
-	case *gin.Context:
-		if g == nil {
-			return false
-		}
-		ck, _ := g.Cookie("id")
-		if ck != common.Cfg.AdminName {
-			return g.PostForm("author") == common.Cfg.AdminName
-		}
-		return true
-	case string:
-		return g == common.Cfg.AdminName
-	}
-	return false
-}
-
-func MakeTempToken(id string) string {
-	if len(id) == 0 {
-		return ""
-	}
-
-	var nonce [12]byte
-	exp := time.Now().Add(time.Second * time.Duration(common.Cfg.IDTokenTTL)).Unix()
-	binary.BigEndian.PutUint32(nonce[:], uint32(exp))
-	rand.Read(nonce[4:])
-
-	idbuf := make([]byte, len(id), len(id)+48)
-	copy(idbuf, id)
-
-	gcm, _ := cipher.NewGCM(common.Cfg.Blk)
-	data := gcm.Seal(idbuf[:0], nonce[:], idbuf, nil)
-	return base64.URLEncoding.EncodeToString(append(data, nonce[:]...))
-}
-
-func ParseTempToken(tok string) string {
-	idbuf, _ := base64.URLEncoding.DecodeString(tok)
-	if len(idbuf) < 12 {
-		return ""
-	}
-
-	nonce := idbuf[len(idbuf)-12:]
-	idbuf = idbuf[:len(idbuf)-12]
-
-	exp := time.Unix(int64(binary.BigEndian.Uint32(nonce)), 0)
-	if time.Now().After(exp) {
-		return ""
-	}
-
-	gcm, _ := cipher.NewGCM(common.Cfg.Blk)
-	p, _ := gcm.Open(nil, nonce, idbuf, nil)
-	return string(p)
-}
+//
+// func MakeTempToken(id string) string {
+// 	if len(id) == 0 {
+// 		return ""
+// 	}
+//
+// 	var nonce [12]byte
+// 	exp := time.Now().Add(time.Second * time.Duration(common.Cfg.IDTokenTTL)).Unix()
+// 	binary.BigEndian.PutUint32(nonce[:], uint32(exp))
+// 	rand.Read(nonce[4:])
+//
+// 	idbuf := make([]byte, len(id), len(id)+48)
+// 	copy(idbuf, id)
+//
+// 	gcm, _ := cipher.NewGCM(common.Cfg.Blk)
+// 	data := gcm.Seal(idbuf[:0], nonce[:], idbuf, nil)
+// 	return base64.URLEncoding.EncodeToString(append(data, nonce[:]...))
+// }
+//
+// func ParseTempToken(tok string) string {
+// 	idbuf, _ := base64.URLEncoding.DecodeString(tok)
+// 	if len(idbuf) < 12 {
+// 		return ""
+// 	}
+//
+// 	nonce := idbuf[len(idbuf)-12:]
+// 	idbuf = idbuf[:len(idbuf)-12]
+//
+// 	exp := time.Unix(int64(binary.BigEndian.Uint32(nonce)), 0)
+// 	if time.Now().After(exp) {
+// 		return ""
+// 	}
+//
+// 	gcm, _ := cipher.NewGCM(common.Cfg.Blk)
+// 	p, _ := gcm.Open(nil, nonce, idbuf, nil)
+// 	return string(p)
+// }
 
 func MakeUserToken(u *model.User) string {
 	if u == nil {
