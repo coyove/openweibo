@@ -250,21 +250,22 @@ func LikeArticle(from, to string, liking bool) (E error) {
 	if updated {
 		go func() {
 			r := NewRequest(DoUpdateArticle, "ID", to, "IncDecLikes", liking)
-			err := Do(r)
-			if a := r.UpdateArticleRequest.Response.Article; err == nil && IsFollowing(a.Author, from) {
+			if err := Do(r); err == nil {
 				// if the author followed 'from', notify the author that his articles has been liked by 'from'
-				Do(NewRequest(DoInsertArticle,
-					"RootID", ik.NewID(ik.IDInbox, a.Author).String(),
-					"Article", model.Article{
-						ID:  ik.NewGeneralID().String(),
-						Cmd: model.CmdILike,
-						Extras: map[string]string{
-							"from":       from,
-							"article_id": a.ID,
-						},
-						CreateTime: time.Now(),
-					}))
-				Do(NewRequest(DoUpdateUser, "ID", a.Author, "IncUnread", true))
+				if a := r.UpdateArticleRequest.Response.Article; IsFollowing(a.Author, from) && liking {
+					Do(NewRequest(DoInsertArticle,
+						"RootID", ik.NewID(ik.IDInbox, a.Author).String(),
+						"Article", model.Article{
+							ID:  ik.NewGeneralID().String(),
+							Cmd: model.CmdILike,
+							Extras: map[string]string{
+								"from":       from,
+								"article_id": a.ID,
+							},
+							CreateTime: time.Now(),
+						}))
+					Do(NewRequest(DoUpdateUser, "ID", a.Author, "IncUnread", true))
+				}
 			}
 
 		}()

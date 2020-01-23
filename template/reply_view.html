@@ -32,28 +32,42 @@
                     <ul>
                         <li>
                             <span onclick="insertTag('{{.UUID}}','[code]','代码块','[/code]')">
-                                <i class=icon-code></i>插入 <span style="font-family:monospace">[code][/code]</span>
+                                <i class=icon-code></i>
+                                插入 <span style="font-family:monospace">[code][/code]</span>
                             </span>
                         </li>
                         <li>
                             <span onclick="insertTag('{{.UUID}}','[img]','图片URL','[/img]')">
-                                <i class=icon-code></i>插入 <span style="font-family:monospace">[img][/img]</span>
+                                <i class=icon-code></i>
+                                插入 <span style="font-family:monospace">[img][/img]</span>
                             </span>
                         </li>
                         {{if .ReplyTo}}
                         <li>
-                            <span name=notimeline onclick="$check(this)"><i class=icon-ok-circled2></i>不同步至我的时间线</span>
+                            <span name=notimeline onclick="$check(this)">
+                                <i class=icon-ok-circled2></i>
+                                不同步至我的时间线
+                            </span>
                         </li>
                         {{else}}
                         <li>
-                            <span name=nomaster onclick="$check(this)"><i class=icon-ok-circled2></i>不同步至Master时间线</span>
+                            <span name=nomaster onclick="$check(this)">
+                                <i class=icon-ok-circled2></i>
+                                不同步至Master时间线
+                            </span>
                         </li>
                         <li>
-                            <span name=alone onclick="$check(this)"><i class=icon-ok-circled2></i>不同步至我的时间线</span>
+                            <span name=alone onclick="$check(this)">
+                                <i class=icon-ok-circled2></i>
+                                不同步至我的时间线
+                            </span>
                         </li>
                         {{end}}
                         <li>
-                            <span name=isnsfw onclick="$check(this)"><i class=icon-ok-circled2 style="color:#f90"></i>标记图片为NSFW内容</span>
+                            <span name=isnsfw onclick="$check(this)">
+                                <i class=icon-ok-circled2></i>
+                                标记图片为<span style="color:#f90"><i class='icon-transgender-alt'></i>NSFW</span>
+                            </span>
                         </li>
                     </ul>
                 </div>
@@ -101,9 +115,6 @@
                     }
                     .post-options .icon-ok-circled2 {
                         color: #aaa;
-                    }
-                    .post-options li i[class^=icon-] {
-                        margin-right: 0.5em;
                     }
                 </style>
 

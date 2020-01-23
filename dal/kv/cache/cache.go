@@ -2,7 +2,9 @@ package cache
 
 import (
 	"bytes"
+	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/coyove/common/lru"
@@ -33,14 +35,16 @@ func NewGlobalCache(localSize int64, config *RedisConfig) *GlobalCache {
 	gc := &GlobalCache{}
 	gc.local = lru.NewCache(localSize)
 
-	if config != nil && config.Addr != "" {
+	if config != nil && config.Addr != "" && os.Getenv("RC") != "0" {
 		options := []redis.DialOption{}
 
-		if config.Timeout != 0 {
-			options = append(options, redis.DialConnectTimeout(config.Timeout))
-			options = append(options, redis.DialReadTimeout(config.Timeout))
-			options = append(options, redis.DialWriteTimeout(config.Timeout))
+		if config.Timeout == 0 {
+			config.Timeout = time.Millisecond * 100
 		}
+
+		options = append(options, redis.DialConnectTimeout(config.Timeout))
+		options = append(options, redis.DialReadTimeout(config.Timeout))
+		options = append(options, redis.DialWriteTimeout(config.Timeout))
 
 		if config.MaxIdle == 0 {
 			config.MaxIdle = 10
@@ -158,20 +162,21 @@ func (gc *GlobalCache) Add(k string, v []byte) error {
 
 	if _, err := c.Do("SET", k, append(v, '$')); err != nil {
 		log.Println("[GlobalCache_redis] set:", k, "value:", string(v), "error:", err)
-		return err
+		return fmt.Errorf("cache error")
 	}
 	return nil
 }
 
-func (gc *GlobalCache) Remove(k string) error {
-	if gc.c == nil {
-		gc.local.Remove(k)
-		return nil
-	}
-
-	c := gc.c.Get()
-	defer c.Close()
-
-	_, err := c.Do("DEL", k)
-	return err
-}
+// func (gc *GlobalCache) Remove(k string) error {
+// 	if gc.c == nil {
+// 		gc.local.Remove(k)
+// 		return nil
+// 	}
+//
+// 	c := gc.c.Get()
+// 	defer c.Close()
+//
+// 	if _, err := c.Do("DEL", k); err != nil {
+// 	}
+// 	return err
+// }
