@@ -11,17 +11,25 @@ function $value(el) {
 }
 
 function $wait(el) {
+    var waiting = 0,
+        stopped = false,
+        oldHTML = el.innerHTML,
+        specialClass = el.className.match(/icon-\S+/g),
+        timer = setInterval(function () {
+            waiting++;
+            el.innerHTML = "<b style='font-family:monospace'>" + "|/-\\".charAt(waiting % 4) + "</b>";
+        }, 100);
+
     el.setAttribute("disabled", "disabled");
-    var waiting = 0, stopped = false, oldHTML = el.innerHTML, timer = setInterval(function () {
-        waiting++;
-        el.innerHTML = "<b style='font-family:monospace'>" + "|/-\\".charAt(waiting % 4) + "</b>";
-    }, 100);
+    el.className = el.className.replace(/icon-\S+/, '');
+
     return function() {
         if (stopped) return;
         stopped = true;
         el.removeAttribute("disabled");
         clearInterval(timer);
         el.innerHTML = oldHTML;
+        el.className += (specialClass || []).join('');
     }
 }
 
@@ -191,10 +199,10 @@ function followBlock(el, m, id) {
     var stop = $wait(el), obj = { method: m };
     obj[m] = $value(el) === "true" ? "" : "1";
     obj['to'] = id;
-    el.setAttribute("value", obj[m] == "" ? "false" : "true");
     $post("/api2/follow_block", obj, function(res) {
         stop();
         if (res != "ok") return res;
+        el.setAttribute("value", obj[m] == "" ? "false" : "true");
         if (m == "follow") {
             el.innerHTML = '<i class=' + ((obj[m] != "") ? "icon-heart-broken" : "icon-user-plus") + "></i>";
             return "ok:" + ((obj[m] != "") ? "已关注" + id : "已取消关注" + id);

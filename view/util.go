@@ -26,7 +26,7 @@ type ReplyView struct {
 
 func makeReplyView(g *gin.Context, reply string) ReplyView {
 	r := ReplyView{}
-	r.UUID = strconv.FormatInt(time.Now().Unix(), 16)
+	r.UUID = strconv.FormatInt(time.Now().UnixNano(), 16)
 	r.ReplyTo = reply
 	r.PID = g.Query("pid")
 	return r

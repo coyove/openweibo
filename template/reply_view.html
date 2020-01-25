@@ -1,9 +1,9 @@
 <div id="rv-{{.UUID}}" style="background:white;margin:0 0.5em">
     <table class="articles reply-table" style="box-shadow: 0 0 3px #ccc;position:relative;text-align:left">
         <tr>
-            <td style="white-space: nowrap" colspan=2>
+            <td style="white-space: nowrap;background:rgba(0,0,0,0.025)" colspan=2>
                 <div class="post-options post-options-emoji">
-                    <button class=gbutton>颜文字<span class='image-size'></span><i class="icon-down-dir right"></i></button>
+                    <button class=gbutton><i class="icon-emo-devil"></i><i class="icon-down-dir right"></i></button>
                     {{template "emoji.html" .UUID}}
                 </div>
 
@@ -122,25 +122,37 @@
             </td>
         </tr>
 
-        <tr class=sep>
+        <tr>
             <td style="padding:0" colspan=2>
                 <textarea
                     name=content
                     maxlength=1024
-                    placeholder="正文"
+                    placeholder="写下你的想法..."
                     rows={{if .ReplyTo}}6{{else}}10{{end}}
-                    style="padding:0.5em;border:none"></textarea>
-            </td>
-        </tr>
+                    style="padding:0.66em;border:none"></textarea>
 
-
-        <tr class=sep>
-            <td>
-            </td>
-            <td class=nowrap>
-                <button class="gbutton" onclick="onPost('{{.UUID}}', this, '{{.ReplyTo}}')">
-                    {{if .ReplyTo}}回复{{else}}发布{{end}}
-                </button>
+                <div
+                    style="
+                           position: absolute;
+                           line-height: 36px;
+                           width: 36px;
+                           height: 36px;
+                           background: #64b5f6;
+                           color: white;
+                           text-align:center;
+                           border-radius: 50%;
+                           box-shadow: 0 0 5px #ccc;
+                           right: 1em;
+                           bottom: 1em;
+                           cursor: pointer;
+                           font-size: 18px;
+                           padding-top: 1px;
+                           "
+                    onclick="onPost('{{.UUID}}', this, '{{.ReplyTo}}')"
+                    onmouseenter="this.style.background='#2196f3'"
+                    onmouseout="this.style.background='#64b5f6'"
+                    class=icon-comment>
+                </div>
             </td>
         </tr>
     </table>
