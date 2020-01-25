@@ -1,9 +1,10 @@
 <!doctype html>
 <html>
-    <link href="/s/css/default.5.css" rel="stylesheet" type="text/css" media="all">
+    <link href="/s/css/default.6.css" rel="stylesheet" type="text/css" media="all">
     <link href="/s/fonts/fontello-embedded.css?ver=15" rel="stylesheet" type="text/css" media="all">
     <script src="/s/js/default.6.js"></script>
-    <script src="/s/js/post.6.js"></script>
+    <script src="/s/js/post.8.js"></script>
+    <script src="/s/js/tribute.min.js"></script>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="shortcut icon" href="/s/css/favicon.png">
@@ -12,6 +13,50 @@
         if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
             document.write('<style>html { -webkit-text-size-adjust: 120%; }</style>')
         }
+
+        window.TRIBUTE_COL = {
+            trigger: '@',
+            selectClass: 'highlight',
+            containerClass: 'tribute-container',
+            selectTemplate: function (item) { return '@' + item.original.key; },
+            menuContainer: document.body,
+            lookup: 'key',
+            values: function remoteSearch(text, cb) {
+                $post("/api/search", { id: text }, function(results) {
+                    if (results && results.length) {
+                        results.forEach(function(t, i) {
+                            results[i] = { key: t.substring(1) } 
+                        });
+                        JSON.parse(window.localStorage.getItem('presets') || '[]')
+                            .filter(function(t){ return t; })
+                            .forEach(function(t) { results.push({ key: t.substring(1) }) });
+                        var seen = {};
+                        results = results.filter(function(item) {
+                            return seen.hasOwnProperty(item.key) ? false : (seen[item.key] = true);
+                        });
+                        cb(results);
+                    }
+                })
+            },
+            replaceTextSuffix: '\n',
+            positionMenu: true,
+        }
+
+        window.TRIBUTE_COL_TAGS = {
+            trigger: '#',
+            selectClass: 'highlight',
+            containerClass: 'tribute-container',
+            selectTemplate: function (item) { return '#' + item.original.key; },
+            menuContainer: document.body,
+            lookup: 'key',
+            values: window.TRIBUTE_COL.values,
+            replaceTextSuffix: '\n',
+            positionMenu: true,
+        }
+
+        window.TRIBUTER = new Tribute({
+            collection: [window.TRIBUTE_COL, window.TRIBUTE_COL_TAGS],
+        });
     </script>
 
 <body>

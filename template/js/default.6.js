@@ -317,6 +317,7 @@ function showReply(aid) {
     $post('/api/p/' + aid, {}, function(h) {
         div.innerHTML = h;
         div.style.backgroundImage = null;
+        window.TRIBUTER.attach(div.querySelector(".reply-table textarea"));
     });
 
     $q("[data-parent='" + aid + "']", true).forEach(function(e) {

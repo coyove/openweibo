@@ -408,7 +408,12 @@ img.avatar {
 }
 
 img.avatar + .avatar-kimochi {
-    width:20px;height:20px;position:absolute;left:32px;top:6px;-webkit-filter: drop-shadow(0 0 3px rgba(0,0,0,0.2));
+    width:20px;
+    height:20px;
+    position:absolute;
+    left:32px;
+    top:6px;
+    -webkit-filter: drop-shadow(0 0 3px rgba(0,0,0,0.2));
 }
 
 img.media {
@@ -452,6 +457,33 @@ div.tri.shadow {
 .control.icon-cancel-circled-1:hover,.control.icon-cw-circled:hover { color: #677 }
 .follow-block .icon-user-plus { color: #098 }
 .follow-block .icon-heart-broken { color: #e16 }
+
+.tribute-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: auto;
+    max-height: 300px;
+    max-width: 500px;
+    overflow: auto;
+    display: block;
+    z-index: 999999;
+}
+
+.tribute-container ul {
+    margin: 0;
+    margin-top: 2px;
+    padding: 0;
+    list-style: none;
+    background: #fafbfc;
+    border: solid 1px #ccc;
+}
+
+.tribute-container li { padding: 5px 5px; cursor: pointer; }
+.tribute-container li.highlight { background: #bdf; }
+.tribute-container li span { font-weight: bold; }
+.tribute-container li.no-match { cursor: default; }
+.tribute-container .menu-highlighted { font-weight: bold; }
 
 @media only screen and (max-width: 540px) {
     .row {

@@ -39,56 +39,6 @@ function onPost(uuid, el, p) {
     }, stop)
 }
 
-function onContentObserved(el) {
-    var emoji = el.parentNode.parentNode.parentNode.querySelector('.emoji');
-    var emojilist = emoji.querySelector('ul');
-
-    if (emoji.getAttribute("preloaded") !== "true") {
-        try {
-            var f = emojilist.querySelector('li');
-            JSON.parse(window.localStorage.getItem('presets') || '[]')
-                .filter(function(t){return t})
-                .forEach(function(t) {
-                    var li = $q('<li>'), a =$q('<a>');
-                    li.appendChild(a);
-                    a.onclick = function() { insertMention(el, t); }
-                    a.innerText = t;
-                    emojilist.insertBefore(li, f);
-                });
-        } catch (e) {
-            console.log(window.localStorage.getItem('presets'), e);
-            window.localStorage.setItem('presets', '');
-        }
-        emoji.setAttribute("preloaded", "true")
-    }
-
-    emoji.style.display = null; 
-    var autos = emojilist.querySelectorAll("li.auto");
-    for (var i = 0; i < autos.length; i++) emojilist.removeChild(autos[i]);
-
-    var res = el.value.match(/(@\S+|#\S+)$/g);
-    if (!res || res.length !== 1 || window.REQUESTING) return;
-    window.REQUESTING = true;
-
-    $post("/api/search", {id:res[0].substring(1)}, function(results) {
-        if (results && results.length) {
-            var f = emojilist.querySelector('li');
-            results.forEach(function(t) {
-                var li = document.createElement('li');
-                var a = document.createElement('a');
-                li.appendChild(a);
-                li.className = "auto";
-                a.onclick = function() { insertMention(el, t); }
-                a.innerText = t;
-                emojilist.insertBefore(li, f);
-            });
-        }
-        window.REQUESTING = false;
-    }, function() {
-        window.REQUESTING = false;
-    })
-}
-
 function onImageChanged(el) {
     var btn = el.previousElementSibling, imageSize = el.parentNode.parentNode.querySelector('.image-size');
 
@@ -112,8 +62,8 @@ function onImageChanged(el) {
                     el.nextElementSibling.value = img.src;
                     el.nextElementSibling.IMAGE_NAME = el.value.split(/(\\|\/)/g).pop();
 
-                    imageSize.innerText = "(" + (img.src.length / 1.33 / 1024).toFixed(0) + "KB";
-                    imageSize.innerText += (f == 1) ? ")" : "/" + (f * 100).toFixed(0) + "%)";
+                    imageSize.innerText = "(" + (img.src.length / 1.33 / 1024).toFixed(0) + "KB)";
+                    console.log((f * 100).toFixed(0) + "%)");
 
                     var img2 = $q("<img>"), div = $q("<div>");
                     img2.src = img.src;
@@ -149,20 +99,32 @@ function onImageChanged(el) {
     };
 }
 
-function insertMention(id, e) {
+function insertMention(btn, id, e) {
     var el = typeof id === 'string' ? $q("#rv-" + id + " [name=content]") : id;
     if (e.startsWith("@") || e.startsWith("#"))
         el.value = el.value.replace(/(@|#)\S+$/, "") + e + " ";
     else
         el.value += e;
     el.focus();
+    el.selectionStart = el.value.length;
+    el.selectionEnd = el.selectionStart; 
+    if (btn) hackHide(btn);
 }
 
-function insertTag(id, start, text, end) {
+function insertTag(btn, id, start, text, end) {
     var el = typeof id === 'string' ? $q("#rv-" + id + " [name=content]") : id;
     if (el.value) start = "\n" + start;
     el.value += start + text + end;
     el.focus();
     el.selectionStart = el.value.length - end.length - text.length;
     el.selectionEnd = el.selectionStart + text.length;
+    hackHide(btn);
+}
+
+function hackHide(el) {
+    while(el.tagName !== 'UL') el = el.parentNode;
+    // el.parentNode.onmouseout = function(e) { el.style.display = null; }
+    el.style.display='none';
+    el.parentNode.onmouseenter = function(e) { el.style.display = null; }
+    el.parentNode.onmousemove = function(e) { el.style.display = null; }
 }

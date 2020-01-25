@@ -1,19 +1,12 @@
 <div id="rv-{{.UUID}}" style="background:white;margin:0 0.5em">
     <table class="articles reply-table" style="box-shadow: 0 0 3px #ccc;position:relative;text-align:left">
         <tr>
-            <td colspan=2 style="padding:0">
-                <textarea
-                    name=content
-                    maxlength=1024
-                    placeholder="正文"
-                    rows={{if .ReplyTo}}6{{else}}10{{end}}
-                    onkeyup="onContentObserved(this)"
-                    style="padding:0.5em;border:none"></textarea>
-            </td>
-        </tr>
+            <td style="white-space: nowrap" colspan=2>
+                <div class="post-options post-options-emoji">
+                    <button class=gbutton>颜文字<span class='image-size'></span><i class="icon-down-dir right"></i></button>
+                    {{template "emoji.html" .UUID}}
+                </div>
 
-        <tr class=sep>
-            <td style="white-space: nowrap">
                 <div class="post-options">
                     <button class=gbutton>图片<span class='image-size'></span><i class="icon-down-dir right"></i></button>
                     <ul style="width: 120px; height: 120px">
@@ -31,13 +24,13 @@
                     <button class=gbutton>选项<i class="icon-down-dir right"></i></button>
                     <ul>
                         <li>
-                            <span onclick="insertTag('{{.UUID}}','[code]','代码块','[/code]')">
+                            <span onclick="insertTag(this, '{{.UUID}}','[code]','代码块','[/code]')">
                                 <i class=icon-code></i>
                                 插入 <span style="font-family:monospace">[code][/code]</span>
                             </span>
                         </li>
                         <li>
-                            <span onclick="insertTag('{{.UUID}}','[img]','图片URL','[/img]')">
+                            <span onclick="insertTag(this, '{{.UUID}}','[img]','图片URL','[/img]')">
                                 <i class=icon-code></i>
                                 插入 <span style="font-family:monospace">[img][/img]</span>
                             </span>
@@ -71,8 +64,6 @@
                         </li>
                     </ul>
                 </div>
-
-
                 <style>
 .gbutton.image {
     height: 120px;
@@ -110,6 +101,16 @@
                         display: block;
                         z-index: 1000;
                     }
+                    .post-options-emoji:hover ul {
+                        display: flex;
+                        flex-wrap: wrap;
+                        width: 250px;
+                        height: 250px;
+                        overflow-y: scroll;
+                    }
+                    .post-options-emoji a {
+                        text-decoration: none !important;
+                    }
                     .post-options ul li:hover {
                         background: #bdf;
                     }
@@ -119,15 +120,32 @@
                 </style>
 
             </td>
-            <td class="nowrap" style="text-align:center">
+        </tr>
+
+        <tr class=sep>
+            <td style="padding:0" colspan=2>
+                <textarea
+                    name=content
+                    maxlength=1024
+                    placeholder="正文"
+                    rows={{if .ReplyTo}}6{{else}}10{{end}}
+                    style="padding:0.5em;border:none"></textarea>
+            </td>
+        </tr>
+
+
+        <tr class=sep>
+            <td>
+            </td>
+            <td class=nowrap>
                 <button class="gbutton" onclick="onPost('{{.UUID}}', this, '{{.ReplyTo}}')">
                     {{if .ReplyTo}}回复{{else}}发布{{end}}
                 </button>
             </td>
         </tr>
-
-        <tr class=sep>
-            <td colspan=2 style="padding:0">{{template "emoji.html" .UUID}}</td>
-        </tr>       
     </table>
 </div>
+
+    <script>
+        window.TRIBUTER.attach(document.querySelectorAll("#rv-{{.UUID}} textarea"));
+    </script>
