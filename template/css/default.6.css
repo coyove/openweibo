@@ -293,6 +293,10 @@ div.rows.replies .reply-table {
     border: solid 1px #e1e2e3;
 }
 
+.reply-table .icon-comment {
+    padding-top: 1px;
+}
+
 div.row {
     background: #f1f2f3;
     margin: 0.5em;

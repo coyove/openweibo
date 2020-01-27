@@ -3,6 +3,7 @@ package dal
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/coyove/iis/common"
@@ -13,9 +14,10 @@ import (
 var ErrInvalidRequest = fmt.Errorf("invalid request")
 
 const (
-	DoUpdateUser    string = "UpdateUser"
-	DoUpdateArticle        = "UpdateArticle"
-	DoInsertArticle        = "InsertArticle"
+	DoUpdateUser            string = "UpdateUser"
+	DoUpdateArticle                = "UpdateArticle"
+	DoInsertArticle                = "InsertArticle"
+	DoUpdateOrInsertArticle        = "UpdateOrInsertArticle"
 )
 
 type Request struct {
@@ -58,16 +60,28 @@ type Request struct {
 
 		Response struct {
 			OldExtraValue string
-			Article       model.Article
+			ArticleAuthor string
 		}
 	}
 	InsertArticleRequest *struct {
-		RootID  string
-		AsReply bool
-		Article model.Article
+		ID          string
+		AsReply     bool
+		AsFollowing bool
+		Article     model.Article
 
 		Response struct {
 			Article model.Article
+		}
+	}
+	UpdateOrInsertArticleRequest *struct {
+		ID      string
+		ID2     string
+		ChainID string
+		Cmd     string
+		Value   bool
+
+		Response struct {
+			Updated bool
 		}
 	}
 	TestRequest *struct {
@@ -250,6 +264,9 @@ func coUpdateArticle(r *Request) error {
 
 	if rr.SetExtraKey != nil {
 		rr.Response.OldExtraValue = a.Extras[*rr.SetExtraKey]
+		if a.Extras == nil {
+			a.Extras = map[string]string{}
+		}
 		a.Extras[*rr.SetExtraKey] = *rr.SetExtraValue
 	}
 	if rr.IncDecLikes != nil {
@@ -278,8 +295,8 @@ func coUpdateArticle(r *Request) error {
 		}
 		a.Locked = !a.Locked
 	}
-	rr.Response.Article = *a
 
+	rr.Response.ArticleAuthor = a.Author
 	return m.db.Set(a.ID, a.Marshal())
 }
 
@@ -288,7 +305,7 @@ func coInsertArticle(r *Request) error {
 		return ErrInvalidRequest
 	}
 
-	rootID := r.InsertArticleRequest.RootID
+	rootID := r.InsertArticleRequest.ID
 	a := r.InsertArticleRequest.Article
 	asReply := r.InsertArticleRequest.AsReply
 
@@ -328,8 +345,18 @@ func coInsertArticle(r *Request) error {
 
 	if !a.Alone {
 		if asReply {
+			// The article is a reply to another feed, so insert it into root's reply chain
 			a.NextReplyID, root.ReplyChain = root.ReplyChain, a.ID
+		} else if r.InsertArticleRequest.AsFollowing {
+			// The article contains following info, it won't go into any chains
+			// instead root's Extras will record the index.
+			// 'index' is the last element of the article's ID: u/<user_id>/follow/<index>
+			if root.Extras == nil {
+				root.Extras = map[string]string{}
+			}
+			root.Extras[lastElemInCompID(a.ID)] = "1"
 		} else {
+			// The article is a normal feed, so insert it into root's main chain
 			a.NextID, root.NextID = root.NextID, a.ID
 			if a.Media != "" {
 				a.NextMediaID, root.NextMediaID = root.NextMediaID, a.ID
@@ -351,6 +378,44 @@ func coInsertArticle(r *Request) error {
 	return nil
 }
 
+func coUpdateOrInsertArticle(r *Request) error {
+	rr := r.UpdateOrInsertArticleRequest
+	state := strconv.FormatBool(rr.Value)
+
+	common.LockKey(rr.ID)
+	defer common.UnlockKey(rr.ID)
+
+	a, err := GetArticle(rr.ID)
+	if err != nil {
+		if err == model.ErrNotExisted {
+			a := &model.Article{
+				ID:  rr.ID,
+				Cmd: model.Cmd(rr.Cmd),
+				Extras: map[string]string{
+					"to":   rr.ID2,
+					rr.Cmd: state,
+				},
+				CreateTime: time.Now(),
+			}
+
+			if rr.Cmd == string(model.CmdLike) {
+				if toa, _ := GetArticle(rr.ID2); toa != nil {
+					a.Media = toa.Media
+				}
+			}
+
+			rr.Response.Updated = true
+			return Do(NewRequest(DoInsertArticle, "ID", rr.ChainID, "Article", *a))
+		}
+		return err
+	}
+
+	rr.Response.Updated = a.Extras[rr.Cmd] != state
+	a.Extras[rr.Cmd] = state
+
+	return m.db.Set(a.ID, a.Marshal())
+}
+
 func Do(r *Request) error {
 	switch {
 	case r.UpdateUserRequest != nil:
@@ -359,6 +424,8 @@ func Do(r *Request) error {
 		return coUpdateArticle(r)
 	case r.InsertArticleRequest != nil:
 		return coInsertArticle(r)
+	case r.UpdateOrInsertArticleRequest != nil:
+		return coUpdateOrInsertArticle(r)
 	default:
 		return nil
 	}

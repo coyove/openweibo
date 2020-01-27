@@ -204,7 +204,7 @@ func Post(a *model.Article, author *model.User, noMaster bool) (*model.Article, 
 	a.Author = author.ID
 
 	if err := Do(NewRequest("InsertArticle",
-		"RootID", ik.NewID(ik.IDAuthor, a.Author).String(),
+		"ID", ik.NewID(ik.IDAuthor, a.Author).String(),
 		"Article", *a,
 	)); err != nil {
 		return nil, err
@@ -213,7 +213,7 @@ func Post(a *model.Article, author *model.User, noMaster bool) (*model.Article, 
 	go func() {
 		if !noMaster {
 			Do(NewRequest("InsertArticle",
-				"RootID", ik.NewID(ik.IDAuthor, "master").String(),
+				"ID", ik.NewID(ik.IDAuthor, "master").String(),
 				"Article", model.Article{
 					ID:         ik.NewGeneralID().String(),
 					ReferID:    a.ID,
@@ -254,7 +254,7 @@ func PostReply(parent string, content, media string, author *model.User, ip stri
 		CreateTime: time.Now(),
 	}
 
-	r := NewRequest(DoInsertArticle, "RootID", p.ID, "Article", *a, "AsReply", true)
+	r := NewRequest(DoInsertArticle, "ID", p.ID, "Article", *a, "AsReply", true)
 	if err := Do(r); err != nil {
 		return nil, err
 	}
@@ -263,7 +263,7 @@ func PostReply(parent string, content, media string, author *model.User, ip stri
 	if !noTimeline {
 		// Add reply to its timeline
 		if err := Do(NewRequest("InsertArticle",
-			"RootID", ik.NewID(ik.IDAuthor, a.Author).String(),
+			"ID", ik.NewID(ik.IDAuthor, a.Author).String(),
 			"Article", *a,
 		)); err != nil {
 			return nil, err
@@ -273,7 +273,7 @@ func PostReply(parent string, content, media string, author *model.User, ip stri
 	go func() {
 		if p.Content != model.DeletionMarker && a.Author != p.Author {
 			if err := Do(NewRequest(DoInsertArticle,
-				"RootID", ik.NewID(ik.IDInbox, p.Author).String(),
+				"ID", ik.NewID(ik.IDInbox, p.Author).String(),
 				"Article", model.Article{
 					ID:  ik.NewGeneralID().String(),
 					Cmd: model.CmdReply,

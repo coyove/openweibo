@@ -29,46 +29,6 @@ func IsCrawler(g *gin.Context) bool {
 	return v == "1"
 }
 
-//func  IncrCounter(g *gin.Context, id string) {
-//	if IsCrawler(g) {
-//		return
-//	}
-//
-//	dbCounter.Lock(id)
-//	defer dbCounter.Unlock(id)
-//
-//	x, _ := counter.LoadOrStore(id, &[256]bool{})
-//
-//	ip := g.MustGet("ip").(net.IP)
-//	(*x)[ip[len(ip)-1]] = true
-//
-//	count := 0
-//	counter.Range(func(k, v interface{}) bool {
-//		count++
-//		if count > 64 {
-//			go writeCounterToDB()
-//			return false
-//		}
-//		return true
-//	})
-//
-//	counter.k.Reschedule(func() { go writeCounterToDB() }, time.Second*10)
-//}
-//
-//func  writeCounterToDB() {
-//	counter.k.Cancel()
-//	count := 0
-//
-//	counter.Range(func(k, v interface{}) bool {
-//		count++
-//		dbCounter.Get(
-//		return true
-//	})
-//
-//	counter.m = sync.Map{}
-//	log.Println("[writeCounterToDB] sched:", count)
-//}
-
 func dec0(a *int32) {
 	*a--
 	if *a < 0 {

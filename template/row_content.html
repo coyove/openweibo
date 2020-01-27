@@ -18,7 +18,7 @@
     {{else if eq .Cmd "inbox-mention"}}
         <span class=post-date>于 {{formatTime .CreateTime}} @了你</span>
     {{else if $isInboxLike}}
-        <span class=post-date>于 {{formatTime .CreateTime}} 收藏了你的状态</span>
+        <span class=post-date>于 {{formatTime .CreateTime}} 喜欢了你的状态</span>
     {{else}}
         {{if .You.IsMod}}
         <span>

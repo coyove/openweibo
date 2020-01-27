@@ -82,22 +82,21 @@ func UnmarshalArticle(b []byte) (*Article, error) {
 }
 
 type User struct {
-	ID             string
-	Session        string
-	Role           string
-	PasswordHash   []byte
-	Email          string `json:"e"`
-	Avatar         uint32 `json:"av"`
-	CustomName     string `json:"cn"`
-	Followers      int32  `json:"F"`
-	Followings     int32  `json:"f"`
-	Unread         int32  `json:"ur"`
-	FollowingChain string `json:"FC2,omitempty"` // deprecated
-	DataIP         string `json:"sip"`
-	TSignup        uint32 `json:"st"`
-	TLogin         uint32 `json:"lt"`
-	Banned         bool   `json:"ban,omitempty"`
-	Kimochi        byte   `json:"kmc,omitempty"`
+	ID           string
+	Session      string
+	Role         string
+	PasswordHash []byte
+	Email        string `json:"e"`
+	Avatar       uint32 `json:"av"`
+	CustomName   string `json:"cn"`
+	Followers    int32  `json:"F"`
+	Followings   int32  `json:"f"`
+	Unread       int32  `json:"ur"`
+	DataIP       string `json:"sip"`
+	TSignup      uint32 `json:"st"`
+	TLogin       uint32 `json:"lt"`
+	Banned       bool   `json:"ban,omitempty"`
+	Kimochi      byte   `json:"kmc,omitempty"`
 
 	_IsFollowing bool
 	_IsBlocking  bool

@@ -17,7 +17,7 @@ function $wait(el) {
         specialClass = el.className.match(/icon-\S+/g),
         timer = setInterval(function () {
             waiting++;
-            el.innerHTML = "<b style='font-family:monospace'>" + "|/-\\".charAt(waiting % 4) + "</b>";
+            el.innerHTML = "<b style='font-family:monospace;font-size:inherit'>" + "|/-\\".charAt(waiting % 4) + "</b>";
         }, 100);
 
     el.setAttribute("disabled", "disabled");

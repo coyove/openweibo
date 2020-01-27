@@ -123,6 +123,11 @@ func init() {
 					})
 
 					for _, f := range files {
+						if strings.Contains(f.Name(), "@") {
+							// user avatars, keep them whenever possible
+							continue
+						}
+
 						path := filepath.Join(path, f.Name())
 						totalSize -= int(f.Size())
 						os.Remove(path)

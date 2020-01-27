@@ -8,7 +8,6 @@ import (
 	"os"
 	"runtime"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -88,18 +87,6 @@ func main() {
 
 	r := middleware.New(common.Cfg.Key != "0123456789abcdef")
 	r.SetFuncMap(template.FuncMap{
-		"isCDError": func(s string) string {
-			if strings.HasPrefix(s, "guard/cooling-down/") {
-				return s[19 : len(s)-1]
-			}
-			return ""
-		},
-		"isITError": func(s string) string {
-			if strings.HasPrefix(s, "image/throt/") {
-				return s[12 : len(s)-1]
-			}
-			return ""
-		},
 		"getTotalPosts": func(id string) int {
 			a, _ := dal.GetArticle(ik.NewID(ik.IDAuthor, id).String())
 			if a != nil {

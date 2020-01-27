@@ -38,30 +38,6 @@ func GetUser(id string) (*model.User, error) {
 	if u != nil {
 		u2 := *u
 		m.weakUsers.Add(u.ID, unsafe.Pointer(&u2))
-		if u.FollowingChain != "" {
-			go func() {
-				fc, _ := GetArticle(u.FollowingChain)
-				id := ik.NewID(ik.IDFollowing, u.ID).String()
-				if fc != nil {
-					for !strings.HasPrefix(fc.NextID, "u/") {
-						fc2, _ := GetArticle(fc.NextID)
-						if fc2 != nil {
-							fc = fc2
-						} else {
-							log.Println(u.ID, "following chain broken")
-							break
-						}
-					}
-					a := &model.Article{
-						ID:     id,
-						NextID: fc.NextID,
-					}
-					if _, err := GetArticle(a.ID); err == model.ErrNotExisted {
-						m.db.Set(a.ID, a.Marshal())
-					}
-				}
-			}()
-		}
 	}
 
 	return u, err
@@ -123,7 +99,7 @@ func MentionUserAndTags(a *model.Article, ids []string, tags []string) error {
 		}
 
 		if err := Do(NewRequest(DoInsertArticle,
-			"RootID", ik.NewID(ik.IDInbox, id).String(),
+			"ID", ik.NewID(ik.IDInbox, id).String(),
 			"Article", model.Article{
 				ID:  ik.NewGeneralID().String(),
 				Cmd: model.CmdMention,
@@ -143,7 +119,7 @@ func MentionUserAndTags(a *model.Article, ids []string, tags []string) error {
 
 	for _, tag := range tags {
 		if err := Do(NewRequest(DoInsertArticle,
-			"RootID", ik.NewID(ik.IDTag, tag).String(),
+			"ID", ik.NewID(ik.IDTag, tag).String(),
 			"Article", model.Article{
 				ID:         ik.NewGeneralID().String(),
 				ReferID:    a.ID,
@@ -188,13 +164,14 @@ func FollowUser(from, to string, following bool) (E error) {
 		if err == model.ErrNotExisted {
 			updated = true
 			if err := Do(NewRequest(DoInsertArticle,
-				"RootID", ik.NewID(ik.IDFollowing, from).String(),
+				"ID", ik.NewID(ik.IDFollowing, from).String(),
 				"Article", model.Article{
 					ID:         followID,
 					Cmd:        model.CmdFollow,
 					Extras:     map[string]string{to: *r.UpdateArticleRequest.SetExtraValue},
 					CreateTime: time.Now(),
 				},
+				"AsFollowing", true,
 			)); err != nil {
 				return err
 			}
@@ -202,6 +179,11 @@ func FollowUser(from, to string, following bool) (E error) {
 		}
 		return err
 	}
+	Do(NewRequest(DoUpdateArticle,
+		"ID", ik.NewID(ik.IDFollowing, from).String(),
+		"SetExtraKey", lastElemInCompID(followID),
+		"SetExtraValue", "1",
+	))
 	if !strings.HasPrefix(r.UpdateArticleRequest.Response.OldExtraValue, strconv.FormatBool(following)) {
 		updated = true
 	}
@@ -212,13 +194,12 @@ func fromFollowToNotifyTo(from, to string, following bool) (E error) {
 	if err := Do(NewRequest(DoUpdateUser, "ID", to, "IncDecFollowers", following)); err != nil {
 		return err
 	}
-	_, err := insertChainOrUpdate(
-		makeFollowedID(to, from),
-		ik.NewID(ik.IDFollower, to).String(),
-		from,
-		model.CmdFollowed,
-		following)
-	return err
+	return Do(NewRequest(DoUpdateOrInsertArticle,
+		"ID", makeFollowedID(to, from),
+		"ID2", from,
+		"ChainID", ik.NewID(ik.IDFollower, to).String(),
+		"Cmd", model.CmdFollowed,
+		"Value", following))
 }
 
 func BlockUser(from, to string, blocking bool) (E error) {
@@ -228,78 +209,49 @@ func BlockUser(from, to string, blocking bool) (E error) {
 		}
 	}
 
-	_, err := insertChainOrUpdate(
-		makeBlockID(from, to),
-		ik.NewID(ik.IDBlacklist, from).String(),
-		to,
-		model.CmdBlock,
-		blocking)
-	return err
+	return Do(NewRequest(DoUpdateOrInsertArticle,
+		"ID", makeBlockID(from, to),
+		"ID2", to,
+		"ChainID", ik.NewID(ik.IDBlacklist, from).String(),
+		"Cmd", model.CmdBlock,
+		"Value", blocking))
 }
 
 func LikeArticle(from, to string, liking bool) (E error) {
-	updated, err := insertChainOrUpdate(
-		makeLikeID(from, to),
-		ik.NewID(ik.IDLike, from).String(),
-		to,
-		model.CmdLike,
-		liking)
-	if err != nil {
+	req := NewRequest(DoUpdateOrInsertArticle,
+		"ID", makeLikeID(from, to),
+		"ID2", to,
+		"ChainID", ik.NewID(ik.IDLike, from).String(),
+		"Cmd", model.CmdLike,
+		"Value", liking,
+	)
+	if err := Do(req); err != nil {
 		return err
 	}
-	if updated {
+	if req.UpdateOrInsertArticleRequest.Response.Updated {
 		go func() {
 			r := NewRequest(DoUpdateArticle, "ID", to, "IncDecLikes", liking)
 			if err := Do(r); err == nil {
 				// if the author followed 'from', notify the author that his articles has been liked by 'from'
-				if a := r.UpdateArticleRequest.Response.Article; IsFollowing(a.Author, from) && liking {
+				if a := r.UpdateArticleRequest.Response.ArticleAuthor; IsFollowing(a, from) && liking {
 					Do(NewRequest(DoInsertArticle,
-						"RootID", ik.NewID(ik.IDInbox, a.Author).String(),
+						"ID", ik.NewID(ik.IDInbox, a).String(),
 						"Article", model.Article{
 							ID:  ik.NewGeneralID().String(),
 							Cmd: model.CmdILike,
 							Extras: map[string]string{
 								"from":       from,
-								"article_id": a.ID,
+								"article_id": to,
 							},
 							CreateTime: time.Now(),
 						}))
-					Do(NewRequest(DoUpdateUser, "ID", a.Author, "IncUnread", true))
+					Do(NewRequest(DoUpdateUser, "ID", a, "IncUnread", true))
 				}
 			}
 
 		}()
 	}
 	return nil
-}
-
-func insertChainOrUpdate(aid, chainid string, to string, cmd model.Cmd, value bool) (updated bool, E error) {
-	state := strconv.FormatBool(value)
-	r := NewRequest(DoUpdateArticle, "ID", aid, "SetExtraKey", string(cmd), "SetExtraValue", state)
-	if err := Do(r); err != nil {
-		if err == model.ErrNotExisted {
-			a := &model.Article{
-				ID:  aid,
-				Cmd: cmd,
-				Extras: map[string]string{
-					"to":        to,
-					string(cmd): strconv.FormatBool(value),
-				},
-				CreateTime: time.Now(),
-			}
-
-			if cmd == model.CmdLike {
-				toa, _ := GetArticle(to)
-				if toa != nil {
-					a.Media = toa.Media
-				}
-			}
-
-			return true, Do(NewRequest(DoInsertArticle, "RootID", chainid, "Article", *a))
-		}
-		return false, err
-	}
-	return r.UpdateArticleRequest.Response.OldExtraValue != state, nil
 }
 
 type FollowingState struct {
@@ -311,12 +263,12 @@ type FollowingState struct {
 	Blocked     bool
 }
 
-func GetFollowingList(chain ik.ID, cursor string, n int) ([]FollowingState, string) {
+func GetRelationList(chain ik.ID, cursor string, n int) ([]FollowingState, string) {
 	if cursor == "" {
 		a, err := GetArticle(chain.String())
 		if err != nil {
 			if err != model.ErrNotExisted {
-				log.Println("[GetFollowingList] Failed to get chain [", chain, "]")
+				log.Println("[GetRelationList] Failed to get chain [", chain, "]")
 			}
 			return nil, ""
 		}
@@ -328,13 +280,13 @@ func GetFollowingList(chain ik.ID, cursor string, n int) ([]FollowingState, stri
 
 	for len(res) < n && strings.HasPrefix(cursor, "u/") {
 		if time.Since(start).Seconds() > 0.2 {
-			log.Println("[GetFollowingList] Break out slow walk [", cursor, "]")
+			log.Println("[GetRelationList] Break out slow walk [", cursor, "]")
 			break
 		}
 
 		a, err := GetArticle(cursor)
 		if err != nil {
-			log.Println("[GetFollowingList]", cursor, err)
+			log.Println("[GetRelationList]", cursor, err)
 			break
 		}
 
@@ -364,6 +316,62 @@ func GetFollowingList(chain ik.ID, cursor string, n int) ([]FollowingState, stri
 	}
 
 	sort.Slice(res, func(i, j int) bool { return res[i].Time.After(res[j].Time) })
+
+	return res, cursor
+}
+
+func GetFollowingList(chain ik.ID, cursor string, n int) ([]FollowingState, string) {
+	master, err := GetArticle(chain.String())
+	if err != nil {
+		if err != model.ErrNotExisted {
+			log.Println("[GetRelationList] Failed to get chain [", chain, "]")
+		}
+		return nil, ""
+	}
+
+	idx, _ := strconv.Atoi(cursor)
+	if idx > 255 || idx < 0 {
+		return nil, ""
+	}
+
+	res := []FollowingState{}
+	start := time.Now()
+
+	for ; len(res) < n && idx < 256; idx++ {
+		if master.Extras[strconv.Itoa(idx)] != "1" {
+			continue
+		}
+
+		if time.Since(start).Seconds() > 0.2 {
+			log.Println("[GetFollowingList] Break out slow walk [", cursor, "]")
+			break
+		}
+
+		a, err := GetArticle("u/" + chain.Tag() + "/follow/" + strconv.Itoa(idx))
+		if err != nil {
+			log.Println("[GetFollowingList]", cursor, err)
+			break
+		}
+
+		for k, v := range a.Extras {
+			p := strings.Split(v, ",")
+			if len(p) != 2 {
+				continue
+			}
+			res = append(res, FollowingState{
+				ID:       k,
+				Time:     time.Unix(atoi64(p[1]), 0),
+				Followed: atob(p[0]),
+			})
+		}
+	}
+
+	sort.Slice(res, func(i, j int) bool { return res[i].Time.After(res[j].Time) })
+
+	cursor = strconv.Itoa(idx)
+	if idx > 255 {
+		cursor = ""
+	}
 
 	return res, cursor
 }
