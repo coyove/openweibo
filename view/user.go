@@ -119,7 +119,7 @@ func UserLikes(g *gin.Context) {
 }
 
 func APIGetUserInfoBox(g *gin.Context) {
-	u, _ := dal.GetUser(g.Param("id"))
+	u, _ := dal.GetUserWithSettings(g.Param("id"))
 	if u == nil {
 		g.String(200, "internal/error")
 		return

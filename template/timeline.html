@@ -1,5 +1,9 @@
 {{template "header.html" .}}
 
+<div id=dummy-user style="display: none">
+{{template "user_public.html" (emptyUser)}}
+</div>
+
 {{if .IsUserTimeline}}
 
 <div class="status-box">

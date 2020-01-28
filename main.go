@@ -87,6 +87,9 @@ func main() {
 
 	r := middleware.New(common.Cfg.Key != "0123456789abcdef")
 	r.SetFuncMap(template.FuncMap{
+		"emptyUser": func() model.User {
+			return model.User{}
+		},
 		"blend": func(args ...interface{}) interface{} {
 			return args
 		},

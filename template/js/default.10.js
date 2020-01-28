@@ -418,27 +418,41 @@ function $check(el) {
 function showInfoBox(el, uid) {
     if (el.BLOCK) return;
     el.BLOCK = true;
-    var div = $q("<div>");
+
+    var div = $q("<div>"),
+        bodyBox = document.body.getBoundingClientRect(),
+        box = el.getBoundingClientRect();
+
+    document.body.appendChild(div);
+    div.innerHTML = $q("#dummy-user").innerHTML;
+    div.querySelector('img.avatar').src = el.src;
+
+    for (var x = el.parentNode; x ; x = x.parentNode) {
+        var pa = x.querySelector('span.post-author')
+        if (pa) {
+            div.querySelector('span.post-author').innerHTML = pa.innerHTML;
+            break;
+        }
+    }
+
+    div.style.position = 'absolute';
+    div.style.left = box.left - bodyBox.left - 5 + 'px';
+    div.style.top = box.top - bodyBox.top - 5 + 'px';
+
+    window.REGIONS = window.REGIONS || [];
+    window.REGIONS.push({
+        valid: true,
+        boxes: [box, div.getBoundingClientRect()],
+        callback: function(x, y) {
+            div.parentNode.removeChild(div);
+            el.BLOCK = false;
+        },
+    });
+
     $post("/api/u/" + uid, {}, function(h) {
         if (h.indexOf("ok:") > -1) {
-            var bodyBox = document.body.getBoundingClientRect(),
-                box = el.getBoundingClientRect();
-
             div.innerHTML = h.substring(3);
-            document.body.appendChild(div);
-            div.style.position = 'absolute';
-            div.style.left = box.left - bodyBox.left - 5 + 'px';
-            div.style.top = box.top - bodyBox.top - 5 + 'px';
 
-            window.REGIONS = window.REGIONS || [];
-            window.REGIONS.push({
-                valid: true,
-                boxes: [box, div.getBoundingClientRect()],
-                callback: function(x, y) {
-                    div.parentNode.removeChild(div);
-                    el.BLOCK = false;
-                },
-            });
             return
         }
         return h
