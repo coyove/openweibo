@@ -87,6 +87,9 @@ func main() {
 
 	r := middleware.New(common.Cfg.Key != "0123456789abcdef")
 	r.SetFuncMap(template.FuncMap{
+		"blend": func(args ...interface{}) interface{} {
+			return args
+		},
 		"getTotalPosts": func(id string) int {
 			a, _ := dal.GetArticle(ik.NewID(ik.IDAuthor, id).String())
 			if a != nil {
@@ -130,6 +133,7 @@ func main() {
 	r.Handle("GET", "/mod/kv", view.ModKV)
 
 	r.Handle("POST", "/api/p/:parent", view.APIReplies)
+	r.Handle("POST", "/api/u/:id", view.APIGetUserInfoBox)
 	r.Handle("POST", "/api/timeline", view.APITimeline)
 	r.Handle("POST", "/api/user_kimochi", action.APIUserKimochi)
 	r.Handle("POST", "/api/new_captcha", action.APINewCaptcha)

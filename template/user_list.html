@@ -38,60 +38,90 @@
 
 <table class="articles z" style="margin: 0.5em 0">
     {{if $own}}
-    <tr style="border-bottom:dotted 1px #ccc">
-        <td class=nowrap>
-            <b>
-                {{if eq .ListType "blacklist"}}
-                黑名单
-                {{else if eq .ListType "followers"}}
-                我的粉丝 ({{.User.Followers}})
-                {{else}}
-                我的关注 ({{.User.Followings}})
-                {{end}}
-            </b>
+    <tr>
+        <td colspan=3>
+            <div style="border:solid 1px #ccc;display: flex;background:#f1f2f3;">
+                <div style="padding:0.5em 0 0.5em 0.5em;color:#aaa;white-space:nowrap">搜索 @</div>
+                <div contentEditable=true id=search-id style="width:100%;border:none;padding:0.5em;display:flex;flex-wrap:wrap">
+                </div>
+            </div>
+    <script>
+        (function() {
+            var el = $q("#search-id");
+            el.addEventListener('keydown', function (evt) {
+                if (evt.keyCode === 13) {
+                    location.href = "/t/" + encodeURIComponent(el.innerText.replace(/(@|#)[\s\S]+$/,''))
+                    evt.preventDefault();
+                }
+            });
+            el.addEventListener('keyup', function() {
+                var v = el.innerText.replace(/(@|#)[\s\S]+$/,'');
+
+                if (el.BUSY) return;
+                if (!v) {
+                    el.innerHTML = '';
+                    return;
+                }
+
+                el.BUSY = true;
+                $post("/api/search", { id: '@' + v }, function(results) {
+                    if (results && results.length) {
+                        for (var i = el.childNodes.length - 1; i > 0; i--) {
+                            el.removeChild(el.childNodes[i])
+                        }
+                        results.forEach(function(e) {
+                            var opt = $q("<div>");
+                            opt.style.paddingLeft = '0.5em';
+                            var a = $q("<a>");
+                            opt.appendChild(a);
+                            a.innerText = e;
+                            a.onclick = function() {
+                                window.open('/t/' + encodeURIComponent(e));
+                            }
+                            el.appendChild(opt);
+                        })
+                    }
+                    el.BUSY = false;
+                }, function() {
+                    el.BUSY = false;
+                })
+            })
+        })()
+    </script>
         </td>
-        <form method="POST" onsubmit="location.href='/t/'+encodeURIComponent($q('#search-id').value);return false">
-            <td><input class=t id=search-id></td>
-            <td class=nowrap><button class="gbutton">搜索 ID</button></td>
-        </form>
     </tr>
     {{end}}
 
     {{range .List}}
     <tr>
         <td class=nowrap>{{.Time.Format "2006-01-02"}}</td>
-        <td><b><a href="/t/{{urlquery .ID}}">{{.ID}}</a></b></td>
-        <td class=nowrap>
+        <td>
+            {{if .FullUser}}
+            {{template "display_name.html" .FullUser}}
+            {{else}}
+            <b><s>{{.ID}}</s></b>
+            {{end}}
+        </td>
+        <td class=nowrap style="text-align:center">
             {{if eq $.ListType "blacklist"}}
-                <button
-                    class="gbutton follow-block"
-                    value='{{.Blocked}}'
-                    style="color:{{if .Blocked}}#f52{{else}}#aaa{{end}}"
-                    onclick="followBlock(this,'block','{{.ID}}')">
-                    <i class="icon-block"></i>
-                </button>
+                {{template "button_follow_block.html" (blend "block-span" .ID .Blocked)}}
             {{else if eq $.ListType "followers"}}
                 {{if not .RevFollowed}}
-                    <button class=gbutton disabled>已解除关注</button>
+                    <button class=gbutton disabled>已取关</button>
                 {{else}}
                     {{if $own}}
-                    <button class="gbutton follow-block" value=false style="color:#aaa" onclick="followBlock(this,'block','{{.ID}}')">
-                        <i class="icon-block"></i>
-                    </button>
+                        {{template "button_follow_block.html" (blend "follow" .ID .Followed)}}
+                        {{template "button_follow_block.html" (blend "block" .ID false)}}
                     {{else}}
-                    <button class=gbutton disabled>正在关注</button>
+                        <button class=gbutton>关注中</button>
                     {{end}}
                 {{end}}
             {{else}}
                 {{if $own}}
-                    <button
-                        class="gbutton follow-block"
-                        value={{.Followed}}
-                        onclick="followBlock(this,'follow','{{.ID}}')">
-                        <i class="{{if .Followed}}icon-heart-broken{{else}}icon-user-plus{{end}}"></i>
-                    </button>
+                    {{template "button_follow_block.html" (blend "follow" .ID .Followed)}}
+                    {{template "button_follow_block.html" (blend "block" .ID .Blocked)}}
                 {{else}}
-                    <button class=gbutton disabled>{{if .Followed}}正在关注{{else}}已解除关注{{end}}</button>
+                <button class=gbutton {{if .Followed}}>关注中{{else}} disabled>已取关{{end}}</button>
                 {{end}}
             {{end}}
         </td>
@@ -109,3 +139,7 @@
     </tr>
 </table>
 
+
+<style>
+.post-author { margin: 0 }
+</style>

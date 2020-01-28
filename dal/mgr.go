@@ -203,7 +203,7 @@ func Post(a *model.Article, author *model.User, noMaster bool) (*model.Article, 
 	a.CreateTime = time.Now()
 	a.Author = author.ID
 
-	if err := Do(NewRequest("InsertArticle",
+	if err := Do(NewRequest(DoInsertArticle,
 		"ID", ik.NewID(ik.IDAuthor, a.Author).String(),
 		"Article", *a,
 	)); err != nil {
@@ -212,7 +212,7 @@ func Post(a *model.Article, author *model.User, noMaster bool) (*model.Article, 
 
 	go func() {
 		if !noMaster {
-			Do(NewRequest("InsertArticle",
+			Do(NewRequest(DoInsertArticle,
 				"ID", ik.NewID(ik.IDAuthor, "master").String(),
 				"Article", model.Article{
 					ID:         ik.NewGeneralID().String(),
@@ -262,7 +262,7 @@ func PostReply(parent string, content, media string, author *model.User, ip stri
 
 	if !noTimeline {
 		// Add reply to its timeline
-		if err := Do(NewRequest("InsertArticle",
+		if err := Do(NewRequest(DoInsertArticle,
 			"ID", ik.NewID(ik.IDAuthor, a.Author).String(),
 			"Article", *a,
 		)); err != nil {
@@ -286,7 +286,7 @@ func PostReply(parent string, content, media string, author *model.User, ip stri
 				log.Println("PostReply", err)
 			}
 
-			Do(NewRequest("UpdateUser", "ID", p.Author, "IncUnread", true))
+			Do(NewRequest(DoUpdateUser, "ID", p.Author, "IncUnread", true))
 		}
 		ids, tags := common.ExtractMentionsAndTags(a.Content)
 		MentionUserAndTags(a, ids, tags)

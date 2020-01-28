@@ -4,7 +4,8 @@
     <div class="row-header" style="line-height:{{if .NoAvatar}}24px{{else}}36px{{end}};display:flex">
         {{if not .NoAvatar}}
         <div class=avatar-container>
-            <img class="avatar" alt="{{.Author.ID}}" src="/avatar/{{.Author.ID}}.jpg?q={{.Author.Avatar}}">
+            <img class="avatar" alt="{{.Author.ID}}" src="/avatar/{{.Author.ID}}.jpg?q={{.Author.Avatar}}"
+                                                     onmouseenter="showInfoBox(this,'{{.Author.ID}}')">
             {{if .Author.Kimochi}}
             <img class="avatar-kimochi" src="/s/emoji/emoji{{.Author.Kimochi}}.png">
             {{end}}

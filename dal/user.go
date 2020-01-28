@@ -256,6 +256,7 @@ func LikeArticle(from, to string, liking bool) (E error) {
 
 type FollowingState struct {
 	ID          string
+	FullUser    *model.User
 	Time        time.Time
 	Followed    bool
 	RevFollowed bool
@@ -290,28 +291,20 @@ func GetRelationList(chain ik.ID, cursor string, n int) ([]FollowingState, strin
 			break
 		}
 
-		if a.Cmd == model.CmdFollow {
-			for k, v := range a.Extras {
-				p := strings.Split(v, ",")
-				if len(p) != 2 {
-					continue
-				}
-				res = append(res, FollowingState{
-					ID:       k,
-					Time:     time.Unix(atoi64(p[1]), 0),
-					Followed: atob(p[0]),
-				})
-			}
-		} else {
-			res = append(res, FollowingState{
-				ID:          a.Extras["to"],
-				Time:        a.CreateTime,
-				Blocked:     a.Extras["block"] == "true",
-				RevFollowed: a.Extras["followed"] == "true",
-				Liked:       a.Extras["like"] == "true",
-			})
+		s := FollowingState{
+			ID:          a.Extras["to"],
+			Time:        a.CreateTime,
+			Blocked:     a.Extras["block"] == "true",
+			RevFollowed: a.Extras["followed"] == "true",
+			Liked:       a.Extras["like"] == "true",
+		}
+		s.FullUser, _ = GetUser(s.ID)
+
+		if chain.Header() == ik.IDFollower && s.RevFollowed {
+			s.Followed = IsFollowing(chain.Tag(), s.ID)
 		}
 
+		res = append(res, s)
 		cursor = a.NextID
 	}
 
@@ -320,7 +313,7 @@ func GetRelationList(chain ik.ID, cursor string, n int) ([]FollowingState, strin
 	return res, cursor
 }
 
-func GetFollowingList(chain ik.ID, cursor string, n int) ([]FollowingState, string) {
+func GetFollowingList(chain ik.ID, cursor string, n int, fulluser bool) ([]FollowingState, string) {
 	master, err := GetArticle(chain.String())
 	if err != nil {
 		if err != model.ErrNotExisted {
@@ -336,6 +329,7 @@ func GetFollowingList(chain ik.ID, cursor string, n int) ([]FollowingState, stri
 
 	res := []FollowingState{}
 	start := time.Now()
+	who := chain.Tag()
 
 	for ; len(res) < n && idx < 256; idx++ {
 		if master.Extras[strconv.Itoa(idx)] != "1" {
@@ -347,7 +341,7 @@ func GetFollowingList(chain ik.ID, cursor string, n int) ([]FollowingState, stri
 			break
 		}
 
-		a, err := GetArticle("u/" + chain.Tag() + "/follow/" + strconv.Itoa(idx))
+		a, err := GetArticle("u/" + who + "/follow/" + strconv.Itoa(idx))
 		if err != nil {
 			log.Println("[GetFollowingList]", cursor, err)
 			break
@@ -358,11 +352,16 @@ func GetFollowingList(chain ik.ID, cursor string, n int) ([]FollowingState, stri
 			if len(p) != 2 {
 				continue
 			}
-			res = append(res, FollowingState{
+			s := FollowingState{
 				ID:       k,
 				Time:     time.Unix(atoi64(p[1]), 0),
 				Followed: atob(p[0]),
-			})
+				Blocked:  IsBlocking(who, k),
+			}
+			if fulluser && !strings.HasPrefix(k, "#") {
+				s.FullUser, _ = GetUser(k)
+			}
+			res = append(res, s)
 		}
 	}
 

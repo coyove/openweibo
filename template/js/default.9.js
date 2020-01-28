@@ -196,7 +196,16 @@ function lockArticle(el, id) {
 }
 
 function followBlock(el, m, id) {
+    if (m == "block" && $value(el) === "false") {
+        if (window.localStorage.getItem('not-first-block') != 'true') {
+            if (!confirm("是否确定拉黑" + id)) {
+                return;
+            }
+            window.localStorage.setItem('not-first-block', 'true')
+        }
+    }
     var stop = $wait(el), obj = { method: m };
+    id = id || el.getAttribute("user-id");
     obj[m] = $value(el) === "true" ? "" : "1";
     obj['to'] = id;
     $post("/api2/follow_block", obj, function(res) {
@@ -207,7 +216,10 @@ function followBlock(el, m, id) {
             el.innerHTML = '<i class=' + ((obj[m] != "") ? "icon-heart-broken" : "icon-user-plus") + "></i>";
             return "ok:" + ((obj[m] != "") ? "已关注" + id : "已取消关注" + id);
         } else {
-            el.style.color = (obj[m] != "") ? "#f52" : "#aaa";
+            el = el.querySelector('i');
+            el.className = el.className.replace(/block-\S+/, '') + " block-" + (obj[m] != "");
+            el = el.nextElementSibling;
+            if (el) el.innerText = obj[m] != "" ? "解除" : "拉黑";
             return "ok:" + ((obj[m] != "") ? "已拉黑" + id : "已解除" + id + "拉黑状态")
         }
     }, stop)
@@ -401,4 +413,36 @@ function $check(el) {
         i.className = 'icon-ok-circled2';
         el.setAttribute("value", "")
     }
+}
+
+function showInfoBox(el, uid) {
+    if (el.BLOCK) return;
+    el.BLOCK = true;
+    var div = $q("<div>");
+    $post("/api/u/" + uid, {}, function(h) {
+        if (h.indexOf("ok:") > -1) {
+            var bodyBox = document.body.getBoundingClientRect(),
+                box = el.getBoundingClientRect();
+
+            div.innerHTML = h.substring(3);
+            document.body.appendChild(div);
+            div.style.position = 'absolute';
+            div.style.left = box.left - bodyBox.left - 5 + 'px';
+            div.style.top = box.top - bodyBox.top - 5 + 'px';
+
+            window.REGIONS = window.REGIONS || [];
+            window.REGIONS.push({
+                valid: true,
+                boxes: [box, div.getBoundingClientRect()],
+                callback: function(x, y) {
+                    div.parentNode.removeChild(div);
+                    el.BLOCK = false;
+                },
+            });
+            return
+        }
+        return h
+    }, function() {
+        el.BLOCK = false;
+    })
 }

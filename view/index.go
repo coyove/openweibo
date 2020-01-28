@@ -116,7 +116,7 @@ func Timeline(g *gin.Context) {
 	cursors := []ik.ID{}
 	pendingFCursor := ""
 	readCursorsAndPendingFCursor := func(start string) {
-		list, next := dal.GetFollowingList(ik.NewID(ik.IDFollowing, pl.User.ID), start, 1e6)
+		list, next := dal.GetFollowingList(ik.NewID(ik.IDFollowing, pl.User.ID), start, 1e6, false)
 		for _, id := range list {
 			if id.Followed {
 				if strings.HasPrefix(id.ID, "#") {
@@ -174,7 +174,7 @@ func APITimeline(g *gin.Context) {
 
 		var pendingFCursor string
 		if len(payload) > 0 {
-			list, next := dal.GetFollowingList(ik.ID{}, string(payload), 1e6)
+			list, next := dal.GetFollowingList(ik.ID{}, string(payload), 1e6, false)
 			// log.Println(list, next, string(payload))
 			for _, id := range list {
 				if !id.Followed {

@@ -67,7 +67,7 @@ func UserList(g *gin.Context) {
 	case "followers":
 		p.List, p.Next = dal.GetRelationList(ik.NewID(ik.IDFollower, p.User.ID), g.Query("n"), int(common.Cfg.PostsPerPage))
 	default:
-		p.List, p.Next = dal.GetFollowingList(ik.NewID(ik.IDFollowing, p.User.ID), g.Query("n"), int(common.Cfg.PostsPerPage))
+		p.List, p.Next = dal.GetFollowingList(ik.NewID(ik.IDFollowing, p.User.ID), g.Query("n"), int(common.Cfg.PostsPerPage), true)
 	}
 
 	g.HTML(200, "user_list.html", p)
@@ -116,4 +116,21 @@ func UserLikes(g *gin.Context) {
 	p.Next = next
 
 	g.HTML(200, "timeline.html", p)
+}
+
+func APIGetUserInfoBox(g *gin.Context) {
+	u, _ := dal.GetUser(g.Param("id"))
+	if u == nil {
+		g.String(200, "internal/error")
+		return
+	}
+
+	if you := getUser(g); you != nil {
+		u.SetIsNotYou(you.ID != u.ID)
+		u.SetIsFollowing(dal.IsFollowing(you.ID, u.ID))
+		u.SetIsBlocking(dal.IsBlocking(you.ID, u.ID))
+	}
+
+	s := middleware.RenderTemplateString("user_public.html", u)
+	g.String(200, "ok:"+s)
 }

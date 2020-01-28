@@ -15,20 +15,8 @@
         <div style="flex-grow:0;white-space:nowrap;margin:0">
 
         {{if .IsNotYou}}
-        <button
-            class="gbutton follow-block"
-            value='{{.IsFollowing}}'
-            onclick="followBlock(this,'follow','{{.ID}}')">
-            <i class="{{if .IsFollowing}}icon-heart-broken{{else}}icon-user-plus{{end}}"></i>
-        </button>
-
-        <button
-            class="gbutton follow-block"
-            value='{{.IsBlocking}}'
-            style="color:{{if .IsBlocking}}#f52{{else}}#aaa{{end}}"
-            onclick="followBlock(this,'block','{{.ID}}')">
-            <i class="icon-block"></i>
-        </button>
+        {{template "button_follow_block.html" (blend "follow" .ID .IsFollowing)}}
+        {{template "button_follow_block.html" (blend "block" .ID .IsBlocking)}}
         {{else}}
         <button class="gbutton" disabled><i style="color:#ddd" class="icon-heart-broken"></i></button>
         <button class="gbutton" disabled><i style="color:#ddd" class="icon-block"></i></button>

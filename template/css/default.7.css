@@ -50,7 +50,7 @@ code {
     font-family: monospace;
 }
 
-input:focus, select:focus, textarea:focus, button:focus {
+input:focus, select:focus, textarea:focus, button:focus, div[contentEditable=true] {
     outline: none;
 }
 
@@ -461,6 +461,8 @@ div.tri.shadow {
 .control.icon-cancel-circled-1:hover,.control.icon-cw-circled:hover { color: #677 }
 .follow-block .icon-user-plus { color: #098 }
 .follow-block .icon-heart-broken { color: #e16 }
+.icon-block.block-true, .icon-block.block-false { color: #f52; }
+.icon-block.block-false { text-shadow: 0 0 2px black; color: white; }
 
 .tribute-container {
     position: absolute;
