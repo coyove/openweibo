@@ -34,10 +34,18 @@
 
     <div class="title">
         <span>
+            {{if .ID}}
             <a href="/user/followings/{{.ID}}"><b>{{.Followings}}</b></a>
+            {{else}}
+            <b>-</b>
+            {{end}}
         </span>
         <span>
+            {{if .ID}}
             <a href="/user/followers/{{.ID}}"><b>{{.Followers}}</b></a>
+            {{else}}
+            <b>-</b>
+            {{end}}
         </span>
         <span>
             <a href="/likes/{{.ID}}"><i class="icon-heart-filled"></i></a>

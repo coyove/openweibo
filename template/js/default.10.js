@@ -435,9 +435,16 @@ function showInfoBox(el, uid) {
         }
     }
 
+    for (var x = el.parentNode; x ; x = x.parentNode) {
+        if (x.getAttribute('data-id')) {
+            box = x.getBoundingClientRect();
+            break;
+        }
+    }
+
     div.style.position = 'absolute';
-    div.style.left = box.left - bodyBox.left - 5 + 'px';
-    div.style.top = box.top - bodyBox.top - 5 + 'px';
+    div.style.left = box.left - bodyBox.left + 'px';
+    div.style.top = box.top - bodyBox.top + 'px';
 
     window.REGIONS = window.REGIONS || [];
     window.REGIONS.push({
