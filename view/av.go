@@ -26,7 +26,6 @@ type ArticleView struct {
 	Liked       bool
 	NSFW        bool
 	NoAvatar    bool
-	Deduped     bool
 	Content     string
 	ContentHTML template.HTML
 	Media       string
@@ -147,8 +146,6 @@ func fromMultiple(a *[]ArticleView, a2 []*model.Article, opt uint64, u *model.Us
 			tmp.Content = a
 			tmp.ContentHTML = template.HTML(html.EscapeString(a)) + "<span class=abbr></span>"
 		}
-
-		tmp.Deduped = true
 	}
 
 	for i, v := range a2 {

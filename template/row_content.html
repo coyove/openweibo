@@ -39,22 +39,26 @@
     </div>
 
     {{if eq .MediaType "IMG"}}
-    <div style="margin-top:0.5em">
-    {{if or .NSFW .You.Settings.FoldImages}}
-    <button
-        style="color:{{if .NSFW}}#f90{{else}}#098{{end}}"
-        onclick="this.style.display='none';this.nextElementSibling.querySelector('img').src='{{.Media}}'"
-        class="gbutton nsfw-clicker">
-        {{if .NSFW}}展开NSFW图片{{else}}展开图片{{end}}
-    </button>
-    <a href="{{.Media}}" target=_blank>
-        <img class="media dedup-{{.Deduped}}">
-    {{else}}
-    <a href="{{.Media}}" target=_blank>
-        <img class="media dedup-{{.Deduped}}" src="{{.Media}}">
-    {{end}}
-    </a>
-    </div>
+        {{if or .NSFW .You.Settings.FoldImages}}
+        <div style="margin-top:0.5em">
+            <button
+                style="color:{{if .NSFW}}#f90{{else}}#098{{end}}"
+                onclick="
+                    this.style.display='none';
+                    this.nextElementSibling.querySelector('img').src='{{.Media}}';
+                    this.parentNode.style.backgroundImage = 'url({{.Media}})';
+                    this.parentNode.className = 'media'" class="gbutton nsfw-clicker">
+                {{if .NSFW}}展开NSFW图片{{else}}展开图片{{end}}
+            </button>
+            <a href="{{.Media}}" target=_blank><img onload="adjustImage(this)"></a>
+            <span class=long-image>长图</span>
+        </div>
+        {{else}}
+        <div style="margin-top:0.5em;background-image:url({{.Media}})" class=media>
+            <a href="{{.Media}}" target=_blank><img onload="adjustImage(this)" src="{{.Media}}"></a>
+            <span class=long-image>长图</span>
+        </div>
+        {{end}}
     {{end}}
 
     {{if .ContentHTML}}

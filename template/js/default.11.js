@@ -6,6 +6,12 @@ function $q(q, multi) {
     return ela;
 }
 
+function $html(h) {
+    var div = $q("<div>")
+    div.innerHTML = h;
+    return div.firstElementChild
+}
+
 function $value(el) {
     return el && el.getAttribute && el.getAttribute("value")
 }
@@ -34,16 +40,7 @@ function $wait(el) {
 }
 
 function $popup(html, bg) {
-    var div = $q("<div>");
-    div.style.position = "fixed";
-    div.style.top = '0';
-    div.style.left = '0';
-    div.style.width = "100%";
-    div.style.opacity = "0.9";
-    div.style.color = "white";
-    div.style.lineHeight = "32px";
-    div.style.textAlign = "center";
-    div.style.wordBreak = "break-all";
+    var div = $html("<div style='position:fixed;top:0;left:0;width:100%;color:white;opacity:0.9;line-height:32px;text-align:center;word-break:break-all'></div>");
     div.style.background = bg || '#f52';
     div.innerHTML = html;
     document.body.appendChild(div);
@@ -337,7 +334,8 @@ function showReply(aid) {
     $post('/api/p/' + aid, {}, function(h) {
         div.innerHTML = h;
         div.style.backgroundImage = null;
-        window.TRIBUTER.attach(div.querySelector(".reply-table textarea"));
+        var box = div.querySelector(".reply-table textarea");
+        if (box) window.TRIBUTER.attach();
     });
 
     $q("[data-parent='" + aid + "']", true).forEach(function(e) {
@@ -345,18 +343,10 @@ function showReply(aid) {
     });
     div.setAttribute('data-parent', aid);
 
-    var divreload = $q("<div>");
-    divreload.style.position = 'fixed';
-    divreload.style.right = '1em';
-    divreload.style.top = '3.5em';
-    divreload.innerHTML = "<i class='control icon-cw-circled'></i>"
+    var divreload = $html("<div style='position:fixed;right:1em;top:3.5em'><i class='control icon-cw-circled'></i></div>");
     divreload.onclick = function() { showReply(aid) }
 
-    var divclose = $q("<div>");
-    divclose.style.position = 'fixed';
-    divclose.style.right = '1em';
-    divclose.style.top = '1em';
-    divclose.innerHTML = "<i class='control icon-cancel-circled-1'></i>"
+    var divclose = $html("<div style='position:fixed;right:1em;top:1em'><i class='control icon-cancel-circled-1'></i></div>");
     divclose.onclick = function() {
         div.parentNode.removeChild(div)
         divclose.parentNode.removeChild(divclose)
@@ -449,7 +439,7 @@ function showInfoBox(el, uid) {
     window.REGIONS = window.REGIONS || [];
     window.REGIONS.push({
         valid: true,
-        boxes: [box, div.getBoundingClientRect()],
+        boxes: [div.getBoundingClientRect()],
         callback: function(x, y) {
             div.parentNode.removeChild(div);
             el.BLOCK = false;
@@ -466,4 +456,14 @@ function showInfoBox(el, uid) {
     }, function() {
         el.BLOCK = false;
     })
+}
+
+function adjustImage(img) {
+    var ratio = img.width / img.height;
+    if (ratio < 0.33 || ratio > 3) {
+        var div = img.parentNode.parentNode;
+        div.style.backgroundSize = 'contain';
+        div.querySelector('.long-image').style.display = 'block';
+        return
+    }
 }
