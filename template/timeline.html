@@ -103,15 +103,14 @@
     </script>
 
     {{else}}
-    <a class=gbutton style="color:#aaa"
-                     {{if .IsUserTimeline}}
-                     href="/t/{{.User.ID}}">没有更多{{.User.ID}}的状态了</a>
-    {{else if .IsInbox}}
-    href="/t/:in">没有更多提醒了</a>
-{{else if eq .User.ID "master"}}
-href="/t/master">没有更多状态了</a>
+    <a class=gbutton style="color:#aaa" href="#">
+        {{if .IsUserTimeline}}
+            没有更多{{.User.ID}}的状态了
+        {{else if .IsInbox}}
+            没有更多提醒了
         {{else}}
-        href="/t">没有更多状态了</a>
-    {{end}}
+            没有更多状态了
+        {{end}}
+    </a>
     {{end}}
 </div>

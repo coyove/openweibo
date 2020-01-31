@@ -79,7 +79,7 @@ func Timeline(g *gin.Context) {
 		pl.User = &model.User{
 			ID: "master",
 		}
-	case uid != "" && uid != ":in":
+	case uid != "":
 		// View someone's timeline
 		pl.IsUserTimeline = true
 		pl.User, _ = dal.GetUserWithSettings(uid)
@@ -100,10 +100,6 @@ func Timeline(g *gin.Context) {
 			pl.User.SetIsBlocking(dal.IsBlocking(pl.You.ID, uid))
 			pl.User.SetIsNotYou(true)
 		}
-	case uid == ":in":
-		// View my inbox
-		pl.IsInbox = true
-		fallthrough
 	default:
 		// View my timeline
 		if pl.You == nil {
@@ -131,8 +127,6 @@ func Timeline(g *gin.Context) {
 
 	if pl.IsUserTimeline {
 		cursors = append(cursors, ik.NewID(ik.IDAuthor, pl.User.ID))
-	} else if pl.IsInbox {
-		cursors = append(cursors, ik.NewID(ik.IDInbox, pl.User.ID))
 	} else {
 		pl.ShowNewPost = true
 		readCursorsAndPendingFCursor("")
@@ -142,14 +136,32 @@ func Timeline(g *gin.Context) {
 	a, next := dal.WalkMulti(pl.MediaOnly, int(common.Cfg.PostsPerPage), cursors...)
 	fromMultiple(&pl.Articles, a, 0, pl.You)
 
-	if pl.IsInbox {
-		go dal.Do(dal.NewRequest("UpdateUser",
-			"ID", pl.User.ID,
-			"Unread", int32(0),
-		))
+	pl.Next = ik.CombineIDs([]byte(pendingFCursor), next...)
+	g.HTML(200, "timeline.html", pl)
+}
+
+func Inbox(g *gin.Context) {
+	pl := ArticlesTimelineView{
+		ReplyView: makeReplyView(g, ""),
+		You:       getUser(g),
+		User:      getUser(g),
+		IsInbox:   true,
 	}
 
-	pl.Next = ik.CombineIDs([]byte(pendingFCursor), next...)
+	if pl.You == nil {
+		g.Redirect(302, "/user")
+		return
+	}
+
+	a, next := dal.WalkMulti(pl.MediaOnly, int(common.Cfg.PostsPerPage), ik.NewID(ik.IDInbox, pl.User.ID))
+	fromMultiple(&pl.Articles, a, 0, pl.You)
+
+	go dal.Do(dal.NewRequest("UpdateUser",
+		"ID", pl.User.ID,
+		"Unread", int32(0),
+	))
+
+	pl.Next = ik.CombineIDs(nil, next...)
 	g.HTML(200, "timeline.html", pl)
 }
 

@@ -94,7 +94,7 @@
 
     {{range .List}}
     <tr>
-        <td class=nowrap>{{.Time.Format "2006-01-02"}}</td>
+        <td class=nowrap>{{formatTime .Time}}</td>
         <td>
             {{if .FullUser}}
             {{template "display_name.html" .FullUser}}

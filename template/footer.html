@@ -2,7 +2,7 @@
     {{if .User}}
     <a href='/user'>@{{.User.ID}}</a>
     {{if .User.Unread}}
-        <a class=unread href="/t/:in">{{.User.Unread}} 消息</a>
+        <a class=unread href="/inbox">{{.User.Unread}} 消息</a>
     <script>
         document.title =  "({{.User.Unread}}) " + document.title;
     </script>

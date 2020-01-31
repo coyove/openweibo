@@ -421,7 +421,7 @@ img.avatar + .avatar-kimochi {
 }
 
 .media {
-    background-size: cover;
+    background-size: auto;
     background-repeat: no-repeat;
     background-position: center;
     background-color: white;

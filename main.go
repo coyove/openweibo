@@ -131,6 +131,7 @@ func main() {
 	r.Handle("GET", "/likes/:uid", view.UserLikes)
 	r.Handle("GET", "/t", view.Timeline)
 	r.Handle("GET", "/t/:user", view.Timeline)
+	r.Handle("GET", "/inbox", view.Inbox)
 	r.Handle("GET", "/avatar/:id", view.Avatar)
 	r.Handle("GET", "/mod/user", view.ModUser)
 	r.Handle("GET", "/mod/kv", view.ModKV)

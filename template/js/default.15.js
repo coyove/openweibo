@@ -410,6 +410,7 @@ function showInfoBox(el, uid) {
     el.BLOCK = true;
 
     var div = $q("<div>"),
+        loading = $html("<div style='position:absolute;left:0;top:0;width:100%;height:100%'></div>"),
         bodyBox = document.body.getBoundingClientRect(),
         box = el.getBoundingClientRect();
 
@@ -436,6 +437,11 @@ function showInfoBox(el, uid) {
     div.style.left = box.left - bodyBox.left + 'px';
     div.style.top = box.top - bodyBox.top + 'px';
 
+    // div.appendChild(loading);
+    // loading.style.backgroundImage = 'url(/s/css/spinner.gif)';
+    // loading.style.backgroundPosition = 'center';
+    // loading.style.backgroundRepeat = 'no-repeat';
+
     window.REGIONS = window.REGIONS || [];
     window.REGIONS.push({
         valid: true,
@@ -459,11 +465,15 @@ function showInfoBox(el, uid) {
 }
 
 function adjustImage(img) {
-    var ratio = img.width / img.height;
+    var ratio = img.width / img.height,
+        div = img.parentNode.parentNode;
+
     if (ratio < 0.33 || ratio > 3) {
-        var div = img.parentNode.parentNode;
         div.style.backgroundSize = 'contain';
         div.querySelector('.long-image').style.display = 'block';
-        return
+    } else {
+        div.style.backgroundSize = 'cover';
     }
+
+    div.style.backgroundImage = 'url(' + img.src + ')';
 }

@@ -45,8 +45,8 @@
                 style="color:{{if .NSFW}}#f90{{else}}#098{{end}}"
                 onclick="
                     this.style.display='none';
+                    this.parentNode.style.backgroundImage = 'url(/s/css/spinner.gif)';
                     this.nextElementSibling.querySelector('img').src='{{.Media}}';
-                    this.parentNode.style.backgroundImage = 'url({{.Media}})';
                     this.parentNode.className = 'media'" class="gbutton nsfw-clicker">
                 {{if .NSFW}}展开NSFW图片{{else}}展开图片{{end}}
             </button>
