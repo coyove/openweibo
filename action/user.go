@@ -2,8 +2,6 @@ package action
 
 import (
 	"bytes"
-	"crypto/hmac"
-	"crypto/sha256"
 	"net/url"
 	"strconv"
 	"strings"
@@ -46,13 +44,11 @@ func APISignup(g *gin.Context) {
 		}
 	}
 
-	pwdHash := hmac.New(sha256.New, common.Cfg.KeyBytes)
-	pwdHash.Write([]byte(password))
 	u := &model.User{}
 	u.ID = username
 	u.Session = genSession()
 	u.Email = email
-	u.PasswordHash = pwdHash.Sum(nil)
+	u.PasswordHash = hashPassword(password)
 	u.DataIP = "{" + ip + "}"
 	u.TSignup = uint32(time.Now().Unix())
 	u.TLogin = uint32(time.Now().Unix())
@@ -88,9 +84,7 @@ func APILogin(g *gin.Context) {
 		return
 	}
 
-	pwdHash := hmac.New(sha256.New, common.Cfg.KeyBytes)
-	pwdHash.Write([]byte(common.SoftTrunc(g.PostForm("password"), 32)))
-	if !bytes.Equal(u.PasswordHash, pwdHash.Sum(nil)) {
+	if !bytes.Equal(u.PasswordHash, hashPassword(g.PostForm("password"))) {
 		g.String(200, "internal/error")
 		return
 	}
@@ -163,32 +157,29 @@ func APINewCaptcha(g *gin.Context) {
 }
 
 func APILike(g *gin.Context) {
-	var (
-		redir = func(b string) { g.String(200, b) }
-		u     = dal.GetUserByContext(g)
-	)
+	u := dal.GetUserByContext(g)
 
 	if u == nil {
-		redir("internal/error")
+		g.String(200, "internal/error")
 		return
 	}
 
 	if ret := checkIP(g); ret != "" {
-		redir(ret)
+		g.String(200, ret)
 		return
 	}
 
 	to := g.PostForm("to")
 	if to == "" {
-		redir("internal/error")
+		g.String(200, "internal/error")
 		return
 	}
 
 	err := dal.LikeArticle(u.ID, to, g.PostForm("like") != "")
 	if err != nil {
-		redir(err.Error())
+		g.String(200, err.Error())
 	} else {
-		redir("ok")
+		g.String(200, "ok")
 	}
 }
 
@@ -202,7 +193,7 @@ func APILogout(g *gin.Context) {
 		u = &model.User{}
 		g.SetCookie("id", ik.MakeUserToken(u), 365*86400, "", "", false, false)
 	}
-	g.Status(200)
+	g.String(200, "ok")
 }
 
 func APIFollowBlock(g *gin.Context) {
@@ -230,35 +221,6 @@ func APIFollowBlock(g *gin.Context) {
 		g.String(200, "ok")
 	}
 	return
-}
-
-func APIFollowBlockSearch(g *gin.Context) {
-	u := dal.GetUserByContext(g)
-	if u == nil {
-		g.String(200, "/user")
-		return
-	}
-
-	q := g.PostForm("q")
-	if strings.HasPrefix(q, "#") {
-		g.String(200, "/tag/"+q[1:])
-		return
-	}
-
-	id := dal.MakeID(g.PostForm("method"), u.ID, q)
-	if a, _ := dal.GetArticle(id); a != nil {
-		g.String(200, "/user")
-		return
-	}
-
-	if _, err := dal.GetUser(q); err != nil {
-		if res := common.SearchUsers(q, 1); len(res) > 0 {
-			q = res[0]
-		} else {
-			q = ""
-		}
-	}
-	g.String(200, "/t/"+q)
 }
 
 func APIUpdateUserSettings(g *gin.Context) {
@@ -342,19 +304,14 @@ func APIUpdateUserPassword(g *gin.Context) {
 	oldPassword := common.SoftTrunc(g.PostForm("old-password"), 32)
 	newPassword := common.SoftTrunc(g.PostForm("new-password"), 32)
 
-	pwdHash := hmac.New(sha256.New, common.Cfg.KeyBytes)
-	pwdHash.Write([]byte(oldPassword))
-	if len(newPassword) < 3 || !bytes.Equal(u.PasswordHash, pwdHash.Sum(nil)) {
+	if len(newPassword) < 3 || !bytes.Equal(u.PasswordHash, hashPassword(oldPassword)) {
 		g.String(200, "password/invalid-too-short")
 		return
 	}
 
-	pwdHash.Reset()
-	pwdHash.Write([]byte(newPassword))
-
 	if err := dal.Do(dal.NewRequest(dal.DoUpdateUser,
 		"ID", u.ID,
-		"PasswordHash", pwdHash.Sum(nil),
+		"PasswordHash", hashPassword(newPassword),
 	)); err != nil {
 		g.String(200, err.Error())
 		return

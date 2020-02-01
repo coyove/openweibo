@@ -38,11 +38,14 @@ func mwRenderPerf(g *gin.Context) {
 
 	start := time.Now()
 
-	tok, _ := g.Cookie("id")
-	u, _ := dal.GetUserByToken(tok)
-	if u != nil {
-		g.Set("user", u)
+	var u *model.User
+	if !strings.HasPrefix(g.Request.URL.Path, "/i/") {
+		tok, _ := g.Cookie("id")
+		if u, _ = dal.GetUserByToken(tok); u != nil {
+			g.Set("user", u)
+		}
 	}
+
 	g.Set("ip", ip)
 	g.Set("req-start", start)
 	g.Next()

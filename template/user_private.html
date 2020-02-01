@@ -38,7 +38,7 @@
             <a class=gbutton href="/user" style="color:#233">
                 <i class="icon-cog"></i>
             </a>
-            <a class=gbutton href="javascript:$post('/api2/logout',{},function(){location.href='/'})" style="color:#233">
+            <a class=gbutton href="#" onclick="$postReload(this, '/api2/logout',{})" style="color:#233">
                 <i class="icon-logout"></i>
             </a>
         </div>

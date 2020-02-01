@@ -83,7 +83,16 @@ func I(g *gin.Context) {
 	if len(img) > 16 {
 		x, _ := strconv.ParseUint(img[:16], 16, 64)
 		cachepath := fmt.Sprintf("tmp/images/%d/%s", x%1024, img)
-		http.ServeFile(g.Writer, g.Request, cachepath)
+
+		if g.Query("thumb") != "" {
+			path := cachepath + "@thumb"
+			if _, err := os.Stat(path); err != nil {
+				path = cachepath
+			}
+			http.ServeFile(g.Writer, g.Request, path)
+		} else {
+			http.ServeFile(g.Writer, g.Request, cachepath)
+		}
 	} else {
 		cachepath := fmt.Sprintf("tmp/images/%s/%s", img[:2], img)
 		http.ServeFile(g.Writer, g.Request, cachepath)

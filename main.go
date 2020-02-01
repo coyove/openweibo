@@ -142,7 +142,6 @@ func main() {
 	r.Handle("POST", "/api/user_kimochi", action.APIUserKimochi)
 	r.Handle("POST", "/api/new_captcha", action.APINewCaptcha)
 	r.Handle("POST", "/api/search", action.APISearch)
-	r.Handle("POST", "/api/follow_block_search", action.APIFollowBlockSearch)
 	r.Handle("POST", "/api/ban", action.APIBan)
 	r.Handle("POST", "/api/promote_mod", action.APIPromoteMod)
 	r.Handle("POST", "/api/mod_kv", action.APIModKV)

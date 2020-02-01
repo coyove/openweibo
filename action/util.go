@@ -1,9 +1,13 @@
 package action
 
 import (
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"image"
+	"image/jpeg"
 	"io"
 	"log"
 	"os"
@@ -54,6 +58,12 @@ func checkToken(g *gin.Context) string {
 
 func sanUsername(id string) string {
 	return common.SafeStringForCompressString(id)
+}
+
+func hashPassword(password string) []byte {
+	pwdHash := hmac.New(sha256.New, common.Cfg.KeyBytes)
+	pwdHash.Write([]byte(password))
+	return pwdHash.Sum(nil)
 }
 
 func checkCaptcha(g *gin.Context) string {
@@ -112,6 +122,7 @@ func genSession() string {
 }
 
 func writeImage(u *model.User, imageName, image string) (string, error) {
+	gif := strings.HasPrefix(image, "data:image/gif")
 	image = image[strings.Index(image, ",")+1:]
 	dec := base64.NewDecoder(base64.StdEncoding, strings.NewReader(image))
 
@@ -132,6 +143,10 @@ func writeImage(u *model.User, imageName, image string) (string, error) {
 		fn += "_" + u.ID
 	}
 
+	if gif {
+		fn += "_mime~gif"
+	}
+
 	os.MkdirAll(path, 0777)
 	of, err := os.OpenFile(path+fn, os.O_CREATE|os.O_WRONLY, 0777)
 	if err != nil {
@@ -139,7 +154,13 @@ func writeImage(u *model.User, imageName, image string) (string, error) {
 	}
 	defer of.Close()
 
-	_, err = io.Copy(of, dec)
+	n, err := io.Copy(of, dec)
+	if n > 100*1024 { // thumbnail
+		if err := writeThumbnail(path+fn+"@thumb", image, 200); err != nil {
+			log.Println("WriteImage:", err)
+		}
+	}
+
 	return "LOCAL:" + fn, err
 }
 
@@ -163,4 +184,81 @@ func writeAvatar(u *model.User, image string) (string, error) {
 		err = nil
 	}
 	return fn, err
+}
+
+func writeThumbnail(path string, base64Data string, throtWidth int) error {
+	config, _, err := image.DecodeConfig(base64.NewDecoder(base64.StdEncoding, strings.NewReader(base64Data)))
+	if err != nil {
+		return err
+	}
+
+	if config.Width <= throtWidth && config.Height <= throtWidth {
+		return nil
+	}
+
+	src, _, err := image.Decode(base64.NewDecoder(base64.StdEncoding, strings.NewReader(base64Data)))
+	if err != nil {
+		return err
+	}
+
+	canvas := image.NewRGBA(image.Rect(0, 0, throtWidth, throtWidth))
+
+	offx, offy, s := 0, 0, 0.0
+	if width, w, h := float64(throtWidth), src.Bounds().Dx(), src.Bounds().Dy(); w < h {
+		s = float64(w) / width
+		offy = int(float64(h)/s-width) / 2
+	} else {
+		s = float64(h) / width
+		offx = int(float64(w)/s-width) / 2
+	}
+
+	radius := 3
+	at := func(x, y int) (float64, float64, float64) {
+		xi := int(float64(x+offx) * s)
+		yi := int(float64(y+offy) * s)
+		r, g, b, _ := src.At(xi, yi).RGBA()
+		return float64(r), float64(g), float64(b)
+	}
+
+	for j := 0; j < throtWidth; j++ {
+		R, G, B := 0.0, 0.0, 0.0
+		RR, GG, BB := 0.0, 0.0, 0.0
+
+		for x := 0; x < radius; x++ {
+			r, g, b := at(x, j)
+			R, G, B = R+r, G+g, B+b
+		}
+
+		RR = R / float64(radius)
+		GG = G / float64(radius)
+		BB = B / float64(radius)
+
+		for i, r2 := 0, radius/2; i < throtWidth; i++ {
+			if i-r2 >= 0 && i+1+r2 < throtWidth {
+				r, g, b := at(i-r2, j)
+				R, G, B = R-r, G-g, B-b
+
+				r, g, b = at(i+1+r2, j)
+				R, G, B = R+r, G+g, B+b
+
+				RR = R / float64(radius)
+				GG = G / float64(radius)
+				BB = B / float64(radius)
+			}
+
+			u := canvas.PixOffset(i, j)
+			canvas.Pix[u+0] = uint8(int(RR) / 256)
+			canvas.Pix[u+1] = uint8(int(GG) / 256)
+			canvas.Pix[u+2] = uint8(int(BB) / 256)
+			canvas.Pix[u+3] = 255
+		}
+	}
+
+	w, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer w.Close()
+
+	return jpeg.Encode(w, canvas, &jpeg.Options{Quality: 60})
 }

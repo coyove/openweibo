@@ -161,8 +161,11 @@ function deleteArticle(el, id) {
         $q("[data-id='" + id + "'] > pre", true).forEach(function(e) {
             e.innerHTML = "<span class=deleted></span>";
         });
-        $q("[data-id='" + id + "'] img.media", true).forEach(function(e) {
+        $q("[data-id='" + id + "'] .media img", true).forEach(function(e) {
             e.src = '';
+        });
+        $q("[data-id='" + id + "'] .media", true).forEach(function(e) {
+            e.style.display = 'none';
         });
     }, stop)
 }
@@ -466,13 +469,19 @@ function showInfoBox(el, uid) {
 
 function adjustImage(img) {
     var ratio = img.width / img.height,
-        div = img.parentNode.parentNode;
+        div = img.parentNode.parentNode,
+        note = div.querySelector('.long-image');
 
     if (ratio < 0.33 || ratio > 3) {
         div.style.backgroundSize = 'contain';
-        div.querySelector('.long-image').style.display = 'block';
+        note.style.display = 'block';
     } else {
         div.style.backgroundSize = 'cover';
+    }
+
+    if (img.src.match(/mime~gif/)) {
+        note.style.display = 'block';
+        note.innerText = 'GIF';
     }
 
     div.style.backgroundImage = 'url(' + img.src + ')';
