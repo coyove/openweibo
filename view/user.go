@@ -2,7 +2,7 @@ package view
 
 import (
 	"fmt"
-	"image/jpeg"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -13,7 +13,7 @@ import (
 	"github.com/coyove/iis/middleware"
 	"github.com/coyove/iis/model"
 	"github.com/gin-gonic/gin"
-	"github.com/o1egl/govatar"
+	"github.com/nullrocks/identicon"
 )
 
 func User(g *gin.Context) {
@@ -73,6 +73,8 @@ func UserList(g *gin.Context) {
 	g.HTML(200, "user_list.html", p)
 }
 
+var ig, _ = identicon.New("github", 5, 3)
+
 func Avatar(g *gin.Context) {
 	id := strings.TrimSuffix(g.Param("id"), ".jpg")
 	hash := (model.User{ID: id}).IDHash()
@@ -81,10 +83,15 @@ func Avatar(g *gin.Context) {
 	if _, err := os.Stat(path); err == nil {
 		http.ServeFile(g.Writer, g.Request, path)
 	} else {
-		img, _ := govatar.GenerateForUsername(govatar.MALE, id)
+		ii, err := ig.Draw("iis" + id)
+		if err != nil {
+			log.Println(err)
+			g.Status(404)
+			return
+		}
 		g.Writer.Header().Add("Content-Type", "image/jpeg")
 		g.Writer.Header().Add("Cache-Control", "public")
-		jpeg.Encode(g.Writer, img, &jpeg.Options{Quality: 75})
+		ii.Jpeg(100, 80, g.Writer)
 	}
 }
 

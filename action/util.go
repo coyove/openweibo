@@ -18,6 +18,7 @@ import (
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
 	"github.com/gin-gonic/gin"
+	"github.com/nfnt/resize"
 )
 
 func checkIP(g *gin.Context) string {
@@ -201,57 +202,12 @@ func writeThumbnail(path string, base64Data string, throtWidth int) error {
 		return err
 	}
 
-	canvas := image.NewRGBA(image.Rect(0, 0, throtWidth, throtWidth))
+	var canvas image.Image
 
-	offx, offy, s := 0, 0, 0.0
-	if width, w, h := float64(throtWidth), src.Bounds().Dx(), src.Bounds().Dy(); w < h {
-		s = float64(w) / width
-		offy = int(float64(h)/s-width) / 2
+	if config.Width > config.Height {
+		canvas = resize.Resize(0, uint(throtWidth), src, resize.Lanczos3)
 	} else {
-		s = float64(h) / width
-		offx = int(float64(w)/s-width) / 2
-	}
-
-	radius := 3
-	at := func(x, y int) (float64, float64, float64) {
-		xi := int(float64(x+offx) * s)
-		yi := int(float64(y+offy) * s)
-		r, g, b, _ := src.At(xi, yi).RGBA()
-		return float64(r), float64(g), float64(b)
-	}
-
-	for j := 0; j < throtWidth; j++ {
-		R, G, B := 0.0, 0.0, 0.0
-		RR, GG, BB := 0.0, 0.0, 0.0
-
-		for x := 0; x < radius; x++ {
-			r, g, b := at(x, j)
-			R, G, B = R+r, G+g, B+b
-		}
-
-		RR = R / float64(radius)
-		GG = G / float64(radius)
-		BB = B / float64(radius)
-
-		for i, r2 := 0, radius/2; i < throtWidth; i++ {
-			if i-r2 >= 0 && i+1+r2 < throtWidth {
-				r, g, b := at(i-r2, j)
-				R, G, B = R-r, G-g, B-b
-
-				r, g, b = at(i+1+r2, j)
-				R, G, B = R+r, G+g, B+b
-
-				RR = R / float64(radius)
-				GG = G / float64(radius)
-				BB = B / float64(radius)
-			}
-
-			u := canvas.PixOffset(i, j)
-			canvas.Pix[u+0] = uint8(int(RR) / 256)
-			canvas.Pix[u+1] = uint8(int(GG) / 256)
-			canvas.Pix[u+2] = uint8(int(BB) / 256)
-			canvas.Pix[u+3] = 255
-		}
+		canvas = resize.Resize(uint(throtWidth), 0, src, resize.Lanczos3)
 	}
 
 	w, err := os.Create(path)
@@ -260,5 +216,5 @@ func writeThumbnail(path string, base64Data string, throtWidth int) error {
 	}
 	defer w.Close()
 
-	return jpeg.Encode(w, canvas, &jpeg.Options{Quality: 60})
+	return jpeg.Encode(w, canvas, &jpeg.Options{Quality: 66})
 }
