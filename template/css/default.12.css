@@ -6,8 +6,7 @@
   src: url('/s/fonts/roboto-v20-latin-regular.eot'); /* IE9 Compat Modes */
   src: local('Roboto'), local('Roboto-Regular'),
        url('/s/fonts/roboto-v20-latin-regular.eot?#iefix') format('embedded-opentype'), /* IE6-IE8 */
-       url('/s/fonts/roboto-v20-latin-regular.woff2') format('woff2'), /* Super Modern Browsers */
-       url('/s/fonts/roboto-v20-latin-regular.woff') format('woff'), /* Modern Browsers */
+       url('/s/fonts/roboto-v20-latin-regular.woff2') format('woff2'), /* Super Modern Browsers */ url('/s/fonts/roboto-v20-latin-regular.woff') format('woff'), /* Modern Browsers */
        url('/s/fonts/roboto-v20-latin-regular.ttf') format('truetype'), /* Safari, Android, iOS */
        url('/s/fonts/roboto-v20-latin-regular.svg#Roboto') format('svg'); /* Legacy iOS */
 }
@@ -488,6 +487,7 @@ div.tri.shadow {
 
 .icon-flow-merge:before { margin-left: 0 !important }
 .icon-down-dir.right:before { margin-right: 0 !important }
+.icon-history.left:before { margin-left: 0 !important }
 .control.icon-cancel-circled-1, .control.icon-cw-circled { font-size:24px;color:#aaa;cursor:pointer }
 .control.icon-cancel-circled-1:hover,.control.icon-cw-circled:hover { color: #677 }
 .follow-block .icon-user-plus { color: #098 }
@@ -521,6 +521,35 @@ div.tri.shadow {
 .tribute-container li span { font-weight: bold; }
 .tribute-container li.no-match { cursor: default; }
 .tribute-container .menu-highlighted { font-weight: bold; }
+
+.post-options {
+    display: inline-block;
+    position: relative;
+}
+.post-options ul {
+    display: none;
+    position: absolute;
+    left: 0;
+    background: #fafbfc;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, .3);
+    list-style: none;
+    line-height: 1.5em;
+    text-align:left;
+    margin-bottom: 2em;
+}
+.post-options ul li {
+    padding: 0.5em 1em;
+    cursor: pointer;
+    margin: 0;
+    white-space: nowrap;
+}
+.post-options:hover ul {
+    display: block;
+    z-index: 1000;
+}
+.post-options ul li:hover {
+    background: #bdf;
+}
 
 @media only screen and (max-width: 540px) {
     .row {

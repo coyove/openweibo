@@ -71,8 +71,17 @@
 {{if not .IsInbox}}
 <nav>
     <ul>
-        <li id="nav-own" class="secondary {{if not .MediaOnly}}selected{{end}}"><a href="?media=">全部</a></li>
-        <li id="nav-master" class="secondary {{if .MediaOnly}}selected{{end}}"><a href="?media=1">只看图片</a></li>
+        <li class="secondary {{if not .MediaOnly}}selected{{end}}"><a href="?media=">全部</a></li>
+        <li class="secondary {{if .MediaOnly}}selected{{end}}"><a href="?media=1">只看图片</a></li>
+        {{if len .Checkpoints}}
+        <li class="secondary post-options"><a>时间<i class="icon-down-dir right"></i></a>
+            <ul style="left:initial;right:0">
+                {{range .Checkpoints}}
+                <li onclick="location.href='?cp={{.}}'"><i class="icon-history left"></i> {{.}}月</li>
+                {{end}}
+            </ul>
+        </li>
+        {{end}}
     </ul>
 </nav>
 {{end}}

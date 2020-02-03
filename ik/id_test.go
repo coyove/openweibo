@@ -2,30 +2,12 @@ package ik
 
 import (
 	"math/rand"
-	"strconv"
 	"testing"
-
-	"github.com/coyove/iis/model"
 )
 
 func TestID(t *testing.T) {
-	t.Log(NewID(IDFollowing,"澜沫"))
-	t.Log(ParseID("L75mSN4-"))
-	return
-
-	for i := 0; i < 1e6; i++ {
-		tag := model.SafeStringForCompressString(strconv.Itoa(rand.Int()))
-
-		id := NewID(IDAuthor,tag)
-		if rand.Intn(2) == 0 {
-			id = NewGeneralID()
-		}
-
-		id2 := ParseID(id.String())
-		if id2 != id {
-			t.Fatal("[", id, "][", id2, "]")
-		}
-	}
+	t.Log(NewID(IDFollowing, "澜沫"))
+	t.Log(ParseID("S5tqMfCXJIL~").Time())
 }
 
 func TestCompressID(t *testing.T) {

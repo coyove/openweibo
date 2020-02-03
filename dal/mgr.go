@@ -40,7 +40,7 @@ func ModKV() KeyValueOp {
 	return m.db
 }
 
-func GetArticle(id string) (*model.Article, error) {
+func GetArticle(id string, dontOverrideNextID ...bool) (*model.Article, error) {
 	if id == "" {
 		return nil, fmt.Errorf("empty ID")
 	}
@@ -61,6 +61,9 @@ func GetArticle(id string) (*model.Article, error) {
 	a2, err := GetArticle(a.ReferID)
 	if err != nil {
 		return nil, err
+	}
+	if len(dontOverrideNextID) == 1 && dontOverrideNextID[0] {
+		return a2, nil
 	}
 	a2.NextID = a.NextID
 	a2.NextMediaID = a.NextMediaID

@@ -27,6 +27,7 @@ type ArticlesTimelineView struct {
 	MediaOnly             bool
 	User                  *model.User
 	You                   *model.User
+	Checkpoints           []string
 	ReplyView             ReplyView
 }
 
@@ -82,6 +83,7 @@ func Timeline(g *gin.Context) {
 	case uid != "":
 		// View someone's timeline
 		pl.IsUserTimeline = true
+		pl.Checkpoints = makeCheckpoints(g)
 		pl.User, _ = dal.GetUserWithSettings(uid)
 		if pl.User == nil {
 			if res := common.SearchUsers(uid, 1); len(res) == 1 {
@@ -111,8 +113,23 @@ func Timeline(g *gin.Context) {
 
 	cursors := []ik.ID{}
 	pendingFCursor := ""
-	readCursorsAndPendingFCursor := func(start string) {
-		list, next := dal.GetFollowingList(ik.NewID(ik.IDFollowing, pl.User.ID), start, 1e6, false)
+
+	if pl.IsUserTimeline {
+		if a, _ := dal.GetArticle("u/"+pl.User.ID+"/checkpoint/"+g.Query("cp"), true); a != nil {
+			cursors = append(cursors, ik.ParseID(a.NextID))
+		} else {
+			// 2020-01 hack fix
+			if g.Query("cp") == "2020-01" {
+				if a, _ := dal.GetArticle("u/"+pl.User.ID+"/checkpoint/0001-01", true); a != nil {
+					cursors = append(cursors, ik.ParseID(a.NextID))
+				}
+			}
+			cursors = append(cursors, ik.NewID(ik.IDAuthor, pl.User.ID))
+		}
+		cursors = cursors[:1]
+	} else {
+		pl.ShowNewPost = true
+		list, next := dal.GetFollowingList(ik.NewID(ik.IDFollowing, pl.User.ID), "", 1e6, false)
 		for _, id := range list {
 			if id.Followed {
 				if strings.HasPrefix(id.ID, "#") {
@@ -123,13 +140,6 @@ func Timeline(g *gin.Context) {
 			}
 		}
 		pendingFCursor = next
-	}
-
-	if pl.IsUserTimeline {
-		cursors = append(cursors, ik.NewID(ik.IDAuthor, pl.User.ID))
-	} else {
-		pl.ShowNewPost = true
-		readCursorsAndPendingFCursor("")
 		cursors = append(cursors, ik.NewID(ik.IDAuthor, pl.User.ID))
 	}
 

@@ -334,7 +334,7 @@ func coInsertArticle(r *Request) error {
 			// The very last article was made before this month, so we will create a checkpoint for long jmp
 			go func() {
 				a := &model.Article{
-					ID:         makeCheckpointID(x.Tag(), root.CreateTime),
+					ID:         makeCheckpointID(x.Tag(), y.Time()),
 					ReferID:    root.NextID,
 					CreateTime: time.Now(),
 				}
