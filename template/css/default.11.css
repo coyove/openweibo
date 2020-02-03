@@ -443,6 +443,11 @@ img.avatar + .avatar-kimochi {
     display: block;
 }
 
+.media button {
+    width: 100%;
+    height: 100%;
+}
+
 .long-image {
     position: absolute;
     display: none;

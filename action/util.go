@@ -188,16 +188,18 @@ func writeAvatar(u *model.User, image string) (string, error) {
 }
 
 func writeThumbnail(path string, base64Data string, throtWidth int) error {
-	config, _, err := image.DecodeConfig(base64.NewDecoder(base64.StdEncoding, strings.NewReader(base64Data)))
+	r := strings.NewReader(base64Data)
+	config, _, err := image.DecodeConfig(base64.NewDecoder(base64.StdEncoding, r))
 	if err != nil {
 		return err
 	}
 
-	if config.Width <= throtWidth && config.Height <= throtWidth {
+	if config.Width <= throtWidth || config.Height <= throtWidth {
 		return nil
 	}
 
-	src, _, err := image.Decode(base64.NewDecoder(base64.StdEncoding, strings.NewReader(base64Data)))
+	r.Reset(base64Data)
+	src, _, err := image.Decode(base64.NewDecoder(base64.StdEncoding, r))
 	if err != nil {
 		return err
 	}
