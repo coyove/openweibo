@@ -39,6 +39,10 @@ type ArticleRepliesView struct {
 	ReplyView     ReplyView
 }
 
+func S(g *gin.Context) {
+	g.Redirect(302, "/t/master?pid=S"+g.Param("id"))
+}
+
 func Index(g *gin.Context) {
 	pl := ArticlesTimelineView{
 		Tag:           g.Param("tag"),
@@ -243,7 +247,7 @@ func APIReplies(g *gin.Context) {
 			g.Status(404)
 			return
 		}
-		pl.ShowReplyBox = u.ID == pl.ParentArticle.Author.ID || !pl.ParentArticle.Locked
+		pl.ShowReplyBox = u.IsMod() || u.ID == pl.ParentArticle.Author.ID || !pl.ParentArticle.Locked
 	}
 
 	a, next := dal.WalkReply(int(common.Cfg.PostsPerPage), parent.ReplyChain)

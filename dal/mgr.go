@@ -239,11 +239,15 @@ func PostReply(parent string, content, media string, author *model.User, ip stri
 	}
 
 	if p.Locked && p.Author != author.ID { // The author himself can reply to his own locked articles
-		return nil, fmt.Errorf("locked parent")
+		if !author.IsMod() {
+			return nil, fmt.Errorf("locked parent")
+		}
 	}
 
 	if IsBlocking(p.Author, author.ID) {
-		return nil, fmt.Errorf("author blocked")
+		if !author.IsMod() {
+			return nil, fmt.Errorf("author blocked")
+		}
 	}
 
 	a := &model.Article{

@@ -189,7 +189,7 @@ func coUpdateUser(r *Request) error {
 		}
 	}
 	if rr.ToggleBan {
-		if u.IsMod() {
+		if u.IsAdmin() {
 			return fmt.Errorf("ban/mod-really")
 		}
 		u.Banned = !u.Banned
@@ -276,24 +276,28 @@ func coUpdateArticle(r *Request) error {
 			dec0(&a.Likes)
 		}
 	}
+	now := func() string { return time.Now().Format(time.Stamp) }
 	if rr.DeleteBy != nil {
 		if rr.DeleteBy.ID != a.Author && !rr.DeleteBy.IsMod() {
 			return fmt.Errorf("user/not-allowed")
 		}
 		a.Content = model.DeletionMarker
 		a.Media = ""
+		a.History += fmt.Sprintf("{delete_by:%s:%v}", rr.DeleteBy.ID, now())
 	}
 	if rr.ToggleNSFWBy != nil {
 		if rr.ToggleNSFWBy.ID != a.Author && !rr.ToggleNSFWBy.IsMod() {
 			return fmt.Errorf("user/not-allowed")
 		}
 		a.NSFW = !a.NSFW
+		a.History += fmt.Sprintf("{nsfw_by:%s:%v}", rr.ToggleNSFWBy.ID, now())
 	}
 	if rr.ToggleLockBy != nil {
 		if rr.ToggleLockBy.ID != a.Author && !rr.ToggleLockBy.IsMod() {
 			return fmt.Errorf("user/not-allowed")
 		}
 		a.Locked = !a.Locked
+		a.History += fmt.Sprintf("{lock_by:%s:%v}", rr.ToggleLockBy.ID, now())
 	}
 
 	rr.Response.ArticleAuthor = a.Author

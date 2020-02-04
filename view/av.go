@@ -30,6 +30,7 @@ type ArticleView struct {
 	ContentHTML template.HTML
 	Media       string
 	MediaType   string
+	History     string
 	CreateTime  time.Time
 }
 
@@ -61,6 +62,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 	a.NSFW = a2.NSFW
 	a.Cmd = string(a2.Cmd)
 	a.CreateTime = a2.CreateTime
+	a.History = a2.History
 	a.Author, _ = dal.GetUser(a2.Author)
 	if a.Author == nil {
 		a.Author = &model.User{

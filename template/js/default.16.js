@@ -48,7 +48,7 @@ function $popup(html, bg) {
         div.style.transition = "opacity 1s";
         div.style.opacity = "0";
         setTimeout(function() {div.parentNode.removeChild(div)}, 1000);
-    }, 1500)
+    }, 1000)
 }
 
 function $post(url, data, cb, errorcb) {
@@ -334,38 +334,43 @@ function showReply(aid) {
     div.style.backgroundImage = 'url(/s/css/spinner.gif)';
     div.style.backgroundRepeat = 'no-repeat';
     div.style.backgroundPosition = 'center center';
-    $post('/api/p/' + aid, {}, function(h) {
-        div.innerHTML = h;
-        div.style.backgroundImage = null;
-        var box = div.querySelector(".reply-table textarea");
-        if (box) window.TRIBUTER.attach();
-    });
 
-    $q("[data-parent='" + aid + "']", true).forEach(function(e) {
-        e.CLOSER.click();
-    });
+    // Close duplicated windows before opening a new one
+    $q("[data-parent='" + aid + "']", true).forEach(function(e) { e.CLOSER.click(); });
     div.setAttribute('data-parent', aid);
 
-    var divreload = $html("<div style='position:fixed;right:1em;top:3.5em'><i class='control icon-cw-circled'></i></div>");
-    divreload.onclick = function() { showReply(aid) }
+    var divclose = $html("<div style='margin:0.5em auto'><div class=row style='padding:0.5em;line-height:30px;display:flex'>" +
+        "<i class='control icon-left-small'></i>" + 
+        "<input style='margin:0 0.5em;width:100%;text-align:center;border:none;background:transparent;cursor:pointer' value='" +
+        location.protocol + "//" +  location.host + "/S/" + aid.substring(1) +
+        "' onclick='this.focus();this.select();document.execCommand(\"copy\");$popup(\"已复制\",\"#088\")' readonly>" +
+        "<i class='control icon-link' onclick='this.previousElementSibling.click()'></i>" + 
+        "</div></div>");
 
-    var divclose = $html("<div style='position:fixed;right:1em;top:1em'><i class='control icon-cancel-circled-1'></i></div>");
-    divclose.onclick = function() {
+    divclose.style.maxWidth = $q("#container").style.maxWidth;
+    div.CLOSER = divclose.querySelector('.icon-left-small')
+    div.CLOSER.onclick = function() {
         div.parentNode.removeChild(div)
-        divclose.parentNode.removeChild(divclose)
-        divreload.parentNode.removeChild(divreload)
 
         if ($q('[data-parent]', true).length === 0) {
             history.pushState("", "", location.pathname + (window.IS_MEDIA ? '?media=1' : ''));
             document.body.style.overflow = null;
         }
     }
-    div.CLOSER = divclose;
 
+    div.appendChild(divclose);
     document.body.appendChild(div);
-    document.body.appendChild(divclose);
-    document.body.appendChild(divreload);
     document.body.style.overflow = 'hidden';
+
+    $post('/api/p/' + aid, {}, function(h) {
+        div.innerHTML = h;
+        div.style.backgroundImage = null;
+        var rows = div.querySelector('.rows'),
+            box = div.querySelector(".reply-table textarea");
+
+        if (box) window.TRIBUTER.attach(box);
+        rows.insertBefore(divclose.querySelector('.row'), rows.firstChild);
+    });
 
     window.IS_MEDIA = window.IS_MEDIA || location.search.indexOf('media') >= 0;
     history.pushState("", "", location.pathname + "?pid=" + encodeURIComponent(aid) + location.hash + "#" + div.id)

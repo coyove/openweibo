@@ -15,6 +15,33 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func RPCGetUserInfo(g *gin.Context) {
+	if common.Cfg.RPCKey == "" || g.GetHeader("X-Key") != common.Cfg.RPCKey {
+		g.Writer.Header().Add("X-Result", "error")
+		g.String(200, "invalid/key")
+		return
+	}
+
+	var u *model.User
+	var err error
+
+	switch {
+	case g.PostForm("id") != "":
+		u, err = dal.GetUserWithSettings(g.PostForm("id"))
+	case g.PostForm("cookie") != "":
+		u, err = dal.GetUserByToken(g.PostForm("cookie"))
+	}
+
+	if err != nil {
+		g.Writer.Header().Add("X-Result", "error")
+		g.String(200, err.Error())
+		return
+	}
+
+	g.Writer.Header().Add("X-Result", "ok")
+	g.JSON(200, u)
+}
+
 func APISignup(g *gin.Context) {
 	var (
 		ip       = hashIP(g)

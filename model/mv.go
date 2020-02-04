@@ -50,6 +50,7 @@ type Article struct {
 	Cmd         Cmd               `json:"K,omitempty"`
 	Extras      map[string]string `json:"X,omitempty"`
 	ReferID     string            `json:"ref,omitempty"`
+	History     string            `json:"his,omitempty"`
 }
 
 func (a *Article) ContentHTML() template.HTML {

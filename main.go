@@ -131,6 +131,7 @@ func main() {
 	r.Handle("GET", "/likes/:uid", view.UserLikes)
 	r.Handle("GET", "/t", view.Timeline)
 	r.Handle("GET", "/t/:user", view.Timeline)
+	r.Handle("GET", "/S/:id", view.S)
 	r.Handle("GET", "/inbox", view.Inbox)
 	r.Handle("GET", "/avatar/:id", view.Avatar)
 	r.Handle("GET", "/mod/user", view.ModUser)
@@ -156,6 +157,8 @@ func main() {
 	r.Handle("POST", "/api2/delete", action.APIDeleteArticle)
 	r.Handle("POST", "/api2/toggle_nsfw", action.APIToggleNSFWArticle)
 	r.Handle("POST", "/api2/toggle_lock", action.APIToggleLockArticle)
+
+	r.Handle("POST", "/rpc/user_info", action.RPCGetUserInfo)
 
 	r.Handle("GET", "/loaderio-4d068f605f9b693f6ca28a8ca23435c6", func(g *gin.Context) { g.String(200, ("loaderio-4d068f605f9b693f6ca28a8ca23435c6")) })
 

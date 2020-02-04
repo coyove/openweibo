@@ -488,8 +488,8 @@ div.tri.shadow {
 .icon-flow-merge:before { margin-left: 0 !important }
 .icon-down-dir.right:before { margin-right: 0 !important }
 .icon-history.left:before { margin-left: 0 !important }
-.control.icon-cancel-circled-1, .control.icon-cw-circled { font-size:24px;color:#aaa;cursor:pointer }
-.control.icon-cancel-circled-1:hover,.control.icon-cw-circled:hover { color: #677 }
+.control.icon-left-small, .control.icon-link { font-size:16px; cursor:pointer; }
+.control.icon-left-small:hover,.control.icon-link:hover { color: #677 }
 .follow-block .icon-user-plus { color: #098 }
 .follow-block .icon-heart-broken { color: #e16 }
 .icon-block.block-true, .icon-block.block-false { color: #f52; }

@@ -89,10 +89,14 @@
     </div>
     {{end}}
 
+    {{if and .You.IsMod .History}}
+    <div style="color:#666;font:12px monospace">{{.History}}</div>
+    {{end}}
+
     {{if .Parent}}
     {{if .Parent.ID}}
     <div style="position:relative;margin:0 -0.5em;{{if not $isInboxLike}}border-top:dotted 1px #aaa{{end}}">
-        <i style="position: absolute; left: -12px; top: -1px; border-color: #aaa transparent transparent; display: block; border-width: 12px; border-style: solid;"></i>
+        <i style="position:absolute;left:-12px;top:-1px;border-color:#aaa transparent transparent;display:block;border-width:12px;border-style:solid;"></i>
     </div>
 
     <div class="subreply">

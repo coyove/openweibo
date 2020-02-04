@@ -14,6 +14,7 @@ import (
 
 var Cfg = struct {
 	Key            string   `yaml:"Key"`
+	RPCKey         string   `yaml:"RPCKey"`
 	Cooldown       int      `yaml:"Cooldown"`   // minute
 	TokenTTL       int64    `yaml:"TokenTTL"`   // minute
 	IDTokenTTL     int64    `yaml:"IDTokenTTL"` // second
