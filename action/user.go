@@ -2,6 +2,7 @@ package action
 
 import (
 	"bytes"
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -28,6 +29,12 @@ func RPCGetUserInfo(g *gin.Context) {
 	switch {
 	case g.PostForm("id") != "":
 		u, err = dal.GetUserWithSettings(g.PostForm("id"))
+
+		if pwd := g.PostForm("password"); pwd != "" {
+			if !bytes.Equal(u.PasswordHash, hashPassword(pwd)) {
+				err = fmt.Errorf("invalid/password")
+			}
+		}
 	case g.PostForm("cookie") != "":
 		u, err = dal.GetUserByToken(g.PostForm("cookie"))
 	}

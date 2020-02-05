@@ -314,25 +314,33 @@ func GetRelationList(chain ik.ID, cursor string, n int) ([]FollowingState, strin
 }
 
 func GetFollowingList(chain ik.ID, cursor string, n int, fulluser bool) ([]FollowingState, string) {
-	master, err := GetArticle(chain.String())
-	if err != nil {
-		if err != model.ErrNotExisted {
-			log.Println("[GetRelationList] Failed to get chain [", chain, "]")
-		}
-		return nil, ""
-	}
+	var idx int
+	var flags map[string]string
 
-	idx, _ := strconv.Atoi(cursor)
-	if idx > 255 || idx < 0 {
-		return nil, ""
+	if parts := strings.Split(cursor, "~"); len(parts) != 2 {
+		// Start from the root article
+		master, err := GetArticle(chain.String())
+		if err != nil {
+			if err != model.ErrNotExisted {
+				log.Println("[GetRelationList] Failed to get chain [", chain, "]")
+			}
+			return nil, ""
+		}
+		flags = master.Extras
+	} else {
+		// Parse the cursor and 0 - 255 flags
+		idx, _ = strconv.Atoi(parts[0])
+		flags = common.Unpack256(parts[1])
+		if idx > 255 || idx < 0 || flags == nil {
+			return nil, ""
+		}
 	}
 
 	res := []FollowingState{}
 	start := time.Now()
-	who := chain.Tag()
 
-	for ; len(res) < n && idx < 256; idx++ {
-		if master.Extras[strconv.Itoa(idx)] != "1" {
+	for who := chain.Tag(); len(res) < n && idx < 256; idx++ {
+		if flags[strconv.Itoa(idx)] != "1" {
 			continue
 		}
 
@@ -367,9 +375,10 @@ func GetFollowingList(chain ik.ID, cursor string, n int, fulluser bool) ([]Follo
 
 	sort.Slice(res, func(i, j int) bool { return res[i].Time.After(res[j].Time) })
 
-	cursor = strconv.Itoa(idx)
 	if idx > 255 {
 		cursor = ""
+	} else {
+		cursor = strconv.Itoa(idx) + "~" + common.Pack256(flags)
 	}
 
 	return res, cursor
