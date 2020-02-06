@@ -339,11 +339,11 @@ function showReply(aid) {
     $q("[data-parent='" + aid + "']", true).forEach(function(e) { e.CLOSER.click(); });
     div.setAttribute('data-parent', aid);
 
-    var divclose = $html("<div style='margin:0.5em auto'><div class=row style='padding:0.5em;line-height:30px;display:flex'>" +
+    var divclose = $html("<div style='margin:0 auto' class='rows replies'><div class=row style='padding:0.5em;line-height:30px;display:flex'>" +
         "<i class='control icon-left-small'></i>" + 
         "<input style='margin:0 0.5em;width:100%;text-align:center;border:none;background:transparent;cursor:pointer' value='" +
         location.protocol + "//" +  location.host + "/S/" + aid.substring(1) +
-        "' onclick='this.focus();this.select();document.execCommand(\"copy\");$popup(\"已复制\",\"#088\")' readonly>" +
+        "' onclick='this.select();document.execCommand(\"copy\");$popup(\"已复制\",\"#088\")' readonly>" +
         "<i class='control icon-link' onclick='this.previousElementSibling.click()'></i>" + 
         "</div></div>");
 

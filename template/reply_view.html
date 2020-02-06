@@ -31,7 +31,7 @@
                     }
 </style>
 
-<div id="rv-{{.UUID}}" style="background:white;margin:0 0.5em">
+<div id="rv-{{.UUID}}" style="background:white">
     <table class="articles reply-table" style="box-shadow: 0 0 3px #ccc;position:relative;text-align:left">
         <tr>
             <td style="white-space: nowrap;background:rgba(0,0,0,0.025)" colspan=2>
@@ -69,6 +69,12 @@
                             </span>
                         </li>
                         {{if .ReplyTo}}
+                        <li>
+                            <span onclick="insertTag(this, '{{.UUID}}', '#ReportThis\n', '举报理由', '')">
+                                <i class=icon-police></i>
+                                举报该状态
+                            </span>
+                        </li>
                         <li>
                             <span name=notimeline onclick="$check(this)">
                                 <i class=icon-ok-circled2></i>

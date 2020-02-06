@@ -272,18 +272,7 @@ div.subreply .post-author {
 }
 
 div.rows.replies .row {
-    border-radius: 0;
-    margin: 0 0.5em;
-}
-
-div.rows.replies .row:first-child {
-    border-radius: 5px 5px 0 0;
-    margin-top: 0.5em;
-}
-
-div.rows.replies .row:last-child {
-    border-radius: 0 0 5px 5px;
-    margin-bottom: 0.5em;
+    margin: 0;
 }
 
 div.rows.replies .reply-table {
@@ -292,14 +281,9 @@ div.rows.replies .reply-table {
     border: solid 1px #e1e2e3;
 }
 
-.reply-table .icon-comment {
-    padding-top: 1px;
-}
-
 div.row {
     background: #f1f2f3;
-    margin: 0.5em;
-    border-radius: 5px;
+    margin: 0.5em 0;
     overflow: hidden;
 }
 
@@ -360,7 +344,6 @@ a.unread {
     box-shadow: 0 1px 2px rgba(0,0,0,0.2);
     background: #fcfdfe;
     width: 100%;
-    max-width: 360px;
 }
 
 .status span a b, .status span a i[class^="icon-"] {
@@ -385,7 +368,10 @@ a.unread {
     line-height: 1em;
 }
 
-div.status-box { text-align:center;line-height:2em;padding:0.5em }
+div.status-box {
+    text-align:center;
+    line-height:2em;
+}
 
 .reply-box {
     display: inline-block;
@@ -494,6 +480,7 @@ div.tri.shadow {
 .follow-block .icon-heart-broken { color: #e16 }
 .icon-block.block-true, .icon-block.block-false { color: #f52; }
 .icon-block.block-false { text-shadow: 0 0 2px black; color: white; }
+.reply-table .icon-comment { padding-top: 1px; }
 
 .tribute-container {
     position: absolute;
@@ -549,11 +536,4 @@ div.tri.shadow {
 }
 .post-options ul li:hover {
     background: #bdf;
-}
-
-@media only screen and (max-width: 540px) {
-    .row {
-        margin-right: 0.1em;
-        margin-left: 0.1em;
-    }
 }

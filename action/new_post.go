@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 	"net/url"
+	"strings"
 
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal"
@@ -114,7 +115,9 @@ func doReply(g *gin.Context) {
 		image = "IMG:" + image
 	}
 
-	a2, err := dal.PostReply(reply, content, image, u, ip, nsfw, g.PostForm("no_timeline") == "1")
+	noTimeline := g.PostForm("no_timeline") == "1" || strings.Contains(content, "#ReportThis")
+
+	a2, err := dal.PostReply(reply, content, image, u, ip, nsfw, noTimeline)
 	if err != nil {
 		log.Println(a2, err)
 		g.String(200, "error/can-not-reply")
