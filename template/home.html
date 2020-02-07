@@ -1,47 +1,47 @@
 {{template "header.html" .}}
 <title>梨名板</title>
 
-<div style="margin: 1em;line-height: 2em;text-align:center">
-    <div style="text-align:left">
-        1. 注册后的用户名如果包含了非法字符，会被替换为英文下划线，但登录的话依旧可以使用输入的原用户名<br>
-        2. 不知道看什么？点击MASTER进入全局时间线<br>
-        3. 上传图片最大不超过1M (.jpg, .png, .gif)，正文内容最大不超过1024字节<br>
-        4. 本站运行于IIS上，其开放源代码托管在：<a href="https://github.com/coyove/iis" target=_blanks>github</a>
-
-        <!--[if lte IE 9]> 
-            <div style="color:red">
-            本站不支持IE9及以下版本
-            </div>
-        <![endif]-->
-
-        {{if not .User}}
-        <form method="POST" action="/user" style="margin-top: 1em" onsubmit="return false">
-            <table class="articles">
-                <tr>
-                    <td class=nowrap>用户名:</td>
-                    <td><input autofocus class=t name=username value required></td>
-                </tr>
-                <tr>
-                    <td class=nowrap>密码:</td>
-                    <td><input type=password class=t name=password value required></td>
-                </tr>
-                <tr>
-                    <td colspan=2 style="text-align:right">
-                        <button class="gbutton"
-                                type=submit
-                                onclick="$postReload(this,'/api2/login',{
-                                'username': $q('[name=username]').value,
-                                'password': $q('[name=password]').value})">登入</button>
-                    </td>
-                </tr>
-            </table>
-        </form>
-        {{else}}
-        <div style="text-align:center">
-            <b style="font-size:120%">{{.User.DisplayName}} 已登入</b>
+<div style="margin: 0.5em 0;line-height: 2em">
+    <!--[if lte IE 9]> 
+        <div style="color:red">
+        本站不支持IE9及以下版本
         </div>
-        {{end}}
-    </div>
+    <![endif]-->
+
+    {{if not .User}}
+    <form method="POST" action="/user" style="margin-top: 1em" onsubmit="return false">
+        <table class="articles">
+            <tr>
+                <td colspan=2 style="text-align:center"><img src="/eriri" style="margin:0 auto"></td>
+            </tr>
+            <tr>
+                <td colspan=2 style="text-align:center">
+                    欢迎来到sserr.net，一个自由开放的微博系统
+                </td>
+            </tr>
+            <tr>
+                <td class=nowrap>用户名:</td>
+                <td><input autofocus class=t name=username value required></td>
+            </tr>
+            <tr>
+                <td class=nowrap>密码:</td>
+                <td><input type=password class=t name=password value required></td>
+            </tr>
+            <tr>
+                <td colspan=2 style="text-align:right">
+                    <button class="gbutton"
+                            type=submit
+                            onclick="$postReload(this,'/api2/login',{
+                            'username': $q('[name=username]').value,
+                            'password': $q('[name=password]').value})">登入</button>
+                    <a class=gbutton style="float:left" href="/user">注册新用户</a>
+                </td>
+            </tr>
+        </table>
+    </form>
+    {{else}}
+    {{template "user_private.html" .User}}
+    {{end}}
 </div>
 
 

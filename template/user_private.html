@@ -136,7 +136,7 @@ function onAvatarChanged(el) {
     reader.onload = function () {
         var img = new Image();
         img.onerror = function() {
-            alert("加载头像失败")
+            $popup("加载头像失败")
         }
         img.onload = function() {
             img.onload = null;

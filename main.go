@@ -124,6 +124,7 @@ func main() {
 	r.Handle("GET", "/", view.Home)
 	r.Handle("GET", "/img/:img", view.Image)
 	r.Handle("GET", "/i/:img", view.I)
+	r.Handle("GET", "/eriri", view.RandomEririImage)
 	r.Handle("GET", "/tag/:tag", view.Index)
 	r.Handle("GET", "/user", view.User)
 	r.Handle("GET", "/user/:type", view.UserList)
