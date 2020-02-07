@@ -28,6 +28,7 @@ type ArticlesTimelineView struct {
 	User                  *model.User
 	You                   *model.User
 	Checkpoints           []string
+	CurrentCheckpoint     string
 	ReplyView             ReplyView
 }
 
@@ -84,6 +85,8 @@ func Timeline(g *gin.Context) {
 		pl.User = &model.User{
 			ID: "master",
 		}
+		pl.Checkpoints = makeCheckpoints(g)
+		pl.IsUserTimeline = true
 	case uid != "":
 		// View someone's timeline
 		pl.IsUserTimeline = true
@@ -119,11 +122,12 @@ func Timeline(g *gin.Context) {
 	pendingFCursor := ""
 
 	if pl.IsUserTimeline {
-		if a, _ := dal.GetArticle("u/"+pl.User.ID+"/checkpoint/"+g.Query("cp"), true); a != nil {
+		pl.CurrentCheckpoint = g.Query("cp")
+		if a, _ := dal.GetArticle("u/"+pl.User.ID+"/checkpoint/"+pl.CurrentCheckpoint, true); a != nil {
 			cursors = append(cursors, ik.ParseID(a.NextID))
 		} else {
 			// 2020-01 hack fix
-			if g.Query("cp") == "2020-01" {
+			if pl.CurrentCheckpoint == "2020-01" {
 				if a, _ := dal.GetArticle("u/"+pl.User.ID+"/checkpoint/0001-01", true); a != nil {
 					cursors = append(cursors, ik.ParseID(a.NextID))
 				}

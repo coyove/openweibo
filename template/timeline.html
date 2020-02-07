@@ -6,13 +6,16 @@
 
 {{if .IsUserTimeline}}
 
-<div class="status-box">
-    <title>{{.User.DisplayName}}</title>
-    <div>
-        <script>$q('#nav-other a').innerText = "@{{.User.ID}}"; $q('#nav-other').className = "selected"</script>
-        {{template "user_public.html" .User}}
-    </div>
-</div>
+    {{if eq .User.ID "master"}}
+        <title>全局时间线</title>
+        <script>$q('#nav-master').className = "selected"</script>
+    {{else}}
+        <title>{{.User.DisplayName}}</title>
+        <div class="status-box">
+            <script>$q('#nav-other a').innerText = "@{{.User.ID}}"; $q('#nav-other').className = "selected"</script>
+            {{template "user_public.html" .User}}
+        </div>
+    {{end}}
 
 {{else if .IsInbox}}
 
@@ -21,11 +24,6 @@
 <div class="status-box">
     {{template "user_private.html" .You}}
 </div>
-
-{{else if eq .User.ID "master"}}
-
-<title>全局时间线</title>
-<script>$q('#nav-master').className = "selected"</script>
 
 {{else if .IsUserLikeTimeline}}
 
@@ -68,32 +66,41 @@
 
 {{end}}
 
-{{if not .IsInbox}}
-<nav>
-    <ul>
-        <li class="secondary {{if not .MediaOnly}}selected{{end}}"><a href="?media=">全部</a></li>
-        <li class="secondary {{if .MediaOnly}}selected{{end}}"><a href="?media=1">只看图片</a></li>
-        {{if len .Checkpoints}}
-        <li class="secondary post-options"><a>时间<i class="icon-down-dir right"></i></a>
-            <ul style="left:initial;right:0">
-                {{range .Checkpoints}}
-                <li onclick="location.href='?cp={{.}}'"><i class="icon-history left"></i> {{.}}月</li>
-                {{end}}
-            </ul>
-        </li>
-        {{end}}
-    </ul>
-</nav>
-{{end}}
-
 {{if .ReplyView.PID}}<script>showReply('{{.ReplyView.PID}}');</script>{{end}}
 
-<div class="rows" id="timeline{{.ReplyView.UUID}}" style="">
+<div class="rows" id="timeline{{.ReplyView.UUID}}" style="margin-top:1em">
     {{if .ShowNewPost}}
     {{if ne .User.ID "master"}}
     {{template "reply_view.html" .ReplyView}}
     {{end}}
     {{end}}
+
+{{if not .IsInbox}}
+<div style="background:#f1f2f3;cursor:pointer;margin-top:0.5em" class="post-options">
+    <div style="padding:0.5em">
+        <b>查看:</b>
+        <span>
+        {{if .CurrentCheckpoint}}
+            {{.CurrentCheckpoint}}月
+        {{else if .MediaOnly}}
+            仅图片
+        {{else}}
+            全部
+        {{end}}
+        </span>
+        <i class="icon-down-dir right"></i>
+    </div>
+    <ul>
+        <li onclick='location.href="?media"'><i class=icon-calendar></i> 全部</li>
+        <li onclick='location.href="?media=1"'><i class=icon-picture></i> 仅图片</li>
+        {{range .Checkpoints}}
+        <li onclick="location.href='?cp={{.}}'"><i class="icon-history"></i> {{.}}月</li>
+        {{end}}
+    </ul>
+</div>
+{{end}}
+
+    <div class="row-reply-inserter" style="display:none"></div>
 
     {{range .Articles}}
     {{template "row_content.html" .}}
@@ -108,7 +115,7 @@
         onclick="loadMore('timeline{{.ReplyView.UUID}}',this,{likes:{{.IsUserLikeTimeline}},media:{{.MediaOnly}},})">更多...</button>
 
     <script>
-        preLoadMore("timeline{{.ReplyView.UUID}}", $q("#timeline{{.ReplyView.UUID}} + .paging > .load-more"))
+        preLoadMore("timeline{{.ReplyView.UUID}}", $q("#timeline{{.ReplyView.UUID}} + .paging > .load-more"));
     </script>
 
     {{else}}

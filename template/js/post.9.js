@@ -35,7 +35,8 @@ function onPost(uuid, el, p) {
         }
         var div = $q("<div>")
         div.innerHTML = decodeURIComponent(res.substring(3));
-        $q("#timeline" + uuid).insertBefore(div.querySelector("div"), $q("#" + cid).nextSibling)
+        var tl = $q("#timeline" + uuid);
+        tl.insertBefore(div.querySelector("div"), tl.querySelector(".row-reply-inserter").nextSibling)
     }, stop)
 }
 

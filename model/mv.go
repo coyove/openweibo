@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"strings"
 	"time"
 
 	"github.com/coyove/iis/common"
@@ -111,10 +112,16 @@ func (u User) Marshal() []byte {
 }
 
 func (u User) DisplayName() string {
-	if u.CustomName == "" {
-		return "@" + u.ID
+	marker := "@"
+	if strings.HasPrefix(u.ID, "#") {
+		marker = "#"
+		u.ID = u.ID[1:]
 	}
-	return u.CustomName + " (@" + u.ID + ")"
+
+	if u.CustomName == "" {
+		return marker + u.ID
+	}
+	return u.CustomName + " (" + marker + u.ID + ")"
 }
 
 func (u User) IsFollowing() bool { return u._IsFollowing }

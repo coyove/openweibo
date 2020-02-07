@@ -402,14 +402,16 @@ function updateSetting(el, field, value, cb, errcb) {
     })
 }
 
-function $check(el) {
+function $check(el, cb) {
     var i = el.querySelector('i');
     if (i.className == 'icon-ok-circled2') {
         i.className = 'icon-ok-circled-1';
         el.setAttribute("value", "true")
+        if (cb) cb(true);
     } else {
         i.className = 'icon-ok-circled2';
         el.setAttribute("value", "")
+        if (cb) cb(false);
     }
 }
 

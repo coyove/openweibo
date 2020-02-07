@@ -118,7 +118,6 @@ pre {
 nav {
     line-height: 2.25em;
     text-align: center;
-    padding: 0 8px;
     margin: 0.5em 0;
 }
 
@@ -129,13 +128,13 @@ nav ul {
 	position: relative;
 }
 
-nav ul li { display: inline-block; margin: 0 0.5em }
+nav > ul > li { display: inline-block; margin: 0 0.5em }
 
 nav ul li.selected > a { border-color: #088; font-weight: bold;}
 
 nav ul li.selected.secondary > a { border-color: #e16 }
 
-nav ul li.selected { display: inline-block !important; }
+nav > ul > li.selected { display: inline-block !important; }
 
 nav ul li > a {
     border-bottom: solid 2px #ddd;
@@ -481,6 +480,7 @@ div.tri.shadow {
 .icon-block.block-true, .icon-block.block-false { color: #f52; }
 .icon-block.block-false { text-shadow: 0 0 2px black; color: white; }
 .reply-table .icon-comment { padding-top: 1px; }
+.post-options .icon-ok-circled2 { color: #bbb; }
 
 .tribute-container {
     position: absolute;

@@ -16,73 +16,107 @@
         <div>{{template "user_private.html" .User}}</div>
     </div>
 
+    <div class="status-box" style="margin: 0.5em 0">
+        <div class="status">
+            <div class="title row-header" style="text-align:center">
+                <b style="flex-grow: 1">用户信息</b>
+            </div>
+
+            <div class=title>
+                <table class="articles" style="margin-top: 0.5em;text-align:left">
+                    <tr>
+                        <td>上次登入:</td>
+                        <td style='text-align:right'>{{.User.Login.Format "2006-01-02 15:04:05"}}</td>
+                    </tr>
+                    <tr>
+                        <td>注册于:</td>
+                        <td style='text-align:right'>{{.User.Signup.Format "2006-01-02 15:04:05"}}</td>
+                    </tr>
+                    <tr>
+                        <td class=nowrap>上次登入IP:</td>
+                        <td>
+                            <input readonly class=t style="font-family:monospace;border:none;text-align:right" value="{{.User.DataIP}}">
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-box" style="margin: 0.5em 0">
+        <div class="status">
+            <div class="title row-header" style="text-align:center">
+                <b style="flex-grow: 1">一般设置</b>
+            </div>
+
+            <div class=title>
+                <table class="articles" style="margin-top: 0.5em;text-align:left">
+                    <tr>
+                        <td colspan=3> 
+                            <input type=checkbox {{if .User.Settings.AutoNSFW}}checked{{end}} id=autonsfw
+                                   onchange="updateSetting(this,'autonsfw',this.checked?'1':'')">
+                            <label for= autonsfw>自动展开NSFW图片</label>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td colspan=3> 
+                            <input type=checkbox {{if .User.Settings.FoldImages}}checked{{end}} id=foldimg
+                                   onchange="updateSetting(this,'foldimg',this.checked?'1':'')">
+                            <label for= foldimg>收起图片（减少流量）</label>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-box" style="margin: 0.5em 0">
+        <div class="status">
+            <div class="title row-header" style="text-align:center">
+                <b style="flex-grow: 1">安全</b>
+            </div>
+
+            <div class=title>
+                <table class="articles" style="margin-top: 0.5em;text-align:left">
+                    <tr>
+                        <td class=nowrap>Email:</td>
+                        <td>
+                            <input name=email class=t value="{{.User.Email}}" type=email>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class=nowrap colspan=2 style="text-align:center">
+                            <button class=gbutton onclick="updateSetting(this,'email',$q('[name=email]').value)">
+                                更新邮箱
+                            </button>
+                        </td>
+                    </tr> 
+                    <tr>
+                        <td class=nowrap>原密码:</td>
+                        <td><input name=old-password type=password class=t></td>
+                    </tr>
+                    <tr>
+                        <td class=nowrap>新密码:</td>
+                        <td><input name=new-password type=password class=t></td>
+                    </tr>
+                    <tr>
+                        <td colspan=2 style="text-align:center">
+                            <button
+                                class="gbutton"
+                                onclick="$post('/api2/user_password', {
+                                'old-password': $q('[name=old-password]').value,
+                                'new-password': $q('[name=new-password]').value,
+                                }, function(h) { return h })">更新密码</button>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
 <table class="articles" style="margin: 0.5em 0">
-    <tr><td colspan=3><b>用户信息</b></td></tr>
-
-    <tr>
-        <td>上次登入:</td>
-        <td colspan=2>{{.User.Login.Format "2006-01-02 15:04:05"}}</td>
-    </tr>
-    <tr>
-        <td>注册于:</td>
-        <td colspan=2>{{.User.Signup.Format "2006-01-02 15:04:05"}}</td>
-    </tr>
-    <tr>
-        <td class=nowrap>上次登入IP:</td><td colspan=2>{{.User.DataIP}}</td>
-    </tr>
-
-    <tr><td colspan=3><b>一般设置</b></td></tr>
-
-    <tr>
-        <td colspan=3> 
-            <input type=checkbox {{if .User.Settings.AutoNSFW}}checked{{end}} id=autonsfw
-            onchange="updateSetting(this,'autonsfw',this.checked?'1':'')">
-            <label for= autonsfw>自动展开NSFW图片</label>
-        </td>
-    </tr>
-
-    <tr>
-        <td colspan=3> 
-            <input type=checkbox {{if .User.Settings.FoldImages}}checked{{end}} id=foldimg
-            onchange="updateSetting(this,'foldimg',this.checked?'1':'')">
-            <label for= foldimg>收起图片（减少流量）</label>
-        </td>
-    </tr>
-
-    <tr><td colspan=3><b>修改邮箱</b></td></tr>
-
-    <tr>
-        <td class=nowrap>Email:</td>
-        <td>
-            <input name=email class=t value="{{.User.Email}}" type=email>
-        </td>
-        <td class=nowrap>
-            <button class=gbutton onclick="updateSetting(this,'email',$q('[name=email]').value)">更新</button>
-        </td>
-    </tr> 
-
-    <tr><td colspan=3><b>修改密码</b></td></tr>
-
-    <tr>
-        <td class=nowrap>原密码:</td>
-        <td colspan=2><input name=old-password type=password class=t></td>
-    </tr>
-    <tr>
-        <td class=nowrap>新密码:</td>
-        <td colspan=2><input name=new-password type=password class=t></td>
-    </tr>
-    <tr>
-        <td colspan=2></td>
-        <td class=nowrap>
-            <button
-                class="gbutton"
-                onclick="$post('/api2/user_password', {
-                          'old-password': $q('[name=old-password]').value,
-                          'new-password': $q('[name=new-password]').value,
-                }, function(h) { return h })">更新</button>
-        </td>
-    </tr>
-
+    
     {{if .User.IsMod}}
     <tr>
         <td class=nowrap>最大耗时:</td>

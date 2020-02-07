@@ -1,6 +1,6 @@
 <span class=post-author data="{{.CustomName}}">
     {{if .Banned}}<span><strong>封禁</strong></span>{{end}}
-    <a href="/t/{{.ID}}" style="color:#233">
+    <a href="/t/{{urlquery .ID}}" style="color:#233">
         {{if .CustomName}}
         <strong>{{.CustomName}}</strong>
         <span mod={{.IsMod}} style="color: #677">@{{.ID}}</span>

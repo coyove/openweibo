@@ -366,8 +366,14 @@ func GetFollowingList(chain ik.ID, cursor string, n int, fulluser bool) ([]Follo
 				Followed: atob(p[0]),
 				Blocked:  IsBlocking(who, k),
 			}
-			if fulluser && !strings.HasPrefix(k, "#") {
-				s.FullUser, _ = GetUser(k)
+			if fulluser {
+				if !strings.HasPrefix(k, "#") {
+					s.FullUser, _ = GetUser(k)
+				} else {
+					s.FullUser = &model.User{
+						ID: k,
+					}
+				}
 			}
 			res = append(res, s)
 		}
