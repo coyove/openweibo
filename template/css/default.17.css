@@ -263,7 +263,7 @@ div.subreply .row-header {
 }
 
 div.subreply .row {
-    margin: 0;
+    margin: 0 0.5em;
 }
 
 div.subreply .post-author {
@@ -271,7 +271,7 @@ div.subreply .post-author {
 }
 
 div.rows.replies .row {
-    margin: 0;
+    margin: 0 0.5em;
 }
 
 div.rows.replies .reply-table {
@@ -282,7 +282,7 @@ div.rows.replies .reply-table {
 
 div.row {
     background: #f1f2f3;
-    margin: 0.5em 0;
+    margin: 0.5em;
     overflow: hidden;
 }
 
@@ -370,6 +370,7 @@ a.unread {
 div.status-box {
     text-align:center;
     line-height:2em;
+    margin: 0.5em;
 }
 
 .reply-box {
@@ -480,7 +481,10 @@ div.tri.shadow {
 .icon-block.block-true, .icon-block.block-false { color: #f52; }
 .icon-block.block-false { text-shadow: 0 0 2px black; color: white; }
 .reply-table .icon-comment { padding-top: 1px; }
-.post-options .icon-ok-circled2 { color: #bbb; }
+.icon-input-checkbox + [class^=icon-]:before { content: '\e812'; color: #aaa }
+.icon-input-checkbox:checked + [class^=icon-]:before { content: '\e813'; color: #233 }
+.icon-input-checkbox { display: none }
+.icon-input-checkbox + * + label { cursor:pointer }
 
 .tribute-container {
     position: absolute;
@@ -537,3 +541,4 @@ div.tri.shadow {
 .post-options ul li:hover {
     background: #bdf;
 }
+

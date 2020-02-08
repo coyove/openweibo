@@ -25,7 +25,14 @@
             $q(".gbutton.nsfw-clicker", true).forEach(function(el) { el.click() });
             {{end}}
             {{end}}
-            // if (window.EXPAND_NSFW) $q(".gbutton.nsfw-clicker", true).forEach(function(el) { el.click() });
+
+            var cb = $q("#auto-expand-nsfw");
+            if (cb && cb.checked) $q(".gbutton.nsfw-clicker", true).forEach(function(el) { el.click() });
+
+            var cb = $q("#auto-hide-nsfw");
+            if (cb && cb.checked) $q(".gbutton.nsfw-clicker", true).forEach(function(el) {
+                el.parentNode.style.display = 'none';
+            });
         }
 
         expandNSFW();

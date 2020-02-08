@@ -29,7 +29,7 @@
                     
 </style>
 
-<div id="rv-{{.UUID}}" style="background:white">
+<div id="rv-{{.UUID}}" style="background:white;margin:0.5em">
     <table class="articles reply-table" style="box-shadow: 0 0 3px #ccc;position:relative;text-align:left">
         <tr>
             <td style="white-space: nowrap;background:rgba(0,0,0,0.025)" colspan=2>
@@ -74,30 +74,28 @@
                             </span>
                         </li>
                         <li>
-                            <span name=notimeline onclick="$check(this)">
-                                <i class=icon-ok-circled2></i>
-                                不同步至我的时间线
-                            </span>
+                            <input type=checkbox name=notimeline id="notimeline{{.UUID}}" class=icon-input-checkbox>
+                            <i class=icon-ok-circled2></i>
+                            <label for="notimeline{{.UUID}}">不同步至我的时间线Master时间线</label>
                         </li>
                         {{else}}
                         <li>
-                            <span name=nomaster onclick="$check(this)">
-                                <i class=icon-ok-circled2></i>
-                                不同步至Master时间线
-                            </span>
+                            <input type=checkbox name=nomaster id="nomaster{{.UUID}}" class=icon-input-checkbox>
+                            <i class=icon-ok-circled2></i>
+                            <label for="nomaster{{.UUID}}">不同步至Master时间线</label>
                         </li>
                         <li>
-                            <span name=alone onclick="$check(this)">
-                                <i class=icon-ok-circled2></i>
-                                不同步至我的时间线
-                            </span>
+                            <input type=checkbox name=alone id="alone{{.UUID}}" class=icon-input-checkbox>
+                            <i class=icon-ok-circled2></i>
+                            <label for="alone{{.UUID}}">不同步至我的时间线</label>
                         </li>
                         {{end}}
                         <li>
-                            <span name=isnsfw onclick="$check(this)">
-                                <i class=icon-ok-circled2></i>
+                            <input type=checkbox name=isnsfw id="isnsfw{{.UUID}}" class=icon-input-checkbox>
+                            <i class=icon-ok-circled2></i>
+                            <label for="isnsfw{{.UUID}}">
                                 标记图片为<span style="color:#f90"><i class='icon-transgender-alt'></i>NSFW</span>
-                            </span>
+                            </label>
                         </li>
                     </ul>
                 </div>

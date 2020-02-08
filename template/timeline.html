@@ -76,7 +76,7 @@
     {{end}}
 
 {{if not .IsInbox}}
-<div style="background:#f1f2f3;cursor:pointer;margin-top:0.5em" class="post-options">
+<div style="background:#f1f2f3;cursor:pointer;margin:0 0.5em" class="post-options">
     <div style="padding:0.5em">
         <b>查看:</b>
         <span>
@@ -96,6 +96,29 @@
         {{range .Checkpoints}}
         <li onclick="location.href='?cp={{.}}'"><i class="icon-history"></i> {{.}}月</li>
         {{end}}
+    </ul>
+</div>
+<div style="background:#f1f2f3;cursor:pointer;margin:0 0.5em 0 0" class="post-options">
+    <div style="padding:0.5em">
+        <b>NSFW</b>:
+        <span id="auto-expand-nsfw-state">
+        {{if .User}}
+        {{if .User.Settings.AutoNSFW}}展开{{else}}折叠{{end}}
+        {{else}}
+        折叠
+        {{end}}
+        </span>
+        <i class="icon-down-dir right"></i>
+    </div>
+    <ul>
+        <li>
+            <input type=checkbox id=auto-expand-nsfw class=icon-input-checkbox
+                   {{if .User}}{{if .User.Settings.AutoNSFW}}checked{{end}}{{end}}
+                   onchange='$q("#auto-expand-nsfw-state").innerText=this.checked?"展开":"折叠"'
+                   >
+            <i class=icon-calendar></i>
+            <label for=auto-expand-nsfw>自动展开这类图片</label>
+        </li>
     </ul>
 </div>
 {{end}}

@@ -16,7 +16,7 @@
         <div>{{template "user_private.html" .User}}</div>
     </div>
 
-    <div class="status-box" style="margin: 0.5em 0">
+    <div class="status-box" >
         <div class="status">
             <div class="title row-header" style="text-align:center">
                 <b style="flex-grow: 1">用户信息</b>
@@ -43,7 +43,7 @@
         </div>
     </div>
 
-    <div class="status-box" style="margin: 0.5em 0">
+    <div class="status-box">
         <div class="status">
             <div class="title row-header" style="text-align:center">
                 <b style="flex-grow: 1">一般设置</b>
@@ -54,7 +54,9 @@
                     <tr>
                         <td colspan=3> 
                             <input type=checkbox {{if .User.Settings.AutoNSFW}}checked{{end}} id=autonsfw
+                                   class=icon-input-checkbox
                                    onchange="updateSetting(this,'autonsfw',this.checked?'1':'')">
+                            <i class='icon-ok-circled2'></i>
                             <label for= autonsfw>自动展开NSFW图片</label>
                         </td>
                     </tr>
@@ -62,7 +64,9 @@
                     <tr>
                         <td colspan=3> 
                             <input type=checkbox {{if .User.Settings.FoldImages}}checked{{end}} id=foldimg
+                                   class=icon-input-checkbox
                                    onchange="updateSetting(this,'foldimg',this.checked?'1':'')">
+                            <i class='icon-ok-circled2'></i>
                             <label for= foldimg>收起图片（减少流量）</label>
                         </td>
                     </tr>
@@ -71,7 +75,7 @@
         </div>
     </div>
 
-    <div class="status-box" style="margin: 0.5em 0">
+    <div class="status-box">
         <div class="status">
             <div class="title row-header" style="text-align:center">
                 <b style="flex-grow: 1">安全</b>
@@ -218,7 +222,9 @@
         <td class=nowrap></td>
         <td>
             至少3英文字符，
-            <input type=checkbox id=show-password onchange="$q('[name=password]').type=this.checked?'text':'password'">
+            <input type=checkbox class='icon-input-checkbox'
+                id=show-password onchange="$q('[name=password]').type=this.checked?'text':'password'">
+            <i class='icon-ok-circled2'></i>
             <label for=show-password>显示密码</label>
         </td>
     </tr>

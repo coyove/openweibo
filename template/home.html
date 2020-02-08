@@ -1,6 +1,7 @@
 {{template "header.html" .}}
 <title>梨名板</title>
 
+    {{if not .User}}
 <div style="margin: 0.5em 0;line-height: 2em">
     <!--[if lte IE 9]> 
         <div style="color:red">
@@ -8,7 +9,6 @@
         </div>
     <![endif]-->
 
-    {{if not .User}}
     <form method="POST" action="/user" style="margin-top: 1em" onsubmit="return false">
         <table class="articles">
             <tr>
@@ -39,9 +39,11 @@
             </tr>
         </table>
     </form>
-    {{else}}
-    {{template "user_private.html" .User}}
-    {{end}}
 </div>
+    {{else}}
+    <div class=status-box>
+    {{template "user_private.html" .User}}
+    </div>
+    {{end}}
 
 

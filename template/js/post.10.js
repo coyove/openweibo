@@ -18,10 +18,10 @@ function onPost(uuid, el, p) {
         content: ta.value,
         image64: image64.value,
         image_name: image64.IMAGE_NAME || "",
-        nsfw: $value($q("#" + cid + " [name=isnsfw]")) == 'true' ? "1" : "",
-        no_master: $value($q("#" + cid + " [name=nomaster]")) == 'true' ? "1" : "",
-        no_timeline: $value($q("#" + cid + " [name=notimeline]")) == 'true' ? "1" : "",
-        alone: $value($q("#" + cid + " [name=alone]")) == 'true' ? "1" : "",
+        nsfw: $q("#" + cid + " [name=isnsfw]").checked ? "1" : "",
+        no_master: $q("#" + cid + " [name=nomaster]").checked ? "1" : "",
+        no_timeline: $q("#" + cid + " [name=notimeline]").checked ? "1" : "",
+        alone: $q("#" + cid + " [name=alone]").checked ? "1" : "",
         parent: p,
     }, function (res, h) {
         stop();

@@ -385,7 +385,7 @@ window.onpopstate = function(event) {
 };
 
 function updateSetting(el, field, value, cb, errcb) {
-    var data = {}, stop = $wait(el.tagName === 'INPUT' ? el.nextElementSibling : el);
+    var data = {}, stop = $wait(el.tagName === 'INPUT' ? el.nextElementSibling: el);
     data["set-" + field] = "1";
     if (field !== 'bio') {
         data[field] = value;
@@ -400,19 +400,6 @@ function updateSetting(el, field, value, cb, errcb) {
         stop();
         if (errcb) errcb();
     })
-}
-
-function $check(el, cb) {
-    var i = el.querySelector('i');
-    if (i.className == 'icon-ok-circled2') {
-        i.className = 'icon-ok-circled-1';
-        el.setAttribute("value", "true")
-        if (cb) cb(true);
-    } else {
-        i.className = 'icon-ok-circled2';
-        el.setAttribute("value", "")
-        if (cb) cb(false);
-    }
 }
 
 function showInfoBox(el, uid) {
