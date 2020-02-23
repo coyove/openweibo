@@ -320,6 +320,12 @@ function preLoadMore(tlid, nextBtn) {
 
 // Nested replies view
 function showReply(aid) {
+    // We have something popped up already, wait them to be removed first
+    if (window.REGIONS && window.REGIONS.length) return;
+
+    // User selected some texts on the page, so we won't pop up
+    if (window.getSelection && window.getSelection().type == 'Range') return;
+
     var div = $q('<div>');
     div.id = 'Z' + Math.random().toString(36).substr(2, 5);
     div.className = 'div-inner-reply';
@@ -339,7 +345,7 @@ function showReply(aid) {
     $q("[data-parent='" + aid + "']", true).forEach(function(e) { e.CLOSER.click(); });
     div.setAttribute('data-parent', aid);
 
-    var divclose = $html("<div style='margin:0 auto' class='rows replies'><div class=row style='padding:0.5em;line-height:30px;display:flex'>" +
+    var divclose = $html("<div style='margin:0 auto' class='container rows replies'><div class=row style='padding:0.5em;line-height:30px;display:flex'>" +
         "<i class='control icon-left-small'></i>" + 
         "<input style='margin:0 0.5em;width:100%;text-align:center;border:none;background:transparent;cursor:pointer' value='" +
         location.protocol + "//" +  location.host + "/S/" + aid.substring(1) +
@@ -347,7 +353,6 @@ function showReply(aid) {
         "<i class='control icon-link' onclick='this.previousElementSibling.click()'></i>" + 
         "</div></div>");
 
-    divclose.style.maxWidth = $q("#container").style.maxWidth;
     div.CLOSER = divclose.querySelector('.icon-left-small')
     div.CLOSER.onclick = function() {
         div.parentNode.removeChild(div)
@@ -433,11 +438,7 @@ function showInfoBox(el, uid) {
     div.style.position = 'absolute';
     div.style.left = box.left - bodyBox.left + 'px';
     div.style.top = box.top - bodyBox.top + 'px';
-
-    // div.appendChild(loading);
-    // loading.style.backgroundImage = 'url(/s/css/spinner.gif)';
-    // loading.style.backgroundPosition = 'center';
-    // loading.style.backgroundRepeat = 'no-repeat';
+    div.style.boxShadow = "0 1px 2px #ccc";
 
     window.REGIONS = window.REGIONS || [];
     window.REGIONS.push({

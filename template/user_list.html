@@ -65,10 +65,11 @@
 
                 el.BUSY = true;
                 $post("/api/search", { id: '@' + v }, function(results) {
+                    for (var i = el.childNodes.length - 1; i > 0; i--) {
+                        el.removeChild(el.childNodes[i])
+                    }
                     if (results && results.length) {
-                        for (var i = el.childNodes.length - 1; i > 0; i--) {
-                            el.removeChild(el.childNodes[i])
-                        }
+
                         results.forEach(function(e) {
                             var opt = $q("<div>");
                             opt.style.paddingLeft = '0.5em';

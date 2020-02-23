@@ -67,8 +67,9 @@ a:hover, label[for=login]:hover {
     text-decoration: underline;
 }
 
-.vcenter {
-    vertical-align: middle;
+.container {
+    width: 100%; max-width: 750px; margin: 0 auto;position:relative;border:solid 1px #eee;border-width:0 1px;
+    min-height: 100%;
 }
 
 hr {
@@ -118,7 +119,7 @@ pre {
 nav {
     line-height: 2.25em;
     text-align: center;
-    margin: 0.5em 0;
+    margin-bottom: 0.5em;
 }
 
 nav ul {
@@ -150,7 +151,7 @@ nav ul li:hover > a {
 
 .paging {
     text-align:center;
-    margin:1em;
+    padding: 1em;
 }
 
 .paging a {
@@ -262,33 +263,23 @@ div.subreply .row-header {
     margin: 0;
 }
 
-div.subreply .row {
-    margin: 0 0.5em;
-}
-
 div.subreply .post-author {
     margin-left: 0;
 }
 
 div.rows.replies .row {
-    margin: 0 0.5em;
-}
-
-div.rows.replies .reply-table {
-    margin: 0 !important;
-    box-shadow: none !important;
-    border: solid 1px #e1e2e3;
+    margin: 0;
 }
 
 div.row {
-    background: #f1f2f3;
-    margin: 0.5em;
+    background: #f7f8f9;
+    margin: 0.5em 0;
     overflow: hidden;
 }
 
 div.row-header {
     margin: -0.5em -0.5em 0 -0.5em;
-    background: rgba(0,0,0,0.05);
+    background: rgba(0,0,0,0.04);
     padding: 0.5em;
     position: relative;
 }
@@ -340,7 +331,6 @@ a.unread {
     text-align: center;
     display: inline-block;
     padding: 0.5em;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
     background: #fcfdfe;
     width: 100%;
 }
@@ -370,7 +360,6 @@ a.unread {
 div.status-box {
     text-align:center;
     line-height:2em;
-    margin: 0.5em;
 }
 
 .reply-box {
@@ -541,4 +530,3 @@ div.tri.shadow {
 .post-options ul li:hover {
     background: #bdf;
 }
-

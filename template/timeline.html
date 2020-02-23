@@ -68,7 +68,7 @@
 
 {{if .ReplyView.PID}}<script>showReply('{{.ReplyView.PID}}');</script>{{end}}
 
-<div class="rows" id="timeline{{.ReplyView.UUID}}" style="margin-top:1em">
+<div class="rows" id="timeline{{.ReplyView.UUID}}" style="">
     {{if .ShowNewPost}}
     {{if ne .User.ID "master"}}
     {{template "reply_view.html" .ReplyView}}
@@ -76,7 +76,8 @@
     {{end}}
 
 {{if not .IsInbox}}
-<div style="background:#f1f2f3;cursor:pointer;margin:0 0.5em" class="post-options">
+<div style='padding:0 0.5em;background:#f1f2f3;cursor:pointer'>
+<div style="" class="tl-checkpoints post-options">
     <div style="padding:0.5em">
         <b>查看:</b>
         <span>
@@ -98,7 +99,7 @@
         {{end}}
     </ul>
 </div>
-<div style="background:#f1f2f3;cursor:pointer;margin:0 0.5em 0 0" class="post-options">
+<div class="tl-checkpoints post-options">
     <div style="padding:0.5em">
         <b>NSFW</b>:
         <span id="auto-expand-nsfw-state">
@@ -120,6 +121,7 @@
             <label for=auto-expand-nsfw>自动展开这类图片</label>
         </li>
     </ul>
+</div>
 </div>
 {{end}}
 
