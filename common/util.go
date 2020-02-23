@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	rxSan        = regexp.MustCompile(`(?m)(\n|\[img\]https?://\S+?\[/img\]|\[code\][\s\S]+?\[/code\]|<|https?://[^\s<>"'#\[\]]+|@\S+|#\S+)`)
+	rxSan        = regexp.MustCompile(`(?m)(\n|\[img\]https?://\S+?\[/img\]|\[code\][\s\S]+?\[/code\]|<|https?://[^\s<>"'#\[\]]+|@\S+|#\S+)|\[mj\]\d+\[/mj\]`)
 	rxFirstImage = regexp.MustCompile(`(?i)(https?://\S+\.(png|jpg|gif|webp|jpeg)|\[img\]https?://\S+\[/img\])`)
 	rxMentions   = regexp.MustCompile(`((@|#)\S+)`)
 )
@@ -66,6 +66,9 @@ func SanText(in string) string {
 		}
 		if strings.HasPrefix(in, "[img]") && strings.HasSuffix(in, "[/img]") {
 			return "<a href='" + in[5:len(in)-6] + "' target=_blank>" + in[5:len(in)-6] + "</a>"
+		}
+		if strings.HasPrefix(in, "[mj]") {
+			return "<img class=majiang src='https://static.saraba1st.com/image/smiley/face2017/" + in[4:len(in)-5] + ".png'>"
 		}
 		if len(in) > 0 {
 			s := SafeStringForCompressString(template.HTMLEscapeString(in[1:]))

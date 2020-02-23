@@ -16,6 +16,10 @@
                         border-radius: 3px;
                         margin: auto;
                     }
+                    .post-options-emoji img {
+                        width: 24px;
+                        height: 24px;
+                    }
                     .post-options-emoji:hover ul {
                         display: flex;
                         flex-wrap: wrap;
@@ -33,7 +37,7 @@
     <table class="articles reply-table" style="border:solid 1px #e1e2e3;border-width:1px 0;position:relative;text-align:left">
         <tr>
             <td style="white-space: nowrap;background:rgba(0,0,0,0.025)" colspan=2>
-                <div class="post-options post-options-emoji">
+                <div class="post-options post-options-emoji" onmousemove="emojiMajiang('{{.UUID}}')">
                     <button class=gbutton><i class="icon-emo-devil"></i><i class="icon-down-dir right"></i></button>
                     {{template "emoji.html" .UUID}}
                 </div>

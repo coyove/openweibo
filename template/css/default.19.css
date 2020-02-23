@@ -272,7 +272,7 @@ div.rows.replies .row {
 }
 
 div.row {
-    background: #f7f8f9;
+    background: #f6f6f6;
     margin: 0.5em 0;
     overflow: hidden;
 }
@@ -293,6 +293,8 @@ div.row-header.title {
     text-align:left;margin:-0.5em -0.5em 0.5em;
     line-height: 36px;
 }
+
+img.majiang { width: 28px; height: 28px; }
 
 span.time.sec:after { content: '秒前' }
 span.time.min:after { content: '分钟前' }

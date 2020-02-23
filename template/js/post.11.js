@@ -123,9 +123,45 @@ function insertTag(btn, id, start, text, end) {
 }
 
 function hackHide(el) {
-    while(el.tagName !== 'UL') el = el.parentNode;
+    while(el && el.tagName !== 'UL') el = el.parentNode;
     // el.parentNode.onmouseout = function(e) { el.style.display = null; }
     el.style.display='none';
     el.parentNode.onmouseenter = function(e) { el.style.display = null; }
     el.parentNode.onmousemove = function(e) { el.style.display = null; }
+}
+
+function emojiMajiang(uuid) {
+    var ul = $q('#rv-' + uuid + ' .post-options-emoji ul');
+    if (ul.LOADED) return;
+    ul.LOADED = true;
+
+    var omits = [4, 9, 56, 61, 62, 87, 115, 120, 137, 168, 169, 211, 215, 175, 210, 213, 209, 214, 217, 206],
+        history = JSON.parse(localStorage.getItem("EMOJIS") || '{}'),
+        add = function(i, front) {
+            var li = $q("<li>"), img = $q("<img>"), idx = ("000"+i).slice(-3);
+            img.src = 'https://static.saraba1st.com/image/smiley/face2017/' + idx + '.png';
+            img.onclick = function() {
+                var e = JSON.parse(localStorage.getItem("EMOJIS") || '{}');
+                e[idx] = {w:new Date().getTime(),k:idx};
+                localStorage.setItem('EMOJIS', JSON.stringify(e));
+                insertMention(img, uuid, '[mj]' + idx + '[/mj]');
+            }
+            li.appendChild(img);
+            front ? ul.insertBefore(li, ul.querySelector('li')) : ul.appendChild(li);
+        };
+
+    Object.values(history)
+        .sort(function(a,b) { return a.w > b.w })
+        .map(function(k) { return history[(k || {}).k] })
+        .forEach(function(e) {
+            var i = parseInt((e || {}).k, 10);
+            if (!i) return;
+            omits.push(i);
+            add(i, true);
+        });
+
+    for (var i = 1; i <= 226; i++) {
+        if (omits.includes(i)) continue;
+        add(i);
+    }
 }

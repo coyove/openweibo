@@ -140,7 +140,9 @@
 
     <script>$q('#nav-login').className = "selected"</script>
 
-
+    <div class=row style="text-align:center;padding:0.5em">
+                <a href="/" class=gbutton>已有账号？点此登入</a>
+    </div>
 
 <form method="POST" action="/user" onsubmit='
                     var username = $q("[name=username]").value || "";
@@ -176,13 +178,6 @@
     <table class="articles">
 
     <input type=hidden name=uuid value="{{.UUID}}">
-    <tr>
-        <td colspan=2 style="text-align:center">
-            <div>
-                <a href="/" class=gbutton>已有账号？点此登入</a>
-            </div>
-        </td>
-    </tr>
     <tr>
         <td>用户名:</td>
         <td><input class=t maxlength=15 name=username onkeyup="checkID(this.value)"></td>
