@@ -38,6 +38,10 @@
     {{end}}
     </div>
 
+    {{if .ContentHTML}}
+    <pre style="padding:0.5em 0 0">{{.ContentHTML}}</pre>
+    {{end}}
+
     {{if eq .MediaType "IMG"}}
         <div style="margin-top:0.5em;" class=media>
             {{if or .NSFW .You.Settings.FoldImages}}
@@ -54,10 +58,6 @@
             {{end}}
             <span class=long-image>长图</span>
         </div>
-    {{end}}
-
-    {{if .ContentHTML}}
-    <pre style="padding:0.66em 0 0">{{.ContentHTML}}</pre>
     {{end}}
 
     {{if not $isInboxLike}}

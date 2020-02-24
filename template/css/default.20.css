@@ -332,12 +332,12 @@ a.unread {
 .status {
     text-align: center;
     display: inline-block;
-    padding: 0.5em;
+    padding: 0.5em 0.5em 0;
     background: #fcfdfe;
     width: 100%;
 }
 
-.status span a b, .status span a i[class^="icon-"] {
+.status span a i[class^="icon-"] {
     text-decoration: none !important;
     font-size: 16px;
 }
@@ -349,15 +349,30 @@ a.unread {
     display: flex;
 }
 
-.status .title > span {
-    display: inline-block;
-    line-height: 48px;
-    flex: 0 33%;
+.status .title:last-child {
+    margin-bottom: 0;
 }
 
-.status .title.small > span {
-    line-height: 1em;
+.status .title > span {
+    display: inline-block;
+    line-height: 3em;
+    flex: 0 33%;
+    border-radius: 5px;
+    margin: 0.25em 0;
 }
+
+.status .title > span:hover {
+    background: rgba(0,0,0,0.033);
+}
+
+.status .sub-status {
+    color: #233;
+    font-weight: normal;
+}
+
+.status a { color: #233 }
+
+.status a:hover { text-decoration: none; }
 
 div.status-box {
     text-align:center;

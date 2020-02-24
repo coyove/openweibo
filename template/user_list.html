@@ -9,7 +9,7 @@
             {{template "user_private.html" .User}}
         {{else}}
             <script>$q('#nav-followings a span').innerText = "@{{.User.ID}}"</script>
-            <title>{{.User.ID}}的关注</title>
+            <title>{{.User.DisplayName}}的关注</title>
             {{template "user_public.html" .User}}
         {{end}}
     {{else if eq .ListType "blacklist"}}
@@ -23,20 +23,24 @@
             {{template "user_private.html" .User}}
         {{else}}
             <script>$q('#nav-followers a span').innerText = "@{{.User.ID}}"</script>
-            <title>{{.User.ID}}的粉丝</title>
+            <title>{{.User.DisplayName}}的粉丝</title>
             {{template "user_public.html" .User}}
         {{end}}
     {{end}}
 </div>
 
+<table class="articles z" style="margin: 0.5em 0;border-top:solid 1px #eee">
+
 {{if eq .ListType "blacklist"}}
-    <div style="margin: 0.5em">
+<tr>
+    <td colspan=3>
         1. 拉黑用户无法评论的状态或@你<br>
         2. 拉黑用户如果之前已经关注了你，则会自动取消且无法再次关注，同时无法看到你的时间线
-    </div>
+    </td>
+</tr>
 {{end}}
 
-<table class="articles z" style="margin: 0.5em 0">
+
     {{if $own}}
     <tr>
         <td colspan=3>

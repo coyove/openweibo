@@ -34,27 +34,33 @@
 
     <div class="title">
         <span>
+            <b>
             {{if .ID}}
-            <a href="/user/followings/{{.ID}}"><b>{{.Followings}}</b></a>
+                <a href="/user/followings/{{.ID}}">
+                    {{.Followings}} <span class=sub-status>关注</span>
+                </a>
             {{else}}
-            <b>-</b>
+                -
             {{end}}
+            </b>
         </span>
         <span>
+            <b>
             {{if .ID}}
-            <a href="/user/followers/{{.ID}}"><b>{{.Followers}}</b></a>
+                <a href="/user/followers/{{.ID}}">
+                    {{.Followers}} <span class=sub-status>粉丝</span>
+                </a>
             {{else}}
-            <b>-</b>
+                -
             {{end}}
+            </b>
         </span>
         <span>
-            <a href="/likes/{{.ID}}"><i class="icon-heart-filled"></i></a>
+            <b>
+            <a href="/likes/{{.ID}}">
+                <span class="sub-status icon-heart-filled">收藏</span>
+            </a>
+            </b>
         </span>
-    </div>
-
-    <div class="title small">
-        <span style="color:black">关注</span>
-        <span style="color:black">粉丝</span>
-        <span style="color:black">收藏</span>
     </div>
 </div>

@@ -352,3 +352,16 @@ func APIUpdateUserPassword(g *gin.Context) {
 	}
 	g.String(200, "ok")
 }
+
+func APIClearInbox(g *gin.Context) {
+	u := dal.GetUserByContext(g)
+	if u == nil {
+		g.String(200, "internal/error")
+		return
+	}
+	if err := dal.ClearInbox(u.ID); err != nil {
+		g.String(200, err.Error())
+		return
+	}
+	g.String(200, "ok")
+}

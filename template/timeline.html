@@ -75,8 +75,8 @@
     {{end}}
     {{end}}
 
-{{if not .IsInbox}}
 <div style='padding:0 0.5em;background:#f1f2f3;cursor:pointer'>
+{{if not .IsInbox}}
 <div style="" class="tl-checkpoints post-options">
     <div style="padding:0.5em">
         <b>查看:</b>
@@ -122,8 +122,10 @@
         </li>
     </ul>
 </div>
-</div>
+{{else}}
+<button class=gbutton style="margin: 0.5em 0" onclick="$postReload(this,'/api/clear_inbox',{})">清空全部提醒</button>
 {{end}}
+</div>
 
     <div class="row-reply-inserter" style="display:none"></div>
 

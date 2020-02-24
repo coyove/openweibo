@@ -1,7 +1,6 @@
 {{template "header.html" .}}
 <title>梨名板</title>
 
-    {{if not .User}}
 <div style="margin: 0.5em 0;line-height: 2em">
     <!--[if lte IE 9]> 
         <div style="color:red">
@@ -42,15 +41,5 @@
         </table>
     </form>
 </div>
-    {{else}}
-    <div class=status-box>
-    {{template "user_private.html" .User}}
-    <script>
-        setTimeout(function() {
-            location.href= '/t';
-        }, 500)
-    </script>
-    </div>
-    {{end}}
 
 

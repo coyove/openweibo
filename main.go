@@ -148,6 +148,7 @@ func main() {
 	r.Handle("POST", "/api/promote_mod", action.APIPromoteMod)
 	r.Handle("POST", "/api/mod_kv", action.APIModKV)
 	r.Handle("POST", "/api/user_settings", action.APIUpdateUserSettings)
+	r.Handle("POST", "/api/clear_inbox", action.APIClearInbox)
 	r.Handle("POST", "/api2/follow_block", action.APIFollowBlock)
 	r.Handle("POST", "/api2/like_article", action.APILike)
 	r.Handle("POST", "/api2/signup", action.APISignup)

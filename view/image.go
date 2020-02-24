@@ -17,17 +17,15 @@ import (
 	"time"
 
 	"github.com/coyove/iis/common"
-	"github.com/coyove/iis/model"
 	"github.com/gin-gonic/gin"
 )
 
 func Home(g *gin.Context) {
-	var p = struct {
-		User *model.User
-	}{
-		User: getUser(g),
+	if getUser(g) != nil {
+		g.Redirect(302, "/t")
+	} else {
+		g.HTML(200, "home.html", nil)
 	}
-	g.HTML(200, "home.html", p)
 }
 
 var imgClient = &http.Client{Timeout: 1 * time.Second}

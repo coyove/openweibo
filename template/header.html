@@ -1,8 +1,8 @@
 <!doctype html>
 <html>
-    <link href="/s/css/default.19.css" rel="stylesheet" type="text/css" media="all">
+    <link href="/s/css/default.20.css" rel="stylesheet" type="text/css" media="all">
     <link href="/s/fonts/fontello-embedded.css?ver=21" rel="stylesheet" type="text/css" media="all">
-    <script src="/s/js/default.19.js"></script>
+    <script src="/s/js/default.20.js"></script>
     <script src="/s/js/post.11.js"></script>
     <script src="/s/js/tribute.min.js"></script>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
@@ -59,7 +59,7 @@
         });
 
         window.onmousemove = function(e) {
-            if (!window.ticking) {
+            if (!window.REGTICK) {
                 window.requestAnimationFrame(function() {
                     var x = e.clientX, y = e.clientY;
                     window.REGIONS = (window.REGIONS || []).filter(function(rect) { return rect.valid; })
@@ -77,9 +77,9 @@
                             rect.valid = false;
                         }
                     })
-                    window.ticking = false;
+                    window.REGTICK = false;
                 });
-                window.ticking = true;
+                window.REGTICK = true;
             }
         }
     </script>

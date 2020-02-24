@@ -51,49 +51,45 @@
             style="padding:0 0.5em;margin:0.5em 0;width:100%;border:dotted 1px #ccc;line-height:2em;text-align:left"
             placeholder="个人简介"
             class=t
-            data="{{.Settings.Description}}" value="{{.Settings.Description}}">
+            value="{{.Settings.Description}}">
     </div>
 
-    <div class=title style="border-bottom: dotted 1px #ccc">
+    <div class=title>
         <span title="我的黑名单">
-            <a href="/user/blacklist"><i class="icon-block"></i></a>
+            <a href="/user/blacklist"><i class="icon-block"></i> <span class=sub-status>黑名单</span></a>
         </span>
         <span title="我的收藏">
-            <a href="/likes/{{.ID}}"><i class="icon-heart-filled"></i></a>
+            <a href="/likes/{{.ID}}"><i class="icon-heart-filled"></i> <span class=sub-status>收藏</span></a>
         </span>
         <span title="我的提醒">
+            <a href="/inbox">
             {{if .Unread}}
-            <a href="/inbox"><b style="color:#f52" class="icon-mail-alt">{{.Unread}}</b></a>
+            <b style="color:#f52" class="icon-mail-alt">{{.Unread}}</b>
+            <span class=sub-status>提醒</span>
             {{else}}
-            <a href="/inbox"><i class="icon-mail-alt"></i></a>
+            <i class="icon-mail-alt"></i>
+            <span class=sub-status>提醒</span>
             {{end}}
+            </a>
         </span>
     </div>
 
     <div class=title>
         <span>
-            <a href="/user/followings"><b>{{.Followings}}</b></a>
+            <a href="/user/followings"><b>{{.Followings}}</b> <span class=sub-status>关注</span></a>
         </span>
         <span>
-            <a href="/user/followers"><b>{{.Followers}}</b></a>
+            <a href="/user/followers"><b>{{.Followers}}</b> <span class=sub-status>粉丝</span></a>
         </span>
         <span>
-            <a href="/t/{{.ID}}"><b>{{getTotalPosts .ID}}</b></a>
+            <a href="/t/{{.ID}}"><b>{{getTotalPosts .ID}}</b> <span class=sub-status>状态</span></a>
         </span>
-    </div>
-
-    <div class="title small">
-        <span style="color:black">关注</span>
-        <span style="color:black">粉丝</span>
-        <span style="color:black">状态</span>
     </div>
 </div>
 
 <script>
     $q("#bio-description").addEventListener("blur", function(e) {
-        if (e.target.getAttribute("data") !== e.target.value) {
-            updateSetting(document.createElement("button"), "description", e.target.value)
-        }
+        if (e.target.value) updateSetting(document.createElement("button"), "description", e.target.value)
     }, false)
 
 function changeName(el) {

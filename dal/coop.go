@@ -54,6 +54,7 @@ type Request struct {
 		SetExtraKey   *string
 		SetExtraValue *string
 		IncDecLikes   *bool
+		ClearNextID   *bool
 		DeleteBy      *model.User
 		ToggleNSFWBy  *model.User
 		ToggleLockBy  *model.User
@@ -275,6 +276,9 @@ func coUpdateArticle(r *Request) error {
 		} else {
 			dec0(&a.Likes)
 		}
+	}
+	if rr.ClearNextID != nil && *rr.ClearNextID {
+		a.NextID, a.NextMediaID = "", ""
 	}
 	now := func() string { return time.Now().Format(time.Stamp) }
 	if rr.DeleteBy != nil {

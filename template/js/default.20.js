@@ -440,20 +440,22 @@ function showInfoBox(el, uid) {
     div.style.top = box.top - bodyBox.top + 'px';
     div.style.boxShadow = "0 1px 2px #ccc";
 
-    window.REGIONS = window.REGIONS || [];
-    window.REGIONS.push({
+    var reg = {
         valid: true,
         boxes: [div.getBoundingClientRect()],
         callback: function(x, y) {
             div.parentNode.removeChild(div);
             el.BLOCK = false;
         },
-    });
+    };
+
+    window.REGIONS = window.REGIONS || [];
+    window.REGIONS.push(reg);
 
     $post("/api/u/" + uid, {}, function(h) {
         if (h.indexOf("ok:") > -1) {
             div.innerHTML = h.substring(3);
-
+            reg.boxes[0] = div.getBoundingClientRect();
             return
         }
         return h

@@ -92,6 +92,13 @@ func GetUserByToken(tok string) (*model.User, error) {
 	return u, nil
 }
 
+func ClearInbox(uid string) error {
+	return Do(NewRequest(DoUpdateArticle,
+		"ID", ik.NewID(ik.IDInbox, uid).String(),
+		"ClearNextID", true,
+	))
+}
+
 func MentionUserAndTags(a *model.Article, ids []string, tags []string) error {
 	for _, id := range ids {
 		if IsBlocking(id, a.Author) {
