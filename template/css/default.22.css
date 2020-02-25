@@ -29,7 +29,6 @@
     margin: 0;
     box-sizing: border-box;
     font-family: "Roboto", "Helvetica Neue",Helvetica,Arial,"Hiragino Sans GB","Hiragino Sans GB W3","WenQuanYi Micro Hei",sans-serif;
-    font-size: 14px;
 }
 
 html {
@@ -41,7 +40,8 @@ html {
     -webkit-text-size-adjust: 120%;
 }
 
-body {
+body, button, input, textarea {
+    font-size: 14px;
     position: relative;
 }
 
@@ -267,7 +267,7 @@ div.subreply .post-author {
     margin-left: 0;
 }
 
-div.rows.replies .row {
+div.rows.replies .row, div.subreply .row {
     margin: 0;
 }
 
@@ -294,12 +294,28 @@ div.row-header.title {
     line-height: 36px;
 }
 
+div.row .foobar {
+    padding-top: 0.75em; line-height:1.5em
+}
+
+div.row .foobar > a {
+    display: inline-block;
+    padding-bottom: 0.2em;
+    border-bottom: solid 0.3em transparent;
+    transition: border-bottom-color 0.25s;
+}
+
+div.row .foobar > a:hover {
+    border-bottom-color: #677;
+}
+
 img.majiang { width: 28px; height: 28px; }
 
 span.time.sec:after { content: '秒前' }
 span.time.min:after { content: '分钟前' }
 span.time.hour:after { content: '小时前' }
 span.time.day:after { content: '天前' }
+span.time.none:after { content: '无' }
 
 span.deleted:after {
     content: '内容已删除，不要想了';
@@ -359,6 +375,7 @@ a.unread {
     flex: 0 33%;
     border-radius: 5px;
     margin: 0.25em 0;
+    transition: background 0.5s;
 }
 
 .status .title > span:hover {
@@ -491,6 +508,7 @@ div.tri.shadow {
 .icon-input-checkbox:checked + [class^=icon-]:before { content: '\e813'; color: #233 }
 .icon-input-checkbox { display: none }
 .icon-input-checkbox + * + label { cursor:pointer }
+.icon-reply-outline.replied:before { transform:rotate(-135deg); }
 
 .tribute-container {
     position: absolute;

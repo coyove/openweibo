@@ -80,7 +80,7 @@
                         <li>
                             <input type=checkbox name=notimeline id="notimeline{{.UUID}}" class=icon-input-checkbox>
                             <i class=icon-ok-circled2></i>
-                            <label for="notimeline{{.UUID}}">不同步至我的时间线Master时间线</label>
+                            <label for="notimeline{{.UUID}}">不同步至我的时间线</label>
                         </li>
                         {{else}}
                         <li>
@@ -101,8 +101,25 @@
                                 标记图片为<span style="color:#f90"><i class='icon-transgender-alt'></i>NSFW</span>
                             </label>
                         </li>
+                        <li>
+                            <span onclick="$q('#tr-encrypt-{{.UUID}}').style.display = null;hackHide(this)">
+                                <i class="icon-code"></i>
+                                使用密码加密内容
+                            </span>
+                        </li>
                     </ul>
                 </div>
+            </td>
+        </tr>
+
+        <tr style="border-bottom:solid 1px #eee;display:none" id="tr-encrypt-{{.UUID}}">
+            <td>
+                <input class=t placeholder="密码">
+            </td>
+            <td class=nowrap>
+                <button class=gbutton onclick="t=$q('#rv-{{.UUID}} [name=content]');$aesgcm().encrypt(t.value,$q('#tr-encrypt-{{.UUID}} input').value,function(v) {t.value='[enc]'+(v.length<1000?v:0)+'[/enc]';$q('#tr-encrypt-{{.UUID}}').style.display='none'})">
+                    使用密码加密
+                </button>
             </td>
         </tr>
 
@@ -112,7 +129,7 @@
                     name=content
                     maxlength=1024
                     placeholder="写下你的想法..."
-                    rows={{if .ReplyTo}}6{{else}}10{{end}}
+                    rows=6
                     style="padding:0.66em;border:none"></textarea>
 
                 <div

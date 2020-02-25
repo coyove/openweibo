@@ -8,9 +8,11 @@ import (
 )
 
 var (
-	rxSan        = regexp.MustCompile(`(?m)(\n|\[img\]https?://\S+?\[/img\]|\[code\][\s\S]+?\[/code\]|<|https?://[^\s<>"'#\[\]]+|@\S+|#\S+)|\[mj\]\d+\[/mj\]`)
+	rxSan        = regexp.MustCompile(`(?m)(\n|\[img\]https?://\S+?\[/img\]|\[code\][\s\S]+?\[/code\]|<|https?://[^\s<>"'#\[\]]+|@\S+|#\S+)|\[mj\]\d+\[/mj\]|\[enc\]\w+\[/enc\]`)
 	rxFirstImage = regexp.MustCompile(`(?i)(https?://\S+\.(png|jpg|gif|webp|jpeg)|\[img\]https?://\S+\[/img\])`)
 	rxMentions   = regexp.MustCompile(`((@|#)\S+)`)
+
+	ReverseTemplateRenderFunc func(string, interface{}) string
 )
 
 func SoftTrunc(a string, n int) string {
@@ -70,6 +72,9 @@ func SanText(in string) string {
 		if strings.HasPrefix(in, "[mj]") {
 			return "<img class=majiang src='https://static.saraba1st.com/image/smiley/face2017/" + in[4:len(in)-5] + ".png'>"
 		}
+		if strings.HasPrefix(in, "[enc]") {
+			return strings.TrimSpace(ReverseTemplateRenderFunc("enc.html", in[5:len(in)-6]))
+		}
 		if len(in) > 0 {
 			s := SafeStringForCompressString(template.HTMLEscapeString(in[1:]))
 			if in[0] == '#' {
@@ -78,7 +83,10 @@ func SanText(in string) string {
 			}
 			if in[0] == '@' {
 				AddUserToSearch(in[1:])
-				return "<a href='/t/" + s + "' target=_blank>" + in + "</a>"
+				return "<a href='javascript:void(0)'" +
+					` class=mentioned-user` +
+					` onclick="showInfoBox(this,'` + in[1:] + `')">` +
+					in + "</a>"
 			}
 		}
 		return "<a href='" + in + "' target=_blank>" + in + "</a>"

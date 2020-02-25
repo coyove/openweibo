@@ -1,0 +1,23 @@
+<div style="white-space: normal;
+    padding: 0.5em;
+    box-shadow: 0 0 2px #ccc;
+    margin: 0.5em 0;
+    border-radius: 5px;
+    text-align: center;
+    background: white;
+    display: flex">
+    <input class=t style="border:none" placeholder="密码">
+    <div style="white-space:nowrap">
+        <button
+            class=gbutton
+            onclick="
+            p=this.parentNode.parentNode;
+            $aesgcm().decrypt('{{.}}',p.querySelector('input').value,function(t){
+                      if (t === false) {
+                          $popup('密码错误')
+                          return
+                      }
+                      p.outerText = t
+    })">打开</button>
+    </div>
+</div>

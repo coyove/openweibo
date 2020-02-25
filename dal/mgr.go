@@ -15,8 +15,9 @@ import (
 )
 
 var m struct {
-	db        KeyValueOp
-	weakUsers *cache.WeakCache
+	db          KeyValueOp
+	weakUsers   *cache.WeakCache
+	activeUsers *cache.GlobalCache
 }
 
 func Init(redisConfig *cache.RedisConfig, region string, ak, sk string) {
@@ -30,9 +31,11 @@ func Init(redisConfig *cache.RedisConfig, region string, ak, sk string) {
 		db = kv.NewDynamoKV(region, ak, sk)
 	}
 
-	db.SetGlobalCache(cache.NewGlobalCache(CacheSize, redisConfig))
+	c := cache.NewGlobalCache(CacheSize, redisConfig)
+	db.SetGlobalCache(c)
 
 	m.db = db
+	m.activeUsers = c
 	m.weakUsers = cache.NewWeakCache(65536, time.Second)
 }
 

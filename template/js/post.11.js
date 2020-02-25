@@ -140,6 +140,7 @@ function emojiMajiang(uuid) {
         add = function(i, front) {
             var li = $q("<li>"), img = $q("<img>"), idx = ("000"+i).slice(-3);
             img.src = 'https://static.saraba1st.com/image/smiley/face2017/' + idx + '.png';
+            img.setAttribute("loading", "lazy");
             img.onclick = function() {
                 var e = JSON.parse(localStorage.getItem("EMOJIS") || '{}');
                 e[idx] = {w:new Date().getTime(),k:idx};

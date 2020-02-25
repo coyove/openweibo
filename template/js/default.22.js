@@ -414,11 +414,13 @@ function showInfoBox(el, uid) {
     var div = $q("<div>"),
         loading = $html("<div style='position:absolute;left:0;top:0;width:100%;height:100%'></div>"),
         bodyBox = document.body.getBoundingClientRect(),
-        box = el.getBoundingClientRect();
+        box = el.getBoundingClientRect(),
+        boxTopOffset = 0,
+        addtionalBoxes = [];
 
     document.body.appendChild(div);
     div.innerHTML = $q("#dummy-user").innerHTML;
-    div.querySelector('img.avatar').src = el.src;
+    div.querySelector('img.avatar').src = el.src || '';
 
     for (var x = el.parentNode; x ; x = x.parentNode) {
         var pa = x.querySelector('span.post-author')
@@ -428,21 +430,25 @@ function showInfoBox(el, uid) {
         }
     }
 
-    for (var x = el.parentNode; x ; x = x.parentNode) {
-        if (x.getAttribute('data-id')) {
+    for (var x = el; x ; x = x.parentNode) {
+        if (x.getAttribute('data-id') || x.className === 'mentioned-user') {
             box = x.getBoundingClientRect();
+            if (x.className === 'mentioned-user') {
+                addtionalBoxes.push(box);
+                boxTopOffset = box.bottom - box.top;
+            }
             break;
         }
     }
 
     div.style.position = 'absolute';
     div.style.left = box.left - bodyBox.left + 'px';
-    div.style.top = box.top - bodyBox.top + 'px';
+    div.style.top = box.top - bodyBox.top + boxTopOffset + 'px';
     div.style.boxShadow = "0 1px 2px #ccc";
 
     var reg = {
         valid: true,
-        boxes: [div.getBoundingClientRect()],
+        boxes: [div.getBoundingClientRect()].concat(addtionalBoxes),
         callback: function(x, y) {
             div.parentNode.removeChild(div);
             el.BLOCK = false;
@@ -482,4 +488,70 @@ function adjustImage(img) {
     }
 
     div.style.backgroundImage = 'url(' + img.src + ')';
+}
+
+function $aesgcm() {
+    function $getKey(key) {
+        var k = new Uint8Array(16);
+        k.forEach(function(v, i) { k[i] = key.charCodeAt(i) || 1; })
+        return window.crypto.subtle.importKey('raw', k, {
+            name: 'AES-GCM',
+            length: 256
+        }, false, ['encrypt', 'decrypt'])
+    }
+
+    function $tohex(a) {
+        var text = "";
+        (new Uint8Array(a)).forEach(function(v) {
+            text += ("00" + v.toString(16)).slice(-2)
+        })
+        return text;
+    }
+
+    function $fromhex(text) {
+        var a = new Uint8Array(text.length / 2);
+        a.forEach(function(v, i) {
+            a[i] = parseInt(text.substr(i * 2, 2), 16)
+        })
+        return a;
+    }
+
+    function $encrypt(str, key, cb) {
+        var iv = window.crypto.getRandomValues(new Uint8Array(12));
+        var algoEncrypt = {
+            name: 'AES-GCM',
+            iv: iv,
+            tagLength: 128
+        };
+        $getKey(key).then(function (key) {
+            var buf = new ArrayBuffer(str.length * 2);
+            var bufView = new Uint16Array(buf);
+            for (var i = 0, strLen = str.length; i < strLen; i++) {
+                bufView[i] = str.charCodeAt(i);
+            }
+            return window.crypto.subtle.encrypt(algoEncrypt, key, buf);
+        }).then(function (cipherText) {
+            cb($tohex(cipherText) + $tohex(iv));
+        });
+    }
+
+    function $decrypt(str, key, cb) {
+        $getKey(key).then(function (key) {
+            return window.crypto.subtle.decrypt({
+                name: 'AES-GCM',
+                iv: $fromhex(str.substr(str.length - 24, 24)),
+                tagLength: 128
+            }, key, $fromhex(str.substring(0, str.length - 24)));
+        }).then(function (data) {
+            data = String.fromCharCode.apply(null, new Uint16Array(data));
+            cb(data)
+        }).catch(function (err) {
+            cb(false)
+        });
+    }
+
+    return {
+        "encrypt": $encrypt,
+        "decrypt": $decrypt,
+    }
 }

@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/coyove/iis/common"
 	"github.com/gin-gonic/gin"
 )
 
@@ -41,6 +42,10 @@ func loadTrafficCounter() {
 			last = Survey.Written
 		}
 	}()
+}
+
+func init() {
+	common.ReverseTemplateRenderFunc = RenderTemplateString
 }
 
 var staticHeader = http.Header{

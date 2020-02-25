@@ -411,3 +411,16 @@ func IsLiking(from, to string) bool {
 	p, _ := GetArticle(makeLikeID(from, to))
 	return p != nil && p.Extras["like"] == "true"
 }
+
+func LastActiveTime(uid string) time.Time {
+	v, _ := m.activeUsers.Get("u/" + uid + "/last_active")
+	t, _ := strconv.ParseInt(string(v), 10, 64)
+	if t == 0 {
+		return time.Time{}
+	}
+	return time.Unix(t, 0)
+}
+
+func MarkUserActive(uid string) {
+	m.activeUsers.Add("u/"+uid+"/last_active", []byte(strconv.FormatInt(time.Now().Unix(), 10)))
+}

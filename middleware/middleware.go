@@ -43,6 +43,7 @@ func mwRenderPerf(g *gin.Context) {
 		tok, _ := g.Cookie("id")
 		if u, _ = dal.GetUserByToken(tok); u != nil {
 			g.Set("user", u)
+			dal.MarkUserActive(u.ID)
 		}
 	}
 

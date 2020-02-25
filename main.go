@@ -100,7 +100,13 @@ func main() {
 			}
 			return 0
 		},
+		"getLastActiveTime": func(id string) time.Time {
+			return dal.LastActiveTime(id)
+		},
 		"formatTime": func(a time.Time) template.HTML {
+			if a == (time.Time{}) || a.IsZero() || a.Unix() == 0 {
+				return template.HTML("<span class='time none'></span>")
+			}
 			s := time.Since(a).Seconds()
 			if s < 60 {
 				return template.HTML("<span class='time sec'>" + strconv.Itoa(int(s)) + "</span>")
