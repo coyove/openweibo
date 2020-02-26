@@ -26,6 +26,7 @@ type ArticleView struct {
 	Liked       bool
 	NSFW        bool
 	NoAvatar    bool
+	NoReply     bool
 	Content     string
 	ContentHTML template.HTML
 	Media       string
@@ -38,6 +39,7 @@ const (
 	_ uint64 = 1 << iota
 	_NoMoreParent
 	_ShowAvatar
+	_NoReply
 )
 
 func NewTopArticleView(a *model.Article, you *model.User) (av ArticleView) {
@@ -99,10 +101,11 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 		a.Parent = &ArticleView{}
 		if opt&_NoMoreParent == 0 {
 			p, _ := dal.GetArticle(a2.Parent)
-			a.Parent.from(p, opt|_NoMoreParent, u)
+			a.Parent.from(p, opt&(^_NoReply)|_NoMoreParent, u)
 		}
 	}
 
+	a.NoReply = opt&_NoReply > 0
 	a.NoAvatar = opt&_NoMoreParent > 0
 	if opt&_ShowAvatar > 0 {
 		a.NoAvatar = false

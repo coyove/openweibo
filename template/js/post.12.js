@@ -113,6 +113,10 @@ function insertMention(btn, id, e) {
 }
 
 function insertTag(btn, id, start, text, end) {
+    if (text.length > 300) {
+        $popup("文本过长 (300字符)")
+        return false;
+    }
     var el = typeof id === 'string' ? $q("#rv-" + id + " [name=content]") : id;
     if (el.value) start = "\n" + start;
     el.value += start + text + end;
@@ -123,6 +127,7 @@ function insertTag(btn, id, start, text, end) {
 }
 
 function hackHide(el) {
+    if (!el) return;
     while(el && el.tagName !== 'UL') el = el.parentNode;
     // el.parentNode.onmouseout = function(e) { el.style.display = null; }
     el.style.display='none';

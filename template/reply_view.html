@@ -112,14 +112,25 @@
             </td>
         </tr>
 
-        <tr style="border-bottom:solid 1px #eee;display:none" id="tr-encrypt-{{.UUID}}">
-            <td>
-                <input class=t placeholder="密码">
-            </td>
-            <td class=nowrap>
-                <button class=gbutton onclick="t=$q('#rv-{{.UUID}} [name=content]');$aesgcm().encrypt(t.value,$q('#tr-encrypt-{{.UUID}} input').value,function(v) {t.value='[enc]'+(v.length<1000?v:0)+'[/enc]';$q('#tr-encrypt-{{.UUID}}').style.display='none'})">
-                    使用密码加密
-                </button>
+        <tr style="display:none" id="tr-encrypt-{{.UUID}}">
+            <td colspan=2>
+                <div class=enc-box style="box-shadow:0 0 2px #bbb">
+                    <input class=t placeholder="内容" name=enc-content style="border:none;border-right:dotted 1px #ddd;flex:0 66%">
+                    <input class=t placeholder="密码" name=enc-key style="flex:0 33%;border:none" maxlength="16">
+                    <button class=gbutton
+                            style="flex-shrink: 0"
+                            onclick="t=$q('#tr-encrypt-{{.UUID}} input[name=enc-key');$aesgcm().encrypt(
+                                          $q('#tr-encrypt-{{.UUID}} input[name=enc-content]').value,
+                                          t.value,
+                                          function(v) {
+                                              if (insertTag(null, '{{.UUID}}', '[enc]', v, '[/enc]') === false) return;
+                                              $popup('请记住密码: ' + (t.value || '空'), '#088');
+                                              t.value = null;
+                                              $q('#tr-encrypt-{{.UUID}}').style.display='none';
+                                          })">
+                        加密
+                    </button>
+                </div>
             </td>
         </tr>
 

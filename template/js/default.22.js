@@ -40,15 +40,16 @@ function $wait(el) {
 }
 
 function $popup(html, bg) {
-    var div = $html("<div style='position:fixed;top:0;left:0;width:100%;color:white;opacity:0.9;line-height:32px;text-align:center;word-break:break-all'></div>");
+    var div = $html("<div style='cursor: pointer; font-size: 90%; position: fixed; left: 50%; color: white; opacity: 0.85; line-height: 32px; text-align: center; word-break: break-all; bottom: 32px; border-radius: 4px; background: rgb(255, 85, 34); transform: translate(-50%, 0); padding: 0 1em;'></div>");
     div.style.background = bg || '#f52';
     div.innerHTML = html;
-    document.body.appendChild(div);
-    setTimeout(function() {
-        div.style.transition = "opacity 1s";
+    div.onclick = function() {
+        div.style.transition = "opacity 0.8s";
         div.style.opacity = "0";
         setTimeout(function() {div.parentNode.removeChild(div)}, 1000);
-    }, 1000)
+    }
+    document.body.appendChild(div);
+    setTimeout(div.onclick, 2000)
 }
 
 function $post(url, data, cb, errorcb) {

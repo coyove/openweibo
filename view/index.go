@@ -243,7 +243,7 @@ func APIReplies(g *gin.Context) {
 		return
 	}
 
-	pl.ParentArticle.from(parent, 0, getUser(g))
+	pl.ParentArticle.from(parent, _NoReply, getUser(g))
 	pl.ReplyView = makeReplyView(g, pid)
 
 	if u := getUser(g); u != nil {

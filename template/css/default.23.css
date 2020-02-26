@@ -55,6 +55,7 @@ input:focus, select:focus, textarea:focus, button:focus, div[contentEditable=tru
 
 input[type=text], input.t, textarea, select {
    -webkit-appearance: none;
+   border-radius: 0;
 }
 
 a, label[for=login] {
@@ -564,4 +565,14 @@ div.tri.shadow {
 }
 .post-options ul li:hover {
     background: #bdf;
+}
+
+.enc-box {
+    white-space: normal;
+    padding: 0.5em;
+    box-shadow: 0 0 2px #ccc;
+    border-radius: 5px;
+    text-align: center;
+    background: white;
+    display: flex;
 }

@@ -1,12 +1,5 @@
-<div style="white-space: normal;
-    padding: 0.5em;
-    box-shadow: 0 0 2px #ccc;
-    margin: 0.5em 0;
-    border-radius: 5px;
-    text-align: center;
-    background: white;
-    display: flex">
-    <input class=t style="border:none" placeholder="密码">
+<div class=enc-box style="margin: 0.5em 0;">
+    <input class=t style="border:none" placeholder="密码" onkeyup="if(event.keyCode==13)this.nextElementSibling.querySelector('button').click()">
     <div style="white-space:nowrap">
         <button
             class=gbutton

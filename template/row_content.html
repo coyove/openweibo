@@ -66,7 +66,7 @@
 
     {{if not $isInboxLike}}
     <div class=foobar>
-        <a class="reply-box" href="javascript:showReply('{{.ID}}')">
+        <a class="reply-box" href="javascript:showReply('{{.ID}}')" {{if .NoReply}}style="color:#aaa"{{end}}>
             <i class="icon-reply-outline {{if .Parent}}{{if .Parent.ID}}replied{{end}}{{end}}"></i>
             {{if .Replies}}{{.Replies}}{{end}}
         </a>
