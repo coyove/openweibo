@@ -2,6 +2,7 @@ package dal
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"strconv"
 	"time"
@@ -54,6 +55,7 @@ type Request struct {
 		SetExtraKey   *string
 		SetExtraValue *string
 		IncDecLikes   *bool
+		IncDecReplies *bool
 		ClearNextID   *bool
 		DeleteBy      *model.User
 		ToggleNSFWBy  *model.User
@@ -277,6 +279,15 @@ func coUpdateArticle(r *Request) error {
 			dec0(&a.Likes)
 		}
 	}
+	if rr.IncDecReplies != nil {
+		if *rr.IncDecReplies {
+			a.Replies++
+		} else {
+			if a.Replies--; a.Replies < 0 {
+				a.Replies = 0
+			}
+		}
+	}
 	if rr.ClearNextID != nil && *rr.ClearNextID {
 		a.NextID, a.NextMediaID = "", ""
 	}
@@ -288,6 +299,15 @@ func coUpdateArticle(r *Request) error {
 		a.Content = model.DeletionMarker
 		a.Media = ""
 		a.History += fmt.Sprintf("{delete_by:%s:%v}", rr.DeleteBy.ID, now())
+
+		if a.Parent != "" {
+			go func() {
+				err := Do(NewRequest(DoUpdateArticle, "ID", a.Parent, "IncDecReplies", false))
+				if err != nil {
+					log.Println("Delete Article, failed to dec parent's reply count:", err)
+				}
+			}()
+		}
 	}
 	if rr.ToggleNSFWBy != nil {
 		if rr.ToggleNSFWBy.ID != a.Author && !rr.ToggleNSFWBy.IsMod() {

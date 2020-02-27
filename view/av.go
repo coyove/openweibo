@@ -58,7 +58,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 	}
 
 	a.ID = a2.ID
-	a.Replies = a2.Replies
+	a.Replies = int(a2.Replies)
 	a.Likes = int(a2.Likes)
 	a.Locked = a2.Locked
 	a.NSFW = a2.NSFW

@@ -135,6 +135,7 @@ func APIGetUserInfoBox(g *gin.Context) {
 	if you := getUser(g); you != nil {
 		u.SetIsNotYou(you.ID != u.ID)
 		u.SetIsFollowing(dal.IsFollowing(you.ID, u.ID))
+		u.SetIsFollowed(dal.IsFollowing(u.ID, you.ID))
 		u.SetIsBlocking(dal.IsBlocking(you.ID, u.ID))
 	}
 

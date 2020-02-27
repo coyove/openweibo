@@ -106,6 +106,7 @@ func Timeline(g *gin.Context) {
 
 		if pl.You != nil && pl.You.ID != pl.User.ID {
 			pl.User.SetIsFollowing(dal.IsFollowing(pl.You.ID, uid))
+			pl.User.SetIsFollowed(dal.IsFollowing(uid, pl.You.ID))
 			pl.User.SetIsBlocking(dal.IsBlocking(pl.You.ID, uid))
 			pl.User.SetIsNotYou(true)
 		}

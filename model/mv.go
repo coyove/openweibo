@@ -101,6 +101,7 @@ type User struct {
 	Kimochi      byte   `json:"kmc,omitempty"`
 
 	_IsFollowing bool
+	_IsFollowed  bool
 	_IsBlocking  bool
 	_IsNotYou    bool
 	_Settings    UserSettings
@@ -126,6 +127,8 @@ func (u User) DisplayName() string {
 
 func (u User) IsFollowing() bool { return u._IsFollowing }
 
+func (u User) IsFollowed() bool { return u._IsFollowed }
+
 func (u User) IsBlocking() bool { return u._IsBlocking }
 
 func (u User) IsNotYou() bool { return u._IsNotYou }
@@ -133,6 +136,8 @@ func (u User) IsNotYou() bool { return u._IsNotYou }
 func (u User) Settings() UserSettings { return u._Settings }
 
 func (u *User) SetIsFollowing(v bool) { u._IsFollowing = v }
+
+func (u *User) SetIsFollowed(v bool) { u._IsFollowed = v }
 
 func (u *User) SetIsBlocking(v bool) { u._IsBlocking = v }
 

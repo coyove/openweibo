@@ -29,7 +29,21 @@
     <div class=title style="border-bottom: dotted 1px #ccc;text-align:left;line-height:1.66em">
         <pre style="margin:0.5em 0"><!--
         -->{{.Settings.DescHTML}}<!--
-        --><div style="color:#666;font-size:90%"><b>加入于</b> {{formatTime .Signup}} <b>活跃于</b> {{formatTime (getLastActiveTime .ID)}}</div><!--
+        --><div style="color:#666;font-size:90%;white-space:normal">
+            <b>加入于</b> {{formatTime .Signup}}&nbsp;
+            <b>活跃于</b> {{formatTime (getLastActiveTime .ID)}}&nbsp;
+            {{if .IsNotYou}}
+            {{if and .IsFollowing .IsFollowed}}
+            <b>互相关注</b>
+            {{else if .IsFollowing}}
+            <b>关注中</b>
+            {{else if .IsFollowed}}
+            <b>你的关注者</b>
+            {{end}}
+            {{else}}
+            <b>你</b>
+            {{end}}
+            </div><!--
         --></pre>
     </div>
 
