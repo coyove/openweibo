@@ -423,11 +423,15 @@ function showInfoBox(el, uid) {
     div.innerHTML = $q("#dummy-user").innerHTML;
     div.querySelector('img.avatar').src = el.src || '';
 
-    for (var x = el.parentNode; x ; x = x.parentNode) {
-        var pa = x.querySelector('span.post-author')
-        if (pa) {
-            div.querySelector('span.post-author').innerHTML = pa.innerHTML;
-            break;
+    if (el.className === 'mentioned-user') {
+        div.querySelector('span.post-author').innerHTML = el.innerHTML;
+    } else {
+        for (var x = el.parentNode; x ; x = x.parentNode) {
+            var pa = x.querySelector('span.post-author')
+            if (pa) {
+                div.querySelector('span.post-author').innerHTML = pa.innerHTML;
+                break;
+            }
         }
     }
 

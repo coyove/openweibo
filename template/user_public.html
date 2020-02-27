@@ -33,15 +33,15 @@
             <b>加入于</b> {{formatTime .Signup}}&nbsp;
             <b>活跃于</b> {{formatTime (getLastActiveTime .ID)}}&nbsp;
             {{if .IsNotYou}}
-            {{if and .IsFollowing .IsFollowed}}
-            <b>互相关注</b>
-            {{else if .IsFollowing}}
-            <b>关注中</b>
-            {{else if .IsFollowed}}
-            <b>你的关注者</b>
-            {{end}}
-            {{else}}
-            <b>你</b>
+                {{if and .IsFollowing .IsFollowed}}
+                <b>互相关注</b>
+                {{else if .IsFollowing}}
+                <b>关注中</b>
+                {{else if .IsFollowed}}
+                <b>你的关注者</b>
+                {{end}}
+            {{else if .ID}}
+                <b>你</b>
             {{end}}
             </div><!--
         --></pre>
