@@ -68,6 +68,10 @@
 
 {{if .ReplyView.PID}}<script>showReply('{{.ReplyView.PID}}');</script>{{end}}
 
+    {{if and (eq .User.ID "master") .You}}
+    {{template "tags_heat.html" .HotTags}}
+    {{end}}
+
 <div class="rows" id="timeline{{.ReplyView.UUID}}" style="">
     {{if .ShowNewPost}}
     {{if ne .User.ID "master"}}

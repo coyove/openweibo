@@ -30,6 +30,7 @@ type ArticlesTimelineView struct {
 	Checkpoints           []string
 	CurrentCheckpoint     string
 	ReplyView             ReplyView
+	HotTags               []HotTag
 }
 
 type ArticleRepliesView struct {
@@ -87,6 +88,7 @@ func Timeline(g *gin.Context) {
 		}
 		pl.Checkpoints = makeCheckpoints(g)
 		pl.IsUserTimeline = true
+		pl.HotTags = TagHeat(g)
 	case uid != "":
 		// View someone's timeline
 		pl.IsUserTimeline = true

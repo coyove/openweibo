@@ -14,6 +14,7 @@ import (
 	"github.com/coyove/iis/action"
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal"
+	"github.com/coyove/iis/dal/forgettable/goforget"
 	"github.com/coyove/iis/dal/kv/cache"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/middleware"
@@ -35,6 +36,13 @@ func main() {
 	dal.Init(&cache.RedisConfig{
 		Addr: common.Cfg.RedisAddr,
 	}, common.Cfg.DyRegion, common.Cfg.DyAccessKey, common.Cfg.DySecretKey)
+
+	if common.Cfg.RedisAddr != "" {
+		goforget.Init(&cache.RedisConfig{
+			Addr:         common.Cfg.RedisAddr,
+			BatchWorkers: 10,
+		})
+	}
 
 	if os.Getenv("BENCH") == "1" {
 		ids := []string{}
@@ -169,6 +177,12 @@ func main() {
 	r.Handle("POST", "/rpc/user_info", action.RPCGetUserInfo)
 
 	r.Handle("GET", "/loaderio-4d068f605f9b693f6ca28a8ca23435c6", func(g *gin.Context) { g.String(200, ("loaderio-4d068f605f9b693f6ca28a8ca23435c6")) })
+
+	// goforget.Incr("tagheat", "a", "b", "c")
+	// goforget.Incr("tagheat", "a", "b", "d")
+	// time.Sleep(time.Second)
+	// goforget.Incr("tagheat", "b", "c", "d")
+	// goforget.Incr("tagheat", "b")
 
 	// if common.Cfg.Domain == "" {
 	log.Fatal(r.Run(":5010"))

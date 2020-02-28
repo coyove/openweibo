@@ -12,6 +12,7 @@ import (
 	"unsafe"
 
 	"github.com/coyove/iis/common"
+	"github.com/coyove/iis/dal/forgettable/goforget"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
 	"github.com/gin-gonic/gin"
@@ -137,6 +138,7 @@ func MentionUserAndTags(a *model.Article, ids []string, tags []string) error {
 			return err
 		}
 		common.AddTagToSearch(tag)
+		goforget.Incr("tagheat", tag)
 	}
 	return nil
 }

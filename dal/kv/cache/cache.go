@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
+	"sync"
 	"time"
 
 	"github.com/coyove/common/lru"
@@ -18,10 +20,17 @@ type batchGetTask struct {
 	done    chan struct{}
 }
 
+type zset struct {
+	v     string
+	score int
+}
+
 type GlobalCache struct {
 	local *lru.Cache
 	c     *redis.Pool
 	batch chan *batchGetTask
+	zmu   sync.Mutex
+	z     []*zset
 }
 
 type RedisConfig struct {
@@ -167,16 +176,60 @@ func (gc *GlobalCache) Add(k string, v []byte) error {
 	return nil
 }
 
-// func (gc *GlobalCache) Remove(k string) error {
-// 	if gc.c == nil {
-// 		gc.local.Remove(k)
-// 		return nil
-// 	}
-//
-// 	c := gc.c.Get()
-// 	defer c.Close()
-//
-// 	if _, err := c.Do("DEL", k); err != nil {
-// 	}
-// 	return err
-// }
+func (gc *GlobalCache) ZAdd(k string, v string, score int) error {
+	if gc.c == nil {
+		gc.zmu.Lock()
+		defer gc.zmu.Unlock()
+
+		for _, item := range gc.z {
+			if v == item.v {
+				item.score = score
+				goto SORT
+			}
+		}
+		gc.z = append(gc.z, &zset{v, score})
+
+	SORT:
+		sort.Slice(gc.z, func(i, j int) bool {
+			return gc.z[i].score > gc.z[j].score
+		})
+		return nil
+	}
+
+	c := gc.c.Get()
+	defer c.Close()
+
+	if _, err := c.Do("ZADD", k, score, v); err != nil {
+		log.Println("[GlobalCache_redis] zincr:", k, "value:", string(v), "error:", err)
+		return fmt.Errorf("cache error")
+	}
+	return nil
+}
+
+func (gc *GlobalCache) ZTopN(k string, n int) ([]string, error) {
+	x := make([]string, 0, n)
+
+	if gc.c == nil {
+		gc.zmu.Lock()
+		defer gc.zmu.Unlock()
+
+		for _, item := range gc.z {
+			x = append(x, item.v)
+			if len(x) >= n {
+				break
+			}
+		}
+		return x, nil
+	}
+
+	c := gc.c.Get()
+	defer c.Close()
+
+	res, err := redis.Strings(c.Do("ZREVRANGE", k, 0, n))
+	if err != nil {
+		log.Println("[GlobalCache_redis] zrevrange:", k, "n:", n, "error:", err)
+		return nil, fmt.Errorf("cache error")
+	}
+
+	return res, nil
+}
