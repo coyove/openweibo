@@ -439,7 +439,7 @@ function showInfoBox(el, uid) {
         if (x.getAttribute('data-id') || x.className === 'mentioned-user') {
             box = x.getBoundingClientRect();
             if (x.className === 'mentioned-user') {
-                addtionalBoxes.push(box);
+                addtionalBoxes.push(x);
                 boxTopOffset = box.bottom - box.top;
             }
             break;
@@ -453,7 +453,7 @@ function showInfoBox(el, uid) {
 
     var reg = {
         valid: true,
-        boxes: [div.getBoundingClientRect()].concat(addtionalBoxes),
+        boxes: [div].concat(addtionalBoxes),
         callback: function(x, y) {
             div.parentNode.removeChild(div);
             el.BLOCK = false;
@@ -466,7 +466,6 @@ function showInfoBox(el, uid) {
     $post("/api/u/" + uid, {}, function(h) {
         if (h.indexOf("ok:") > -1) {
             div.innerHTML = h.substring(3);
-            reg.boxes[0] = div.getBoundingClientRect();
             return
         }
         return h

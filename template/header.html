@@ -2,7 +2,7 @@
 <html>
     <link href="/s/css/default.24.css" rel="stylesheet" type="text/css" media="all">
     <link href="/s/fonts/fontello-embedded.css?ver=22" rel="stylesheet" type="text/css" media="all">
-    <script src="/s/js/default.23.js"></script>
+    <script src="/s/js/default.24.js"></script>
     <script src="/s/js/post.12.js"></script>
     <script src="/s/js/tribute.min.js"></script>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
@@ -65,7 +65,8 @@
                     window.REGIONS = (window.REGIONS || []).filter(function(rect) { return rect.valid; })
                     window.REGIONS.forEach(function(rect) {
                         var inside = false, margin = 5;
-                        rect.boxes.forEach(function(box) {
+                        rect.boxes.forEach(function(el) {
+                            var box = el.getBoundingClientRect();
                             inside = inside || (
                                 x >= box.left - margin &&
                                 x <= box.right + margin &&
@@ -82,6 +83,7 @@
                 window.REGTICK = true;
             }
         }
+        window.ontouchend = window.onmousemove;
     </script>
 
 <body>
