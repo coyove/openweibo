@@ -2,6 +2,7 @@ package view
 
 import (
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/coyove/iis/dal"
@@ -20,15 +21,27 @@ type HotTag struct {
 	IsFollowing bool
 }
 
-func TagHeat(g *gin.Context) []HotTag {
-	i, u := 0, getUser(g)
+var (
+	tagHeatOnce  sync.Once
+	tagHeatCache goforget.Distribution
+)
 
+func TagHeat(g *gin.Context) []HotTag {
+	tagHeatOnce.Do(func() {
+		go func() {
+			for {
+				tagHeatCache = goforget.TopN("tagheat", 5)
+				time.Sleep(time.Second * 5)
+			}
+		}()
+	})
+
+	i, u := 0, getUser(g)
 	if u == nil {
 		return nil
 	}
 
-	res := goforget.TopN("tagheat", 5)
-
+	res := tagHeatCache
 	// res.Data["a"] = &goforget.Value{Count: 10, P: 100}
 
 	tags := make([]HotTag, len(res.Data))

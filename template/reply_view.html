@@ -116,7 +116,7 @@
             <td colspan=2>
                 <div class=enc-box style="box-shadow:0 0 2px #bbb">
                     <input class=t placeholder="内容" name=enc-content style="border:none;border-right:dotted 1px #ddd;flex:0 66%">
-                    <input class=t placeholder="密码" name=enc-key style="flex:0 33%;border:none" maxlength="16">
+                    <input class=t placeholder="密码 (0~16位)" name=enc-key style="flex:0 33%;border:none" maxlength="16">
                     <button class=gbutton
                             style="flex-shrink: 0"
                             onclick="t=$q('#tr-encrypt-{{.UUID}} input[name=enc-key');$aesgcm().encrypt(

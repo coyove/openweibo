@@ -31,8 +31,9 @@ var Cfg = struct {
 	DyAccessKey    string   `yaml:"DyAccessKey"`
 	DySecretKey    string   `yaml:"DySecretKey"`
 	RedisAddr      string   `yaml:"RedisAddr"`
+	ReadOnly       bool     `yaml:"ReadOnly"`
 
-	// inited after common.being read
+	// inited after Cfg being read
 	Blk               cipher.Block
 	KeyBytes          []byte
 	IPBlacklistParsed []*net.IPNet

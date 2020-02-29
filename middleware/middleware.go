@@ -67,6 +67,12 @@ func mwRenderPerf(g *gin.Context) {
 }
 
 func mwIPThrot(g *gin.Context) {
+	if g.Request.Method == "POST" && common.Cfg.ReadOnly {
+		g.String(200, "retryable/read-only")
+		g.Abort()
+		return
+	}
+
 	if g.Request.Method != "POST" || strings.HasPrefix(g.Request.URL.Path, "/api/") {
 		g.Set("ip-ok", true)
 		g.Next()

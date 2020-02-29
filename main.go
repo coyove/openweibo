@@ -116,6 +116,9 @@ func main() {
 				return template.HTML("<span class='time none'></span>")
 			}
 			s := time.Since(a).Seconds()
+			if s < 5 {
+				return template.HTML("<span class='time now'></span>")
+			}
 			if s < 60 {
 				return template.HTML("<span class='time sec'>" + strconv.Itoa(int(s)) + "</span>")
 			}

@@ -317,6 +317,7 @@ span.time.min:after { content: '分钟前' }
 span.time.hour:after { content: '小时前' }
 span.time.day:after { content: '天前' }
 span.time.none:after { content: '无' }
+span.time.now:after { content: '刚刚' }
 
 span.deleted:after {
     content: '内容已删除，不要想了';
@@ -417,7 +418,7 @@ div.avatar-container {
 img.avatar {
     border-radius:3px;display:inline-block;vertical-align:middle;max-width:36px;max-height:36px;overflow:hidden;
     margin: 0 auto;
-    flex-shrink: 0;
+    flex-shrink: 0; cursor: pointer;
 }
 
 img.avatar + .avatar-kimochi {

@@ -10,9 +10,13 @@
             <img class="avatar-kimochi" src="/s/emoji/emoji{{.Author.Kimochi}}.png">
             {{end}}
         </div>
+            {{template "display_name.html" .Author}}
+        {{else}}
+        <span class="post-author mentioned-user" onclick="this.querySelector('a').href='javascript:void(0)';showInfoBox(this,'{{.Author.ID}}')">
+            {{template "display_name.html" .Author}}
+        </span>
         {{end}}
 
-    {{template "display_name.html" .Author}}
 
     {{if eq .Cmd "inbox-reply"}}
         <span class=post-date>于 {{formatTime .CreateTime}} 回复了你</span>
