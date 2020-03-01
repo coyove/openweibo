@@ -494,6 +494,18 @@ function adjustImage(img) {
     div.style.backgroundImage = 'url(' + img.src + ')';
 }
 
+function adjustVideoIFrame(el, src) {
+    el.style.display = 'none';
+    el.previousElementSibling.style.display = 'none';
+    el = el.nextSibling;
+    el.style.display = null;
+    var box = el.getBoundingClientRect();
+    var w = box.right - box.left, h = 400;
+    var dh = (w < 500) ? h : w / 16 * 9;
+    el.style.height = (el.getAttribute("fixed-height") || dh) + 'px';
+    el.src = src;
+}
+
 function $aesgcm() {
     function $getKey(key) {
         var k = new Uint8Array(16);

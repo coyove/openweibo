@@ -11,6 +11,9 @@ var (
 	rxSan        = regexp.MustCompile(`(?m)(\n|\[img\]https?://\S+?\[/img\]|\[code\][\s\S]+?\[/code\]|<|https?://[^\s<>"'#\[\]]+|@\S+|#\S+)|\[mj\]\d+\[/mj\]|\[enc\]\w+\[/enc\]`)
 	rxFirstImage = regexp.MustCompile(`(?i)(https?://\S+\.(png|jpg|gif|webp|jpeg)|\[img\]https?://\S+\[/img\])`)
 	rxMentions   = regexp.MustCompile(`((@|#)\S+)`)
+	rxAcCode     = regexp.MustCompile(`ac(\d+)`)
+	rxBiliAVCode = regexp.MustCompile(`av(\d+)`)
+	rxWYYYCode   = regexp.MustCompile(`id=(\d+)`)
 
 	ReverseTemplateRenderFunc func(string, interface{}) string
 )
@@ -89,9 +92,46 @@ func SanText(in string) string {
 					in + "</a>"
 			}
 		}
+		if strings.Contains(in, "bilibili") {
+			res := rxBiliAVCode.FindAllStringSubmatch(in, 1)
+			if len(res) == 1 && len(res[0]) == 2 {
+				return makeVideoButton("#00a1d6",
+					"av"+res[0][1],
+					"https://player.bilibili.com/player.html?aid="+res[0][1],
+					"https://www.bilibili.com/av"+res[0][1])
+			}
+		}
+
+		if strings.Contains(in, "acfun") {
+			res := rxAcCode.FindAllStringSubmatch(in, 1)
+			if len(res) == 1 && len(res[0]) == 2 {
+				return makeVideoButton("#fd4c5d",
+					"ac"+res[0][1],
+					"https://www.acfun.cn/player/ac"+res[0][1],
+					"https://www.acfun.cn/v/ac"+res[0][1])
+			}
+		}
+
+		if strings.Contains(in, "music.163") {
+			res := rxWYYYCode.FindAllStringSubmatch(in, 1)
+			if len(res) == 1 && len(res[0]) == 2 {
+				return strings.Replace(makeVideoButton("#e60125",
+					"yy"+res[0][1],
+					"https://music.163.com/outchain/player?type=2&auto=0&height=66&id="+res[0][1],
+					"https://music.163.com/song?id="+res[0][1]), "<iframe ", "<iframe fixed-height=80 ", 1)
+			}
+		}
+
 		return "<a href='" + in + "' target=_blank>" + in + "</a>"
 	})
 	return in
+}
+
+func makeVideoButton(color string, title, vid, url string) string {
+	return "<a style='color:" + color + "' href='" + url + "' target=_blank><i class='icon-export-alt'></i></a>" +
+		"<a style='color:" + color + "' href='javascript:void(0)' " +
+		"onclick='adjustVideoIFrame(this,\"" + vid + "\")'>" + title + "</a>" +
+		"<iframe style='width:100%;display:none' frameborder=0 allowfullscreen=true></iframe>"
 }
 
 func ExtractMentionsAndTags(in string) ([]string, []string) {
