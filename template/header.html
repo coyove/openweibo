@@ -61,7 +61,7 @@
         window.onmousemove = function(e) {
             if (!window.REGTICK) {
                 window.requestAnimationFrame(function() {
-                    var x = e.clientX, y = e.clientY;
+                    var x = e.clientX || e.left, y = e.clientY || e.top;
                     window.REGIONS = (window.REGIONS || []).filter(function(rect) { return rect.valid; })
                     window.REGIONS.forEach(function(rect) {
                         var inside = false, margin = 5;
@@ -83,7 +83,10 @@
                 window.REGTICK = true;
             }
         }
-        window.ontouchend = window.onmousemove;
+        window.ontouchend = function(e) {
+            var el = e.changedTouches[0];
+            if (el) window.onmousemove(el);
+        }
     </script>
 
 <body>
