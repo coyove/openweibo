@@ -14,6 +14,7 @@ var (
 	rxAcCode     = regexp.MustCompile(`ac(\d+)`)
 	rxBiliAVCode = regexp.MustCompile(`av(\d+)`)
 	rxWYYYCode   = regexp.MustCompile(`id=(\d+)`)
+	rxYTCode     = regexp.MustCompile(`(youtu\.be\/(\w+)|v=(\w+))`)
 
 	ReverseTemplateRenderFunc func(string, interface{}) string
 )
@@ -92,7 +93,7 @@ func SanText(in string) string {
 					in + "</a>"
 			}
 		}
-		if strings.Contains(in, "bilibili") {
+		if strings.Contains(in, "bilibili") || strings.Contains(in, "b23.tv") {
 			res := rxBiliAVCode.FindAllStringSubmatch(in, 1)
 			if len(res) == 1 && len(res[0]) == 2 {
 				return makeVideoButton("#00a1d6",
@@ -119,6 +120,16 @@ func SanText(in string) string {
 					"yy"+res[0][1],
 					"https://music.163.com/outchain/player?type=2&auto=0&height=66&id="+res[0][1],
 					"https://music.163.com/song?id="+res[0][1]), "<iframe ", "<iframe fixed-height=80 ", 1)
+			}
+		}
+
+		if strings.HasPrefix(in, "https://youtu") {
+			res := rxYTCode.FindAllStringSubmatch(in, 1)
+			if len(res) == 1 && len(res[0]) >= 3 {
+				return makeVideoButton("#db4437",
+					"yt"+res[0][2],
+					"https://www.youtube.com/embed/"+res[0][2],
+					in)
 			}
 		}
 
