@@ -3,6 +3,7 @@ package view
 import (
 	"log"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -125,7 +126,15 @@ func Timeline(g *gin.Context) {
 	cursors := []ik.ID{}
 	pendingFCursor := ""
 
-	if pl.IsUserTimeline {
+	if pl.User.ID == "master" {
+		for i := 0; i < dal.Masters; i++ {
+			master := "master"
+			if i > 0 {
+				master += strconv.Itoa(i)
+			}
+			cursors = append(cursors, ik.NewID(ik.IDAuthor, master))
+		}
+	} else if pl.IsUserTimeline {
 		pl.CurrentCheckpoint = g.Query("cp")
 		if a, _ := dal.GetArticle("u/"+pl.User.ID+"/checkpoint/"+pl.CurrentCheckpoint, true); a != nil {
 			cursors = append(cursors, ik.ParseID(a.NextID))

@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"math/rand"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -14,6 +16,8 @@ import (
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
 )
+
+var Masters = 10
 
 var m struct {
 	db          KeyValueOp
@@ -239,7 +243,6 @@ func WalkLikes(media bool, n int, cursor string) (a []*model.Article, next strin
 
 func Post(a *model.Article, author *model.User, noMaster bool) (*model.Article, error) {
 	a.ID = ik.NewGeneralID().String()
-	a.CreateTime = time.Now()
 	a.Author = author.ID
 
 	if _, err := DoInsertArticle(&InsertArticleRequest{
@@ -251,13 +254,16 @@ func Post(a *model.Article, author *model.User, noMaster bool) (*model.Article, 
 
 	go func() {
 		if !noMaster {
+			master := "master"
+			if r := rand.Intn(Masters); r > 0 {
+				master += strconv.Itoa(r)
+			}
 			DoInsertArticle(&InsertArticleRequest{
-				ID: ik.NewID(ik.IDAuthor, "master").String(),
+				ID: ik.NewID(ik.IDAuthor, master).String(),
 				Article: model.Article{
-					ID:         ik.NewGeneralID().String(),
-					ReferID:    a.ID,
-					Media:      a.Media,
-					CreateTime: time.Now(),
+					ID:      ik.NewGeneralID().String(),
+					ReferID: a.ID,
+					Media:   a.Media,
 				},
 			})
 		}
@@ -287,14 +293,13 @@ func PostReply(parent string, content, media string, author *model.User, ip stri
 	}
 
 	a := &model.Article{
-		ID:         ik.NewGeneralID().String(),
-		Content:    content,
-		Media:      media,
-		NSFW:       nsfw,
-		Author:     author.ID,
-		IP:         ip,
-		Parent:     p.ID,
-		CreateTime: time.Now(),
+		ID:      ik.NewGeneralID().String(),
+		Content: content,
+		Media:   media,
+		NSFW:    nsfw,
+		Author:  author.ID,
+		IP:      ip,
+		Parent:  p.ID,
 	}
 
 	a2, err := DoInsertArticle(&InsertArticleRequest{ID: p.ID, Article: *a, AsReply: true})
@@ -324,7 +329,6 @@ func PostReply(parent string, content, media string, author *model.User, ip stri
 						"from":       a.Author,
 						"article_id": a.ID,
 					},
-					CreateTime: time.Now(),
 				},
 			}); err != nil {
 				log.Println("PostReply", err)

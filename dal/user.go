@@ -110,7 +110,6 @@ func MentionUserAndTags(a *model.Article, ids []string, tags []string) error {
 					"from":       a.Author,
 					"article_id": a.ID,
 				},
-				CreateTime: time.Now(),
 			},
 		}); err != nil {
 			return err
@@ -124,10 +123,9 @@ func MentionUserAndTags(a *model.Article, ids []string, tags []string) error {
 		if _, err := DoInsertArticle(&InsertArticleRequest{
 			ID: ik.NewID(ik.IDTag, tag).String(),
 			Article: model.Article{
-				ID:         ik.NewGeneralID().String(),
-				ReferID:    a.ID,
-				Media:      a.Media,
-				CreateTime: time.Now(),
+				ID:      ik.NewGeneralID().String(),
+				ReferID: a.ID,
+				Media:   a.Media,
 			},
 		}); err != nil {
 			return err
@@ -154,7 +152,7 @@ func FollowUser(from, to string, following bool) (E error) {
 		go func() {
 			DoUpdateUser(&UpdateUserRequest{ID: from, IncDecFollowings: aws.Bool(following)})
 			if !strings.HasPrefix(to, "#") {
-				fromFollowToNotifyTo(from, to, following)
+				notifyNewFollower(from, to, following)
 			}
 		}()
 	}()
@@ -173,10 +171,9 @@ func FollowUser(from, to string, following bool) (E error) {
 		_, err := DoInsertArticle(&InsertArticleRequest{
 			ID: ik.NewID(ik.IDFollowing, from).String(),
 			Article: model.Article{
-				ID:         followID,
-				Cmd:        model.CmdFollow,
-				Extras:     map[string]string{to: state},
-				CreateTime: time.Now(),
+				ID:     followID,
+				Cmd:    model.CmdFollow,
+				Extras: map[string]string{to: state},
 			},
 			AsFollowing: true,
 		})
@@ -195,15 +192,14 @@ func FollowUser(from, to string, following bool) (E error) {
 	return nil
 }
 
-func fromFollowToNotifyTo(from, to string, following bool) (E error) {
-	req := &UpdateOrInsertCmdArticleRequest{
+func notifyNewFollower(from, to string, following bool) (E error) {
+	updated, err := DoUpdateOrInsertCmdArticle(&UpdateOrInsertCmdArticleRequest{
 		ArticleID:          makeFollowedID(to, from),
 		ToSubject:          from,
 		InsertUnderChainID: ik.NewID(ik.IDFollower, to).String(),
 		Cmd:                model.CmdFollowed,
 		CmdValue:           following,
-	}
-	updated, err := DoUpdateOrInsertCmdArticle(req)
+	})
 	if err != nil {
 		return err
 	}
@@ -245,25 +241,23 @@ func LikeArticle(from, to string, liking bool) (E error) {
 	}
 	if updated {
 		go func() {
-			if a, err := DoUpdateArticle(&UpdateArticleRequest{ID: to, IncDecLikes: aws.Bool(liking)}); err == nil {
-				if IsFollowing(a.Author, from) && liking {
-					// if the author followed 'from', notify the author that his articles has been liked by 'from'
-					DoInsertArticle(&InsertArticleRequest{
-						ID: ik.NewID(ik.IDInbox, a.Author).String(),
-						Article: model.Article{
-							ID:  ik.NewGeneralID().String(),
-							Cmd: model.CmdILike,
-							Extras: map[string]string{
-								"from":       from,
-								"article_id": to,
-							},
-							CreateTime: time.Now(),
-						},
-					})
-					DoUpdateUser(&UpdateUserRequest{ID: a.Author, IncDecUnread: aws.Bool(true)})
-				}
+			a, err := DoUpdateArticle(&UpdateArticleRequest{ID: to, IncDecLikes: aws.Bool(liking)})
+			if !(err == nil && IsFollowing(a.Author, from) && liking) {
+				return
 			}
-
+			// if the author followed 'from', notify the author that his articles has been liked by 'from'
+			DoInsertArticle(&InsertArticleRequest{
+				ID: ik.NewID(ik.IDInbox, a.Author).String(),
+				Article: model.Article{
+					ID:  ik.NewGeneralID().String(),
+					Cmd: model.CmdILike,
+					Extras: map[string]string{
+						"from":       from,
+						"article_id": to,
+					},
+				},
+			})
+			DoUpdateUser(&UpdateUserRequest{ID: a.Author, IncDecUnread: aws.Bool(true)})
 		}()
 	}
 	return nil
@@ -296,7 +290,7 @@ func GetRelationList(chain ik.ID, cursor string, n int) ([]FollowingState, strin
 
 	for len(res) < n && strings.HasPrefix(cursor, "u/") {
 		if time.Since(start).Seconds() > 0.2 {
-			log.Println("[GetRelationList] Break out slow walk [", cursor, "]")
+			log.Println("[GetRelationList] Break out slow walk [", chain.Tag(), "]")
 			break
 		}
 
@@ -360,7 +354,7 @@ func GetFollowingList(chain ik.ID, cursor string, n int, fulluser bool) ([]Follo
 		}
 
 		if time.Since(start).Seconds() > 0.2 {
-			log.Println("[GetFollowingList] Break out slow walk [", cursor, "]")
+			log.Println("[GetFollowingList] Break out slow walk [", chain.Tag(), "]")
 			break
 		}
 

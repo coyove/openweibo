@@ -215,6 +215,7 @@ func DoUpdateArticleExtra(rr *UpdateArticleExtraRequest) (string, error) {
 func DoInsertArticle(r *InsertArticleRequest) (model.Article, error) {
 	rootID := r.ID
 	a := r.Article
+	a.CreateTime = time.Now()
 
 	// UpdateOrInsert may call Insert internally, so NoLock will prevent deadlock
 	if !r.NoLock {
