@@ -62,6 +62,7 @@ type Request struct {
 		ToggleLockBy  *model.User
 
 		Response struct {
+			OldMedia      string
 			OldExtraValue string
 			ArticleAuthor string
 		}
@@ -264,7 +265,7 @@ func coUpdateArticle(r *Request) error {
 	if err != nil {
 		return err
 	}
-
+	rr.Response.OldMedia = a.Media
 	if rr.SetExtraKey != nil {
 		rr.Response.OldExtraValue = a.Extras[*rr.SetExtraKey]
 		if a.Extras == nil {
