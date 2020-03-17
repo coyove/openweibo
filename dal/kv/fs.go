@@ -34,6 +34,11 @@ func calcPath(key string) (string, string) {
 	return dir, dir + "/" + url.PathEscape(key) + ".txt"
 }
 
+func calcPath2(key1, key2 string) (string, string) {
+	dir := fmt.Sprintf("tmp/data/%d/%s", common.Hash32(key1)&0xff, key1)
+	return dir, dir + "/" + url.PathEscape(key2) + ".txt"
+}
+
 func (m *DiskKV) SetGlobalCache(c *cache.GlobalCache) {
 	m.cache = c
 }

@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unsafe"
 
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal/forgettable/goforget"
@@ -21,9 +20,6 @@ import (
 func GetUser(id string) (*model.User, error) {
 	if id == "" {
 		return nil, fmt.Errorf("empty user id")
-	}
-	if u := m.weakUsers.Get(id); u != nil {
-		return (*model.User)(u), nil
 	}
 
 	p, err := m.db.Get("u/" + id)
@@ -37,10 +33,7 @@ func GetUser(id string) (*model.User, error) {
 
 	u, err := model.UnmarshalUser(p)
 	if u != nil {
-		u2 := *u
-		m.weakUsers.Add(u.ID, unsafe.Pointer(&u2))
 	}
-
 	return u, err
 }
 

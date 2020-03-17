@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -176,60 +176,37 @@ func (gc *GlobalCache) Add(k string, v []byte) error {
 	return nil
 }
 
-func (gc *GlobalCache) ZAdd(k string, v string, score int) error {
+func (gc *GlobalCache) MGet(keys ...string) map[string][]byte {
+	m := map[string][]byte{}
 	if gc.c == nil {
-		gc.zmu.Lock()
-		defer gc.zmu.Unlock()
-
-		for _, item := range gc.z {
-			if v == item.v {
-				item.score = score
-				goto SORT
+		for _, k := range keys {
+			v, _ := gc.local.Get(k)
+			buf, ok := v.([]byte)
+			if ok {
+				m[k] = buf
 			}
 		}
-		gc.z = append(gc.z, &zset{v, score})
-
-	SORT:
-		sort.Slice(gc.z, func(i, j int) bool {
-			return gc.z[i].score > gc.z[j].score
-		})
-		return nil
+		return m
 	}
 
 	c := gc.c.Get()
 	defer c.Close()
 
-	if _, err := c.Do("ZADD", k, score, v); err != nil {
-		log.Println("[GlobalCache_redis] zincr:", k, "value:", string(v), "error:", err)
-		return fmt.Errorf("cache error")
-	}
-	return nil
-}
-
-func (gc *GlobalCache) ZTopN(k string, n int) ([]string, error) {
-	x := make([]string, 0, n)
-
-	if gc.c == nil {
-		gc.zmu.Lock()
-		defer gc.zmu.Unlock()
-
-		for _, item := range gc.z {
-			x = append(x, item.v)
-			if len(x) >= n {
-				break
-			}
-		}
-		return x, nil
+	args := []interface{}{}
+	for _, k := range keys {
+		args = append(args, k)
 	}
 
-	c := gc.c.Get()
-	defer c.Close()
-
-	res, err := redis.Strings(c.Do("ZREVRANGE", k, 0, n))
+	res, err := redis.Strings(c.Do("MGET", args...))
 	if err != nil {
-		log.Println("[GlobalCache_redis] zrevrange:", k, "n:", n, "error:", err)
-		return nil, fmt.Errorf("cache error")
+		log.Println("[GlobalCache_redis] mget:", keys, "error:", err)
+		return m
 	}
 
-	return res, nil
+	for i, r := range res {
+		if strings.HasSuffix(r, "$") {
+			m[keys[i]] = []byte(r[:len(r)-1])
+		}
+	}
+	return m
 }

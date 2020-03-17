@@ -70,6 +70,7 @@ type Request struct {
 		ID          string
 		AsReply     bool
 		AsFollowing bool
+		NoLock      bool
 		Article     model.Article
 
 		Response struct {
@@ -247,7 +248,6 @@ func coUpdateUser(r *Request) error {
 	if u.ID == "" {
 		return nil
 	}
-	m.weakUsers.Delete(u.ID)
 	return m.db.Set("u/"+u.ID, u.Marshal())
 }
 
@@ -337,8 +337,11 @@ func coInsertArticle(r *Request) error {
 	a := r.InsertArticleRequest.Article
 	asReply := r.InsertArticleRequest.AsReply
 
-	common.LockKey(rootID)
-	defer common.UnlockKey(rootID)
+	// UpdateOrInsert may call Insert internally, so NoLock will prevent deadlock
+	if !r.InsertArticleRequest.NoLock {
+		common.LockKey(rootID)
+		defer common.UnlockKey(rootID)
+	}
 
 	root, err := GetArticle(rootID)
 	if err != nil && err != model.ErrNotExisted {
@@ -433,7 +436,12 @@ func coUpdateOrInsertArticle(r *Request) error {
 			}
 
 			rr.Response.Updated = true
-			return Do(NewRequest(DoInsertArticle, "ID", rr.ChainID, "Article", *a))
+
+			return Do(NewRequest(DoInsertArticle,
+				"ID", rr.ChainID,
+				"Article", *a,
+				"NoLock", coDistribute(rr.ID) == coDistribute(rr.ChainID),
+			))
 		}
 		return err
 	}
@@ -457,4 +465,8 @@ func Do(r *Request) error {
 	default:
 		return nil
 	}
+}
+
+func coDistribute(id string) uint16 {
+	return common.Hash16(id)
 }

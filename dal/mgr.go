@@ -16,7 +16,6 @@ import (
 
 var m struct {
 	db          KeyValueOp
-	weakUsers   *cache.WeakCache
 	activeUsers *cache.GlobalCache
 }
 
@@ -36,11 +35,25 @@ func Init(redisConfig *cache.RedisConfig, region string, ak, sk string) {
 
 	m.db = db
 	m.activeUsers = c
-	m.weakUsers = cache.NewWeakCache(65536, time.Second)
 }
 
 func ModKV() KeyValueOp {
 	return m.db
+}
+
+func MGetArticlesFromCache(keys ...string) map[string]*model.Article {
+	if len(keys) > 1024 {
+		keys = keys[:1024]
+	}
+	res := m.activeUsers.MGet(keys...)
+	m := map[string]*model.Article{}
+	for k, v := range res {
+		a, err := model.UnmarshalArticle(v)
+		if err == nil {
+			m[k] = a
+		}
+	}
+	return m
 }
 
 func GetArticle(id string, dontOverrideNextID ...bool) (*model.Article, error) {
@@ -76,6 +89,25 @@ func GetArticle(id string, dontOverrideNextID ...bool) (*model.Article, error) {
 func WalkMulti(media bool, n int, cursors ...ik.ID) (a []*model.Article, next []ik.ID) {
 	if len(cursors) == 0 {
 		return
+	}
+
+	// Quick hack: mget from cache first
+	trykeys, trykeysIndex := []string{}, []int{}
+	for i, c := range cursors {
+		if hdr := c.Header(); hdr == ik.IDAuthor || hdr == ik.IDTag {
+			trykeys = append(trykeys, c.String())
+			trykeysIndex = append(trykeysIndex, i)
+		}
+	}
+	if len(trykeys) > 0 {
+		m := MGetArticlesFromCache(trykeys...)
+		count := 0
+		for i, k := range trykeys {
+			if m[k] != nil {
+				cursors[trykeysIndex[i]] = ik.ParseID(m[k].PickNextID(media))
+				count++
+			}
+		}
 	}
 
 	startTime := time.Now()
