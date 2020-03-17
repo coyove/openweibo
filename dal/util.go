@@ -2,6 +2,7 @@ package dal
 
 import (
 	"crypto/sha1"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -32,21 +33,19 @@ func IsCrawler(g *gin.Context) bool {
 	return v == "1"
 }
 
-func dec0(a *int32) {
-	*a--
-	if *a < 0 {
-		*a = 0
-	}
-}
-
-func MakeID(mth string, a, b string) string {
-	switch mth {
-	case "follow":
-		return makeFollowID(a, b)
-	case "followed":
-		return makeFollowedID(a, b)
-	default:
-		return makeBlockID(a, b)
+func incdec(a *int32, b *int, inc bool) {
+	if a != nil && inc {
+		*a++
+	} else if a != nil && !inc {
+		if *a--; *a < 0 {
+			*a = 0
+		}
+	} else if b != nil && inc {
+		*b++
+	} else if b != nil && !inc {
+		if *b--; *b < 0 {
+			*b = 0
+		}
 	}
 }
 
@@ -83,4 +82,12 @@ func atoi64(a string) int64 {
 func atob(a string) bool {
 	v, _ := strconv.ParseBool(a)
 	return v
+}
+
+func setIfValid(k interface{}, v interface{}) {
+	rk, rv := reflect.ValueOf(k), reflect.ValueOf(v)
+	if rv.Pointer() == 0 {
+		return
+	}
+	rk.Elem().Set(rv.Elem())
 }

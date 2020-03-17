@@ -19,9 +19,9 @@ func BenchmarkAddSearch(b *testing.B) {
 }
 
 func TestSearchUsers(t *testing.T) {
-	// UnmarshalUser([]byte(`{"ID":"aaa"}`))
-	// UnmarshalUser([]byte(`{"ID":"bbb"}`))
-	// UnmarshalUser([]byte(`{"ID":"aabb"}`))
-	// UnmarshalUser([]byte(`{"ID":"coyove"}`))
+	// UnmarshalUser([]byte(`{"ArticleID":"aaa"}`))
+	// UnmarshalUser([]byte(`{"ArticleID":"bbb"}`))
+	// UnmarshalUser([]byte(`{"ArticleID":"aabb"}`))
+	// UnmarshalUser([]byte(`{"ArticleID":"coyove"}`))
 	// t.Log(SearchUsers("coyv", 3))
 }

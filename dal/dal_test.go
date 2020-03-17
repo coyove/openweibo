@@ -4,12 +4,14 @@ import (
 	"testing"
 )
 
-func TestNewRequest(t *testing.T) {
-	t.Log(*NewRequest("Test", "A", 1).TestRequest.A)
-}
+func TestSet(t *testing.T) {
+	a := 1
+	var b *int
+	setIfValid(&a, b)
+	t.Log(a)
 
-func BenchmarkNewRequest(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		NewRequest("UpdateUserKimochi", "ID", "zzz", "Kimochi", byte(12))
-	}
+	b = &a
+	*b++
+	setIfValid(&a, b)
+	t.Log(a)
 }

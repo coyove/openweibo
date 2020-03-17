@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/ik"
@@ -88,16 +89,16 @@ func APISignup(g *gin.Context) {
 	u.TLogin = uint32(time.Now().Unix())
 	tok := ik.MakeUserToken(u)
 
-	if err := dal.Do(dal.NewRequest(dal.DoUpdateUser,
-		"ID", u.ID,
-		"Signup", true,
-		"Session", u.Session,
-		"Email", u.Email,
-		"PasswordHash", u.PasswordHash,
-		"DataIP", u.DataIP,
-		"TSignup", u.TSignup,
-		"TLogin", u.TLogin,
-	)); err != nil {
+	if _, err := dal.DoUpdateUser(&dal.UpdateUserRequest{
+		Signup:       true,
+		ID:           u.ID,
+		Session:      aws.String(u.Session),
+		Email:        aws.String(u.Email),
+		PasswordHash: &u.PasswordHash,
+		DataIP:       aws.String(u.DataIP),
+		TSignup:      aws.Uint32(u.TSignup),
+		TLogin:       aws.Uint32(u.TLogin),
+	}); err != nil {
 		g.String(200, err.Error())
 		return
 	}
@@ -134,12 +135,12 @@ func APILogin(g *gin.Context) {
 
 	tok := ik.MakeUserToken(u)
 
-	if err := dal.Do(dal.NewRequest(dal.DoUpdateUser,
-		"ID", u.ID,
-		"Session", u.Session,
-		"TLogin", u.TLogin,
-		"DataIP", u.DataIP,
-	)); err != nil {
+	if _, err := dal.DoUpdateUser(&dal.UpdateUserRequest{
+		ID:      u.ID,
+		Session: aws.String(u.Session),
+		DataIP:  aws.String(u.DataIP),
+		TLogin:  aws.Uint32(u.TLogin),
+	}); err != nil {
 		g.String(200, err.Error())
 	} else {
 		g.SetCookie("id", tok, 365*86400, "", "", false, false)
@@ -159,10 +160,7 @@ func APIUserKimochi(g *gin.Context) {
 		k = 25
 	}
 
-	if err := dal.Do(dal.NewRequest(dal.DoUpdateUser,
-		"ID", u.ID,
-		"Kimochi", byte(k),
-	)); err != nil {
+	if _, err := dal.DoUpdateUser(&dal.UpdateUserRequest{ID: u.ID, Kimochi: aws.Uint8(byte(k))}); err != nil {
 		g.String(200, "internal/error")
 		return
 	}
@@ -220,10 +218,10 @@ func APILike(g *gin.Context) {
 func APILogout(g *gin.Context) {
 	u := dal.GetUserByContext(g)
 	if u != nil {
-		dal.Do(dal.NewRequest(dal.DoUpdateUser,
-			"ID", u.ID,
-			"Session", genSession(),
-		))
+		dal.DoUpdateUser(&dal.UpdateUserRequest{
+			ID:      u.ID,
+			Session: aws.String(genSession()),
+		})
 		u = &model.User{}
 		g.SetCookie("id", ik.MakeUserToken(u), 365*86400, "", "", false, false)
 	}
@@ -266,32 +264,34 @@ func APIUpdateUserSettings(g *gin.Context) {
 
 	switch {
 	case g.PostForm("set-email") != "":
-		if err := dal.Do(dal.NewRequest(dal.DoUpdateUser, "ID", u.ID,
-			"Email", common.SoftTrunc(g.PostForm("email"), 256))); err != nil {
+		if _, err := dal.DoUpdateUser(&dal.UpdateUserRequest{
+			ID:    u.ID,
+			Email: aws.String(common.SoftTrunc(g.PostForm("email"), 256)),
+		}); err != nil {
 			g.String(200, err.Error())
 			return
 		}
 	case g.PostForm("set-autonsfw") != "":
-		if err := dal.Do(dal.NewRequest(dal.DoUpdateUser,
-			"ID", u.ID,
-			"SettingAutoNSFW", g.PostForm("autonsfw") != "",
-		)); err != nil {
+		if _, err := dal.DoUpdateUser(&dal.UpdateUserRequest{
+			ID:              u.ID,
+			SettingAutoNSFW: aws.Bool(g.PostForm("autonsfw") != ""),
+		}); err != nil {
 			g.String(200, err.Error())
 			return
 		}
 	case g.PostForm("set-foldimg") != "":
-		if err := dal.Do(dal.NewRequest(dal.DoUpdateUser,
-			"ID", u.ID,
-			"SettingFoldImages", g.PostForm("foldimg") != "",
-		)); err != nil {
+		if _, err := dal.DoUpdateUser(&dal.UpdateUserRequest{
+			ID:                u.ID,
+			SettingFoldImages: aws.Bool(g.PostForm("foldimg") != ""),
+		}); err != nil {
 			g.String(200, err.Error())
 			return
 		}
 	case g.PostForm("set-description") != "":
-		if err := dal.Do(dal.NewRequest(dal.DoUpdateUser,
-			"ID", u.ID,
-			"SettingDescription", common.SoftTrunc(g.PostForm("description"), 512),
-		)); err != nil {
+		if _, err := dal.DoUpdateUser(&dal.UpdateUserRequest{
+			ID:                 u.ID,
+			SettingDescription: aws.String(common.SoftTrunc(g.PostForm("description"), 512)),
+		}); err != nil {
 			g.String(200, err.Error())
 			return
 		}
@@ -301,14 +301,13 @@ func APIUpdateUserSettings(g *gin.Context) {
 			name = strings.Replace(name, "admin", "nimda", -1)
 		}
 		name = common.SoftTruncDisplayWidth(name, 16)
-		r := dal.NewRequest(dal.DoUpdateUser, "ID", u.ID, "CustomName", name)
-		if err := dal.Do(r); err != nil {
+		u2, err := dal.DoUpdateUser(&dal.UpdateUserRequest{ID: u.ID, CustomName: &name})
+		if err != nil {
 			g.String(200, err.Error())
 			return
 		}
 		g.Writer.Header().Add("X-Result",
-			url.PathEscape(middleware.RenderTemplateString("display_name.html",
-				r.UpdateUserRequest.Response.User)))
+			url.PathEscape(middleware.RenderTemplateString("display_name.html", u2)))
 		g.Writer.Header().Add("X-Custom-Name", url.PathEscape(name))
 	case g.PostForm("set-avatar") != "":
 		_, err := writeAvatar(u, g.PostForm("avatar"))
@@ -316,7 +315,7 @@ func APIUpdateUserSettings(g *gin.Context) {
 			g.String(200, err.Error())
 			return
 		}
-		if err := dal.Do(dal.NewRequest(dal.DoUpdateUser, "ID", u.ID, "Avatar", uint32(time.Now().Unix()))); err != nil {
+		if _, err := dal.DoUpdateUser(&dal.UpdateUserRequest{ID: u.ID, Avatar: aws.Uint32(uint32(time.Now().Unix()))}); err != nil {
 			g.String(200, err.Error())
 			return
 		}
@@ -343,10 +342,8 @@ func APIUpdateUserPassword(g *gin.Context) {
 		return
 	}
 
-	if err := dal.Do(dal.NewRequest(dal.DoUpdateUser,
-		"ID", u.ID,
-		"PasswordHash", hashPassword(newPassword),
-	)); err != nil {
+	hp := hashPassword(newPassword)
+	if _, err := dal.DoUpdateUser(&dal.UpdateUserRequest{ID: u.ID, PasswordHash: &hp}); err != nil {
 		g.String(200, err.Error())
 		return
 	}

@@ -42,7 +42,7 @@ func TagHeat(g *gin.Context) []HotTag {
 	}
 
 	res := tagHeatCache
-	// res.Data["a"] = &goforget.Value{Count: 10, P: 100}
+	// res.Data["a"] = &goforget.CmdValue{Count: 10, P: 100}
 
 	tags := make([]HotTag, len(res.Data))
 

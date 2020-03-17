@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/ik"
@@ -177,10 +178,10 @@ func Inbox(g *gin.Context) {
 	a, next := dal.WalkMulti(pl.MediaOnly, int(common.Cfg.PostsPerPage), ik.NewID(ik.IDInbox, pl.User.ID))
 	fromMultiple(&pl.Articles, a, 0, pl.You)
 
-	go dal.Do(dal.NewRequest("UpdateUser",
-		"ID", pl.User.ID,
-		"Unread", int32(0),
-	))
+	go dal.DoUpdateUser(&dal.UpdateUserRequest{
+		ID:     pl.User.ID,
+		Unread: aws.Int32(int32(0)),
+	})
 
 	pl.Next = ik.CombineIDs(nil, next...)
 	g.HTML(200, "timeline.html", pl)

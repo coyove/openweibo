@@ -7,6 +7,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal/kv"
 	"github.com/coyove/iis/dal/kv/cache"
@@ -58,7 +59,7 @@ func MGetArticlesFromCache(keys ...string) map[string]*model.Article {
 
 func GetArticle(id string, dontOverrideNextID ...bool) (*model.Article, error) {
 	if id == "" {
-		return nil, fmt.Errorf("empty ID")
+		return nil, fmt.Errorf("empty ArticleID")
 	}
 	p, err := m.db.Get(id)
 	if err != nil {
@@ -241,24 +242,24 @@ func Post(a *model.Article, author *model.User, noMaster bool) (*model.Article, 
 	a.CreateTime = time.Now()
 	a.Author = author.ID
 
-	if err := Do(NewRequest(DoInsertArticle,
-		"ID", ik.NewID(ik.IDAuthor, a.Author).String(),
-		"Article", *a,
-	)); err != nil {
+	if _, err := DoInsertArticle(&InsertArticleRequest{
+		ID:      ik.NewID(ik.IDAuthor, a.Author).String(),
+		Article: *a,
+	}); err != nil {
 		return nil, err
 	}
 
 	go func() {
 		if !noMaster {
-			Do(NewRequest(DoInsertArticle,
-				"ID", ik.NewID(ik.IDAuthor, "master").String(),
-				"Article", model.Article{
+			DoInsertArticle(&InsertArticleRequest{
+				ID: ik.NewID(ik.IDAuthor, "master").String(),
+				Article: model.Article{
 					ID:         ik.NewGeneralID().String(),
 					ReferID:    a.ID,
 					Media:      a.Media,
 					CreateTime: time.Now(),
 				},
-			))
+			})
 		}
 		ids, tags := common.ExtractMentionsAndTags(a.Content)
 		MentionUserAndTags(a, ids, tags)
@@ -296,27 +297,27 @@ func PostReply(parent string, content, media string, author *model.User, ip stri
 		CreateTime: time.Now(),
 	}
 
-	r := NewRequest(DoInsertArticle, "ID", p.ID, "Article", *a, "AsReply", true)
-	if err := Do(r); err != nil {
+	a2, err := DoInsertArticle(&InsertArticleRequest{ID: p.ID, Article: *a, AsReply: true})
+	if err != nil {
 		return nil, err
 	}
-	a = &r.InsertArticleRequest.Response.Article
+	a = &a2
 
 	if !noTimeline {
 		// Add reply to its timeline
-		if err := Do(NewRequest(DoInsertArticle,
-			"ID", ik.NewID(ik.IDAuthor, a.Author).String(),
-			"Article", *a,
-		)); err != nil {
+		if _, err := DoInsertArticle(&InsertArticleRequest{
+			ID:      ik.NewID(ik.IDAuthor, a.Author).String(),
+			Article: *a,
+		}); err != nil {
 			return nil, err
 		}
 	}
 
 	go func() {
 		if p.Content != model.DeletionMarker && a.Author != p.Author {
-			if err := Do(NewRequest(DoInsertArticle,
-				"ID", ik.NewID(ik.IDInbox, p.Author).String(),
-				"Article", model.Article{
+			if _, err := DoInsertArticle(&InsertArticleRequest{
+				ID: ik.NewID(ik.IDInbox, p.Author).String(),
+				Article: model.Article{
 					ID:  ik.NewGeneralID().String(),
 					Cmd: model.CmdReply,
 					Extras: map[string]string{
@@ -324,11 +325,12 @@ func PostReply(parent string, content, media string, author *model.User, ip stri
 						"article_id": a.ID,
 					},
 					CreateTime: time.Now(),
-				})); err != nil {
+				},
+			}); err != nil {
 				log.Println("PostReply", err)
 			}
 
-			Do(NewRequest(DoUpdateUser, "ID", p.Author, "IncUnread", true))
+			DoUpdateUser(&UpdateUserRequest{ID: p.Author, IncDecUnread: aws.Bool(true)})
 		}
 		ids, tags := common.ExtractMentionsAndTags(a.Content)
 		MentionUserAndTags(a, ids, tags)

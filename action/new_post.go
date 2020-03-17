@@ -140,7 +140,7 @@ func APIDeleteArticle(g *gin.Context) {
 		return
 	}
 
-	if err := dal.Do(dal.NewRequest(dal.DoUpdateArticle, "ID", g.PostForm("id"), "DeleteBy", *u)); err != nil {
+	if _, err := dal.DoUpdateArticle(&dal.UpdateArticleRequest{ID: g.PostForm("id"), DeleteBy: u}); err != nil {
 		g.String(200, err.Error())
 	} else {
 		g.String(200, "ok")
@@ -159,7 +159,7 @@ func APIToggleNSFWArticle(g *gin.Context) {
 		return
 	}
 
-	if err := dal.Do(dal.NewRequest(dal.DoUpdateArticle, "ID", g.PostForm("id"), "ToggleNSFWBy", *u)); err != nil {
+	if _, err := dal.DoUpdateArticle(&dal.UpdateArticleRequest{ID: g.PostForm("id"), ToggleNSFWBy: u}); err != nil {
 		g.String(200, err.Error())
 	} else {
 		g.String(200, "ok")
@@ -178,7 +178,7 @@ func APIToggleLockArticle(g *gin.Context) {
 		return
 	}
 
-	if err := dal.Do(dal.NewRequest(dal.DoUpdateArticle, "ID", g.PostForm("id"), "ToggleLockBy", *u)); err != nil {
+	if _, err := dal.DoUpdateArticle(&dal.UpdateArticleRequest{ID: g.PostForm("id"), ToggleLockBy: u}); err != nil {
 		g.String(200, err.Error())
 	} else {
 		g.String(200, "ok")

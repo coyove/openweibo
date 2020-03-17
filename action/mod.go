@@ -1,6 +1,7 @@
 package action
 
 import (
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/coyove/iis/dal"
 	"github.com/gin-gonic/gin"
 )
@@ -12,10 +13,7 @@ func APIBan(g *gin.Context) {
 		return
 	}
 
-	if err := dal.Do(dal.NewRequest(dal.DoUpdateUser,
-		"ID", g.PostForm("to"),
-		"ToggleBan", true,
-	)); err != nil {
+	if _, err := dal.DoUpdateUser(&dal.UpdateUserRequest{ID: g.PostForm("to"), ToggleBan: aws.Bool(true)}); err != nil {
 		g.String(200, err.Error())
 	} else {
 		g.String(200, "ok")
@@ -29,10 +27,7 @@ func APIPromoteMod(g *gin.Context) {
 		return
 	}
 
-	if err := dal.Do(dal.NewRequest(dal.DoUpdateUser,
-		"ID", g.PostForm("to"),
-		"ToggleMod", true,
-	)); err != nil {
+	if _, err := dal.DoUpdateUser(&dal.UpdateUserRequest{ID: g.PostForm("to"), ToggleMod: aws.Bool(true)}); err != nil {
 		g.String(200, err.Error())
 	} else {
 		g.String(200, "ok")
