@@ -98,8 +98,10 @@
     <ul>
         <li onclick='location.href="?media"'><i class=icon-calendar></i> 全部</li>
         <li onclick='location.href="?media=1"'><i class=icon-picture></i> 仅图片</li>
+        {{if ne .User.ID "master"}}
         {{range .Checkpoints}}
         <li onclick="location.href='?cp={{.}}'"><i class="icon-history"></i> {{.}}月</li>
+        {{end}}
         {{end}}
     </ul>
 </div>
