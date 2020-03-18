@@ -43,9 +43,13 @@ func GetUserWithSettings(id string) (*model.User, error) {
 	if err != nil {
 		return u, err
 	}
-	p, _ := m.db.Get("u/" + id + "/settings")
-	u.SetSettings(model.UnmarshalUserSettings(p))
+	u.SetSettings(GetUserSettings(id))
 	return u, nil
+}
+
+func GetUserSettings(id string) model.UserSettings {
+	p, _ := m.db.Get("u/" + id + "/settings")
+	return model.UnmarshalUserSettings(p)
 }
 
 func GetUserByContext(g *gin.Context) *model.User {
@@ -175,7 +179,7 @@ func FollowUser(from, to string, following bool) (E error) {
 				Cmd:    model.CmdFollow,
 				Extras: map[string]string{to: state},
 			},
-			AsFollowing: true,
+			AsFollowingSlot: true,
 		})
 		return err
 	}

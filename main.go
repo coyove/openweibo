@@ -8,7 +8,6 @@ import (
 	"os"
 	"runtime"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/coyove/iis/action"
@@ -45,52 +44,52 @@ func main() {
 	}
 
 	if os.Getenv("BENCH") == "1" {
-		ids := []string{}
-		names := []string{"aa", "bb", "cc", "dd"}
-		N := 40
+		// 	ids := []string{}
+		// 	names := []string{"aa", "bb", "cc", "dd"}
+		// 	N := 40
 
-		for i := 0; i < N; i++ {
-			time.Sleep(time.Second)
-			aid, _ := dal.Post(&model.Article{
-				Content: "BENCH " + strconv.Itoa(i) + " post",
-				IP:      "127.0.0.0",
-				NSFW:    true,
-			}, &model.User{
-				ID: names[rand.Intn(len(names))],
-			}, false)
-			ids = append(ids, aid.ID)
-		}
+		// 	for i := 0; i < N; i++ {
+		// 		time.Sleep(time.Second)
+		// 		aid, _ := dal.Post(&model.Article{
+		// 			Content: "BENCH " + strconv.Itoa(i) + " post",
+		// 			IP:      "127.0.0.0",
+		// 			NSFW:    true,
+		// 		}, &model.User{
+		// 			ID: names[rand.Intn(len(names))],
+		// 		}, false)
+		// 		ids = append(ids, aid.ID)
+		// 	}
 
-		wg := sync.WaitGroup{}
-		for k := 0; k < 2; k++ {
-			wg.Add(1)
-			// go func() {
-			// 	time.Sleep(time.Second)
-			// 	x := append(names, "", "", "")
-			// 	m.Walk(ik.IDTagCategory, x[rand.Intn(len(x))], "", rand.Intn(N/2)+N/2)
-			// 	wg.Done()
-			// }()
+		// 	wg := sync.WaitGroup{}
+		// 	for k := 0; k < 2; k++ {
+		// 		wg.Add(1)
+		// 		// go func() {
+		// 		// 	time.Sleep(time.Second)
+		// 		// 	x := append(names, "", "", "")
+		// 		// 	m.Walk(ik.IDTagCategory, x[rand.Intn(len(x))], "", rand.Intn(N/2)+N/2)
+		// 		// 	wg.Done()
+		// 		// }()
 
-			for i := 0; i < 50; i++ {
-				wg.Add(1)
-				go func(i int) {
-					parent := ids[0]
-					if rand.Intn(4) == 1 {
-						parent = ids[rand.Intn(len(ids))]
-					}
-					aid, _ := dal.PostReply(parent, "BENCH "+strconv.Itoa(i)+" reply", "", &model.User{
-						ID: names[rand.Intn(len(names))],
-					}, "127.0.0.0", false, false)
-					ids = append(ids, aid.ID)
+		// 		for i := 0; i < 50; i++ {
+		// 			wg.Add(1)
+		// 			go func(i int) {
+		// 				parent := ids[0]
+		// 				if rand.Intn(4) == 1 {
+		// 					parent = ids[rand.Intn(len(ids))]
+		// 				}
+		// 				aid, _ := dal.PostReply(parent, "BENCH "+strconv.Itoa(i)+" reply", "", &model.User{
+		// 					ID: names[rand.Intn(len(names))],
+		// 				}, "127.0.0.0", false, false)
+		// 				ids = append(ids, aid.ID)
 
-					if i%10 == 0 {
-						log.Println("Progress", i)
-					}
-					wg.Done()
-				}(i)
-			}
-			wg.Wait()
-		}
+		// 				if i%10 == 0 {
+		// 					log.Println("Progress", i)
+		// 				}
+		// 				wg.Done()
+		// 			}(i)
+		// 		}
+		// 		wg.Wait()
+		// 	}
 	}
 
 	r := middleware.New(common.Cfg.Key != "0123456789abcdef")

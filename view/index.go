@@ -36,11 +36,11 @@ type ArticlesTimelineView struct {
 }
 
 type ArticleRepliesView struct {
-	Articles      []ArticleView
-	ParentArticle ArticleView
-	Next          string
-	ShowReplyBox  bool
-	ReplyView     ReplyView
+	Articles          []ArticleView
+	ParentArticle     ArticleView
+	Next              string
+	ShowReplyLockInfo bool
+	ReplyView         ReplyView
 }
 
 func S(g *gin.Context) {
@@ -108,11 +108,13 @@ func Timeline(g *gin.Context) {
 			return
 		}
 
-		if pl.You != nil && pl.You.ID != pl.User.ID {
-			pl.User.SetIsFollowing(dal.IsFollowing(pl.You.ID, uid))
-			pl.User.SetIsFollowed(dal.IsFollowing(uid, pl.You.ID))
-			pl.User.SetIsBlocking(dal.IsBlocking(pl.You.ID, uid))
-			pl.User.SetIsNotYou(true)
+		if pl.You != nil {
+			if pl.You.ID != pl.User.ID {
+				pl.User.SetIsFollowing(dal.IsFollowing(pl.You.ID, uid))
+				pl.User.SetIsFollowed(dal.IsFollowing(uid, pl.You.ID))
+				pl.User.SetIsBlocking(dal.IsBlocking(pl.You.ID, uid))
+			}
+			pl.User.SetIsYou(pl.You.ID == pl.User.ID)
 		}
 	default:
 		// View my timeline
@@ -264,7 +266,7 @@ func APIReplies(g *gin.Context) {
 			g.Status(404)
 			return
 		}
-		pl.ShowReplyBox = u.IsMod() || u.ID == pl.ParentArticle.Author.ID || !pl.ParentArticle.Locked
+		pl.ShowReplyLockInfo = !(u.IsMod() || u.ID == pl.ParentArticle.Author.ID)
 	}
 
 	a, next := dal.WalkReply(int(common.Cfg.PostsPerPage), parent.ReplyChain)

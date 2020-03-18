@@ -567,6 +567,10 @@ div.tri.shadow {
 .post-options ul li:hover {
     background: #bdf;
 }
+.post-options [name="reply-lock"]:not([value="0"]) .icon-lock { display: block }
+.post-options [name="reply-lock"]:not([value="0"]) .icon-lock-open { display: none }
+.post-options [name="reply-lock"][value="0"] .icon-lock { display: none }
+.post-options [name="reply-lock"][value="0"] .icon-lock-open { display: block }
 
 .enc-box {
     white-space: normal;
@@ -577,3 +581,4 @@ div.tri.shadow {
     background: white;
     display: flex;
 }
+

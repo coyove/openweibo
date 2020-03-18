@@ -274,14 +274,36 @@ func Post(a *model.Article, author *model.User, noMaster bool) (*model.Article, 
 	return a, nil
 }
 
-func PostReply(parent string, content, media string, author *model.User, ip string, nsfw bool, noTimeline bool) (*model.Article, error) {
+func PostReply(parent string, a *model.Article, author *model.User, noTimeline bool) (*model.Article, error) {
 	p, err := GetArticle(parent)
 	if err != nil {
 		return nil, err
 	}
 
-	if p.Locked && p.Author != author.ID { // The author himself can reply to his own locked articles
-		if !author.IsMod() {
+	if p.ReplyLockMode != 0 && !(p.Author == author.ID || author.IsMod()) {
+		// The author himself can reply to his own locked articles
+		// And site moderators of course
+		can := false
+		switch p.ReplyLockMode {
+		case model.ReplyLockNobody:
+			can = false
+		case model.ReplyLockFollowingsCan:
+			can = IsFollowing(p.Author, author.ID)
+		case model.ReplyLockFollowingsMentionsCan:
+			can = IsFollowing(p.Author, author.ID)
+			if !can {
+				mentions, _ := common.ExtractMentionsAndTags(p.Content)
+				for _, m := range mentions {
+					if m == author.ID {
+						can = true
+						break
+					}
+				}
+			}
+		case model.ReplyLockFollowingsFollowersCan:
+			can = IsFollowing(p.Author, author.ID) || IsFollowing(author.ID, p.Author)
+		}
+		if !can {
 			return nil, fmt.Errorf("locked parent")
 		}
 	}
@@ -292,15 +314,8 @@ func PostReply(parent string, content, media string, author *model.User, ip stri
 		}
 	}
 
-	a := &model.Article{
-		ID:      ik.NewGeneralID().String(),
-		Content: content,
-		Media:   media,
-		NSFW:    nsfw,
-		Author:  author.ID,
-		IP:      ip,
-		Parent:  p.ID,
-	}
+	a.ID = ik.NewGeneralID().String()
+	a.Parent = p.ID
 
 	a2, err := DoInsertArticle(&InsertArticleRequest{ID: p.ID, Article: *a, AsReply: true})
 	if err != nil {

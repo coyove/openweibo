@@ -30,28 +30,34 @@ const (
 	DeletionMarker = "[[b19b8759-391b-460a-beb0-16f5f334c34f]]"
 )
 
+const (
+	ReplyLockNobody byte = 1 + iota
+	ReplyLockFollowingsCan
+	ReplyLockFollowingsMentionsCan
+	ReplyLockFollowingsFollowersCan
+)
+
 type Article struct {
-	ID          string            `json:"id"`
-	Replies     int               `json:"rs,omitempty"`
-	Likes       int32             `json:"like,omitempty"`
-	Locked      bool              `json:"lock,omitempty"`
-	Alone       bool              `json:"aln,omitempty"`
-	NSFW        bool              `json:"nsfw,omitempty"`
-	Content     string            `json:"content,omitempty"`
-	Media       string            `json:"M,omitempty"`
-	Author      string            `json:"author,omitempty"`
-	IP          string            `json:"ip,omitempty"`
-	CreateTime  time.Time         `json:"create,omitempty"`
-	Parent      string            `json:"P,omitempty"`
-	ReplyChain  string            `json:"Rc,omitempty"`
-	NextReplyID string            `json:"R,omitempty"`
-	NextMediaID string            `json:"MN,omitempty"`
-	NextID      string            `json:"N,omitempty"`
-	EOC         string            `json:"EO,omitempty"`
-	Cmd         Cmd               `json:"K,omitempty"`
-	Extras      map[string]string `json:"X,omitempty"`
-	ReferID     string            `json:"ref,omitempty"`
-	History     string            `json:"his,omitempty"`
+	ID            string            `json:"id"`
+	Replies       int               `json:"rs,omitempty"`
+	Likes         int32             `json:"like,omitempty"`
+	ReplyLockMode byte              `json:"lm,omitempty"`
+	NSFW          bool              `json:"nsfw,omitempty"`
+	Content       string            `json:"content,omitempty"`
+	Media         string            `json:"M,omitempty"`
+	Author        string            `json:"author,omitempty"`
+	IP            string            `json:"ip,omitempty"`
+	CreateTime    time.Time         `json:"create,omitempty"`
+	Parent        string            `json:"P,omitempty"`
+	ReplyChain    string            `json:"Rc,omitempty"`
+	NextReplyID   string            `json:"R,omitempty"`
+	NextMediaID   string            `json:"MN,omitempty"`
+	NextID        string            `json:"N,omitempty"`
+	EOC           string            `json:"EO,omitempty"`
+	Cmd           Cmd               `json:"K,omitempty"`
+	Extras        map[string]string `json:"X,omitempty"`
+	ReferID       string            `json:"ref,omitempty"`
+	History       string            `json:"his,omitempty"`
 }
 
 func (a *Article) ContentHTML() template.HTML {
@@ -103,7 +109,7 @@ type User struct {
 	_IsFollowing bool
 	_IsFollowed  bool
 	_IsBlocking  bool
-	_IsNotYou    bool
+	_IsYou       bool
 	_Settings    UserSettings
 }
 
@@ -131,7 +137,7 @@ func (u User) IsFollowed() bool { return u._IsFollowed }
 
 func (u User) IsBlocking() bool { return u._IsBlocking }
 
-func (u User) IsNotYou() bool { return u._IsNotYou }
+func (u User) IsYou() bool { return u._IsYou }
 
 func (u User) Settings() UserSettings { return u._Settings }
 
@@ -141,7 +147,7 @@ func (u *User) SetIsFollowed(v bool) { u._IsFollowed = v }
 
 func (u *User) SetIsBlocking(v bool) { u._IsBlocking = v }
 
-func (u *User) SetIsNotYou(v bool) { u._IsNotYou = v }
+func (u *User) SetIsYou(v bool) { u._IsYou = v }
 
 func (u *User) SetSettings(s UserSettings) { u._Settings = s }
 
@@ -179,9 +185,10 @@ func UnmarshalUser(b []byte) (*User, error) {
 }
 
 type UserSettings struct {
-	AutoNSFW    bool   `json:"autonsfw,omitempty"`
-	FoldImages  bool   `json:"foldi,omitempty"`
-	Description string `json:"desc,omitempty"`
+	AutoNSFW      bool   `json:"autonsfw,omitempty"`
+	FoldImages    bool   `json:"foldi,omitempty"`
+	NoReplyNotify bool   `json:"norep,omitempty"`
+	Description   string `json:"desc,omitempty"`
 }
 
 func (u UserSettings) Marshal() []byte {

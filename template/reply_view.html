@@ -37,6 +37,13 @@
     <table class="articles reply-table" style="border:solid 1px #e1e2e3;border-width:1px 0;position:relative;text-align:left">
         <tr>
             <td style="white-space: nowrap;background:rgba(0,0,0,0.025)" colspan=2>
+                <div class="post-options">
+                    <button name=reply-lock class=gbutton onmouseenter="lockArticle(this)" value=0>
+                        <i class=icon-lock></i>
+                        <i class=icon-lock-open></i>
+                    </button>
+                </div>
+
                 <div class="post-options post-options-emoji" onmousemove="emojiMajiang('{{.UUID}}')">
                     <button class=gbutton><i class="icon-emo-devil"></i><i class="icon-down-dir right"></i></button>
                     {{template "emoji.html" .UUID}}
@@ -87,11 +94,6 @@
                             <input type=checkbox name=nomaster id="nomaster{{.UUID}}" class=icon-input-checkbox>
                             <i class=icon-ok-circled2></i>
                             <label for="nomaster{{.UUID}}">不同步至广场</label>
-                        </li>
-                        <li>
-                            <input type=checkbox name=alone id="alone{{.UUID}}" class=icon-input-checkbox>
-                            <i class=icon-ok-circled2></i>
-                            <label for="alone{{.UUID}}">不同步至我的时间线</label>
                         </li>
                         {{end}}
                         <li>

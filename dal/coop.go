@@ -37,13 +37,14 @@ type (
 	}
 
 	UpdateArticleRequest struct {
-		ID            string
-		IncDecLikes   *bool
-		IncDecReplies *bool
-		ClearNextID   *bool
-		DeleteBy      *model.User
-		ToggleNSFWBy  *model.User
-		ToggleLockBy  *model.User
+		ID                string
+		IncDecLikes       *bool
+		IncDecReplies     *bool
+		ClearNextID       *bool
+		DeleteBy          *model.User
+		ToggleNSFWBy      *model.User
+		UpdateReplyLockBy *model.User
+		UpdateReplyLock   *byte
 	}
 
 	UpdateArticleExtraRequest struct {
@@ -53,11 +54,11 @@ type (
 	}
 
 	InsertArticleRequest struct {
-		ID          string
-		AsReply     bool
-		AsFollowing bool
-		NoLock      bool
-		Article     model.Article
+		ID              string
+		AsReply         bool
+		AsFollowingSlot bool
+		NoLock          bool
+		Article         model.Article
 	}
 
 	UpdateOrInsertCmdArticleRequest struct {
@@ -76,7 +77,6 @@ func DoUpdateUser(rr *UpdateUserRequest) (model.User, error) {
 
 	if rr.SettingAutoNSFW != nil || rr.SettingFoldImages != nil || rr.SettingDescription != nil {
 		sid := "u/" + id + "/settings"
-
 		p, _ := m.db.Get(sid)
 		u := model.UnmarshalUserSettings(p)
 
@@ -183,12 +183,12 @@ func DoUpdateArticle(rr *UpdateArticleRequest) (model.Article, error) {
 		a.NSFW = !a.NSFW
 		a.History += fmt.Sprintf("{nsfw_by:%s:%v}", rr.ToggleNSFWBy.ID, now())
 	}
-	if rr.ToggleLockBy != nil {
-		if rr.ToggleLockBy.ID != a.Author && !rr.ToggleLockBy.IsMod() {
+	if rr.UpdateReplyLockBy != nil {
+		if rr.UpdateReplyLockBy.ID != a.Author && !rr.UpdateReplyLockBy.IsMod() {
 			return model.Article{}, fmt.Errorf("user/not-allowed")
 		}
-		a.Locked = !a.Locked
-		a.History += fmt.Sprintf("{lock_by:%s:%v}", rr.ToggleLockBy.ID, now())
+		a.ReplyLockMode = *rr.UpdateReplyLock
+		a.History += fmt.Sprintf("{lock_by:%s:%v}", rr.UpdateReplyLockBy.ID, now())
 	}
 
 	return *a, m.db.Set(a.ID, a.Marshal())
@@ -215,7 +215,10 @@ func DoUpdateArticleExtra(rr *UpdateArticleExtraRequest) (string, error) {
 func DoInsertArticle(r *InsertArticleRequest) (model.Article, error) {
 	rootID := r.ID
 	a := r.Article
-	a.CreateTime = time.Now()
+
+	if a.CreateTime.IsZero() || a.CreateTime == (time.Time{}) {
+		a.CreateTime = time.Now()
+	}
 
 	// UpdateOrInsert may call Insert internally, so NoLock will prevent deadlock
 	if !r.NoLock {
@@ -254,26 +257,26 @@ func DoInsertArticle(r *InsertArticleRequest) (model.Article, error) {
 		}
 	}
 
-	if !a.Alone {
-		if r.AsReply {
-			// The article is a reply to another feed, so insert it into root's reply chain
-			a.NextReplyID, root.ReplyChain = root.ReplyChain, a.ID
-		} else if r.AsFollowing {
-			// The article contains following info, it won't go into any chains
-			// instead root's Extras will record the index.
-			// 'index' is the last element of the article's ArticleID: u/<user_id>/follow/<index>
-			if root.Extras == nil {
-				root.Extras = map[string]string{}
-			}
-			root.Extras[lastElemInCompID(a.ID)] = "1"
-		} else {
-			// The article is a normal feed, so insert it into root's main chain
-			a.NextID, root.NextID = root.NextID, a.ID
-			if a.Media != "" {
-				a.NextMediaID, root.NextMediaID = root.NextMediaID, a.ID
-			}
+	switch {
+	case r.AsReply:
+		// The article is a reply to another feed, so insert it into root's reply chain
+		a.NextReplyID, root.ReplyChain = root.ReplyChain, a.ID
+	case r.AsFollowingSlot:
+		// The article contains following info, it won't go into any chains
+		// instead root's Extras will record the index.
+		// 'index' is the last element of the article's ArticleID: u/<user_id>/follow/<index>
+		if root.Extras == nil {
+			root.Extras = map[string]string{}
+		}
+		root.Extras[lastElemInCompID(a.ID)] = "1"
+	default:
+		// The article is a normal feed, so insert it into root's main chain/media chain
+		a.NextID, root.NextID = root.NextID, a.ID
+		if a.Media != "" {
+			a.NextMediaID, root.NextMediaID = root.NextMediaID, a.ID
 		}
 	}
+
 	root.Replies++
 
 	if err := m.db.Set(a.ID, a.Marshal()); err != nil {

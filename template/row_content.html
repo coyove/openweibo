@@ -87,8 +87,8 @@
                              style="color:{{if .NSFW}}#f90{{else}}#bbb{{end}}" value={{.NSFW}}>
             <i class="icon-transgender-alt"></i>
         </a>
-        <a class="reply-box" href="javascript:void(0)" onclick="lockArticle(this,'{{.ID}}')" value={{.Locked}}>
-            {{if .Locked}}
+        <a class="reply-box" href="javascript:void(0)" onclick="lockArticle(this,'{{.ID}}')" value="{{.ReplyLockMode}}">
+            {{if .ReplyLockMode}}
             <i style="color:#233" class="icon-lock"></i>
             {{else}}
             <i style="color:#aaa" class="icon-lock-open"></i>

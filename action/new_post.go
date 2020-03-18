@@ -4,8 +4,10 @@ import (
 	"log"
 	"net"
 	"net/url"
+	"strconv"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/middleware"
@@ -34,6 +36,7 @@ func APINew(g *gin.Context) {
 		ip      = hashIP(g)
 		content = common.SoftTrunc(g.PostForm("content"), int(common.Cfg.MaxContent))
 		image   = g.PostForm("image64")
+		rlm, _  = strconv.Atoi(g.PostForm("reply_lock"))
 		err     error
 	)
 
@@ -62,17 +65,14 @@ func APINew(g *gin.Context) {
 	}
 
 	a := &model.Article{
-		Content: content,
-		Media:   image,
-		IP:      ip,
-		NSFW:    g.PostForm("nsfw") != "",
-		Alone:   g.PostForm("alone") != "",
+		Content:       content,
+		Media:         image,
+		IP:            ip,
+		NSFW:          g.PostForm("nsfw") != "",
+		ReplyLockMode: byte(rlm),
 	}
 
 	noMaster := g.PostForm("no_master") == "1"
-	if a.Alone {
-		noMaster = true
-	}
 
 	a2, err := dal.Post(a, u, noMaster)
 	if err != nil {
@@ -92,6 +92,7 @@ func doReply(g *gin.Context) {
 		content = common.SoftTrunc(g.PostForm("content"), int(common.Cfg.MaxContent))
 		image   = g.PostForm("image64")
 		nsfw    = g.PostForm("nsfw") != ""
+		rlm, _  = strconv.Atoi(g.PostForm("reply_lock"))
 		err     error
 	)
 
@@ -117,7 +118,16 @@ func doReply(g *gin.Context) {
 
 	noTimeline := g.PostForm("no_timeline") == "1" || strings.Contains(content, "#ReportThis")
 
-	a2, err := dal.PostReply(reply, content, image, u, ip, nsfw, noTimeline)
+	a := &model.Article{
+		Content:       content,
+		Media:         image,
+		NSFW:          nsfw,
+		Author:        u.ID,
+		IP:            ip,
+		ReplyLockMode: byte(rlm),
+	}
+
+	a2, err := dal.PostReply(reply, a, u, noTimeline)
 	if err != nil {
 		log.Println(a2, err)
 		g.String(200, "error/can-not-reply")
@@ -178,7 +188,12 @@ func APIToggleLockArticle(g *gin.Context) {
 		return
 	}
 
-	if _, err := dal.DoUpdateArticle(&dal.UpdateArticleRequest{ID: g.PostForm("id"), ToggleLockBy: u}); err != nil {
+	v, _ := strconv.Atoi(g.PostForm("mode"))
+	if _, err := dal.DoUpdateArticle(&dal.UpdateArticleRequest{
+		ID:                g.PostForm("id"),
+		UpdateReplyLockBy: u,
+		UpdateReplyLock:   aws.Uint8(byte(v)),
+	}); err != nil {
 		g.String(200, err.Error())
 	} else {
 		g.String(200, "ok")

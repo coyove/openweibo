@@ -14,7 +14,7 @@
 
         <div style="flex-grow:0;white-space:nowrap;margin:0">
 
-        {{if .IsNotYou}}
+        {{if not .IsYou}}
         {{template "button_follow_block.html" (blend "follow" .ID .IsFollowing)}}
         {{template "button_follow_block.html" (blend "block" .ID .IsBlocking)}}
         {{else}}
@@ -32,7 +32,7 @@
         --><div style="color:#666;font-size:90%;white-space:normal">
             <b>加入于</b> {{formatTime .Signup}}&nbsp;
             <b>活跃于</b> {{formatTime (getLastActiveTime .ID)}}&nbsp;
-            {{if .IsNotYou}}
+            {{if not .IsYou}}
                 {{if and .IsFollowing .IsFollowed}}
                 <b>互相关注</b>
                 {{else if .IsFollowing}}

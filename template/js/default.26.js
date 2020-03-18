@@ -183,17 +183,60 @@ function nsfwArticle(el, id) {
 }
 
 function lockArticle(el, id) {
-    var stop = $wait(el);
-    $post("/api2/toggle_lock", { id: id }, function (res) {
-        stop();
-        if (res != "ok") return res;
+    var div = $html('<div style="position:absolute;background:#fafbfc;box-shadow:0 1px 5px rgba(0,0,0,.3);"></div>'),
+        box = el.getBoundingClientRect(),
+        bodyBox = document.body.getBoundingClientRect(),
+        currentValue = $value(el),
+        reg = {};
 
-        var locked = $value(el) !== 'true';
-        el.setAttribute("value", locked)
-        el.querySelector("i").className = locked ? "icon-lock" : "icon-lock-open"
-        el.querySelector("i").style.color = locked ? "#233" : "#aaa"
-        return "ok:" + (locked ? "已锁定该状态，其他人不能回复" : "已解除锁定");
-    }, stop);
+    div.style.left = box.left - bodyBox.left + "px";
+    div.style.top = box.bottom - bodyBox.top + "px";
+
+    var checkbox = function(i, t) {
+        var xid = "lala" + (Math.random() * 1000).toFixed(0);
+        var r = $html("<div style='margin:0.5em'>" +
+            "<input value=" + i + " type=radio name=reply-lock class=icon-input-checkbox id=" +
+            xid + (i == currentValue ? " checked" : "") + ">" +
+            "<i class='icon-ok-circled2'></i> <label for=" + xid + ">" + t + "</label></div>")
+        if (!id) {
+            r.querySelector('input').addEventListener("change", function(e) {
+                reg.callback();
+            }, false);
+        }
+        return r;
+    }
+    div.appendChild(checkbox(0, "不限制回复"))
+    div.appendChild(checkbox(1, "禁止回复"))
+    div.appendChild(checkbox(2, "我关注的人可以回复"))
+    div.appendChild(checkbox(3, "我关注的和我@的人可以回复"))
+    div.appendChild(checkbox(4, "我关注的和粉丝可以回复"))
+    document.body.appendChild(div)
+
+    if (id) div.appendChild($html("<div style='margin:0.5em;text-align:center'><button class=gbutton>更新设置</div></div>"))
+
+    reg = { valid: true, boxes: [el, div], callback: function(x, y) {
+        if (!id) {
+            var v = div.querySelector("[name=reply-lock]:checked").value;
+            el.setAttribute("value", v)
+        }
+        div.parentNode.removeChild(div);
+    }, };
+    window.REGIONS = window.REGIONS || [];
+    window.REGIONS.push(reg);
+
+    if (!id) return;
+    div.querySelector('button').onclick = function(e) {
+        var stop = $wait(e.target), v = div.querySelector("[name=reply-lock]:checked").value;
+        $post("/api2/toggle_lock", { id: id, mode: v }, function (res) {
+            stop();
+            if (res != "ok") return res;
+            el.setAttribute("value", v)
+            el.innerHTML = v > 0 ?
+                '<i style="color:#233" class="icon-lock"></i>' :
+                '<i style="color:#aaa" class="icon-lock-open"></i>'
+            return "ok:回复设置更新"
+        }, stop);
+    }
 }
 
 function followBlock(el, m, id) {
@@ -417,11 +460,13 @@ function showInfoBox(el, uid) {
         bodyBox = document.body.getBoundingClientRect(),
         box = el.getBoundingClientRect(),
         boxTopOffset = 0,
-        addtionalBoxes = [];
+        addtionalBoxes = [],
+        startAt = new Date().getTime();
 
     document.body.appendChild(div);
     div.innerHTML = $q("#dummy-user").innerHTML;
     div.querySelector('img.avatar').src = el.src || '';
+    div.querySelector('img.avatar').onclick = null;
 
     if (el.className === 'mentioned-user') {
         div.querySelector('span.post-author').innerHTML = el.innerHTML;
@@ -465,7 +510,7 @@ function showInfoBox(el, uid) {
 
     $post("/api/u/" + uid, {}, function(h) {
         if (h.indexOf("ok:") > -1) {
-            div.innerHTML = h.substring(3);
+            setTimeout(function() { div.innerHTML = h.substring(3) }, new Date().getTime() - startAt > 100 ? 0 : 100)
             return
         }
         return h

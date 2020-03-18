@@ -2,15 +2,21 @@
     <div class="rows replies" id="timeline{{.ReplyView.UUID}}" > 
         {{template "row_content.html" .ParentArticle}}
 
-        {{if .ShowReplyBox}}
-        {{template "reply_view.html" .ReplyView}}
-        {{else}}
+        {{if and .ParentArticle.ReplyLockMode .ShowReplyLockInfo}}
         <div class=row>
-            <div style="padding: 0 0.5em 0.5em; text-align:center;color:#aaa">
-                <button class=gbutton disabled>回复已关闭</button>
+            <div style="text-align:center;color:#aaa;
+                         background: repeating-linear-gradient(45deg, transparent, transparent 20px, #eee 20px, #eee 40px);">
+                <button class=gbutton disabled>
+                    {{if eq .ParentArticle.ReplyLockMode 1}}禁止回复{{end}}
+                    {{if eq .ParentArticle.ReplyLockMode 2}}仅限作者关注的人回复{{end}}
+                    {{if eq .ParentArticle.ReplyLockMode 3}}仅限作者关注和@的人回复{{end}}
+                    {{if eq .ParentArticle.ReplyLockMode 4}}仅限作者关注的和其粉丝回复{{end}}
+                </button>
             </div>
         </div>
         {{end}}
+
+        {{template "reply_view.html" .ReplyView}}
 
         <div class="row-reply-inserter" style="display:none"></div>
 

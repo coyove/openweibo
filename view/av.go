@@ -14,25 +14,24 @@ import (
 )
 
 type ArticleView struct {
-	ID          string
-	IDDOM       string
-	Parent      *ArticleView
-	Author      *model.User
-	You         *model.User
-	Cmd         string
-	Replies     int
-	Likes       int
-	Locked      bool
-	Liked       bool
-	NSFW        bool
-	NoAvatar    bool
-	NoReply     bool
-	Content     string
-	ContentHTML template.HTML
-	Media       string
-	MediaType   string
-	History     string
-	CreateTime  time.Time
+	ID            string
+	Parent        *ArticleView
+	Author        *model.User
+	You           *model.User
+	Cmd           string
+	Replies       int
+	Likes         int
+	ReplyLockMode byte
+	Liked         bool
+	NSFW          bool
+	NoAvatar      bool
+	NoReply       bool
+	Content       string
+	ContentHTML   template.HTML
+	Media         string
+	MediaType     string
+	History       string
+	CreateTime    time.Time
 }
 
 const (
@@ -60,7 +59,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 	a.ID = a2.ID
 	a.Replies = int(a2.Replies)
 	a.Likes = int(a2.Likes)
-	a.Locked = a2.Locked
+	a.ReplyLockMode = a2.ReplyLockMode
 	a.NSFW = a2.NSFW
 	a.Cmd = string(a2.Cmd)
 	a.CreateTime = a2.CreateTime
