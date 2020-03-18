@@ -216,8 +216,8 @@ function lockArticle(el, id) {
 
     reg = { valid: true, boxes: [el, div], callback: function(x, y) {
         if (!id) {
-            var v = div.querySelector("[name=reply-lock]:checked").value;
-            el.setAttribute("value", v)
+            var v = (div.querySelector("[name=reply-lock]:checked") || {}).value;
+            if (v) el.setAttribute("value", v)
         }
         div.parentNode.removeChild(div);
     }, };
