@@ -335,6 +335,10 @@ func PostReply(parent string, a *model.Article, author *model.User, noTimeline b
 
 	go func() {
 		if p.Content != model.DeletionMarker && a.Author != p.Author {
+			if GetUserSettings(p.Author).OnlyMyFollowingsCanMention && !IsFollowing(p.Author, a.Author) {
+				return
+			}
+
 			if _, err := DoInsertArticle(&InsertArticleRequest{
 				ID: ik.NewID(ik.IDInbox, p.Author).String(),
 				Article: model.Article{

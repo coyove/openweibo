@@ -50,24 +50,41 @@
             </div>
 
             <div class=title>
-                <table class="articles" style="margin-top: 0.5em;text-align:left">
+                <table class="articles" style="margin: 0.5em 0;text-align:left">
                     <tr>
-                        <td colspan=3> 
+                        <td>
                             <input type=checkbox {{if .User.Settings.AutoNSFW}}checked{{end}} id=autonsfw
                                    class=icon-input-checkbox
                                    onchange="updateSetting(this,'autonsfw',this.checked?'1':'')">
                             <i class='icon-ok-circled2'></i>
-                            <label for= autonsfw>自动展开NSFW图片</label>
+                            <label for=autonsfw>自动展开NSFW图片</label>
                         </td>
                     </tr>
-
                     <tr>
-                        <td colspan=3> 
+                        <td>
                             <input type=checkbox {{if .User.Settings.FoldImages}}checked{{end}} id=foldimg
                                    class=icon-input-checkbox
                                    onchange="updateSetting(this,'foldimg',this.checked?'1':'')">
                             <i class='icon-ok-circled2'></i>
-                            <label for= foldimg>收起图片（减少流量）</label>
+                            <label for=foldimg>收起图片（减少流量）</label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type=checkbox {{if .User.Settings.OnlyMyFollowingsCanMention}}checked{{end}} id=mfcm
+                                   class=icon-input-checkbox
+                                   onchange="updateSetting(this,'mfcm',this.checked?'1':'')">
+                            <i class='icon-ok-circled2'></i>
+                            <label for=mfcm>屏蔽我没关注的人的回复和@提醒</label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type=checkbox {{if .User.Settings.OnlyMyFollowingsCanFollow}}checked{{end}} id=mffm
+                                   class=icon-input-checkbox
+                                   onchange="updateSetting(this,'mffm',this.checked?'1':'')">
+                            <i class='icon-ok-circled2'></i>
+                            <label for=mffm>只有我关注的人可以关注我</label>
                         </td>
                     </tr>
                 </table>

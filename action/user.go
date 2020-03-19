@@ -287,6 +287,22 @@ func APIUpdateUserSettings(g *gin.Context) {
 			g.String(200, err.Error())
 			return
 		}
+	case g.PostForm("set-mffm") != "":
+		if _, err := dal.DoUpdateUser(&dal.UpdateUserRequest{
+			ID:          u.ID,
+			SettingMFFM: aws.Bool(g.PostForm("mffm") != ""),
+		}); err != nil {
+			g.String(200, err.Error())
+			return
+		}
+	case g.PostForm("set-mfcm") != "":
+		if _, err := dal.DoUpdateUser(&dal.UpdateUserRequest{
+			ID:          u.ID,
+			SettingMFCM: aws.Bool(g.PostForm("mfcm") != ""),
+		}); err != nil {
+			g.String(200, err.Error())
+			return
+		}
 	case g.PostForm("set-description") != "":
 		if _, err := dal.DoUpdateUser(&dal.UpdateUserRequest{
 			ID:                 u.ID,

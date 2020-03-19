@@ -185,10 +185,11 @@ func UnmarshalUser(b []byte) (*User, error) {
 }
 
 type UserSettings struct {
-	AutoNSFW      bool   `json:"autonsfw,omitempty"`
-	FoldImages    bool   `json:"foldi,omitempty"`
-	NoReplyNotify bool   `json:"norep,omitempty"`
-	Description   string `json:"desc,omitempty"`
+	AutoNSFW                   bool   `json:"autonsfw,omitempty"`
+	FoldImages                 bool   `json:"foldi,omitempty"`
+	OnlyMyFollowingsCanFollow  bool   `json:"mffm,omitempty"`
+	OnlyMyFollowingsCanMention bool   `json:"mfcm,omitempty"`
+	Description                string `json:"desc,omitempty"`
 }
 
 func (u UserSettings) Marshal() []byte {

@@ -105,6 +105,10 @@ func MentionUserAndTags(a *model.Article, ids []string, tags []string) error {
 			return fmt.Errorf("author blocked")
 		}
 
+		if GetUserSettings(id).OnlyMyFollowingsCanMention && !IsFollowing(id, a.Author) {
+			continue
+		}
+
 		if _, err := DoInsertArticle(&InsertArticleRequest{
 			ID: ik.NewID(ik.IDInbox, id).String(),
 			Article: model.Article{
@@ -118,6 +122,7 @@ func MentionUserAndTags(a *model.Article, ids []string, tags []string) error {
 		}); err != nil {
 			return err
 		}
+
 		if _, err := DoUpdateUser(&UpdateUserRequest{ID: id, IncDecUnread: aws.Bool(true)}); err != nil {
 			return err
 		}
@@ -142,9 +147,14 @@ func MentionUserAndTags(a *model.Article, ids []string, tags []string) error {
 
 func FollowUser(from, to string, following bool) (E error) {
 	followID := makeFollowID(from, to)
-	if following && IsBlocking(to, from) {
-		// "from" wants "to" follow "to" but "to" blocked "from"
-		return fmt.Errorf("follow/to-blocked")
+	if following {
+		if IsBlocking(to, from) {
+			// "from" wants "to" follow "to" but "to" blocked "from"
+			return fmt.Errorf("follow/to-blocked")
+		}
+		if GetUserSettings(to).OnlyMyFollowingsCanFollow && !IsFollowing(to, from) {
+			return fmt.Errorf("follow/to-following-required")
+		}
 	}
 
 	updated := false

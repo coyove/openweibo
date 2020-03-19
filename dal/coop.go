@@ -34,6 +34,8 @@ type (
 		SettingAutoNSFW    *bool
 		SettingFoldImages  *bool
 		SettingDescription *string
+		SettingMFFM        *bool
+		SettingMFCM        *bool
 	}
 
 	UpdateArticleRequest struct {
@@ -75,7 +77,12 @@ func DoUpdateUser(rr *UpdateUserRequest) (model.User, error) {
 	common.LockKey(id)
 	defer common.UnlockKey(id)
 
-	if rr.SettingAutoNSFW != nil || rr.SettingFoldImages != nil || rr.SettingDescription != nil {
+	if rr.SettingAutoNSFW != nil ||
+		rr.SettingFoldImages != nil ||
+		rr.SettingDescription != nil ||
+		rr.SettingMFFM != nil ||
+		rr.SettingMFCM != nil {
+
 		sid := "u/" + id + "/settings"
 		p, _ := m.db.Get(sid)
 		u := model.UnmarshalUserSettings(p)
@@ -83,6 +90,8 @@ func DoUpdateUser(rr *UpdateUserRequest) (model.User, error) {
 		setIfValid(&u.AutoNSFW, rr.SettingAutoNSFW)
 		setIfValid(&u.FoldImages, rr.SettingFoldImages)
 		setIfValid(&u.Description, rr.SettingDescription)
+		setIfValid(&u.OnlyMyFollowingsCanFollow, rr.SettingMFFM)
+		setIfValid(&u.OnlyMyFollowingsCanMention, rr.SettingMFCM)
 		return model.User{}, m.db.Set(sid, u.Marshal())
 	}
 
