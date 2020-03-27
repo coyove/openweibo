@@ -17,15 +17,14 @@ var ErrNotExisted = errors.New("article not existed")
 type Cmd string
 
 const (
-	CmdNone     Cmd = ""
-	CmdReply        = "inbox-reply"
-	CmdMention      = "inbox-mention"
-	CmdILike        = "inbox-like"
-	CmdFollow       = "follow"
-	CmdFollowed     = "followed"
-	CmdBlock        = "block"
-	CmdLike         = "like"
-	CmdVote         = "vote"
+	CmdNone         Cmd = ""
+	CmdInboxReply       = "inbox-reply"
+	CmdInboxMention     = "inbox-mention"
+	CmdInboxLike        = "inbox-like"
+	CmdFollow           = "follow"
+	CmdFollowed         = "followed"
+	CmdBlock            = "block"
+	CmdLike             = "like"
 
 	DeletionMarker = "[[b19b8759-391b-460a-beb0-16f5f334c34f]]"
 )

@@ -38,6 +38,40 @@
                             <input readonly class=t style="font-family:monospace;border:none;text-align:right" value="{{.User.DataIP}}">
                         </td>
                     </tr>
+                    <tr>
+                        <td colspan=2 style="text-align:center">
+                            <a class=gbutton href="#"
+                                onclick="confirm('确认登出 {{.User.DisplayName}}')?$postReload(this, '/api2/logout',{}):0" style="color:#f80">
+                                <i class="icon-logout"></i> 退出账号
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-box">
+        <div class="status">
+            <div class="title row-header" style="text-align:center">
+                <b style="flex-grow: 1">昵称 @ID</b>
+            </div>
+
+            <div class=title>
+                <table class="articles" style="margin: 0.5em 0;text-align:left">
+                    <tr>
+                        <td>
+                            <input name=custom-name class=t value="{{.User.CustomName}}">
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class=nowrap style="text-align:center">
+                            <button class=gbutton onclick="updateSetting(this,'custom-name',$q('[name=custom-name]').value)">
+                                更新昵称
+                            </button>
+                        </td>
+                    </tr> 
+
                 </table>
             </div>
         </div>

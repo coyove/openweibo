@@ -113,7 +113,7 @@ func MentionUserAndTags(a *model.Article, ids []string, tags []string) error {
 			ID: ik.NewID(ik.IDInbox, id).String(),
 			Article: model.Article{
 				ID:  ik.NewGeneralID().String(),
-				Cmd: model.CmdMention,
+				Cmd: model.CmdInboxMention,
 				Extras: map[string]string{
 					"from":       a.Author,
 					"article_id": a.ID,
@@ -264,7 +264,7 @@ func LikeArticle(from, to string, liking bool) (E error) {
 				ID: ik.NewID(ik.IDInbox, a.Author).String(),
 				Article: model.Article{
 					ID:  ik.NewGeneralID().String(),
-					Cmd: model.CmdILike,
+					Cmd: model.CmdInboxLike,
 					Extras: map[string]string{
 						"from":       from,
 						"article_id": to,

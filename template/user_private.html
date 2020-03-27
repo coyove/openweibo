@@ -1,57 +1,44 @@
 <div class="status">
     <div class="title row-header" style="">
-        <div style="white-space:nowrap">
-            <div style="display:inline-block;position:relative;margin-right:0.5em" class=avatar-container>
-                <img class="avatar" src="/avatar/{{.ID}}.jpg?q={{.Avatar}}" style="cursor:pointer;margin:0"
-                     onclick="this.nextElementSibling.click()">
-                <input type=file style="display:none" onchange="onAvatarChanged(this)">
-                <div style="position: absolute;
-    top: 50%; left: 50%; margin-left: -16px; margin-top: -16px; width: 32px; height: 32px;
-    background: rgba(0,0,0,0.3);
-    line-height: 32px;
-    color: white;
-    text-align: center;
-    pointer-events: none;
-    border-radius: 50%"><i class=icon-camera style="font-size:12px"></i></div>
-            </div>
-            <div style="display:inline-block">{{template "kimochi.html" .}}</div>
+        <div style="white-space:nowrap;display:inline-block">
+            <img class="avatar" src="/avatar/{{.ID}}.jpg?q={{.Avatar}}" style="cursor:pointer;margin:0"
+                                                                        onclick="this.nextElementSibling.click()">
+            <input type=file style="display:none" onchange="onAvatarChanged(this)">
+            <button style="color:#233" class=gbutton onclick="this.previousElementSibling.click()">
+                <i class=icon-camera></i>
+            </button>
         </div>
-        <div style="flex:1 100%;text-align:center;overflow:hidden;text-overflow: ellipsis;white-space:nowrap">
-            {{if not .CustomName}}
-<style>
-#change-name .post-author {
-    padding: 0 0.33em;
-    border-left: solid 2px #233;
-    animation: name-blink 1s steps(2, start) infinite;
-}
-      @keyframes name-blink {
-          to { border-left-color: transparent ;}
-      }
-</style>
-{{end}}
-            <span id=change-name onclick="changeName(this)">
-                {{template "display_name.html" .}}
-                <input class=t style="display:none;border:none;text-align:center" placeholder="输入你的名字">
-            </span>
+        <div style="flex:1 100%;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+            {{template "display_name.html" .}}
         </div>
         <div style="flex:0 48px;margin:0;white-space:nowrap">
             <a class=gbutton href="/user" style="color:#233">
                 <i class="icon-cog"></i>
             </a>
-            <a class=gbutton href="#" onclick="confirm('确认登出 {{.DisplayName}}')?$postReload(this, '/api2/logout',{}):0" style="color:#233">
-                <i class="icon-logout"></i>
-            </a>
+            <div style="display:inline-block">
+                <div class="post-options post-options-emoji" onmouseover="loadKimochi(this)">
+                    <img src="/s/emoji/emoji{{.Kimochi}}.png" style="
+                                                             vertical-align: middle;
+                                                             {{if not .Kimochi}}border:dashed 1px #233;border-radius:50%{{end}}">
+                    <ul style="margin-left:-216px;direction:rtl"></ul>
+                </div>
+            </div>
         </div>
         <div class=tri></div>
     </div>
 
     <div class=title>
+        <div style="display:flex;width:100%;border:dotted 1px #ccc;margin:0.5em 0;border-radius:4px">
         <input
-            id="bio-description"
-            style="padding:0 0.5em;margin:0.5em 0;width:100%;border:dotted 1px #ccc;line-height:2em;text-align:left"
+            style="width:100%;border:none;text-align:left"
             placeholder="个人简介"
             class=t
             value="{{.Settings.Description}}">
+        <button class=gbutton style="margin:0.25em;color:#4a5;flex-shrink:0"
+                              onclick="updateSetting(this, 'description', this.previousElementSibling.value)">
+            <i class=icon-ok></i> 更新
+        </button>
+        </div>
     </div>
 
     <div class=title>
@@ -88,42 +75,6 @@
 </div>
 
 <script>
-    $q("#bio-description").addEventListener("blur", function(e) {
-        if (e.target.value) updateSetting(document.createElement("button"), "description", e.target.value)
-    }, false)
-
-function changeName(el) {
-    el.querySelector("a").href= 'javascript:void(0)';
-    el.onclick = null;
-
-    var i = el.querySelector("input"), n = el.querySelector("span");
-    var old = decodeURIComponent(n.getAttribute('data'));
-
-    i.value = old;
-    n.style.display = 'none';
-    i.style.display = null;
-    i.focus();
-    i.addEventListener("blur", function(e) {
-        el.onclick =  function() { changeName(el) }
-        var fail = function() {
-            n.style.display = null;
-            i.style.display = 'none';
-        }
-        if (old !== e.target.value) {
-            updateSetting(n, "custom-name", e.target.value, function(h, x) {
-                fail();
-                if (h === 'ok') {
-                    n.innerHTML = decodeURIComponent(x.getResponseHeader("X-Result"));
-                    n.innerHTML = n.querySelector(".post-author").innerHTML;
-                    n.setAttribute('data', decodeURIComponent(x.getResponseHeader("X-Custom-Name")))
-                }
-            }, fail)
-        } else {
-            fail();
-        }
-    }, false)
-}
-
 function onAvatarChanged(el) {
     if (!el.value) return;
 
@@ -140,14 +91,14 @@ function onAvatarChanged(el) {
                 success = function() {
                     console.log((img.src.length / 1.33 / 1024).toFixed(0) + "KB", f);
                     var data = {}, a = el.previousElementSibling;
+                    var btnstop = $wait(el.nextElementSibling)
                     var stop = function() {
                         a.src = a.OLD_SRC;
-                        el.parentNode.querySelector("div").style.display = null;
+                        btnstop();
                     }
 
                     a.OLD_SRC = a.src;
                     a.src = '/s/css/spinner.gif'
-                    el.parentNode.querySelector("div").style.display = 'none';
 
                     data["set-avatar"] = "1";
                     data["avatar"] = img.src;

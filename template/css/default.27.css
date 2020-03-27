@@ -108,7 +108,7 @@ input.t, textarea, select.t {
 
 input.t, textarea, input.s {
     border: solid 1px #ccc;
-    padding: 4px 6px;
+    padding: 0.5em;
 }
 
 pre {
@@ -427,7 +427,6 @@ img.avatar + .avatar-kimochi {
     position:absolute;
     left:32px;
     top:6px;
-    -webkit-filter: drop-shadow(0 0 3px rgba(0,0,0,0.2));
 }
 
 .media {
@@ -489,13 +488,6 @@ div.tri {
     left: 50%;
 }
 
-div.tri.shadow {
-    box-shadow: 0 0 5px rgba(0, 0, 0, 1);
-    z-index: 0;
-    top: 100%;
-    transform: rotate(45deg);
-}
-
 .icon-flow-merge:before { margin-left: 0 !important }
 .icon-down-dir.right:before { margin-right: 0 !important }
 .icon-history.left:before { margin-left: 0 !important }
@@ -506,8 +498,10 @@ div.tri.shadow {
 .icon-block.block-true, .icon-block.block-false { color: #f52; }
 .icon-block.block-false { text-shadow: 0 0 2px black; color: white; }
 .reply-table .icon-comment { padding-top: 1px; }
-.icon-input-checkbox + [class^=icon-]:before { content: '\e812'; color: #aaa }
-.icon-input-checkbox:checked + [class^=icon-]:before { content: '\e813'; color: #233 }
+.icon-input-checkbox + [class^=icon-]:before { content: '\f204'; color: #aaa }
+.icon-input-checkbox:checked + [class^=icon-]:before { content: '\f205'; color: #233 }
+[type=radio].icon-input-checkbox + [class^=icon-]:before { content: '\e812'; color: #ddd }
+[type=radio].icon-input-checkbox:checked + [class^=icon-]:before { content: '\e813'; color: #667 } 
 .icon-input-checkbox { display: none }
 .icon-input-checkbox + * + label { cursor:pointer }
 .icon-reply-outline.replied:before { transform:rotate(-135deg); }
@@ -566,6 +560,20 @@ div.tri.shadow {
 }
 .post-options ul li:hover {
     background: #bdf;
+}
+.post-options-emoji img {
+    width: 24px;
+    height: 24px;
+}
+.post-options-emoji:hover ul {
+    display: flex;
+    flex-wrap: wrap;
+    width: 240px;
+    height: 250px;
+    overflow-y: scroll;
+}
+.post-options-emoji a {
+    text-decoration: none !important;
 }
 .post-options [name="reply-lock"]:not([value="0"]) .icon-lock { display: block }
 .post-options [name="reply-lock"]:not([value="0"]) .icon-lock-open { display: none }

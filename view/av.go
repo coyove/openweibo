@@ -111,7 +111,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 	}
 
 	switch a2.Cmd {
-	case model.CmdReply, model.CmdMention:
+	case model.CmdInboxReply, model.CmdInboxMention:
 		p, _ := dal.GetArticle(a2.Extras["article_id"])
 		if p == nil {
 			return a
@@ -119,7 +119,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 
 		a.from(p, opt, u)
 		a.Cmd = string(a2.Cmd)
-	case model.CmdILike:
+	case model.CmdInboxLike:
 		p, _ := dal.GetArticle(a2.Extras["article_id"])
 
 		if p == nil {
@@ -129,7 +129,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 		dummy := &model.Article{
 			ID:         ik.NewGeneralID().String(),
 			CreateTime: p.CreateTime,
-			Cmd:        model.CmdILike,
+			Cmd:        model.CmdInboxLike,
 			Author:     a2.Extras["from"],
 			Parent:     p.ID,
 		}

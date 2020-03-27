@@ -438,7 +438,9 @@ window.onpopstate = function(event) {
 };
 
 function updateSetting(el, field, value, cb, errcb) {
-    var data = {}, stop = $wait(el.tagName === 'INPUT' ? el.nextElementSibling: el);
+    var data = {},
+        stop = $wait(el.tagName === 'INPUT' && el.className == "icon-input-checkbox" ?
+            el.nextElementSibling.nextElementSibling: el);
     data["set-" + field] = "1";
     if (field !== 'bio') {
         data[field] = value;

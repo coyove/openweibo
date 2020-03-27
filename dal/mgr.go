@@ -343,7 +343,7 @@ func PostReply(parent string, a *model.Article, author *model.User, noTimeline b
 				ID: ik.NewID(ik.IDInbox, p.Author).String(),
 				Article: model.Article{
 					ID:  ik.NewGeneralID().String(),
-					Cmd: model.CmdReply,
+					Cmd: model.CmdInboxReply,
 					Extras: map[string]string{
 						"from":       a.Author,
 						"article_id": a.ID,
