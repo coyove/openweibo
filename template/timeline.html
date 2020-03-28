@@ -5,65 +5,23 @@
 </div>
 
 {{if .IsUserTimeline}}
-
     {{if eq .User.ID "master"}}
-        <title>全局时间线</title>
-        <script>$q('#nav-master').className = "selected"</script>
+        <title>广场</title>
     {{else}}
         <title>{{.User.DisplayName}}</title>
-        <div class="status-box">
-            <script>$q('#nav-other a').innerText = "@{{.User.ID}}"; $q('#nav-other').className = "selected"</script>
-            {{template "user_public.html" .User}}
-        </div>
+        <div class="status-box">{{template "user_public.html" .User}}</div>
     {{end}}
-
 {{else if .IsInbox}}
-
-<title>我的提醒</title>
-<script>$q('#nav-inbox').className = "selected"</script>
-<div class="status-box">
-    {{template "user_private.html" .You}}
-</div>
-
+    <title>我的提醒</title>
 {{else if .IsUserLikeTimeline}}
-
-<div class="status-box">
-    {{if eq .You.ID .User.ID}}
-    {{template "user_private.html" .You}}
-    {{else}}
-    {{template "user_public.html" .User}}
-    {{end}}
-</div>
-
-<title>{{.User.DisplayName}} 的收藏</title>
-<script>$q('#nav-likes a span').innerText = "@{{.User.ID}}";$q('#nav-likes').className = "selected"</script>
-
+    <title>{{.User.DisplayName}} 的收藏</title>
 {{else if .IsTagTimeline}}
-
-<title>#{{.Tag}}</title>
-<script>
-    (function() {
-        $q('#nav-tag a span').innerText = "#{{.Tag}} ({{.PostsUnderTag}})"
-        $q('#nav-tag').className = "selected"
-
-        var el = $q('#nav-tag a b');
-        el.innerHTML = "<i class='{{if .IsTagTimelineFollowed}}icon-heart-broken{{else}}icon-user-plus{{end}}'></i>"
-        el.onclick = function() { followBlock(this,'follow','#{{.Tag}}') }
-        el.setAttribute("value", {{.IsTagTimelineFollowed}})
-    })()
-</script>
-
+    <title>{{.Tag}} ({{.PostsUnderTag}})</title>
 {{else}}
-
-<div class="status-box">
-    <title>我的时间线</title>
-    <div>
-        <script>$q('#nav-own').className = "selected"</script>
-        {{template "user_private.html" .User}}
+    <div class="status-box">
+        <title>我的时间线</title>
+        <div>{{template "user_private.html" .User}}</div>
     </div>
-    
-</div>
-
 {{end}}
 
 {{if .ReplyView.PID}}<script>showReply('{{.ReplyView.PID}}');</script>{{end}}
@@ -73,63 +31,63 @@
     {{end}}
 
 <div class="rows" id="timeline{{.ReplyView.UUID}}" style="">
-    {{if .ShowNewPost}}
-    {{if ne .User.ID "master"}}
-    {{template "reply_view.html" .ReplyView}}
-    {{end}}
+    {{if and .ShowNewPost (ne .User.ID "master")}}
+        {{template "reply_view.html" .ReplyView}}
     {{end}}
 
-<div style='padding:0 0.5em;background:#f1f2f3;cursor:pointer'>
+<div style='padding:0 0.5em;background:#f1f2f3;cursor:pointer;line-height:2.5em'>
 {{if not .IsInbox}}
-<div style="" class="tl-checkpoints post-options">
-    <div style="padding:0.5em">
-        <b>查看:</b>
-        <span>
-        {{if .CurrentCheckpoint}}
-            {{.CurrentCheckpoint}}月
-        {{else if .MediaOnly}}
-            仅图片
-        {{else}}
-            全部
+
+    {{if or .IsTagTimeline .IsUserLikeTimeline}}
+    <div class="tl-checkpoints post-options" style="padding:0.5em 0;margin:0 0.5em; font-weight: bold">
+        {{if .IsTagTimeline}}
+            <span style="margin-left: -0.5em">
+                {{template "button_follow_block.html" (blend "follow" .Tag .IsTagTimelineFollowed)}}
+            </span>
+            {{.Tag}} ({{.PostsUnderTag}})
+        {{else if .IsUserLikeTimeline}}
+            {{if eq .You.ID .User.ID}}我{{else}}{{.User.DisplayName}}{{end}}的收藏
         {{end}}
-        </span>
-        <i class="icon-down-dir right"></i>
     </div>
-    <ul>
-        <li onclick='location.href="?media"'><i class=icon-calendar></i> 全部</li>
-        <li onclick='location.href="?media=1"'><i class=icon-picture></i> 仅图片</li>
-        {{if ne .User.ID "master"}}
-        {{range .Checkpoints}}
-        <li onclick="location.href='?cp={{.}}'"><i class="icon-history"></i> {{.}}月</li>
-        {{end}}
-        {{end}}
-    </ul>
-</div>
-<div class="tl-checkpoints post-options">
-    <div style="padding:0.5em">
-        <b>NSFW</b>:
-        <span id="auto-expand-nsfw-state">
-        {{if .User}}
-        {{if .User.Settings.AutoNSFW}}展开{{else}}折叠{{end}}
-        {{else}}
-        折叠
-        {{end}}
-        </span>
-        <i class="icon-down-dir right"></i>
+    {{end}}
+
+    <div class="tl-checkpoints post-options" style="padding:0.5em 0;margin: 0 0.5em">
+        <div style=>
+            <b>查看:</b>
+            <span>
+            {{if .CurrentCheckpoint}}
+                {{.CurrentCheckpoint}}月
+            {{else if .MediaOnly}}
+                仅图片
+            {{else}}
+                全部
+                {{if .User.IsYou}}
+                ({{getTotalPosts .User.ID}})
+                {{end}}
+            {{end}}
+            </span>
+            <i class="icon-down-dir right"></i>
+        </div>
+        <ul>
+            <li onclick='location.href="?media"'><i class=icon-calendar></i> 全部</li>
+            <li onclick='location.href="?media=1"'><i class=icon-picture></i> 仅图片</li>
+            {{if ne .User.ID "master"}}
+            {{range .Checkpoints}}
+            <li onclick="location.href='?cp={{.}}'"><i class="icon-history"></i> {{.}}月</li>
+            {{end}}
+            {{end}}
+        </ul>
     </div>
-    <ul>
-        <li>
+    <div class="tl-checkpoints post-options" style="padding:0.5em 0;">
+        <div style=>
             <input type=checkbox id=auto-expand-nsfw class=icon-input-checkbox
-                   {{if .User}}{{if .User.Settings.AutoNSFW}}checked{{end}}{{end}}
-                   onchange='$q("#auto-expand-nsfw-state").innerText=this.checked?"展开":"折叠"'
-                   >
+                   {{if .User}}{{if .User.Settings.AutoNSFW}}checked{{end}}{{end}}>
             <i class=icon-calendar></i>
-            <label for=auto-expand-nsfw>自动展开这类图片</label>
-        </li>
-    </ul>
-</div>
+            <label for=auto-expand-nsfw>展开NSFW</label>
+        </div>
+    </div>
 {{else}}
-<button class=gbutton style="margin: 0.5em 0" onclick="$postReload(this,'/api/clear_inbox',{})">清空全部提醒</button>
+    <button style="margin:0.5em 0" class=gbutton onclick="$postReload(this,'/api/clear_inbox',{})">清空全部提醒</button>
 {{end}}
 </div>
 

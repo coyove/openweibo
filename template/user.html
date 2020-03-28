@@ -4,8 +4,6 @@
 
 <title>{{.User.DisplayName}}</title>
 
-    <script>$q('#nav-user-info').className = "selected"</script>
-    
     <style>
 .articles tr td:last-child {
     word-break: break-all;
@@ -171,7 +169,6 @@
     </div>
 
 <table class="articles" style="margin: 0.5em 0">
-    
     {{if .User.IsMod}}
     <tr>
         <td class=nowrap>最大耗时:</td>
@@ -184,15 +181,12 @@
     {{end}}
 </table>
 
-
 {{else}}
 
 <title>注册</title>
 
-    <script>$q('#nav-login').className = "selected"</script>
-
-    <div class=row style="text-align:center;padding:0.5em">
-                <a href="/" class=gbutton>已有账号？点此登入</a>
+    <div class=row style="text-align:center;padding:0.5em;margin-top:0">
+        <a href="/" class=gbutton>已有账号？点此登入</a>
     </div>
 
 <form method="POST" action="/user" onsubmit='

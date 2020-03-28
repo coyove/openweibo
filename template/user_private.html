@@ -28,37 +28,15 @@
     </div>
 
     <div class=title>
-        <div style="display:flex;width:100%;border:dotted 1px #ccc;margin:0.5em 0;border-radius:4px">
+        <div style="display:flex;width:100%;border:dotted 1px #ccc;margin:0.5em 0 0;border-radius:4px">
         <input
             style="width:100%;border:none;text-align:left"
             placeholder="个人简介"
             class=t
             value="{{.Settings.Description}}">
         <button class=gbutton style="margin:0.25em;color:#4a5;flex-shrink:0"
-                              onclick="updateSetting(this, 'description', this.previousElementSibling.value)">
-            <i class=icon-ok></i> 更新
-        </button>
+                              onclick="updateSetting(this, 'description', this.previousElementSibling.value)">更新</button>
         </div>
-    </div>
-
-    <div class=title>
-        <span title="我的黑名单">
-            <a href="/user/blacklist"><i class="icon-block"></i> <span class=sub-status>黑名单</span></a>
-        </span>
-        <span title="我的收藏">
-            <a href="/likes/{{.ID}}"><i class="icon-heart-filled"></i> <span class=sub-status>收藏</span></a>
-        </span>
-        <span title="我的提醒">
-            <a href="/inbox">
-            {{if .Unread}}
-            <b style="color:#f52" class="icon-mail-alt">{{.Unread}}</b>
-            <span class=sub-status>提醒</span>
-            {{else}}
-            <i class="icon-mail-alt"></i>
-            <span class=sub-status>提醒</span>
-            {{end}}
-            </a>
-        </span>
     </div>
 
     <div class=title>
@@ -68,8 +46,8 @@
         <span>
             <a href="/user/followers"><b>{{.Followers}}</b> <span class=sub-status>粉丝</span></a>
         </span>
-        <span>
-            <a href="/t/{{.ID}}"><b>{{getTotalPosts .ID}}</b> <span class=sub-status>状态</span></a>
+        <span title="我的黑名单">
+            <a href="/user/blacklist"><i class="icon-block"></i> <span class=sub-status>黑名单</span></a>
         </span>
     </div>
 </div>

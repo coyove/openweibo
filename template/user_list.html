@@ -3,26 +3,21 @@
 
 <div class="status-box">
     {{if eq .ListType "followings"}}
-        <script>$q('#nav-followings').className = "selected"</script>
         {{if $own}}
             <title>我的关注</title>
             {{template "user_private.html" .User}}
         {{else}}
-            <script>$q('#nav-followings a span').innerText = "@{{.User.ID}}"</script>
             <title>{{.User.DisplayName}}的关注</title>
             {{template "user_public.html" .User}}
         {{end}}
     {{else if eq .ListType "blacklist"}}
-        <script>$q('#nav-blacklist').className = "selected"</script>
         <title>黑名单</title>
         {{template "user_private.html" .User}}
     {{else}}
-        <script>$q('#nav-followers').className = "selected"</script>
         {{if $own}}
             <title>我的粉丝</title>
             {{template "user_private.html" .User}}
         {{else}}
-            <script>$q('#nav-followers a span').innerText = "@{{.User.ID}}"</script>
             <title>{{.User.DisplayName}}的粉丝</title>
             {{template "user_public.html" .User}}
         {{end}}
@@ -39,9 +34,6 @@
     </td>
 </tr>
 {{end}}
-
-
-    {{if $own}}
     <tr>
         <td colspan=3>
             <div style="border:solid 1px #ccc;display: flex;background:#f1f2f3;">
@@ -95,7 +87,6 @@
     </script>
         </td>
     </tr>
-    {{end}}
 
     {{range .List}}
     <tr>

@@ -198,11 +198,6 @@ function lockArticle(el, id) {
             "<input value=" + i + " type=radio name=reply-lock class=icon-input-checkbox id=" +
             xid + (i == currentValue ? " checked" : "") + ">" +
             "<i class='icon-ok-circled2'></i> <label for=" + xid + ">" + t + "</label></div>")
-        if (!id) {
-            r.querySelector('input').addEventListener("change", function(e) {
-                reg.callback();
-            }, false);
-        }
         return r;
     }
     div.appendChild(checkbox(0, "不限制回复"))
@@ -393,7 +388,8 @@ function showReply(aid) {
     $q("[data-parent='" + aid + "']", true).forEach(function(e) { e.CLOSER.click(); });
     div.setAttribute('data-parent', aid);
 
-    var divclose = $html("<div style='margin:0 auto' class='container rows replies'><div class=row style='padding:0.5em;line-height:30px;display:flex'>" +
+    var divclose = $html(
+        "<div style='margin:0 auto' class='container rows replies'><div class=row style='padding:0.5em;line-height:30px;display:flex'>" +
         "<i class='control icon-left-small'></i>" + 
         "<input style='margin:0 0.5em;width:100%;text-align:center;border:none;background:transparent;cursor:pointer' value='" +
         location.protocol + "//" +  location.host + "/S/" + aid.substring(1) +
@@ -410,6 +406,7 @@ function showReply(aid) {
             document.body.style.overflow = null;
         }
     }
+    divclose.insertBefore($q("nav").cloneNode(true), divclose.firstChild);
 
     div.appendChild(divclose);
     document.body.appendChild(div);
@@ -423,6 +420,7 @@ function showReply(aid) {
 
         if (box) window.TRIBUTER.attach(box);
         rows.insertBefore(divclose.querySelector('.row'), rows.firstChild);
+        rows.insertBefore($q("nav").cloneNode(true), rows.firstChild);
     });
 
     window.IS_MEDIA = window.IS_MEDIA || location.search.indexOf('media') >= 0;

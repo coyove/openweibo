@@ -28,6 +28,9 @@ func User(g *gin.Context) {
 
 	p.UUID, p.Challenge = ik.MakeToken(g)
 	p.User = getUser(g)
+	if p.User != nil {
+		p.User.SetShowList('S')
+	}
 	g.HTML(200, "user.html", p)
 }
 
@@ -64,10 +67,13 @@ func UserList(g *gin.Context) {
 			return
 		}
 		p.List, p.Next = dal.GetRelationList(ik.NewID(ik.IDBlacklist, p.User.ID), g.Query("n"), int(common.Cfg.PostsPerPage))
+		p.User.SetShowList('b')
 	case "followers":
 		p.List, p.Next = dal.GetRelationList(ik.NewID(ik.IDFollower, p.User.ID), g.Query("n"), int(common.Cfg.PostsPerPage))
+		p.User.SetShowList('s')
 	default:
 		p.List, p.Next = dal.GetFollowingList(ik.NewID(ik.IDFollowing, p.User.ID), g.Query("n"), int(common.Cfg.PostsPerPage), true)
+		p.User.SetShowList('f')
 	}
 
 	g.HTML(200, "user_list.html", p)
@@ -108,8 +114,12 @@ func UserLikes(g *gin.Context) {
 		return
 	}
 
-	p.User, _ = dal.GetUser(g.Param("uid"))
-	if p.User == nil {
+	if uid := g.Param("uid"); uid != "master" {
+		p.User, _ = dal.GetUser(uid)
+		if p.User == nil {
+			p.User = p.You
+		}
+	} else {
 		p.User = p.You
 	}
 

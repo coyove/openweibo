@@ -48,8 +48,9 @@ func S(g *gin.Context) {
 }
 
 func Index(g *gin.Context) {
+	tag := g.Param("tag")
 	pl := ArticlesTimelineView{
-		Tag:           g.Param("tag"),
+		Tag:           "#" + tag,
 		You:           getUser(g),
 		User:          &model.User{},
 		IsTagTimeline: true,
@@ -58,15 +59,15 @@ func Index(g *gin.Context) {
 	}
 
 	if pl.You != nil {
-		pl.IsTagTimelineFollowed = dal.IsFollowing(pl.You.ID, "#"+pl.Tag)
+		pl.IsTagTimelineFollowed = dal.IsFollowing(pl.You.ID, pl.Tag)
 	}
 
-	a, _ := dal.GetArticle(ik.NewID(ik.IDTag, pl.Tag).String())
+	a, _ := dal.GetArticle(ik.NewID(ik.IDTag, tag).String())
 	if a != nil {
 		pl.PostsUnderTag = int32(a.Replies)
 	}
 
-	a2, next := dal.WalkMulti(pl.MediaOnly, int(common.Cfg.PostsPerPage), ik.NewID(ik.IDTag, pl.Tag))
+	a2, next := dal.WalkMulti(pl.MediaOnly, int(common.Cfg.PostsPerPage), ik.NewID(ik.IDTag, tag))
 	fromMultiple(&pl.Articles, a2, 0, getUser(g))
 
 	pl.Next = ik.CombineIDs(nil, next...)
@@ -119,10 +120,11 @@ func Timeline(g *gin.Context) {
 	default:
 		// View my timeline
 		if pl.You == nil {
-			g.Redirect(302, "/user")
+			g.Redirect(302, "/")
 			return
 		}
 		pl.User = pl.You
+		pl.User.SetIsYou(true)
 	}
 
 	cursors := []ik.ID{}
@@ -182,7 +184,7 @@ func Inbox(g *gin.Context) {
 	}
 
 	if pl.You == nil {
-		g.Redirect(302, "/user")
+		g.Redirect(302, "/")
 		return
 	}
 

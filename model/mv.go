@@ -109,6 +109,7 @@ type User struct {
 	_IsFollowed  bool
 	_IsBlocking  bool
 	_IsYou       bool
+	_ShowList    byte
 	_Settings    UserSettings
 }
 
@@ -138,6 +139,8 @@ func (u User) IsBlocking() bool { return u._IsBlocking }
 
 func (u User) IsYou() bool { return u._IsYou }
 
+func (u User) ShowList() byte { return u._ShowList }
+
 func (u User) Settings() UserSettings { return u._Settings }
 
 func (u *User) SetIsFollowing(v bool) { u._IsFollowing = v }
@@ -147,6 +150,8 @@ func (u *User) SetIsFollowed(v bool) { u._IsFollowed = v }
 func (u *User) SetIsBlocking(v bool) { u._IsBlocking = v }
 
 func (u *User) SetIsYou(v bool) { u._IsYou = v }
+
+func (u *User) SetShowList(t byte) { u._ShowList = t }
 
 func (u *User) SetSettings(s UserSettings) { u._Settings = s }
 

@@ -2,9 +2,10 @@
     {{if .User}}
     <a href='/user'>@{{.User.ID}}</a>
     {{if .User.Unread}}
-        <a class=unread href="/inbox">{{.User.Unread}} 消息</a>
     <script>
         document.title =  "({{.User.Unread}}) " + document.title;
+$q("#unread-notify span").innerText = "{{.User.Unread}}";
+$q("#unread-notify i").style.color = "#f52";
     </script>
     {{end}}
     {{else}}

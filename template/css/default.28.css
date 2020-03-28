@@ -69,8 +69,9 @@ a:hover, label[for=login]:hover {
 }
 
 .container {
-    width: 100%; max-width: 750px; margin: 0 auto;position:relative;border:solid 1px #eee;border-width:0 1px;
+    width: 100%; max-width: 750px; margin: 0 auto;position:relative;
     min-height: 100%;
+    border:solid 1px #eee;border-width:0 1px;
 }
 
 hr {
@@ -118,36 +119,31 @@ pre {
 }
 
 nav {
-    line-height: 2.25em;
-    text-align: center;
-    margin-bottom: 0.5em;
+    line-height: 3em;
+    background: #feb;
+    border-bottom: solid 2px rgba(0,0,0,0.1);
 }
 
 nav ul {
 	padding: 0;
     margin: 0;
 	list-style: none;
-	position: relative;
 }
 
-nav > ul > li { display: inline-block; margin: 0 0.5em }
-
-nav ul li.selected > a { border-color: #088; font-weight: bold;}
-
-nav ul li.selected.secondary > a { border-color: #e16 }
-
-nav > ul > li.selected { display: inline-block !important; }
+nav > ul > li { display: inline-block; margin-left: 0.5em }
 
 nav ul li > a {
-    border-bottom: solid 2px #ddd;
     cursor: pointer;
 	display: block;
     color: #233 !important;
 	text-decoration: none;
+    padding: 0 0.5em;
+    transition: background 0.33s;
 }
 
-nav ul li:hover > a {
+nav ul li:hover a {
     text-decoration: none;
+    background: rgba(0, 0, 0, 0.05)
 }
 
 .paging {
@@ -333,20 +329,6 @@ span.abbr:after {
     margin-left: 0.5em
 }
 
-a.unread {
-    display:inline-block;
-    color:white;
-    background:#FF5722;
-    padding:0 0.5em;
-    border-radius:8px;
-    min-width:20px;
-    text-align:center;
-    line-height:20px;
-    font-size:12px;
-    vertical-align:middle;
-    margin:0 0.33em; 
-}
-
 .status {
     text-align: center;
     display: inline-block;
@@ -376,7 +358,7 @@ a.unread {
     line-height: 3em;
     flex: 0 33%;
     border-radius: 5px;
-    margin: 0.25em 0;
+    margin: 0.5em 0;
     transition: background 0.5s;
 }
 
@@ -575,7 +557,7 @@ div.tri {
 .post-options-emoji a {
     text-decoration: none !important;
 }
-.post-options [name="reply-lock"]:not([value="0"]) .icon-lock { display: block }
+.post-options [name="reply-lock"]:not([value="0"]) .icon-lock { display: block; color: #4a5 }
 .post-options [name="reply-lock"]:not([value="0"]) .icon-lock-open { display: none }
 .post-options [name="reply-lock"][value="0"] .icon-lock { display: none }
 .post-options [name="reply-lock"][value="0"] .icon-lock-open { display: block }
