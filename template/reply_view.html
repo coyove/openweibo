@@ -16,7 +16,7 @@
                         border-radius: 3px;
                         margin: auto;
                     }
-                    
+
                     
 </style>
 
@@ -90,35 +90,7 @@
                                 标记图片为<span style="color:#f90"><i class='icon-transgender-alt'></i>NSFW</span>
                             </label>
                         </li>
-                        <li>
-                            <span onclick="$q('#tr-encrypt-{{.UUID}}').style.display = null;hackHide(this)">
-                                <i class="icon-code"></i>
-                                使用密码加密内容
-                            </span>
-                        </li>
                     </ul>
-                </div>
-            </td>
-        </tr>
-
-        <tr style="display:none" id="tr-encrypt-{{.UUID}}">
-            <td colspan=2>
-                <div class=enc-box style="box-shadow:0 0 2px #bbb">
-                    <input class=t placeholder="内容" name=enc-content style="border:none;border-right:dotted 1px #ddd;flex:0 66%">
-                    <input class=t placeholder="密码 (0~16位)" name=enc-key style="flex:0 33%;border:none" maxlength="16">
-                    <button class=gbutton
-                            style="flex-shrink: 0"
-                            onclick="t=$q('#tr-encrypt-{{.UUID}} input[name=enc-key');$aesgcm().encrypt(
-                                          $q('#tr-encrypt-{{.UUID}} input[name=enc-content]').value,
-                                          t.value,
-                                          function(v) {
-                                              if (insertTag(null, '{{.UUID}}', '[enc]', v, '[/enc]') === false) return;
-                                              $popup('请记住密码: ' + (t.value || '空'), '#088');
-                                              t.value = null;
-                                              $q('#tr-encrypt-{{.UUID}}').style.display='none';
-                                          })">
-                        加密
-                    </button>
                 </div>
             </td>
         </tr>
@@ -132,27 +104,7 @@
                     rows=6
                     style="padding:0.66em;border:none"></textarea>
 
-                <div
-                    style="
-                           position: absolute;
-                           line-height: 36px;
-                           width: 36px;
-                           height: 36px;
-                           background: #64b5f6;
-                           color: white;
-                           text-align:center;
-                           border-radius: 50%;
-                           box-shadow: 0 0 5px #ccc;
-                           right: 1em;
-                           bottom: 1em;
-                           cursor: pointer;
-                           font-size: 18px;
-                           "
-                    onclick="onPost('{{.UUID}}', this, '{{.ReplyTo}}')"
-                    onmouseenter="this.style.background='#2196f3'"
-                    onmouseout="this.style.background='#64b5f6'"
-                    class=icon-comment>
-                </div>
+                <div class="post-button icon-comment" onclick="onPost('{{.UUID}}', this, '{{.ReplyTo}}')"></div>
             </td>
         </tr>
     </table>

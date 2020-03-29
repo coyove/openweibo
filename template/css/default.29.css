@@ -58,13 +58,13 @@ input[type=text], input.t, textarea, select {
    border-radius: 0;
 }
 
-a, label[for=login] {
+a {
     cursor: pointer;
     text-decoration: none;
     color: #2a66d9;
 }
 
-a:hover, label[for=login]:hover {
+a:hover {
     text-decoration: underline;
 }
 
@@ -74,30 +74,17 @@ a:hover, label[for=login]:hover {
     border:solid 1px #eee;border-width:0 1px;
 }
 
-hr {
-    border-color: rgba(0, 0, 0, 0.1);
-    border-style: dotted;
-}
-
 .articles {
     width: 100%;
     border-collapse: collapse;
 }
 
-.articles th {
-    line-height: 2.2em !important;
-    text-align: left;
-    background: #f7f8f9;
-}
-
-.articles th, .articles td {
+.articles td {
     padding: 0.4em; 
     line-height: 1.5em;
 }
 
-.articles .sep { border-top: solid 1px #ddd; }
-
-.articles th.nowrap, .articles td.nowrap {
+.articles td.nowrap {
     white-space: nowrap;
     width: 1px;
 }
@@ -105,9 +92,6 @@ hr {
 input.t, textarea, select.t {
     width: 100%;
     resize: none;
-}
-
-input.t, textarea, input.s {
     border: solid 1px #ccc;
     padding: 0.5em;
 }
@@ -124,24 +108,16 @@ nav {
     border-bottom: solid 2px rgba(0,0,0,0.1);
 }
 
-nav ul {
-	padding: 0;
-    margin: 0;
-	list-style: none;
-}
-
-nav > ul > li { display: inline-block; margin-left: 0.5em }
-
-nav ul li > a {
+nav a {
     cursor: pointer;
-	display: block;
+	display: inline-block;
     color: #233 !important;
 	text-decoration: none;
-    padding: 0 0.5em;
+    padding: 0 0.66em;
     transition: background 0.33s;
 }
 
-nav ul li:hover a {
+nav a:hover {
     text-decoration: none;
     background: rgba(0, 0, 0, 0.05)
 }
@@ -154,100 +130,6 @@ nav ul li:hover a {
 .paging a {
     display: inline-block;
     margin: 0 0.2em;
-}
-
-.gbutton {
-    position: relative;
-    display: inline-block;
-    box-sizing: border-box;
-    border-radius: 4px;
-    border: none;
-    padding: 0 6px;
-    height: 34px;
-    vertical-align: middle;
-    text-align: center;
-    text-overflow: ellipsis;
-    text-transform: uppercase;
-    color: rgb(var(--pure-material-primary-rgb, 33, 150, 243));
-    background-color: transparent;
-    font-family: var(--pure-material-font, "Roboto", "Segoe UI", BlinkMacSystemFont, system-ui, -apple-system);
-    font-weight: 500;
-    line-height: 34px;
-    overflow: hidden;
-    outline: none;
-    cursor: pointer;
-}
-
-.gbutton::-moz-focus-inner {
-    border: none;
-}
-
-/* Overlay */
-.gbutton::before {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    background-color: currentColor;
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-/* Ripple */
-.gbutton::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 50%;
-    border-radius: 50%;
-    padding: 50%;
-    width: 32px;
-    height: 32px;
-    background-color: currentColor;
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(1) ;
-    transition: opacity 1s, transform 0.5s;
-}
-
-/* Hover, Focus */
-.gbutton:hover::before {
-    opacity: 0.12;
-}
-
-.gbutton:focus::before {
-    opacity: 0.16;
-}
-
-.gbutton:hover:focus::before {
-    opacity: 0.20;
-}
-
-/* Active */
-.gbutton:active::after {
-    opacity: 0.20;
-    transform: translate(-50%, -50%) scale(0);
-    transition: transform 0s;
-}
-
-/* Disabled */
-.gbutton:disabled {
-    color: rgba(var(--pure-material-onsurface-rgb, 0, 0, 0), 0.38);
-    background-color: transparent;
-    cursor: initial;
-}
-
-.gbutton:disabled::before {
-    opacity: 0;
-}
-
-.gbutton:disabled::after {
-    opacity: 0;
-}
-
-.gbutton:hover {
-    text-decoration: none;
 }
 
 div.subreply {
@@ -455,7 +337,9 @@ img.avatar + .avatar-kimochi {
 }
 
 .post-author {
-    overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     margin: 0 0.33em;
 }
 
@@ -469,52 +353,6 @@ div.tri {
     margin-left: -8px;
     left: 50%;
 }
-
-.icon-flow-merge:before { margin-left: 0 !important }
-.icon-down-dir.right:before { margin-right: 0 !important }
-.icon-history.left:before { margin-left: 0 !important }
-.control.icon-left-small, .control.icon-link { font-size:16px; cursor:pointer; }
-.control.icon-left-small:hover,.control.icon-link:hover { color: #677 }
-.follow-block .icon-user-plus { color: #098 }
-.follow-block .icon-heart-broken { color: #e16 }
-.icon-block.block-true, .icon-block.block-false { color: #f52; }
-.icon-block.block-false { text-shadow: 0 0 2px black; color: white; }
-.reply-table .icon-comment { padding-top: 1px; }
-.icon-input-checkbox + [class^=icon-]:before { content: '\f204'; color: #aaa }
-.icon-input-checkbox:checked + [class^=icon-]:before { content: '\f205'; color: #233 }
-[type=radio].icon-input-checkbox + [class^=icon-]:before { content: '\e812'; color: #ddd }
-[type=radio].icon-input-checkbox:checked + [class^=icon-]:before { content: '\e813'; color: #667 } 
-.icon-input-checkbox { display: none }
-.icon-input-checkbox + * + label { cursor:pointer }
-.icon-reply-outline.replied:before { transform:rotate(-135deg); }
-
-.tribute-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: auto;
-    max-height: 300px;
-    max-width: 500px;
-    overflow: auto;
-    display: block;
-    z-index: 999999;
-}
-
-.tribute-container ul {
-    margin: 0;
-    margin-top: 2px;
-    padding: 0;
-    list-style: none;
-    background: #fafbfc;
-    border: solid 1px #ccc;
-}
-
-.tribute-container li { padding: 5px 5px; cursor: pointer; }
-.tribute-container li.highlight { background: #bdf; }
-.tribute-container li span { font-weight: bold; }
-.tribute-container li.no-match { cursor: default; }
-.tribute-container .menu-highlighted { font-weight: bold; }
-
 .post-options {
     display: inline-block;
     position: relative;
@@ -557,18 +395,22 @@ div.tri {
 .post-options-emoji a {
     text-decoration: none !important;
 }
-.post-options [name="reply-lock"]:not([value="0"]) .icon-lock { display: block; color: #4a5 }
-.post-options [name="reply-lock"]:not([value="0"]) .icon-lock-open { display: none }
-.post-options [name="reply-lock"][value="0"] .icon-lock { display: none }
-.post-options [name="reply-lock"][value="0"] .icon-lock-open { display: block }
-
-.enc-box {
-    white-space: normal;
-    padding: 0.5em;
-    box-shadow: 0 0 2px #ccc;
-    border-radius: 5px;
-    text-align: center;
-    background: white;
-    display: flex;
+.post-button {
+    position: absolute;
+    line-height: 36px;
+    width: 36px;
+    height: 36px;
+    background: #64b5f6;
+    transition: background 0.3s;
+    color: white;
+    text-align:center;
+    border-radius: 50%;
+    box-shadow: 0 0 5px #ccc;
+    right: 1em;
+    bottom: 1em;
+    cursor: pointer;
+    font-size: 18px;
 }
-
+.post-button:hover {
+    background: #2196f3;
+}

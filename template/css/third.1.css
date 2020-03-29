@@ -1,0 +1,199 @@
+.gbutton {
+    position: relative;
+    display: inline-block;
+    box-sizing: border-box;
+    border-radius: 4px;
+    border: none;
+    padding: 0 6px;
+    height: 34px;
+    vertical-align: middle;
+    text-align: center;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    color: rgb(var(--pure-material-primary-rgb, 33, 150, 243));
+    background-color: transparent;
+    font-family: var(--pure-material-font, "Roboto", "Segoe UI", BlinkMacSystemFont, system-ui, -apple-system);
+    font-weight: 500;
+    line-height: 34px;
+    overflow: hidden;
+    outline: none;
+    cursor: pointer;
+}
+
+.gbutton::-moz-focus-inner {
+    border: none;
+}
+
+/* Overlay */
+.gbutton::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background-color: currentColor;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+/* Ripple */
+.gbutton::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    border-radius: 50%;
+    padding: 50%;
+    width: 32px;
+    height: 32px;
+    background-color: currentColor;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1) ;
+    transition: opacity 1s, transform 0.5s;
+}
+
+/* Hover, Focus */
+.gbutton:hover::before {
+    opacity: 0.12;
+}
+
+.gbutton:focus::before {
+    opacity: 0.16;
+}
+
+.gbutton:hover:focus::before {
+    opacity: 0.20;
+}
+
+/* Active */
+.gbutton:active::after {
+    opacity: 0.20;
+    transform: translate(-50%, -50%) scale(0);
+    transition: transform 0s;
+}
+
+/* Disabled */
+.gbutton:disabled {
+    color: rgba(var(--pure-material-onsurface-rgb, 0, 0, 0), 0.38);
+    background-color: transparent;
+    cursor: initial;
+}
+
+.gbutton:disabled::before {
+    opacity: 0;
+}
+
+.gbutton:disabled::after {
+    opacity: 0;
+}
+
+.gbutton:hover {
+    text-decoration: none;
+}
+.icon-flow-merge:before {
+    margin-left: 0 !important 
+}
+.icon-down-dir.right:before {
+    margin-right: 0 !important 
+}
+.icon-history.left:before {
+    margin-left: 0 !important 
+}
+.control.icon-left-small, .control.icon-link {
+    font-size:16px;
+    cursor:pointer; 
+}
+.control.icon-left-small:hover,.control.icon-link:hover {
+    color: #677 
+}
+.follow-block .icon-user-plus {
+    color: #098 
+}
+.follow-block .icon-heart-broken {
+    color: #e16 
+}
+.icon-block.block-true, .icon-block.block-false {
+    color: #f52; 
+}
+.icon-block.block-false {
+    text-shadow: 0 0 2px black;
+    color: white; 
+}
+.reply-table .icon-comment {
+    padding-top: 1px; 
+}
+.icon-input-checkbox + [class^=icon-]:before {
+    content: '\f204';
+    color: #aaa 
+}
+.icon-input-checkbox:checked + [class^=icon-]:before {
+    content: '\f205';
+    color: #233 
+}
+[type=radio].icon-input-checkbox + [class^=icon-]:before {
+    content: '\e812';
+    color: #ddd 
+}
+[type=radio].icon-input-checkbox:checked + [class^=icon-]:before {
+    content: '\e813';
+    color: #667 
+}
+.icon-input-checkbox {
+    display: none 
+}
+.icon-input-checkbox + * + label {
+    cursor:pointer 
+}
+.icon-reply-outline.replied:before {
+    transform:rotate(-135deg); 
+}
+.post-options [name="reply-lock"]:not([value="0"]) .icon-lock {
+    display: block;
+    color: #4a5;
+}
+.post-options [name="reply-lock"]:not([value="0"]) .icon-lock-open {
+    display: none 
+}
+.post-options [name="reply-lock"][value="0"] .icon-lock {
+    display: none 
+}
+.post-options [name="reply-lock"][value="0"] .icon-lock-open {
+    display: block 
+}
+.tribute-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: auto;
+    max-height: 300px;
+    max-width: 500px;
+    overflow: auto;
+    display: block;
+    z-index: 999999;
+}
+.tribute-container ul {
+    margin: 0;
+    margin-top: 2px;
+    padding: 0;
+    list-style: none;
+    background: #fafbfc;
+    border: solid 1px #ccc;
+}
+.tribute-container li {
+    padding: 5px 5px;
+    cursor: pointer; 
+}
+.tribute-container li.highlight {
+    background: #bdf; 
+}
+.tribute-container li span {
+    font-weight: bold; 
+}
+.tribute-container li.no-match {
+    cursor: default; 
+}
+.tribute-container .menu-highlighted {
+    font-weight: bold; 
+}
+

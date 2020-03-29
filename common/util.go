@@ -8,15 +8,13 @@ import (
 )
 
 var (
-	rxSan        = regexp.MustCompile(`(?m)(\n|\[img\]https?://\S+?\[/img\]|\[code\][\s\S]+?\[/code\]|<|https?://[^\s<>"'#\[\]]+|@\S+|#\S+)|\[mj\]\d+\[/mj\]|\[enc\]\w+\[/enc\]`)
+	rxSan        = regexp.MustCompile(`(?m)(\n|\[img\]https?://\S+?\[/img\]|\[code\][\s\S]+?\[/code\]|<|https?://[^\s<>"'#\[\]]+|@\S+|#\S+)|\[mj\]\d+\[/mj\]`)
 	rxFirstImage = regexp.MustCompile(`(?i)(https?://\S+\.(png|jpg|gif|webp|jpeg)|\[img\]https?://\S+\[/img\])`)
 	rxMentions   = regexp.MustCompile(`((@|#)\S+)`)
 	rxAcCode     = regexp.MustCompile(`ac(\d+)`)
 	rxBiliAVCode = regexp.MustCompile(`av(\d+)`)
 	rxWYYYCode   = regexp.MustCompile(`id=(\d+)`)
 	rxYTCode     = regexp.MustCompile(`(youtu\.be\/(\w+)|v=(\w+))`)
-
-	ReverseTemplateRenderFunc func(string, interface{}) string
 )
 
 func SoftTrunc(a string, n int) string {
@@ -75,9 +73,6 @@ func SanText(in string) string {
 		}
 		if strings.HasPrefix(in, "[mj]") {
 			return "<img class=majiang src='https://static.saraba1st.com/image/smiley/face2017/" + in[4:len(in)-5] + ".png'>"
-		}
-		if strings.HasPrefix(in, "[enc]") {
-			return strings.TrimSpace(ReverseTemplateRenderFunc("enc.html", in[5:len(in)-6]))
 		}
 		if len(in) > 0 {
 			s := SafeStringForCompressString(template.HTMLEscapeString(in[1:]))
