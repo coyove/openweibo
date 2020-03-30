@@ -104,7 +104,7 @@ function loadKimochi(el) {
     if (ul.childNodes.length) return;
 
     for (var i = 0; i <= 44; i++) {
-        var li = $q('<li>'), a = $q('<a>'), img = $q('<img>');
+        var li = z.html('<li>'), a = z.html('<a>'), img = z.html('<img>');
         img.src = '/s/emoji/emoji' + i + '.png';
         if (i == 0) {
             img.style.border = 'dashed 1px #233';
@@ -406,7 +406,7 @@ function showReply(aid) {
             document.body.style.overflow = null;
         }
     }
-    divclose.insertBefore($q("nav").cloneNode(true), divclose.firstChild);
+    divclose.insertBefore($q("nav", true)[0].cloneNode(true), divclose.firstChild);
 
     div.appendChild(divclose);
     document.body.appendChild(div);
@@ -420,7 +420,7 @@ function showReply(aid) {
 
         if (box) window.TRIBUTER.attach(box);
         rows.insertBefore(divclose.querySelector('.row'), rows.firstChild);
-        rows.insertBefore($q("nav").cloneNode(true), rows.firstChild);
+        rows.insertBefore($q("nav", true)[0].cloneNode(true), rows.firstChild);
     });
 
     window.IS_MEDIA = window.IS_MEDIA || location.search.indexOf('media') >= 0;
