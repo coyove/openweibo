@@ -12,7 +12,7 @@ var (
 	rxFirstImage = regexp.MustCompile(`(?i)(https?://\S+\.(png|jpg|gif|webp|jpeg)|\[img\]https?://\S+\[/img\])`)
 	rxMentions   = regexp.MustCompile(`((@|#)\S+)`)
 	rxAcCode     = regexp.MustCompile(`ac(\d+)`)
-	rxBiliAVCode = regexp.MustCompile(`av(\d+)`)
+	rxBiliAVCode = regexp.MustCompile(`(av(\d+)|BV(\w+))`)
 	rxWYYYCode   = regexp.MustCompile(`id=(\d+)`)
 	rxYTCode     = regexp.MustCompile(`(youtu\.be\/(\w+)|v=(\w+))`)
 )
@@ -90,11 +90,17 @@ func SanText(in string) string {
 		}
 		if strings.Contains(in, "bilibili") || strings.Contains(in, "b23.tv") {
 			res := rxBiliAVCode.FindAllStringSubmatch(in, 1)
-			if len(res) == 1 && len(res[0]) == 2 {
+			if len(res) == 1 && len(res[0]) > 2 {
+				if strings.HasPrefix(res[0][0], "BV") { // new BV code
+					return makeVideoButton("#00a1d6",
+						res[0][0],
+						"https://player.bilibili.com/player.html?bvid="+res[0][0],
+						"https://www.bilibili.com/"+res[0][0])
+				}
 				return makeVideoButton("#00a1d6",
-					"av"+res[0][1],
-					"https://player.bilibili.com/player.html?aid="+res[0][1],
-					"https://www.bilibili.com/av"+res[0][1])
+					"av"+res[0][2],
+					"https://player.bilibili.com/player.html?aid="+res[0][2],
+					"https://www.bilibili.com/av"+res[0][2])
 			}
 		}
 

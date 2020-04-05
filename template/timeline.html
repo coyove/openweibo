@@ -39,7 +39,7 @@
 {{if not .IsInbox}}
 
     {{if or .IsTagTimeline .IsUserLikeTimeline}}
-    <div class="tl-checkpoints post-options" style="padding:0.5em 0;margin:0 0.5em; font-weight: bold">
+    <div class="tl-checkpoints post-options" style="padding:0.5em 0;margin:0 0.5em;font-weight:bold;white-space:nowrap">
         {{if .IsTagTimeline}}
             <span style="margin-left: -0.5em">
                 {{template "button_follow_block.html" (blend "follow" .Tag .IsTagTimelineFollowed)}}
