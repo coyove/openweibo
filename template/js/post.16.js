@@ -21,6 +21,7 @@ function onPost(uuid, el, p) {
         nsfw: $q("#" + cid + " [name=isnsfw]").checked ? "1" : "",
         no_master: $q("#" + cid + " [name=nomaster]").checked ? "1" : "",
         no_timeline: $q("#" + cid + " [name=notimeline]").checked ? "1" : "",
+        stick_on_top: $q("#" + cid + " [name=stickontop]").checked ? "1" : "",
         reply_lock: $value($q("#" + cid + " [name=reply-lock]")),
         parent: p,
     }, function (res, h) {

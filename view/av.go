@@ -26,6 +26,7 @@ type ArticleView struct {
 	NSFW          bool
 	NoAvatar      bool
 	NoReply       bool
+	StickOnTop    bool
 	Content       string
 	ContentHTML   template.HTML
 	Media         string
@@ -61,6 +62,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 	a.Likes = int(a2.Likes)
 	a.ReplyLockMode = a2.ReplyLockMode
 	a.NSFW = a2.NSFW
+	a.StickOnTop = a2.StickOnTop()
 	a.Cmd = string(a2.Cmd)
 	a.CreateTime = a2.CreateTime
 	a.History = a2.History

@@ -161,6 +161,13 @@
 .post-options [name="reply-lock"][value="0"] .icon-lock-open {
     display: block 
 }
+a[value=true] .icon-transgender-alt {
+    color:#f90;
+}
+a[value=false] .icon-transgender-alt {
+    color:#bbb;
+}
+
 .tribute-container {
     position: absolute;
     top: 0;

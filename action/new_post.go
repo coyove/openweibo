@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal"
+	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/middleware"
 	"github.com/coyove/iis/model"
 	"github.com/coyove/iis/view"
@@ -71,11 +72,14 @@ func APINew(g *gin.Context) {
 		NSFW:          g.PostForm("nsfw") != "",
 		ReplyLockMode: byte(rlm),
 	}
+	a.SetStickOnTop(g.PostForm("stick_on_top") != "")
 
-	noMaster := g.PostForm("no_master") == "1"
-
-	a2, err := dal.Post(a, u, noMaster)
+	a2, err := dal.Post(a, u, g.PostForm("no_master") == "1")
 	if err != nil {
+		if err.Error() == "multiple/stick-on-top" {
+			g.String(200, err.Error())
+			return
+		}
 		log.Println(a2, err)
 		g.String(200, "internal/error")
 		return
@@ -198,4 +202,28 @@ func APIToggleLockArticle(g *gin.Context) {
 	} else {
 		g.String(200, "ok")
 	}
+}
+
+func APIDropTop(g *gin.Context) {
+	u := dal.GetUserByContext(g)
+	if u == nil {
+		g.String(200, "user/not-logged-in")
+		return
+	}
+
+	if ret := checkIP(g); ret != "" {
+		g.String(200, ret)
+		return
+	}
+
+	if _, err := dal.DoUpdateArticleExtra(&dal.UpdateArticleExtraRequest{
+		ID:            ik.NewID(ik.IDAuthor, u.ID).String(),
+		SetExtraKey:   "stick_on_top",
+		SetExtraValue: "",
+	}); err != nil {
+		g.String(200, err.Error())
+		return
+	}
+
+	g.String(200, "ok")
 }

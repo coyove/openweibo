@@ -177,9 +177,13 @@ function nsfwArticle(el, id) {
         stop();
         if (res != "ok") return res;
         el.setAttribute("value", !($value(el) === 'true'))
-        el.style.color = $value(el) === 'true' ? "#f90" : "#bbb"
         return "ok";
     }, stop);
+}
+
+function dropTopArticle(el, id) {
+    if (!confirm("是否取消置顶")) return;
+    $postReload(el, "/api2/drop_top", { id: id, extra: "" })
 }
 
 function lockArticle(el, id) {

@@ -177,6 +177,7 @@ func main() {
 	r.Handle("POST", "/api2/delete", action.APIDeleteArticle)
 	r.Handle("POST", "/api2/toggle_nsfw", action.APIToggleNSFWArticle)
 	r.Handle("POST", "/api2/toggle_lock", action.APIToggleLockArticle)
+	r.Handle("POST", "/api2/drop_top", action.APIDropTop)
 
 	r.Handle("POST", "/rpc/user_info", action.RPCGetUserInfo)
 

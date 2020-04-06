@@ -57,6 +57,16 @@ type Article struct {
 	Extras        map[string]string `json:"X,omitempty"`
 	ReferID       string            `json:"ref,omitempty"`
 	History       string            `json:"his,omitempty"`
+
+	_StickOnTop bool
+}
+
+func (a *Article) SetStickOnTop(v bool) {
+	a._StickOnTop = v
+}
+
+func (a *Article) StickOnTop() bool {
+	return a._StickOnTop
 }
 
 func (a *Article) ContentHTML() template.HTML {

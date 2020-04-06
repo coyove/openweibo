@@ -4,8 +4,8 @@
     {{if .User.Unread}}
     <script>
         document.title =  "({{.User.Unread}}) " + document.title;
-$q("#unread-notify span").innerText = "{{.User.Unread}}";
-$q("#unread-notify i").style.color = "#f52";
+$q("#unread-notify b").innerText = "{{.User.Unread}}";
+$q("#unread-notify i").style.color = "#3f51b5";
     </script>
     {{end}}
     {{else}}

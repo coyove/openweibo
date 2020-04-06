@@ -96,8 +96,21 @@ func WalkMulti(media bool, n int, cursors ...ik.ID) (a []*model.Article, next []
 		return
 	}
 
+	showStickOnTop := len(cursors) == 1 && cursors[0].Header() == ik.IDAuthor // show stick-on-top only in single user timeline
+	idm := map[string]bool{}
+	idmp := map[string]bool{} // dedup map for parent articles
+	appendStickOnTop := func(id string) {
+		if top, _ := GetArticle(id); top != nil {
+			top.SetStickOnTop(true)
+			a = append(a, top)
+			idm[top.ID] = true
+		}
+	}
+
 	// Quick hack: mget from cache first
-	trykeys, trykeysIndex := []string{}, []int{}
+	var trykeys []string
+	var trykeysIndex []int
+
 	for i, c := range cursors {
 		if hdr := c.Header(); hdr == ik.IDAuthor || hdr == ik.IDTag {
 			trykeys = append(trykeys, c.String())
@@ -108,18 +121,20 @@ func WalkMulti(media bool, n int, cursors ...ik.ID) (a []*model.Article, next []
 		m := MGetArticlesFromCache(trykeys...)
 		count := 0
 		for i, k := range trykeys {
-			if m[k] != nil {
-				cursors[trykeysIndex[i]] = ik.ParseID(m[k].PickNextID(media))
-				count++
+			if m[k] == nil {
+				continue
+			}
+
+			cursors[trykeysIndex[i]] = ik.ParseID(m[k].PickNextID(media))
+			count++
+
+			if top := ik.ParseID(m[k].Extras["stick_on_top"]); showStickOnTop && top.Valid() {
+				appendStickOnTop(top.String())
 			}
 		}
 	}
 
-	startTime := time.Now()
-	idm := map[string]bool{}
-	idmp := map[string]bool{} // dedup map for parent articles
-
-	for len(a) < n {
+	for startTime := time.Now(); len(a) < n; {
 		if time.Since(startTime).Seconds() > 1 {
 			log.Println("[mgr.WalkMulti] Break out slow walk at", cursors)
 			break
@@ -163,6 +178,10 @@ func WalkMulti(media bool, n int, cursors ...ik.ID) (a []*model.Article, next []
 				// 4. if 'p' is a top article and has been replied before (presented in 'idmp')
 				//    ignore it to clean the timeline a bit
 				ok = false
+			}
+
+			if showStickOnTop && latest.IsRoot() && p.Extras["stick_on_top"] != "" {
+				appendStickOnTop(p.Extras["stick_on_top"])
 			}
 
 			if ok {

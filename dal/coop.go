@@ -221,7 +221,7 @@ func DoUpdateArticleExtra(rr *UpdateArticleExtraRequest) (string, error) {
 	return oldExtraValue, m.db.Set(a.ID, a.Marshal())
 }
 
-func DoInsertArticle(r *InsertArticleRequest) (model.Article, error) {
+func DoInsertArticle(r *InsertArticleRequest) (A model.Article, E error) {
 	rootID := r.ID
 	a := r.Article
 
@@ -248,7 +248,17 @@ func DoInsertArticle(r *InsertArticleRequest) (model.Article, error) {
 			ID:         rootID,
 			EOC:        a.ID,
 			CreateTime: time.Now(),
+			Extras:     map[string]string{},
 		}
+	}
+
+	root.Replies++
+	if root.Extras == nil { // Compatible with older records
+		root.Extras = map[string]string{}
+	}
+
+	if a.StickOnTop() && ik.ParseID(rootID).Header() == ik.IDAuthor {
+		root.Extras["stick_on_top"] = a.ID
 	}
 
 	if x, y := ik.ParseID(rootID), ik.ParseID(root.NextID); x.Header() == ik.IDAuthor && y.Valid() {
@@ -274,9 +284,6 @@ func DoInsertArticle(r *InsertArticleRequest) (model.Article, error) {
 		// The article contains following info, it won't go into any chains
 		// instead root's Extras will record the index.
 		// 'index' is the last element of the article's ArticleID: u/<user_id>/follow/<index>
-		if root.Extras == nil {
-			root.Extras = map[string]string{}
-		}
 		root.Extras[lastElemInCompID(a.ID)] = "1"
 	default:
 		// The article is a normal feed, so insert it into root's main chain/media chain
@@ -286,11 +293,10 @@ func DoInsertArticle(r *InsertArticleRequest) (model.Article, error) {
 		}
 	}
 
-	root.Replies++
-
 	if err := m.db.Set(a.ID, a.Marshal()); err != nil {
 		return model.Article{}, err
 	}
+
 	if err := m.db.Set(root.ID, root.Marshal()); err != nil {
 		return model.Article{}, err
 	}
