@@ -40,7 +40,7 @@ function $wait(el) {
 }
 
 function $popup(html, bg) {
-    var div = $html("<div style='cursor:pointer;font-size:90%;position:fixed;left: 50%; color: white;line-height: 32px; text-align: center; word-break: break-all; bottom: 32px; border-radius:16px; background: rgba(0,0,0,0.5); transform: translate(-50%, 0); padding:0 1em;'></div>");
+    var div = $html("<div class=toast></div>");
     div.innerHTML = html;
     div.onclick = function() {
         div.style.transition = "opacity 0.8s";
@@ -374,7 +374,7 @@ function showReply(aid) {
 
     var div = $q('<div>');
     div.id = 'Z' + Math.random().toString(36).substr(2, 5);
-    div.className = 'div-inner-reply';
+    div.className = 'div-inner-reply tmpl-body-bg';
     div.style.position = 'fixed';
     div.style.left = '0';
     div.style.top = '0';
@@ -622,4 +622,8 @@ function $aesgcm() {
         "encrypt": $encrypt,
         "decrypt": $decrypt,
     }
+}
+
+function isDarkMode() {
+    return (document.cookie.match(/(^| )mode=([^;]+)/) || [])[2] === 'dark';
 }

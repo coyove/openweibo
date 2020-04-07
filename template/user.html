@@ -85,6 +85,17 @@
                 <table class="articles" style="margin: 0.5em 0;text-align:left">
                     <tr>
                         <td>
+                            <input type=checkbox
+                                   id=darkmode
+                                   class=icon-input-checkbox
+                                   onchange="document.cookie='mode='+(this.checked?'dark':'');location.reload()">
+                            <i class='icon-ok-circled2'></i>
+                            <label for=darkmode>暗色主题</label>
+                            <script>if(isDarkMode())$q("#darkmode").checked=true</script>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
                             <input type=checkbox {{if .User.Settings.AutoNSFW}}checked{{end}} id=autonsfw
                                    class=icon-input-checkbox
                                    onchange="updateSetting(this,'autonsfw',this.checked?'1':'')">
@@ -277,7 +288,7 @@
         <td class=nowrap rowspan=2>验证码:</td>
         <td>
             <a href="javascript:refreshCaptcha()">
-                <img name=captcha src="data:image/png;base64,{{.Challenge}}">
+                <img name=captcha src="data:image/png;base64,{{.Challenge}}" style="background: white">
             </a>
     <script>
         function refreshCaptcha() {

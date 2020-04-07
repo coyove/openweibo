@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -107,15 +106,8 @@ func main() {
 			}
 			for _, path := range css {
 				buf, _ := ioutil.ReadFile(path)
-				tmpl, err := template.New("").Parse(string(buf))
-				if err != nil {
-					panic(err)
-				}
-				p := &bytes.Buffer{}
-				if err := tmpl.Execute(p, common.CSSLightConfig); err != nil {
-					panic(err)
-				}
-				ioutil.WriteFile(path+cssVersion, p.Bytes(), 0777)
+				common.CSSLightConfig.WriteTemplate(path+cssVersion, string(buf))
+				common.CSSDarkConfig.WriteTemplate(path+".dark"+cssVersion, string(buf))
 			}
 			if prodMode {
 				return

@@ -10,7 +10,7 @@
     text-align: center;
     text-overflow: ellipsis;
     text-transform: uppercase;
-    color: rgb(var(--pure-material-primary-rgb, 33, 150, 243));
+    color: {{.Button}};
     background-color: transparent;
     font-family: var(--pure-material-font, "Roboto", "Segoe UI", BlinkMacSystemFont, system-ui, -apple-system);
     font-weight: 500;
@@ -75,7 +75,7 @@
 
 /* Disabled */
 .gbutton:disabled {
-    color: rgba(var(--pure-material-onsurface-rgb, 0, 0, 0), 0.38);
+    color: {{.ButtonDisabled}};
     background-color: transparent;
     cursor: initial;
 }

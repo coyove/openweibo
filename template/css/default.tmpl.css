@@ -44,6 +44,10 @@ body, button, input, textarea {
     font-size: 14px;
     position: relative;
     color: {{.NormalText}};
+    background: {{.BodyBG}};
+}
+
+button, input, textarea {
     background: {{.InputBG}};
 }
 
@@ -55,7 +59,7 @@ input:focus, select:focus, textarea:focus, button:focus, div[contentEditable=tru
     outline: none;
 }
 
-input[type=text], input.t, textarea, select {
+input[type=text], input, textarea, select {
    -webkit-appearance: none;
    border-radius: 0;
 }
@@ -110,7 +114,7 @@ pre {
 nav {
     line-height: 3em;
     background: {{.Navbar}};
-    border-bottom: solid 2px rgba(0,0,0,0.1);
+    border-bottom: solid 2px {{.RowHeader}};
 }
 
 nav a {
@@ -124,7 +128,7 @@ nav a {
 
 nav a:hover {
     text-decoration: none;
-    background: rgba(0, 0, 0, 0.05)
+    background: {{.RowHeader}};
 }
 
 .paging {
@@ -163,7 +167,7 @@ div.row {
 
 div.row-header {
     margin: -0.5em -0.5em 0 -0.5em;
-    background: rgba(0,0,0,0.04);
+    background: {{.RowHeader}};
     padding: 0.5em;
     position: relative;
 }
@@ -249,7 +253,7 @@ span.abbr:after {
     transition: background 0.5s;
 }
 
-.status .title > span:hover { background: rgba(0,0,0,0.033); }
+.status .title > span:hover { background: {{.RowHeader}}; }
 
 .status .sub-status { font-weight: normal; }
 
@@ -348,7 +352,7 @@ div.tri {
     width: 0;
     position: absolute;
     border: solid 8px black;
-    border-color: transparent transparent white;
+    border-color: transparent transparent {{.LightBG}};
     bottom: 0;
     margin-left: -8px;
     left: 50%;
@@ -417,7 +421,9 @@ div.tri {
 .reply-table {
     border:solid 1px {{.Border}};
     border-width: 1px 0;
-    position:relative;text-align:left
+    position:relative;
+    text-align:left;
+    background: {{.LightBG}};
 }
 
 img.kimochi-selector[kimochi="0"] {
@@ -443,6 +449,22 @@ div.reply-lock-notify {
     border-top: solid 1px {{.Border}};
 }
 
+.toast {
+    cursor:pointer;
+    font-size:90%;
+    position:fixed;
+    left: 50%;
+    color: {{.Toast}};
+    line-height: 32px;
+    text-align: center;
+    word-break: break-all;
+    bottom: 32px;
+    border-radius:16px;
+    background: {{.ToastBG}};
+    transform: translate(-50%, 0);
+    padding:0 1em;
+}
+
 .tmpl-normal-text { color: {{.NormalText}} !important }
 .tmpl-light-text { color: {{.LightText}} !important }
 .tmpl-mid-text { color: {{.MidGrayText}} !important }
@@ -453,3 +475,5 @@ div.reply-lock-notify {
 .tmpl-light-bg { background: {{.LightBG}} !important }
 .tmpl-row-light-bg { background: {{.Row}} !important }
 .tmpl-inbox-message-text { color: {{.InboxMessage}} !important }
+.tmpl-input-bg { background: {{.InputBG}} !important }
+.tmpl-body-bg { background: {{.BodyBG}} !important }

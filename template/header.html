@@ -1,9 +1,8 @@
 <!doctype html>
 <html>
-    <link href="/s/css/default.tmpl.css{{cssVersion}}" rel="stylesheet" type="text/css" media="all">
-    <link href="/s/css/third.tmpl.css{{cssVersion}}" rel="stylesheet" type="text/css" media="all">
+    <head>
     <link href="/s/fonts/fontello-embedded.css?ver=26" rel="stylesheet" type="text/css" media="all">
-    <script src="/s/js/default.32.js"></script>
+    <script src="/s/js/default.33.js"></script>
     <script src="/s/js/newgen.1.js"></script>
     <script src="/s/js/post.16.js"></script>
     <script src="/s/js/tribute.min.js"></script>
@@ -12,9 +11,14 @@
     <link rel="shortcut icon" href="/s/assets/favicon.png">
 
     <script>
-        if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
-            document.write('<style>body, button, input, textarea {font-size: 16px }</style>')
-        }
+        (function() {
+            var mode = isDarkMode() ? '.dark' : '';
+            document.write('<link href="/s/css/default.tmpl.css'+mode+'{{cssVersion}}" rel="stylesheet" type="text/css" media=all>')
+            document.write('<link href="/s/css/third.tmpl.css'+mode+'{{cssVersion}}" rel="stylesheet" type="text/css" media=all>')
+            if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
+                document.write('<style>body, button, input, textarea {font-size: 16px }</style>')
+            }
+        })()
 
         window.TRIBUTE_COL = {
             trigger: '@',
@@ -94,6 +98,7 @@
             if (el) window.onmousemove(el);
         }
     </script>
+    </head>
 
 <body>
     <div id="container" style="" class=container>
