@@ -51,6 +51,11 @@ button, input, textarea {
     background: {{.InputBG}};
 }
 
+::placeholder {
+    color: {{.MidGrayText}};
+    opacity: 1;
+}
+
 code {
     font-family: monospace;
 }
@@ -62,6 +67,7 @@ input:focus, select:focus, textarea:focus, button:focus, div[contentEditable=tru
 input[type=text], input, textarea, select {
    -webkit-appearance: none;
    border-radius: 0;
+   border: solid 1px {{.Border}};
 }
 
 a {
@@ -433,7 +439,7 @@ img.kimochi-selector[kimochi="0"] {
 
 div.reply-lock-notify {
     text-align:center;
-    background: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(0,0,0,0.05) 20px, rgba(0,0,0,0.05) 40px);
+    background: repeating-linear-gradient(45deg, transparent, transparent 20px, {{.RowHeader}} 20px, {{.RowHeader}} 40px);
     color: {{.LightText}};
 }
 
