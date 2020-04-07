@@ -4,8 +4,7 @@
 
         {{if and .ParentArticle.ReplyLockMode .ShowReplyLockInfo}}
         <div class=row>
-            <div style="text-align:center;color:#aaa;
-                         background: repeating-linear-gradient(45deg, transparent, transparent 20px, #eee 20px, #eee 40px);">
+            <div class=reply-lock-notify>
                 <button class=gbutton disabled>
                     {{if eq .ParentArticle.ReplyLockMode 1}}禁止回复{{end}}
                     {{if eq .ParentArticle.ReplyLockMode 2}}仅限作者关注的人回复{{end}}
@@ -33,7 +32,7 @@
             onclick="loadMore('timeline{{.ReplyView.UUID}}',this,{reply:true})">更多回复...</button>
 
         {{else}}
-        <a class=gbutton style="color:#aaa">没有更多回复</a>
+        <a class="gbutton tmpl-light-text">没有更多回复</a>
         {{end}}
     </div>
 </div>

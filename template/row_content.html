@@ -50,7 +50,7 @@
         <div style="margin-top:0.5em;" class=media>
             {{if or .NSFW .You.Settings.FoldImages}}
                 <button
-                    style="color:{{if .NSFW}}#f90{{else}}#098{{end}}"
+                    class="gbutton {{if .NSFW}}tmpl-orange-text{{else}}tmpl-normal-text{{end}}"
                     onclick="this.style.display='none';
                         this.nextElementSibling.querySelector('img').src='{{.Media}}?thumb=1'"
                         class="gbutton nsfw-clicker">
@@ -65,7 +65,7 @@
     {{end}}
 
     {{if and .You.IsMod .History}}
-    <div style="color:#666;font:12px monospace">{{.History}}</div>
+    <div class=tmpl-mid-text style="font:12px monospace">{{.History}}</div>
     {{end}}
 
     {{if not $isInboxLike}}
@@ -76,13 +76,13 @@
                 <i class="icon-bullhorn"></i> 置顶
             </a>
         {{else}}
-            <a class="reply-box" style="color:#233;font-weight:bold" href="javascript:void(0)">
+            <a class="reply-box tmpl-normal-text" style="font-weight:bold" href="javascript:void(0)">
                 <i class="icon-bullhorn"></i> 置顶
             </a>
         {{end}}
         {{end}}
 
-        <a class="reply-box" href="javascript:showReply('{{.ID}}')" {{if .NoReply}}style="color:#aaa"{{end}}>
+        <a class="reply-box {{if .NoReply}}tmpl-light-text{{end}}" href="javascript:showReply('{{.ID}}')">
             <i class="icon-reply-outline {{if .Parent}}{{if .Parent.ID}}replied{{end}}{{end}}"></i>
             {{if .Replies}}{{.Replies}}{{end}}
         </a>
@@ -92,12 +92,12 @@
         {{if or (eq .You.ID .Author.ID) .You.IsMod}}
         <a class="reply-box" href="javascript:void(0)" onclick="lockArticle(this,'{{.ID}}')" value="{{.ReplyLockMode}}">
             {{if .ReplyLockMode}}
-            <i style="color:#233" class="icon-lock"></i>
+            <i class="tmpl-normal-text icon-lock"></i>
             {{else}}
-            <i style="color:#aaa" class="icon-lock-open"></i>
+            <i class="tmpl-light-text icon-lock-open"></i>
             {{end}}
         </a>
-        <a class="reply-box" href="javascript:void(0)" onclick="deleteArticle(this,'{{.ID}}')" style="color:#f52">
+        <a class="tmpl-red-text reply-box" href="javascript:void(0)" onclick="deleteArticle(this,'{{.ID}}')">
             <i class="icon-trash"></i>
         </a>
         {{if eq .MediaType "IMG"}}
@@ -111,8 +111,8 @@
 
     {{if .Parent}}
     {{if .Parent.ID}}
-    <div style="position:relative;margin:0 -0.5em;{{if not $isInboxLike}}border-top:solid 1px #ddd{{end}}">
-        <div style="position:absolute;left:0.5em;top:0.5em;color:#aaa">
+    <div style="position:relative;margin:0 -0.5em;{{if not $isInboxLike}}border-top:solid 1px transparent{{end}}" class=tmpl-border>
+        <div style="position:absolute;left:0.5em;top:0.5em" class=tmpl-light-text>
             <i class=icon-quote-left></i>
         </div>
     </div>

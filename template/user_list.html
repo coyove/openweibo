@@ -24,7 +24,7 @@
     {{end}}
 </div>
 
-<table class="articles z" style="border-top:solid 1px #eee">
+<table class="articles tmpl-border" style="border-top:solid 1px transparent">
 
 {{if eq .ListType "blacklist"}}
 <tr>
@@ -36,8 +36,8 @@
 {{end}}
     <tr>
         <td colspan=3>
-            <div style="border:solid 1px #ccc;display: flex;background:#f1f2f3;">
-                <div style="padding:0.5em 0 0.5em 0.5em;color:#aaa;white-space:nowrap">搜索 @</div>
+            <div class="tmpl-border tmpl-light-bg" style="border:solid 1px transparent;display:flex">
+                <div style="padding:0.5em 0 0.5em 0.5em;white-space:nowrap">搜索 @</div>
                 <div contentEditable=true id=search-id style="width:100%;border:none;padding:0.5em;display:flex;flex-wrap:wrap">
                 </div>
             </div>
@@ -124,12 +124,12 @@
     </tr>
     {{end}}
 
-    <tr style="margin: 0.5em 0;border-top:solid 1px #eee">
+    <tr class=tmpl-border style="margin: 0.5em 0;border-top:solid 1px transparent">
         <td colspan=3 style="text-align:center">
             {{if .Next}}
             <a href="?n={{.Next}}" class=gbutton>下一页 &raquo;</a>
             {{else}}
-            <a href="?n=" class=gbutton style="color:#aaa">没有更多结果</a>
+            <a href="?n=" class="gbutton tmpl-light-text">没有更多结果</a>
             {{end}}
         </td>
     </tr>

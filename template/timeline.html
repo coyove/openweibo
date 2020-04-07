@@ -35,7 +35,7 @@
         {{template "reply_view.html" .ReplyView}}
     {{end}}
 
-<div style='padding:0 0.5em;background:#f1f2f3;cursor:pointer;line-height:2.5em'>
+<div style='padding:0 0.5em;cursor:pointer;line-height:2.5em' class=tmpl-row-light-bg>
 {{if not .IsInbox}}
 
     {{if or .IsTagTimeline .IsUserLikeTimeline}}
@@ -110,7 +110,7 @@
     </script>
 
     {{else}}
-    <a class=gbutton style="color:#aaa" href="#">
+    <a class="gbutton tmpl-light-text" href="#">
         {{if .IsUserTimeline}}
             没有更多{{.User.ID}}的状态了
         {{else if .IsInbox}}

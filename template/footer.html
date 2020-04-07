@@ -1,11 +1,11 @@
-<div id=footer style="margin:0;word-break:break-all;line-height:2em;padding:0.5em;background:#f3f4f5;text-align:center" class=row>
+<div id=footer style="margin:0;word-break:break-all;line-height:2em;padding:0.5em;text-align:center" class="row tmpl-light-bg">
     {{if .User}}
     <a href='/user'>@{{.User.ID}}</a>
     {{if .User.Unread}}
     <script>
         document.title =  "({{.User.Unread}}) " + document.title;
 $q("#unread-notify b").innerText = "{{.User.Unread}}";
-$q("#unread-notify i").style.color = "#3f51b5";
+$q("#unread-notify i").className += " tmpl-inbox-message-text";
     </script>
     {{end}}
     {{else}}

@@ -12,3 +12,5 @@ images
 badcw.log
 .idea
 unifont
+.css.prod.
+*.test.css

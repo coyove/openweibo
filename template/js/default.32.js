@@ -40,8 +40,7 @@ function $wait(el) {
 }
 
 function $popup(html, bg) {
-    var div = $html("<div style='cursor: pointer; font-size: 90%; position: fixed; left: 50%; color: white; opacity: 0.85; line-height: 32px; text-align: center; word-break: break-all; bottom: 32px; border-radius: 4px; background: rgb(255, 85, 34); transform: translate(-50%, 0); padding: 0 1em;'></div>");
-    div.style.background = bg || '#f52';
+    var div = $html("<div style='cursor:pointer;font-size:90%;position:fixed;left: 50%; color: white;line-height: 32px; text-align: center; word-break: break-all; bottom: 32px; border-radius:16px; background: rgba(0,0,0,0.5); transform: translate(-50%, 0); padding:0 1em;'></div>");
     div.innerHTML = html;
     div.onclick = function() {
         div.style.transition = "opacity 0.8s";
@@ -73,9 +72,9 @@ function $post(url, data, cb, errorcb) {
     }
     xml.onerror = function() {
         if (cbres == 'ok') {
-            $popup('<i class=icon-ok-circled></i>成功', '#088');
+            $popup('<i class=icon-ok-circled></i>成功');
         } else if (cbres && cbres.match(/^ok:/)) {
-            $popup('<i class=icon-ok-circled></i>' + cbres.substring(3), '#088');
+            $popup('<i class=icon-ok-circled></i>' + cbres.substring(3));
         } else {
             if (errorcb) errorcb(xml)
             $popup('<i class=icon-cancel-circled-1></i>' + (cbres || ("错误状态: " + xml.status)));
@@ -107,13 +106,13 @@ function loadKimochi(el) {
         var li = z.html('<li>'), a = z.html('<a>'), img = z.html('<img>');
         img.src = '/s/emoji/emoji' + i + '.png';
         if (i == 0) {
-            img.style.border = 'dashed 1px #233';
-            img.style.borderRadius = '50%';
+            img.className = 'kimochi-selector';
+            img.setAttribute("kimochi", "0");
         }
         a.appendChild(img);
         a.onclick = (function(i, img) {
             return function() {
-                img.src = '/s/css/spinner.gif';
+                img.src = '/s/assets/spinner.gif';
                 $post('/api/user_kimochi', {k: i}, function(resp) {
                     if (resp === 'ok')  location.reload(); 
                 });
@@ -187,7 +186,7 @@ function dropTopArticle(el, id) {
 }
 
 function lockArticle(el, id) {
-    var div = $html('<div style="position:absolute;background:#fafbfc;box-shadow:0 1px 5px rgba(0,0,0,.3);"></div>'),
+    var div = $html('<div style="position:absolute;box-shadow:0 1px 5px rgba(0,0,0,.3);" class=tmpl-light-bg></div>'),
         box = el.getBoundingClientRect(),
         bodyBox = document.body.getBoundingClientRect(),
         currentValue = $value(el),
@@ -231,8 +230,8 @@ function lockArticle(el, id) {
             if (res != "ok") return res;
             el.setAttribute("value", v)
             el.innerHTML = v > 0 ?
-                '<i style="color:#233" class="icon-lock"></i>' :
-                '<i style="color:#aaa" class="icon-lock-open"></i>'
+                '<i class="tmpl-normal-text icon-lock"></i>' :
+                '<i class="tmpl-light-text icon-lock-open"></i>'
             return "ok:回复设置更新"
         }, stop);
     }
@@ -310,7 +309,7 @@ function loadMore(tlid, el, data) {
         if (pl.EOT) {
             el.innerText = "没有更多内容了";
             el.setAttribute("eot", "true");
-            el.style.color = "#aaa";
+            el.className += " tmpl-light-text";
             el.onclick = function() { location.reload() }
         } else {
             el.innerText = "更多...";
@@ -384,7 +383,7 @@ function showReply(aid) {
     div.style.backgroundColor = 'white';
     div.style.overflowY = 'scroll';
     div.style.overflowX = 'hidden';
-    div.style.backgroundImage = 'url(/s/css/spinner.gif)';
+    div.style.backgroundImage = 'url(/s/assets/spinner.gif)';
     div.style.backgroundRepeat = 'no-repeat';
     div.style.backgroundPosition = 'center center';
 
@@ -397,7 +396,7 @@ function showReply(aid) {
         "<i class='control icon-left-small'></i>" + 
         "<input style='margin:0 0.5em;width:100%;text-align:center;border:none;background:transparent;cursor:pointer' value='" +
         location.protocol + "//" +  location.host + "/S/" + aid.substring(1) +
-        "' onclick='this.select();document.execCommand(\"copy\");$popup(\"已复制\",\"#088\")' readonly>" +
+        "' onclick='this.select();document.execCommand(\"copy\");$popup(\"已复制\")' readonly>" +
         "<i class='control icon-link' onclick='this.previousElementSibling.click()'></i>" + 
         "</div></div>");
 
@@ -502,7 +501,7 @@ function showInfoBox(el, uid) {
     div.style.position = 'absolute';
     div.style.left = box.left - bodyBox.left + 'px';
     div.style.top = box.top - bodyBox.top + boxTopOffset + 'px';
-    div.style.boxShadow = "0 1px 2px #ccc";
+    div.style.boxShadow = "0 1px 2px rgba(0, 0, 0, .3)";
 
     var reg = {
         valid: true,

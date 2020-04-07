@@ -18,18 +18,18 @@
         {{template "button_follow_block.html" (blend "follow" .ID .IsFollowing)}}
         {{template "button_follow_block.html" (blend "block" .ID .IsBlocking)}}
         {{else}}
-        <button class="gbutton" disabled><i style="color:#ddd" class="icon-heart-broken"></i></button>
-        <button class="gbutton" disabled><i style="color:#ddd" class="icon-block"></i></button>
+        <button class="gbutton" disabled><i class="tmpl-light-text icon-heart-broken"></i></button>
+        <button class="gbutton" disabled><i class="tmpl-light-text icon-block"></i></button>
         {{end}}
         </div>
 
         <div class=tri></div>
     </div>
 
-    <div class=title style="border-bottom: dotted 1px #ccc;text-align:left;line-height:1.66em">
+    <div class="title tmpl-border" style="border-bottom: dotted 1px transparent;text-align:left;line-height:1.66em">
         <pre style="margin:0.5em 0"><!--
         -->{{.Settings.DescHTML}}<!--
-        --><div style="color:#666;font-size:90%;white-space:normal">
+        --><div class=tmpl-mid-text style="font-size:90%;white-space:normal">
             <b>加入于</b> {{formatTime .Signup}}&nbsp;
             <b>活跃于</b> {{formatTime (getLastActiveTime .ID)}}&nbsp;
             {{if not .IsYou}}

@@ -10,7 +10,7 @@
        url('/s/fonts/roboto-v20-latin-regular.ttf') format('truetype'), /* Safari, Android, iOS */
        url('/s/fonts/roboto-v20-latin-regular.svg#Roboto') format('svg'); /* Legacy iOS */
 }
-/* roboto-700 - latin */
+
 @font-face {
   font-family: 'Roboto';
   font-style: normal;
@@ -43,6 +43,8 @@ html {
 body, button, input, textarea {
     font-size: 14px;
     position: relative;
+    color: {{.NormalText}};
+    background: {{.InputBG}};
 }
 
 code {
@@ -59,9 +61,8 @@ input[type=text], input.t, textarea, select {
 }
 
 a {
-    cursor: pointer;
     text-decoration: none;
-    color: #2a66d9;
+    color: {{.Link}};
 }
 
 a:hover {
@@ -69,9 +70,13 @@ a:hover {
 }
 
 .container {
-    width: 100%; max-width: 750px; margin: 0 auto;position:relative;
+    width: 100%;
+    max-width: 750px;
+    margin: 0 auto;
+    position: relative;
     min-height: 100%;
-    border:solid 1px #eee;border-width:0 1px;
+    border: solid 1px {{.Border}};
+    border-width:0 1px;
 }
 
 .articles {
@@ -92,7 +97,7 @@ a:hover {
 input.t, textarea, select.t {
     width: 100%;
     resize: none;
-    border: solid 1px #ccc;
+    border: solid 1px {{.Border}};
     padding: 0.5em;
 }
 
@@ -104,14 +109,14 @@ pre {
 
 nav {
     line-height: 3em;
-    background: #feb;
+    background: {{.Navbar}};
     border-bottom: solid 2px rgba(0,0,0,0.1);
 }
 
 nav a {
     cursor: pointer;
 	display: inline-block;
-    color: #233 !important;
+    color: {{.NormalText}} !important;
 	text-decoration: none;
     padding: 0 0.66em;
     transition: background 0.33s;
@@ -123,7 +128,7 @@ nav a:hover {
 }
 
 .paging {
-    text-align:center;
+    text-align: center;
     padding: 1em;
 }
 
@@ -133,7 +138,7 @@ nav a:hover {
 }
 
 div.subreply {
-    padding-left:1.5em;
+    padding-left: 1.5em;
 }
 
 div.subreply .row-header {
@@ -151,7 +156,7 @@ div.rows.replies .row, div.subreply .row {
 }
 
 div.row {
-    background: #f6f6f6;
+    background: {{.Row}};
     margin: 0.5em 0;
     overflow: hidden;
 }
@@ -185,7 +190,7 @@ div.row .foobar > a {
 }
 
 div.row .foobar > a:hover {
-    border-bottom-color: #677;
+    border-bottom-color: {{.FoobarHoverBottom}};
 }
 
 img.majiang { width: 28px; height: 28px; }
@@ -199,14 +204,14 @@ span.time.now:after { content: '刚刚' }
 
 span.deleted:after {
     content: '内容已删除，不要想了';
-    text-shadow: 0 0 5px #667;
+    text-shadow: 0 0 5px {{.TextShadow}};
     color: transparent;
 }
 
 span.abbr:after {
     content: '...重复内容';
     font-weight: bold;
-    color: #aaa;
+    color: {{.LightText}};
     display: inline-block;
     margin-left: 0.5em
 }
@@ -215,7 +220,7 @@ span.abbr:after {
     text-align: center;
     display: inline-block;
     padding: 0.5em 0.5em 0;
-    background: #fcfdfe;
+    background: {{.LightBG}};
     width: 100%;
 }
 
@@ -244,16 +249,11 @@ span.abbr:after {
     transition: background 0.5s;
 }
 
-.status .title > span:hover {
-    background: rgba(0,0,0,0.033);
-}
+.status .title > span:hover { background: rgba(0,0,0,0.033); }
 
-.status .sub-status {
-    color: #233;
-    font-weight: normal;
-}
+.status .sub-status { font-weight: normal; }
 
-.status a { color: #233 }
+.status a { color: {{.NormalText}} }
 
 .status a:hover { text-decoration: none; }
 
@@ -269,7 +269,7 @@ div.status-box {
 }
 
 [mod=true] {
-    color: #673ab7 !important;
+    color: {{.ModText}} !important;
     font-weight: bold;
 }
 
@@ -361,7 +361,7 @@ div.tri {
     display: none;
     position: absolute;
     left: 0;
-    background: #fafbfc;
+    background: {{.LightBG}};
     box-shadow: 0 1px 5px rgba(0, 0, 0, .3);
     list-style: none;
     line-height: 1.5em;
@@ -379,7 +379,7 @@ div.tri {
     z-index: 1000;
 }
 .post-options ul li:hover {
-    background: #bdf;
+    background: {{.DropdownItemHover}};
 }
 .post-options-emoji img {
     width: 24px;
@@ -400,17 +400,56 @@ div.tri {
     line-height: 36px;
     width: 36px;
     height: 36px;
-    background: #64b5f6;
+    background: {{.PostButton}};
     transition: background 0.3s;
     color: white;
     text-align:center;
     border-radius: 50%;
-    box-shadow: 0 0 5px #ccc;
     right: 1em;
     bottom: 1em;
     cursor: pointer;
     font-size: 18px;
 }
 .post-button:hover {
-    background: #2196f3;
+    background: {{.PostButtonHover}};
 }
+
+.reply-table {
+    border:solid 1px {{.Border}};
+    border-width: 1px 0;
+    position:relative;text-align:left
+}
+
+img.kimochi-selector[kimochi="0"] {
+    border: dashed 1px {{.NormalText}};
+    border-radius:50%
+}
+
+div.reply-lock-notify {
+    text-align:center;
+    background: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(0,0,0,0.05) 20px, rgba(0,0,0,0.05) 40px);
+    color: {{.LightText}};
+}
+
+.tagrow {
+    border-bottom: solid 1px {{.Border}};
+    padding: 0.5em;
+    cursor: pointer;
+    display: flex;
+    line-height: 2em;
+}
+
+.tagrow:first-child {
+    border-top: solid 1px {{.Border}};
+}
+
+.tmpl-normal-text { color: {{.NormalText}} !important }
+.tmpl-light-text { color: {{.LightText}} !important }
+.tmpl-mid-text { color: {{.MidGrayText}} !important }
+.tmpl-red-text { color: {{.RedText}} !important }
+.tmpl-orange-text { color: {{.OrangeText}} !important }
+.tmpl-green-text { color: {{.GreenText}} !important }
+.tmpl-border { border-color: {{.Border}} !important }
+.tmpl-light-bg { background: {{.LightBG}} !important }
+.tmpl-row-light-bg { background: {{.Row}} !important }
+.tmpl-inbox-message-text { color: {{.InboxMessage}} !important }

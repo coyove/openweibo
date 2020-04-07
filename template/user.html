@@ -38,8 +38,8 @@
                     </tr>
                     <tr>
                         <td colspan=2 style="text-align:center">
-                            <a class=gbutton href="#"
-                                onclick="confirm('确认登出 {{.User.DisplayName}}')?$postReload(this, '/api2/logout',{}):0" style="color:#f80">
+                            <a class="gbutton tmpl-red-text" href="#"
+                               onclick="confirm('确认登出 {{.User.DisplayName}}')?$postReload(this, '/api2/logout',{}):0">
                                 <i class="icon-logout"></i> 退出账号
                             </a>
                         </td>
@@ -247,7 +247,7 @@
                 }
             }
             $q("#id-output").innerHTML = "<b style='font-family:monospace'>@" + String.fromCharCode.apply(null, x) +
-                (filtered ? "&emsp;<span style='color:#f52'>(注意: 非法字符已过滤)</span></b>" : "</b>");
+                (filtered ? "&emsp;<span class=tmpl-red-text>(注意: 非法字符已过滤)</span></b>" : "</b>");
         }
     </script>
     </tr>

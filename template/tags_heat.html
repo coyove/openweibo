@@ -1,22 +1,13 @@
 {{if .}}
 <style>
-.tagrow {
-    border-bottom: solid 1px #ddd;
-    padding: 0.5em;
-    cursor: pointer;
-    display: flex;
-    line-height: 2em;
-}
-.tagrow:first-child {
-    border-top: solid 1px #ccc;
-}
+
 </style>
 <div>
 {{range .}}
 <div class=tagrow>
     <div style="flex-grow: 1">
-        <a style="font-size:120%" href="/tag/{{.Name}}">#{{.Name}} <span style="color:#677">({{.Tag.Replies}})</span></a>
-        <div style="color:#666">{{formatTime .LastUpdated}}</div>
+        <a style="font-size:120%" href="/tag/{{.Name}}">#{{.Name}} <span class=tmpl-mid-text>({{.Tag.Replies}})</span></a>
+        <div class="tmpl-mid-text">{{formatTime .LastUpdated}}</div>
     </div>
     <div>
         {{template "button_follow_block.html" (blend "follow" .FullName .IsFollowing)}}

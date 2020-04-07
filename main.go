@@ -1,13 +1,15 @@
 package main
 
 import (
-	"flag"
+	"bytes"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/coyove/iis/action"
@@ -23,10 +25,6 @@ import (
 )
 
 func main() {
-	noHTTP := false
-	flag.BoolVar(&noHTTP, "no-http", false, "")
-	flag.Parse()
-
 	rand.Seed(time.Now().Unix())
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
@@ -37,10 +35,7 @@ func main() {
 	}, common.Cfg.DyRegion, common.Cfg.DyAccessKey, common.Cfg.DySecretKey)
 
 	if common.Cfg.RedisAddr != "" {
-		goforget.Init(&cache.RedisConfig{
-			Addr:         common.Cfg.RedisAddr,
-			BatchWorkers: 10,
-		})
+		goforget.Init(&cache.RedisConfig{Addr: common.Cfg.RedisAddr, BatchWorkers: 10})
 	}
 
 	if os.Getenv("BENCH") == "1" {
@@ -92,8 +87,48 @@ func main() {
 		// 	}
 	}
 
-	r := middleware.New(common.Cfg.Key != "0123456789abcdef")
+	prodMode := common.Cfg.Key != "0123456789abcdef"
+
+	cssVersion := ".prod." + strconv.FormatInt(time.Now().Unix(), 10) + ".css"
+	if !prodMode {
+		cssVersion = ".test.css"
+	}
+
+	go func() {
+		for {
+			cssFiles, _ := ioutil.ReadDir("template/css")
+			css := []string{}
+			for _, f := range cssFiles {
+				if path := "template/css/" + f.Name(); !strings.HasSuffix(f.Name(), ".tmpl.css") {
+					os.Remove(path)
+				} else {
+					css = append(css, path)
+				}
+			}
+			for _, path := range css {
+				buf, _ := ioutil.ReadFile(path)
+				tmpl, err := template.New("").Parse(string(buf))
+				if err != nil {
+					panic(err)
+				}
+				p := &bytes.Buffer{}
+				if err := tmpl.Execute(p, common.CSSLightConfig); err != nil {
+					panic(err)
+				}
+				ioutil.WriteFile(path+cssVersion, p.Bytes(), 0777)
+			}
+			if prodMode {
+				return
+			}
+			time.Sleep(time.Second)
+		}
+	}()
+
+	r := middleware.New(prodMode)
 	r.SetFuncMap(template.FuncMap{
+		"cssVersion": func() string {
+			return cssVersion
+		},
 		"emptyUser": func() model.User {
 			u := model.User{}
 			u.SetIsYou(true)

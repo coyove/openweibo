@@ -86,3 +86,51 @@ func RegenConfigString() {
 	})
 	Cfg.PublicString = string(buf)
 }
+
+type CSSConfig struct {
+	Link              string
+	Navbar            string
+	Border            string
+	NormalText        string
+	LightText         string
+	MidGrayText       string
+	LightBG           string
+	InputBG           string
+	Row               string
+	FoobarHoverBottom string
+	TextShadow        string
+	ModText           string
+	PostButton        string
+	PostButtonHover   string
+	DropdownItemHover string
+	RedText           string
+	GreenText         string
+	OrangeText        string
+	InboxMessage      string
+	AddFriend         string
+	RemoveFriend      string
+}
+
+var CSSLightConfig = CSSConfig{
+	Link:              "#2a66d9",
+	Navbar:            "#feb",
+	Border:            "#ddd",
+	NormalText:        "#233",
+	LightText:         "#aaa",
+	MidGrayText:       "#666",
+	LightBG:           "#fafbfc",
+	InputBG:           "#fff",
+	Row:               "#f6f6f6",
+	FoobarHoverBottom: "#677",
+	TextShadow:        "#677",
+	ModText:           "#673ab7",
+	PostButton:        "#64b5f6",
+	PostButtonHover:   "#2196f3",
+	DropdownItemHover: "#bdf",
+	RedText:           "#f52",
+	GreenText:         "#4a5",
+	OrangeText:        "#f90",
+	InboxMessage:      "#3f51b5",
+	AddFriend:         "#098",
+	RemoveFriend:      "#e16",
+}

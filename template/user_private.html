@@ -4,7 +4,7 @@
             <img class="avatar" src="/avatar/{{.ID}}.jpg?q={{.Avatar}}" style="cursor:pointer;margin:0"
                                                                         onclick="this.nextElementSibling.click()">
             <input type=file style="display:none" onchange="onAvatarChanged(this)">
-            <button style="color:#233" class=gbutton onclick="this.previousElementSibling.click()">
+            <button class="gbutton tmpl-normal-text" onclick="this.previousElementSibling.click()">
                 <i class=icon-camera></i>
             </button>
         </div>
@@ -12,14 +12,12 @@
             {{template "display_name.html" .}}
         </div>
         <div style="flex:0 48px;margin:0;white-space:nowrap">
-            <a class=gbutton href="/user" style="color:#233">
+            <a class="gbutton tmpl-normal-text" href="/user">
                 <i class="icon-cog"></i>
             </a>
             <div style="display:inline-block">
                 <div class="post-options post-options-emoji" onmouseover="loadKimochi(this)">
-                    <img src="/s/emoji/emoji{{.Kimochi}}.png" style="
-                                                             vertical-align: middle;
-                                                             {{if not .Kimochi}}border:dashed 1px #233;border-radius:50%{{end}}">
+                    <img src="/s/emoji/emoji{{.Kimochi}}.png" style="vertical-align: middle" kimochi={{.Kimochi}} class=kimochi-selector>
                     <ul style="margin-left:-216px;direction:rtl"></ul>
                 </div>
             </div>
@@ -28,14 +26,15 @@
     </div>
 
     <div class=title>
-        <div style="display:flex;width:100%;border:dotted 1px #ccc;margin:0.5em 0 0;border-radius:4px">
+        <div style="display:flex;width:100%;border:dotted 1px transparent;margin:0.5em 0 0;border-radius:4px" class=tmpl-border>
         <input
             style="width:100%;border:none;text-align:left"
             placeholder="个人简介"
             class=t
             value="{{.Settings.Description}}">
-        <button class=gbutton style="margin:0.25em;color:#4a5;flex-shrink:0"
-                              onclick="updateSetting(this, 'description', this.previousElementSibling.value)">更新</button>
+        <button class="gbutton tmpl-green-text"
+                style="margin:0.25em;flex-shrink:0"
+                onclick="updateSetting(this, 'description', this.previousElementSibling.value)">更新</button>
         </div>
     </div>
 
@@ -76,7 +75,7 @@ function onAvatarChanged(el) {
                     }
 
                     a.OLD_SRC = a.src;
-                    a.src = '/s/css/spinner.gif'
+                    a.src = '/s/assets/spinner.gif'
 
                     data["set-avatar"] = "1";
                     data["avatar"] = img.src;
