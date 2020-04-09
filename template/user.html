@@ -88,7 +88,7 @@
                             <input type=checkbox
                                    id=darkmode
                                    class=icon-input-checkbox
-                                   onchange="document.cookie='mode='+(this.checked?'dark':'');location.reload()">
+                                   onchange="document.cookie='mode='+(this.checked?'dark':'')+';expires=Sun, 07 Apr 2030 01:27:11 GMT';location.reload()">
                             <i class='icon-ok-circled2'></i>
                             <label for=darkmode>暗色主题</label>
                             <script>if(isDarkMode())$q("#darkmode").checked=true</script>
