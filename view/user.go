@@ -66,10 +66,10 @@ func UserList(g *gin.Context) {
 			g.Redirect(302, "/user/blacklist")
 			return
 		}
-		p.List, p.Next = dal.GetRelationList(ik.NewID(ik.IDBlacklist, p.User.ID), g.Query("n"), int(common.Cfg.PostsPerPage))
+		p.List, p.Next = dal.GetRelationList(p.User, ik.NewID(ik.IDBlacklist, p.User.ID), g.Query("n"), int(common.Cfg.PostsPerPage))
 		p.User.SetShowList('b')
 	case "followers":
-		p.List, p.Next = dal.GetRelationList(ik.NewID(ik.IDFollower, p.User.ID), g.Query("n"), int(common.Cfg.PostsPerPage))
+		p.List, p.Next = dal.GetRelationList(p.User, ik.NewID(ik.IDFollower, p.User.ID), g.Query("n"), int(common.Cfg.PostsPerPage))
 		p.User.SetShowList('s')
 	default:
 		p.List, p.Next = dal.GetFollowingList(ik.NewID(ik.IDFollowing, p.User.ID), g.Query("n"), int(common.Cfg.PostsPerPage), true)

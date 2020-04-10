@@ -109,7 +109,7 @@
                                    class=icon-input-checkbox
                                    onchange="updateSetting(this,'foldimg',this.checked?'1':'')">
                             <i class='icon-ok-circled2'></i>
-                            <label for=foldimg>收起图片（减少流量）</label>
+                            <label for=foldimg>收起图片减少流量</label>
                         </td>
                     </tr>
                     <tr>
@@ -128,6 +128,15 @@
                                    onchange="updateSetting(this,'mffm',this.checked?'1':'')">
                             <i class='icon-ok-circled2'></i>
                             <label for=mffm>只有我关注的人可以关注我</label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type=checkbox {{if .User.Settings.DoFollowerNeedsAcceptance}}checked{{end}} id=fw-accept
+                                   class=icon-input-checkbox
+                                   onchange="updateSetting(this,'fw-accept',this.checked?'1':'')">
+                            <i class='icon-ok-circled2'></i>
+                            <label for=fw-accept>关注我需要我的同意，然后才可以查看我的时间线</label>
                         </td>
                     </tr>
                 </table>

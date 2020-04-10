@@ -257,6 +257,8 @@ function followBlock(el, m, id) {
         if (m == "follow") {
             el.innerHTML = '<i class=' + ((obj[m] != "") ? "icon-heart-broken" : "icon-user-plus") + "></i>";
             return "ok:" + ((obj[m] != "") ? "已关注" + id : "已取消关注" + id);
+        } else if (m == "accept") {
+            el.style.display = "none";
         } else {
             el = el.querySelector('i');
             el.className = el.className.replace(/block-\S+/, '') + " block-" + (obj[m] != "");
@@ -517,7 +519,14 @@ function showInfoBox(el, uid) {
 
     $post("/api/u/" + uid, {}, function(h) {
         if (h.indexOf("ok:") > -1) {
-            setTimeout(function() { div.innerHTML = h.substring(3) }, new Date().getTime() - startAt > 100 ? 0 : 100)
+            setTimeout(function() {
+                div.innerHTML = h.substring(3)
+                var newBox = div.getBoundingClientRect();
+                if (newBox.right > bodyBox.right) {
+                    div.style.left = null;
+                    div.style.right = "0";
+                }
+            }, new Date().getTime() - startAt > 100 ? 0 : 100)
             return
         }
         return h

@@ -10,7 +10,8 @@ import (
 )
 
 func NotFound(g *gin.Context) {
-	g.HTML(404, "error.html", nil)
+	p := struct{ Accept bool }{g.GetBool("need-accept")}
+	g.HTML(404, "error.html", p)
 }
 
 func getUser(g *gin.Context) *model.User {

@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/coyove/iis/common"
@@ -107,6 +108,19 @@ func Timeline(g *gin.Context) {
 			}
 			NotFound(g)
 			return
+		}
+
+		if pl.User.Settings().FollowerNeedsAcceptance != (time.Time{}) {
+			if pl.You == nil {
+				NotFound(g)
+				return
+			} else {
+				if following, accepted := dal.IsFollowingWithAcceptance(pl.You.ID, pl.User); !following || !accepted {
+					g.Set("need-accept", true)
+					NotFound(g)
+					return
+				}
+			}
 		}
 
 		if pl.You != nil {

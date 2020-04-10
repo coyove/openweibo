@@ -54,6 +54,10 @@ func makeFollowID(from, to string) string {
 	return "u/" + from + "/follow/" + strconv.Itoa(int(h[0]))
 }
 
+func makeFollowerAcceptanceID(from, to string) string {
+	return "u/" + from + "/accept-follow/" + to
+}
+
 func makeFollowedID(from, to string) string {
 	return "u/" + from + "/followed/" + to
 }

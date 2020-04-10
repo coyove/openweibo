@@ -98,7 +98,7 @@
             <b><s>{{.ID}}</s></b>
             {{end}}
         </td>
-        <td class=nowrap style="text-align:center">
+        <td class=nowrap style="text-align:right">
             {{if eq $.ListType "blacklist"}}
                 {{template "button_follow_block.html" (blend "block-span" .ID .Blocked)}}
             {{else if eq $.ListType "followers"}}
@@ -106,6 +106,9 @@
                     <button class=gbutton disabled>已取关</button>
                 {{else}}
                     {{if $own}}
+                        {{if not .Accepted}}
+                        {{template "button_follow_block.html" (blend "accept" .ID false)}}
+                        {{end}}
                         {{template "button_follow_block.html" (blend "follow" .ID .Followed)}}
                         {{template "button_follow_block.html" (blend "block" .ID false)}}
                     {{else}}

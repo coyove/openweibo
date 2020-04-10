@@ -149,7 +149,7 @@ func FollowUser(from, to string, following bool) (E error) {
 	followID := makeFollowID(from, to)
 	if following {
 		if IsBlocking(to, from) {
-			// "from" wants "to" follow "to" but "to" blocked "from"
+			// "from" wants to follow "to" but "to" blocked "from"
 			return fmt.Errorf("follow/to-blocked")
 		}
 		if GetUserSettings(to).OnlyMyFollowingsCanFollow && !IsFollowing(to, from) {
@@ -230,6 +230,9 @@ func BlockUser(from, to string, blocking bool) (E error) {
 		if err := FollowUser(to, from, false); err != nil {
 			log.Println("Block user:", to, "unfollow error:", err)
 		}
+		if err := AcceptUser(from, to, false); err != nil {
+			log.Println("Unaccept user:", to, "unfollow error:", err)
+		}
 	}
 
 	_, err := DoUpdateOrInsertCmdArticle(&UpdateOrInsertCmdArticleRequest{
@@ -240,6 +243,27 @@ func BlockUser(from, to string, blocking bool) (E error) {
 		CmdValue:           blocking,
 	})
 	return err
+}
+
+func AcceptUser(from, to string, accept bool) (E error) {
+	id := makeFollowerAcceptanceID(from, to)
+	if accept {
+		go func() {
+			DoInsertArticle(&InsertArticleRequest{
+				ID: ik.NewID(ik.IDInbox, to).String(),
+				Article: model.Article{
+					ID:     ik.NewGeneralID().String(),
+					Cmd:    model.CmdInboxFwAccepted,
+					Extras: map[string]string{"from": from},
+				},
+			})
+			DoUpdateUser(&UpdateUserRequest{ID: to, IncDecUnread: aws.Bool(true)})
+		}()
+	}
+	return m.db.Set(id, (&model.Article{
+		ID:     id,
+		Extras: map[string]string{"accept": strconv.FormatBool(accept)},
+	}).Marshal())
 }
 
 func LikeArticle(from, to string, liking bool) (E error) {
@@ -285,9 +309,10 @@ type FollowingState struct {
 	RevFollowed bool
 	Liked       bool
 	Blocked     bool
+	Accepted    bool
 }
 
-func GetRelationList(chain ik.ID, cursor string, n int) ([]FollowingState, string) {
+func GetRelationList(u *model.User, chain ik.ID, cursor string, n int) ([]FollowingState, string) {
 	if cursor == "" {
 		a, err := GetArticle(chain.String())
 		if err != nil {
@@ -325,6 +350,7 @@ func GetRelationList(chain ik.ID, cursor string, n int) ([]FollowingState, strin
 
 		if chain.Header() == ik.IDFollower && s.RevFollowed {
 			s.Followed = IsFollowing(chain.Tag(), s.ID)
+			s.RevFollowed, s.Accepted = IsFollowingWithAcceptance(s.ID, u)
 		}
 
 		res = append(res, s)
@@ -416,6 +442,35 @@ func GetFollowingList(chain ik.ID, cursor string, n int, fulluser bool) ([]Follo
 func IsFollowing(from, to string) bool {
 	p, _ := GetArticle(makeFollowID(from, to))
 	return p != nil && strings.HasPrefix(p.Extras[to], "true")
+}
+
+func IsFollowingWithAcceptance(from string, to *model.User) (following bool, accepted bool) {
+	if from == to.ID {
+		return true, true
+	}
+	at := to.Settings().FollowerNeedsAcceptance
+	if at == (time.Time{}) || at.IsZero() {
+		return IsFollowing(from, to.ID), true // 'to' didn't have the switch on, so no acceptance needed for 'from'
+	}
+	p, _ := GetArticle(makeFollowID(from, to.ID))
+	if p == nil {
+		return false, false
+	}
+	if !strings.HasPrefix(p.Extras[to.ID], "true,") {
+		return false, false // didn't follow 'to' at all
+	}
+	ts, err := strconv.ParseInt(p.Extras[to.ID][5:], 10, 64)
+	if err != nil {
+		return false, false
+	}
+	if time.Unix(ts, 0).Before(at) {
+		return true, true // 'from' followed 'to' before 'to' turned on the switch, so 'from' gains acceptance automatically
+	}
+	accept, _ := GetArticle(makeFollowerAcceptanceID(to.ID, from))
+	if accept == nil {
+		return true, false
+	}
+	return true, accept.Extras["accept"] == "true"
 }
 
 func IsBlocking(from, to string) bool {

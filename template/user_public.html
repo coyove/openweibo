@@ -43,6 +43,10 @@
             {{else if .ID}}
                 <b>你</b>
             {{end}}
+
+            {{if .Settings.DoFollowerNeedsAcceptance}}
+            <b>关注需要其承认</b>
+            {{end}}
             </div><!--
         --></pre>
     </div>

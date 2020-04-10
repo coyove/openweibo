@@ -121,6 +121,14 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 
 		a.from(p, opt, u)
 		a.Cmd = string(a2.Cmd)
+	case model.CmdInboxFwAccepted:
+		dummy := &model.Article{
+			ID:         ik.NewGeneralID().String(),
+			CreateTime: a2.CreateTime,
+			Author:     a2.Extras["from"],
+		}
+		a.from(dummy, opt, u)
+		a.Cmd = model.CmdInboxFwAccepted
 	case model.CmdInboxLike:
 		p, _ := dal.GetArticle(a2.Extras["article_id"])
 

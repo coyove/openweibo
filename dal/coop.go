@@ -36,6 +36,7 @@ type (
 		SettingDescription *string
 		SettingMFFM        *bool
 		SettingMFCM        *bool
+		SettingFwAccept    *bool
 	}
 
 	UpdateArticleRequest struct {
@@ -81,7 +82,8 @@ func DoUpdateUser(rr *UpdateUserRequest) (model.User, error) {
 		rr.SettingFoldImages != nil ||
 		rr.SettingDescription != nil ||
 		rr.SettingMFFM != nil ||
-		rr.SettingMFCM != nil {
+		rr.SettingMFCM != nil ||
+		rr.SettingFwAccept != nil {
 
 		sid := "u/" + id + "/settings"
 		p, _ := m.db.Get(sid)
@@ -92,6 +94,15 @@ func DoUpdateUser(rr *UpdateUserRequest) (model.User, error) {
 		setIfValid(&u.Description, rr.SettingDescription)
 		setIfValid(&u.OnlyMyFollowingsCanFollow, rr.SettingMFFM)
 		setIfValid(&u.OnlyMyFollowingsCanMention, rr.SettingMFCM)
+
+		if rr.SettingFwAccept != nil {
+			if *rr.SettingFwAccept {
+				u.FollowerNeedsAcceptance = time.Now()
+			} else {
+				u.FollowerNeedsAcceptance = time.Time{}
+			}
+		}
+
 		return model.User{}, m.db.Set(sid, u.Marshal())
 	}
 

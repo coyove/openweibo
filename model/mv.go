@@ -17,14 +17,15 @@ var ErrNotExisted = errors.New("article not existed")
 type Cmd string
 
 const (
-	CmdNone         Cmd = ""
-	CmdInboxReply       = "inbox-reply"
-	CmdInboxMention     = "inbox-mention"
-	CmdInboxLike        = "inbox-like"
-	CmdFollow           = "follow"
-	CmdFollowed         = "followed"
-	CmdBlock            = "block"
-	CmdLike             = "like"
+	CmdNone            Cmd = ""
+	CmdInboxReply          = "inbox-reply"
+	CmdInboxMention        = "inbox-mention"
+	CmdInboxLike           = "inbox-like"
+	CmdInboxFwAccepted     = "inbox-fw-accepted"
+	CmdFollow              = "follow"
+	CmdFollowed            = "followed"
+	CmdBlock               = "block"
+	CmdLike                = "like"
 
 	DeletionMarker = "[[b19b8759-391b-460a-beb0-16f5f334c34f]]"
 )
@@ -199,11 +200,16 @@ func UnmarshalUser(b []byte) (*User, error) {
 }
 
 type UserSettings struct {
-	AutoNSFW                   bool   `json:"autonsfw,omitempty"`
-	FoldImages                 bool   `json:"foldi,omitempty"`
-	OnlyMyFollowingsCanFollow  bool   `json:"mffm,omitempty"`
-	OnlyMyFollowingsCanMention bool   `json:"mfcm,omitempty"`
-	Description                string `json:"desc,omitempty"`
+	AutoNSFW                   bool      `json:"autonsfw,omitempty"`
+	FoldImages                 bool      `json:"foldi,omitempty"`
+	OnlyMyFollowingsCanFollow  bool      `json:"mffm,omitempty"`
+	OnlyMyFollowingsCanMention bool      `json:"mfcm,omitempty"`
+	Description                string    `json:"desc,omitempty"`
+	FollowerNeedsAcceptance    time.Time `json:"pdfollow,omitempty"`
+}
+
+func (u UserSettings) DoFollowerNeedsAcceptance() bool {
+	return u.FollowerNeedsAcceptance != (time.Time{}) && !u.FollowerNeedsAcceptance.IsZero()
 }
 
 func (u UserSettings) Marshal() []byte {

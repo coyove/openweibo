@@ -241,9 +241,12 @@ func APIFollowBlock(g *gin.Context) {
 	}
 
 	var err error
-	if g.PostForm("method") == "follow" {
+	switch g.PostForm("method") {
+	case "follow":
 		err = dal.FollowUser(u.ID, to, g.PostForm("follow") != "")
-	} else {
+	case "accept":
+		err = dal.AcceptUser(u.ID, to, g.PostForm("accept") != "")
+	default:
 		err = dal.BlockUser(u.ID, to, g.PostForm("block") != "")
 	}
 
@@ -307,6 +310,14 @@ func APIUpdateUserSettings(g *gin.Context) {
 		if _, err := dal.DoUpdateUser(&dal.UpdateUserRequest{
 			ID:                 u.ID,
 			SettingDescription: aws.String(common.SoftTrunc(g.PostForm("description"), 512)),
+		}); err != nil {
+			g.String(200, err.Error())
+			return
+		}
+	case g.PostForm("set-fw-accept") != "":
+		if _, err := dal.DoUpdateUser(&dal.UpdateUserRequest{
+			ID:              u.ID,
+			SettingFwAccept: aws.Bool(g.PostForm("fw-accept") != ""),
 		}); err != nil {
 			g.String(200, err.Error())
 			return

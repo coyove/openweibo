@@ -320,7 +320,14 @@ func PostReply(parent string, a *model.Article, author *model.User, noTimeline b
 				}
 			}
 		case model.ReplyLockFollowingsFollowersCan:
-			can = IsFollowing(p.Author, author.ID) || IsFollowing(author.ID, p.Author)
+			can = IsFollowing(p.Author, author.ID)
+			if !can {
+				pauthor, _ := GetUserWithSettings(p.Author)
+				if pauthor != nil {
+					following, accepted := IsFollowingWithAcceptance(author.ID, pauthor)
+					can = following && accepted
+				}
+			}
 		}
 		if !can {
 			return nil, fmt.Errorf("locked parent")
