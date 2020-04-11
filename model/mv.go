@@ -116,12 +116,13 @@ type User struct {
 	Banned       bool   `json:"ban,omitempty"`
 	Kimochi      byte   `json:"kmc,omitempty"`
 
-	_IsFollowing bool
-	_IsFollowed  bool
-	_IsBlocking  bool
-	_IsYou       bool
-	_ShowList    byte
-	_Settings    UserSettings
+	_IsFollowing            bool
+	_IsFollowingNotAccepted bool
+	_IsFollowed             bool
+	_IsBlocking             bool
+	_IsYou                  bool
+	_ShowList               byte
+	_Settings               UserSettings
 }
 
 func (u User) Marshal() []byte {
@@ -144,6 +145,8 @@ func (u User) DisplayName() string {
 
 func (u User) IsFollowing() bool { return u._IsFollowing }
 
+func (u User) IsFollowingNotAccepted() bool { return u._IsFollowingNotAccepted }
+
 func (u User) IsFollowed() bool { return u._IsFollowed }
 
 func (u User) IsBlocking() bool { return u._IsBlocking }
@@ -155,6 +158,8 @@ func (u User) ShowList() byte { return u._ShowList }
 func (u User) Settings() UserSettings { return u._Settings }
 
 func (u *User) SetIsFollowing(v bool) { u._IsFollowing = v }
+
+func (u *User) SetIsFollowingNotAccepted(v bool) { u._IsFollowingNotAccepted = v }
 
 func (u *User) SetIsFollowed(v bool) { u._IsFollowed = v }
 

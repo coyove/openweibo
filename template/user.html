@@ -16,9 +16,7 @@
 
     <div class="status-box" >
         <div class="status">
-            <div class="title row-header" style="text-align:center">
-                <b style="flex-grow: 1">用户信息</b>
-            </div>
+            <div class="title row-header" style="text-align:center"><b style="flex-grow: 1">用户信息</b></div>
 
             <div class=title>
                 <table class="articles" style="margin-top: 0.5em;text-align:left">
@@ -51,9 +49,7 @@
 
     <div class="status-box">
         <div class="status">
-            <div class="title row-header" style="text-align:center">
-                <b style="flex-grow: 1">昵称 @ID</b>
-            </div>
+            <div class="title row-header" style="text-align:center"><b style="flex-grow: 1">昵称 @ID</b></div>
 
             <div class=title>
                 <table class="articles" style="margin: 0.5em 0;text-align:left">
@@ -77,9 +73,7 @@
 
     <div class="status-box">
         <div class="status">
-            <div class="title row-header" style="text-align:center">
-                <b style="flex-grow: 1">一般设置</b>
-            </div>
+            <div class="title row-header" style="text-align:center"><b style="flex-grow: 1">一般设置</b></div>
 
             <div class=title>
                 <table class="articles" style="margin: 0.5em 0;text-align:left">
@@ -130,13 +124,32 @@
                             <label for=mffm>只有我关注的人可以关注我</label>
                         </td>
                     </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="status-box">
+        <div class="status">
+            <div class="title row-header" style="text-align:center"><b style="flex-grow: 1">隐私</b></div>
+
+            <div class=title>
+                <table class="articles" style="margin-top: 0.5em;text-align:left">
                     <tr>
                         <td>
                             <input type=checkbox {{if .User.Settings.DoFollowerNeedsAcceptance}}checked{{end}} id=fw-accept
                                    class=icon-input-checkbox
                                    onchange="updateSetting(this,'fw-accept',this.checked?'1':'')">
                             <i class='icon-ok-circled2'></i>
-                            <label for=fw-accept>关注我需要我的同意，然后才可以查看我的时间线</label>
+                            <label for=fw-accept>限制关注</label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div>1. 开启后新关注者关注你前需要你的确认</div>
+                            <div>2. 未确认的关注者无法查看你的时间线</div>
+                            <div>3. 如果你在广场发言，则无法阻止这类关注者看到你的状态</div>
+                            <div>4. 如果你限制了只有“关注者”可以回复你的状态，则这类人无法回复你</div>
                         </td>
                     </tr>
                 </table>
@@ -146,9 +159,7 @@
 
     <div class="status-box">
         <div class="status">
-            <div class="title row-header" style="text-align:center">
-                <b style="flex-grow: 1">安全</b>
-            </div>
+            <div class="title row-header" style="text-align:center"><b style="flex-grow: 1">安全</b></div>
 
             <div class=title>
                 <table class="articles" style="margin-top: 0.5em;text-align:left">

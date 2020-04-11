@@ -77,7 +77,9 @@ function $post(url, data, cb, errorcb) {
             $popup('<i class=icon-ok-circled></i>' + cbres.substring(3));
         } else {
             if (errorcb) errorcb(xml)
-            $popup('<i class=icon-cancel-circled-1></i>' + (cbres || ("错误状态: " + xml.status)));
+            var text = "错误状态: " + xml.status;
+            if (xml.status === 404) text = "内容未找到";
+            $popup('<i class=icon-cancel-circled-1></i>' + (cbres || text));
         }
     }
     xml.open("POST", url, true);

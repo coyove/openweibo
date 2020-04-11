@@ -44,8 +44,12 @@
                 <b>你</b>
             {{end}}
 
-            {{if .Settings.DoFollowerNeedsAcceptance}}
-            <b>关注需要其承认</b>
+            {{if .IsFollowingNotAccepted}}
+                <b>等待其确认关注</b>
+            {{else}}
+                {{if and (not .IsFollowing) .Settings.DoFollowerNeedsAcceptance}}
+                <b>关注需要其确认</b>
+                {{end}}
             {{end}}
             </div><!--
         --></pre>

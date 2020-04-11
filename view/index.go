@@ -277,12 +277,27 @@ func APIReplies(g *gin.Context) {
 	pl.ParentArticle.from(parent, _NoReply, getUser(g))
 	pl.ReplyView = makeReplyView(g, pid)
 
-	if u := getUser(g); u != nil {
-		if dal.IsBlocking(pl.ParentArticle.Author.ID, u.ID) {
+	you := getUser(g)
+	if you != nil {
+		if dal.IsBlocking(pl.ParentArticle.Author.ID, you.ID) {
 			g.Status(404)
 			return
 		}
-		pl.ShowReplyLockInfo = !(u.IsMod() || u.ID == pl.ParentArticle.Author.ID)
+
+		pl.ShowReplyLockInfo = !(you.IsMod() || you.ID == pl.ParentArticle.Author.ID)
+	}
+
+	us := dal.GetUserSettings(pl.ParentArticle.Author.ID)
+	if at := us.FollowerNeedsAcceptance; at != (time.Time{}) && !at.IsZero() {
+		pl.ParentArticle.Author.SetSettings(us)
+		if you == nil {
+			g.Status(404)
+			return
+		}
+		if _, accepted := dal.IsFollowingWithAcceptance(you.ID, pl.ParentArticle.Author); !accepted {
+			g.Status(404)
+			return
+		}
 	}
 
 	a, next := dal.WalkReply(int(common.Cfg.PostsPerPage), parent.ReplyChain)
