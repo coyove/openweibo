@@ -56,6 +56,11 @@ button, input, textarea {
     opacity: 1;
 }
 
+{{if eq .Mode "dark"}}
+::-webkit-scrollbar { background: {{.InputBG}}; width: 0.66em; box-shadow: 0 0 2px black inset; }
+::-webkit-scrollbar-thumb { background: {{.Navbar}}; }
+{{end}}
+
 code {
     font-family: monospace;
 }
@@ -95,7 +100,7 @@ a:hover {
 }
 
 .articles td {
-    padding: 0.4em; 
+    padding: 0.5em; 
     line-height: 1.5em;
 }
 

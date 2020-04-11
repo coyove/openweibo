@@ -247,6 +247,10 @@ func APIFollowBlock(g *gin.Context) {
 	case "accept":
 		err = dal.AcceptUser(u.ID, to, g.PostForm("accept") != "")
 	default:
+		if strings.HasPrefix(to, "#") {
+			g.String(200, "error/block-tag")
+			return
+		}
 		err = dal.BlockUser(u.ID, to, g.PostForm("block") != "")
 	}
 

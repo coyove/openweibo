@@ -116,6 +116,8 @@ type CSSConfig struct {
 	ButtonDisabled    string
 	ToastBG           string
 	Toast             string
+
+	Mode string
 }
 
 var CSSLightConfig = CSSConfig{
@@ -149,13 +151,14 @@ var CSSLightConfig = CSSConfig{
 }
 
 var CSSDarkConfig = CSSConfig{
+	Mode:              "dark",
 	BodyBG:            "#1b2838",
 	InputBG:           "#2a3f5a",
 	Button:            "#67c1f5",
 	ButtonDisabled:    "#666",
 	Row:               "#0d131b",
 	RowHeader:         "rgba(255,255,255,0.07)",
-	Navbar:            "#0d131b",
+	Navbar:            "#121923",
 	Border:            "#234456",
 	NormalText:        "#eee",
 	LightBG:           "#192a40",

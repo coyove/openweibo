@@ -5,7 +5,7 @@
         <strong>{{.CustomName}}</strong>
         <span mod={{.IsMod}} {{if not .IsMod}}class="tmpl-mid-text"{{end}}>@{{.ID}}</span>
         {{else}}
-        <strong mod={{.IsMod}}>@{{.ID}}</strong>
+        <strong mod={{.IsMod}}>{{.DisplayName}}</strong>
         {{end}}
     </a>
 

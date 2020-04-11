@@ -1,4 +1,5 @@
-<div id=footer style="margin:0;word-break:break-all;line-height:2em;padding:0.5em;text-align:center" class="row tmpl-light-bg">
+</div>
+<div id=footer style="flex-shrink:0;margin:0;word-break:break-all;line-height:2em;padding:0.5em;text-align:center" class="row">
     {{if .User}}
     <a href='/user'>@{{.User.ID}}</a>
     {{if .User.Unread}}
@@ -13,8 +14,8 @@ $q("#unread-notify i").className += " tmpl-inbox-message-text";
     <a href="/user">注册</a>
     {{end}}
 
-    <div style="font-size:12px">
-        <a href="https://github.com/coyove/iis" target=_blanks style="font-size:12px;text-decoration:underline">IIS</a>
+    <div style="font-size:85%">
+        <a href="https://github.com/coyove/iis" target=_blank>IIS</a>
         <script>document.write(new Date().getFullYear())</script> in {{.Render}}ms
     </div>
 </div>
@@ -36,7 +37,7 @@ $q("#unread-notify i").className += " tmpl-inbox-message-text";
             });
         }
 
-        expandNSFW();
+        (function() { expandNSFW(); })()
     </script>
 
 <!-- Global site tag (gtag.js) - Google Analytics -->

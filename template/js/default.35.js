@@ -302,6 +302,8 @@ function __i18n(t) {
         return "已被拉黑";
     if (t === "follow/to-following-required")
         return "需要对方先关注你";
+    if (t === "error/block-tag")
+        return "无法拉黑标签";
     return t;
 }
 
