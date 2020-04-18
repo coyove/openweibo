@@ -156,6 +156,19 @@ div.subreply {
     padding-left: 1.5em;
 }
 
+div.subreply .quoted-sep div {
+    display: none;
+}
+
+div.row div.subreply .quoted-sep {
+    border-top-style: dashed !important;
+}
+
+div.subreply .row .subreply {
+    margin-left: -2em;
+    margin-right: -0.5em;
+}
+
 div.subreply .row-header {
     background: transparent;
     padding: 0;

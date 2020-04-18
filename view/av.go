@@ -2,7 +2,6 @@ package view
 
 import (
 	"encoding/base64"
-	"html"
 	"html/template"
 	"strings"
 	"time"
@@ -152,32 +151,29 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 func fromMultiple(a *[]ArticleView, a2 []*model.Article, opt uint64, u *model.User) {
 	*a = make([]ArticleView, len(a2))
 
-	dedup := map[string]*ArticleView{}
-	abbr := func(tmp *ArticleView) {
-		a := strings.TrimSuffix(common.SoftTrunc(tmp.Content, 32), "...")
-
-		if a != tmp.Content {
-			tmp.Content = a
-			tmp.ContentHTML = template.HTML(html.EscapeString(a)) + "<span class=abbr></span>"
-		}
-	}
+	lookup := map[string]*ArticleView{}
+	dedup := map[string]bool{}
 
 	for i, v := range a2 {
 		(*a)[i].from(v, opt, u)
-		tmp := &(*a)[i]
+		lookup[v.ID] = &(*a)[i]
+	}
 
-		if dedup[tmp.ID] != nil {
-			abbr(tmp)
-		}
-
-		if tmp.Parent != nil && dedup[tmp.Parent.ID] != nil {
-			abbr(tmp.Parent)
-		}
-
-		dedup[tmp.ID] = tmp
-		if tmp.Parent != nil {
-			dedup[tmp.Parent.ID] = tmp.Parent
+	for i, v := range *a {
+		if v.Parent != nil && lookup[v.Parent.ID] != nil {
+			p := lookup[v.Parent.ID]
+			p.NoAvatar = true
+			(*a)[i].Parent = p
+			dedup[p.ID] = true
 		}
 	}
 
+	newa := make([]ArticleView, 0, len(*a))
+	for _, v := range *a {
+		if dedup[v.ID] {
+			continue
+		}
+		newa = append(newa, v)
+	}
+	*a = newa
 }
