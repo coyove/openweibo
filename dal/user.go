@@ -310,6 +310,9 @@ type FollowingState struct {
 	Liked       bool
 	Blocked     bool
 	Accepted    bool
+	// Relationship
+	CommonFollowing  bool
+	TwoHopsFollowing bool
 }
 
 func GetRelationList(u *model.User, chain ik.ID, cursor string, n int) ([]FollowingState, string) {

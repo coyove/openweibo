@@ -71,6 +71,17 @@ func UserList(g *gin.Context) {
 	case "followers":
 		p.List, p.Next = dal.GetRelationList(p.User, ik.NewID(ik.IDFollower, p.User.ID), g.Query("n"), int(common.Cfg.PostsPerPage))
 		p.User.SetShowList('s')
+	case "twohops":
+		if p.You == nil {
+			g.Redirect(302, "/")
+			return
+		}
+		if p.You.ID == p.User.ID {
+			g.Redirect(302, "/user/followings")
+			return
+		}
+		p.List, p.Next = dal.GetCommonFollowingList(p.You.ID, p.User.ID, g.Query("n"), int(common.Cfg.PostsPerPage))
+		p.User.SetShowList('r')
 	default:
 		p.List, p.Next = dal.GetFollowingList(ik.NewID(ik.IDFollowing, p.User.ID), g.Query("n"), int(common.Cfg.PostsPerPage), true)
 		p.User.SetShowList('f')

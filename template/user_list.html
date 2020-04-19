@@ -13,6 +13,9 @@
     {{else if eq .ListType "blacklist"}}
         <title>黑名单</title>
         {{template "user_private.html" .User}}
+    {{else if eq .ListType "twohops"}}
+        <title>关系</title>
+        {{template "user_public.html" .User}}
     {{else}}
         {{if $own}}
             <title>我的粉丝</title>
@@ -114,6 +117,14 @@
                     {{else}}
                         <button class=gbutton>关注中</button>
                     {{end}}
+                {{end}}
+            {{else if eq $.ListType "twohops"}}
+                {{if and .TwoHopsFollowing .CommonFollowing}}
+                    <button class=gbutton>双向关注</button>
+                {{else if .TwoHopsFollowing}}
+                    <button class=gbutton>粉丝</button>
+                {{else if .CommonFollowing}}
+                    <button class=gbutton>我们共同关注</button>
                 {{end}}
             {{else}}
                 {{if $own}}

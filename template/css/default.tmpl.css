@@ -489,6 +489,7 @@ div.reply-lock-notify {
     padding:0 1em;
 }
 
+.tmpl-link-text { color: {{.Link}} !important }
 .tmpl-normal-text { color: {{.NormalText}} !important }
 .tmpl-light-text { color: {{.LightText}} !important }
 .tmpl-mid-text { color: {{.MidGrayText}} !important }
