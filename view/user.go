@@ -60,6 +60,8 @@ func UserList(g *gin.Context) {
 		p.User = p.You
 	}
 
+	p.User.Buildup(p.You, dal.IsFollowing, dal.IsBlocking, dal.IsFollowingWithAcceptance)
+
 	switch p.ListType {
 	case "blacklist":
 		if p.User != p.You {
@@ -72,10 +74,6 @@ func UserList(g *gin.Context) {
 		p.List, p.Next = dal.GetRelationList(p.User, ik.NewID(ik.IDFollower, p.User.ID), g.Query("n"), int(common.Cfg.PostsPerPage))
 		p.User.SetShowList('s')
 	case "twohops":
-		if p.You == nil {
-			g.Redirect(302, "/")
-			return
-		}
 		if p.You.ID == p.User.ID {
 			g.Redirect(302, "/user/followings")
 			return
@@ -154,12 +152,7 @@ func APIGetUserInfoBox(g *gin.Context) {
 	}
 
 	if you := getUser(g); you != nil {
-		u.SetIsYou(you.ID == u.ID)
-		following, accepted := dal.IsFollowingWithAcceptance(you.ID, u)
-		u.SetIsFollowing(following)
-		u.SetIsFollowingNotAccepted(following && !accepted)
-		u.SetIsFollowed(dal.IsFollowing(u.ID, you.ID))
-		u.SetIsBlocking(dal.IsBlocking(you.ID, u.ID))
+		u.Buildup(you, dal.IsFollowing, dal.IsBlocking, dal.IsFollowingWithAcceptance)
 	}
 
 	s := middleware.RenderTemplateString("user_public.html", u)

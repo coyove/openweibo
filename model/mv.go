@@ -13,6 +13,7 @@ import (
 )
 
 var ErrNotExisted = errors.New("article not existed")
+var Dummy User = User{_IsYou: true}
 
 type Cmd string
 
@@ -157,15 +158,22 @@ func (u User) ShowList() byte { return u._ShowList }
 
 func (u User) Settings() UserSettings { return u._Settings }
 
-func (u *User) SetIsFollowing(v bool) { u._IsFollowing = v }
+func (u *User) Buildup(you *User,
+	revIsFollowing func(string, string) bool,
+	revIsBlocking func(string, string) bool,
+	revIsFollowingWithAcceptance func(string, *User) (bool, bool)) {
 
-func (u *User) SetIsFollowingNotAccepted(v bool) { u._IsFollowingNotAccepted = v }
+	following, accepted := revIsFollowingWithAcceptance(you.ID, u)
+	u._IsYou = you.ID == u.ID
+	if u._IsYou {
+		return
+	}
 
-func (u *User) SetIsFollowed(v bool) { u._IsFollowed = v }
-
-func (u *User) SetIsBlocking(v bool) { u._IsBlocking = v }
-
-func (u *User) SetIsYou(v bool) { u._IsYou = v }
+	u._IsFollowing = following
+	u._IsFollowingNotAccepted = following && !accepted
+	u._IsFollowed = revIsFollowing(u.ID, you.ID)
+	u._IsBlocking = revIsBlocking(you.ID, u.ID)
+}
 
 func (u *User) SetShowList(t byte) { u._ShowList = t }
 

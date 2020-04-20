@@ -12,6 +12,27 @@ import (
 	"github.com/coyove/iis/model"
 )
 
+type getCommonFollowingListTask struct {
+	from, to string
+	cursor   string
+	n        int
+}
+
+var deferredGetCommonFollowingList chan getCommonFollowingListTask
+
+func init() {
+	deferredGetCommonFollowingList = make(chan getCommonFollowingListTask, 1024)
+	go func() {
+		for {
+			select {
+			case t := <-deferredGetCommonFollowingList:
+				GetCommonFollowingList(t.from, t.to, t.cursor, t.n)
+			}
+			time.Sleep(time.Millisecond * 500)
+		}
+	}()
+}
+
 func GetCommonFollowingList(from, to string, cursor string, n int) ([]FollowingState, string) {
 	var idx int
 	var flags map[string]string
@@ -37,6 +58,7 @@ func GetCommonFollowingList(from, to string, cursor string, n int) ([]FollowingS
 
 	res := []FollowingState{}
 	start := time.Now()
+	timedout := false
 
 	for ; len(res) < n && idx < 256; idx++ {
 		if flags[strconv.Itoa(idx)] != "1" {
@@ -44,7 +66,7 @@ func GetCommonFollowingList(from, to string, cursor string, n int) ([]FollowingS
 		}
 
 		if time.Since(start).Seconds() > 0.2 {
-			log.Println("[GetCommonFollowingList] Break out slow walk [", from, "]")
+			timedout = true
 			break
 		}
 
@@ -108,6 +130,19 @@ func GetCommonFollowingList(from, to string, cursor string, n int) ([]FollowingS
 		cursor = ""
 	} else {
 		cursor = strconv.Itoa(idx) + "~" + common.Pack256(flags)
+	}
+
+	if timedout && cursor != "" {
+		// Continue calling the function to preload the data into cache
+		select {
+		case deferredGetCommonFollowingList <- getCommonFollowingListTask{
+			from:   from,
+			to:     to,
+			cursor: cursor,
+			n:      n,
+		}:
+		default:
+		}
 	}
 
 	return res, cursor

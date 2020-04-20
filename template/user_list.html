@@ -27,23 +27,18 @@
     {{end}}
 </div>
 
-<table class="articles tmpl-border" style="border-top:solid 1px transparent">
+<div class="articles tmpl-border" style="border-top:solid 1px transparent">
 
 {{if eq .ListType "blacklist"}}
-<tr>
-    <td colspan=3>
-        1. 被拉黑用户无法评论你的状态或@你<br>
-        2. 被拉黑用户如果之前已经关注了你，则会自动取消且无法再次关注，同时无法看到你的时间线
-    </td>
-</tr>
+<div>
+    1. 被拉黑用户无法评论你的状态或@你<br>
+    2. 被拉黑用户如果之前已经关注了你，则会自动取消且无法再次关注，同时无法看到你的时间线
+</div>
 {{end}}
-    <tr>
-        <td colspan=3>
-            <div class="tmpl-border tmpl-light-bg" style="border:solid 1px transparent;display:flex">
-                <div style="padding:0.5em 0 0.5em 0.5em;white-space:nowrap">搜索 @</div>
-                <div contentEditable=true id=search-id style="width:100%;border:none;padding:0.5em;display:flex;flex-wrap:wrap">
-                </div>
-            </div>
+    <div class="tmpl-border tmpl-light-bg" style="border:solid 1px transparent;display:flex">
+        <div style="padding:0.5em 0 0.5em 0.5em;white-space:nowrap">搜索 @</div>
+        <div contentEditable=true id=search-id style="width:100%;border:none;padding:0.5em;display:flex;flex-wrap:wrap">
+        </div>
     <script>
         (function() {
             var el = $q("#search-id");
@@ -88,20 +83,19 @@
             })
         })()
     </script>
-        </td>
-    </tr>
+    </div>
 
     {{range .List}}
-    <tr>
-        <td class=nowrap>{{formatTime .Time}}</td>
-        <td>
+    <div colspan=3 style="display: flex; line-height: 2.5em">
+        <div style="flex: 0 48px; min-width: 90px; white-space: nowrap">{{formatTime .Time}}</div>
+        <div style="flex: 1 100%; overflow: hidden; text-overflow: ellipsis;">
             {{if .FullUser}}
             {{template "display_name.html" .FullUser}}
             {{else}}
             <b><s>{{.ID}}</s></b>
             {{end}}
-        </td>
-        <td class=nowrap style="text-align:right">
+        </div>
+        <div style="text-align:right; flex: 0 48px; white-space: nowrap">
             {{if eq $.ListType "blacklist"}}
                 {{template "button_follow_block.html" (blend "block-span" .ID .Blocked)}}
             {{else if eq $.ListType "followers"}}
@@ -134,20 +128,18 @@
                 <button class=gbutton {{if .Followed}}>关注中{{else}} disabled>已取关{{end}}</button>
                 {{end}}
             {{end}}
-        </td>
-    </tr>
+        </div>
+    </div>
     {{end}}
 
-    <tr class=tmpl-border style="margin: 0.5em 0;border-top:solid 1px transparent">
-        <td colspan=3 style="text-align:center">
-            {{if .Next}}
-            <a href="?n={{.Next}}" class=gbutton>下一页 &raquo;</a>
-            {{else}}
-            <a href="?n=" class="gbutton tmpl-light-text">没有更多结果</a>
-            {{end}}
-        </td>
-    </tr>
-</table>
+    <div class=tmpl-border style="margin: 0.5em 0;padding-top:0.5em;border-top:solid 1px transparent;text-align:center">
+        {{if .Next}}
+        <a href="?n={{.Next}}" class=gbutton>下一页 &raquo;</a>
+        {{else}}
+        <a href="?n=" class="gbutton tmpl-light-text">没有更多结果</a>
+        {{end}}
+    </div>
+</div>
 
 
 <style>

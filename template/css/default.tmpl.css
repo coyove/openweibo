@@ -99,6 +99,10 @@ a:hover {
     border-collapse: collapse;
 }
 
+.articles > div {
+    margin: 0.5em;
+}
+
 .articles td {
     padding: 0.5em; 
     line-height: 1.5em;

@@ -122,8 +122,7 @@ func main() {
 			return cssVersion
 		},
 		"emptyUser": func() model.User {
-			u := model.User{}
-			u.SetIsYou(true)
+			u := model.Dummy
 			return u
 		},
 		"blend": func(args ...interface{}) interface{} {
