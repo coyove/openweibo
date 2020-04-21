@@ -67,9 +67,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 	a.History = a2.History
 	a.Author, _ = dal.GetUser(a2.Author)
 	if a.Author == nil {
-		a.Author = &model.User{
-			ID: a2.Author + "?",
-		}
+		a.Author = (&model.User{ID: a2.Author}).SetInvalid()
 	}
 	a.You = u
 	if a.You == nil {

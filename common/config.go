@@ -9,8 +9,6 @@ import (
 	"io/ioutil"
 	"net"
 	"regexp"
-
-	"gopkg.in/yaml.v2"
 )
 
 var Cfg = struct {
@@ -38,8 +36,6 @@ var Cfg = struct {
 	Blk               cipher.Block
 	KeyBytes          []byte
 	IPBlacklistParsed []*net.IPNet
-	PublicString      string
-	PrivateString     string
 }{
 	TokenTTL:       10,
 	IDTokenTTL:     600,
@@ -54,12 +50,16 @@ var Cfg = struct {
 }
 
 func MustLoadConfig() {
-	buf, err := ioutil.ReadFile("config.yml")
+	buf, err := ioutil.ReadFile("config.json")
 	if err != nil {
 		panic(err)
 	}
 
-	if err := yaml.Unmarshal(buf, &Cfg); err != nil {
+	buf = regexp.
+		MustCompile(`(?:/\*[^*]*\*+(?:[^/*][^*]*\*+)*/|//[^\n]*(?:\n|$))|("[^"\\]*(?:\\[\S\s][^"\\]*)*"|'[^'\\]*(?:\\[\S\s][^'\\]*)*'|[\S\s][^/"'\\]*)`).
+		ReplaceAll(buf, []byte("$1"))
+
+	if err := json.Unmarshal(buf, &Cfg); err != nil {
 		panic(err)
 	}
 
@@ -71,21 +71,6 @@ func MustLoadConfig() {
 		Cfg.IPBlacklistParsed = append(Cfg.IPBlacklistParsed, subnet)
 	}
 
-	RegenConfigString()
-}
-
-func RegenConfigString() {
-	Cfg.PrivateString = ""
-	Cfg.PublicString = ""
-
-	buf, _ := json.MarshalIndent(Cfg, "", "")
-	buf = buf[1 : len(buf)-1]
-	Cfg.PrivateString = string(buf)
-
-	buf = regexp.MustCompile(`(?i)".*(token|dy|key|admin).+`).ReplaceAllFunc(buf, func(in []byte) []byte {
-		return bytes.Repeat([]byte("\u2588"), len(in)/2+1)
-	})
-	Cfg.PublicString = string(buf)
 }
 
 type CSSConfig struct {
@@ -172,13 +157,13 @@ var CSSDarkConfig = CSSConfig{
 	PostButtonHover:   "#176caf",
 	ToastBG:           "rgba(255,255,255,0.5)",
 	Toast:             "black",
+	InboxMessage:      "inherit; text-shadow: 0 0 8px rgba(0,0,0,0.5);",
 
 	FoobarHoverBottom: "#677",
 	TextShadow:        "#677",
 	RedText:           "#f52",
 	GreenText:         "#4a5",
 	OrangeText:        "#f90",
-	InboxMessage:      "inherit; text-shadow: 0 0 8px rgba(0,0,0,0.5);",
 	AddFriend:         "#098",
 }
 

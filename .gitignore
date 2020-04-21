@@ -1,5 +1,6 @@
 transfer.db
 config.yml
+config.json
 cache
 cache2
 tmp

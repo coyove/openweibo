@@ -116,11 +116,11 @@ func GetCommonFollowingList(from, to string, cursor string, n int) ([]FollowingS
 				if !strings.HasPrefix(k, "#") {
 					s.FullUser, _ = GetUser(k)
 				} else {
-					s.FullUser = &model.User{
-						ID: k,
-					}
+					s.FullUser = &model.User{ID: k}
 				}
-				res = append(res, s)
+				if s.FullUser != nil {
+					res = append(res, s)
+				}
 			}
 		}
 	}

@@ -86,14 +86,12 @@
     </div>
 
     {{range .List}}
-    <div colspan=3 style="display: flex; line-height: 2.5em">
+    {{if .FullUser}}
+    <div style="display: flex; line-height: 2.5em">
         <div style="flex: 0 48px; min-width: 90px; white-space: nowrap">{{formatTime .Time}}</div>
+        {{if ne $.ListType "twohops"}}
         <div style="flex: 1 100%; overflow: hidden; text-overflow: ellipsis;">
-            {{if .FullUser}}
             {{template "display_name.html" .FullUser}}
-            {{else}}
-            <b><s>{{.ID}}</s></b>
-            {{end}}
         </div>
         <div style="text-align:right; flex: 0 48px; white-space: nowrap">
             {{if eq $.ListType "blacklist"}}
@@ -129,7 +127,19 @@
                 {{end}}
             {{end}}
         </div>
+        {{else}}
+        <div style="flex: 1 100%; overflow: hidden; text-overflow: ellipsis;">
+            {{if and .TwoHopsFollowing .CommonFollowing}}
+                {{template "display_name.html" .FullUser}} 与其互相关注
+            {{else if .TwoHopsFollowing}}
+                你关注的 {{template "display_name.html" .FullUser}} 也是其粉丝
+            {{else if .CommonFollowing}}
+                你们共同关注了 {{template "display_name.html" .FullUser}}
+            {{end}}
+        </div>
+        {{end}}
     </div>
+    {{end}}
     {{end}}
 
     <div class=tmpl-border style="margin: 0.5em 0;padding-top:0.5em;border-top:solid 1px transparent;text-align:center">

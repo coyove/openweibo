@@ -428,9 +428,10 @@ func GetFollowingList(chain ik.ID, cursor string, n int, fulluser bool) ([]Follo
 				if !strings.HasPrefix(k, "#") {
 					s.FullUser, _ = GetUser(k)
 				} else {
-					s.FullUser = &model.User{
-						ID: k,
-					}
+					s.FullUser = &model.User{ID: k}
+				}
+				if s.FullUser == nil {
+					continue
 				}
 			}
 			res = append(res, s)
