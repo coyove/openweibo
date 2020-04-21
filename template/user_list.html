@@ -134,9 +134,14 @@
 
     <div class=tmpl-border style="margin: 0.5em 0;padding-top:0.5em;border-top:solid 1px transparent;text-align:center">
         {{if .Next}}
-        <a href="?n={{.Next}}" class=gbutton>下一页 &raquo;</a>
+            {{if .List}}
+                <a href="?n={{.Next}}" class=gbutton>更多 &raquo;</a>
+            {{else}}
+                <a href="?n={{.Next}}" class=gbutton>获取数据中...</a>
+                <script>setTimeout(function() { location.reload() }, 2000)</script>
+            {{end}}
         {{else}}
-        <a href="?n=" class="gbutton tmpl-light-text">没有更多结果</a>
+            <a href="?n=" class="gbutton tmpl-light-text">没有更多结果</a>
         {{end}}
     </div>
 </div>

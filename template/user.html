@@ -198,6 +198,13 @@
     </div>
 
 <table class="articles" style="margin: 0.5em 0">
+    {{if .User.IsAdmin}}
+    <tr>
+        <td colspan=2>
+            <a href="/debug/pprof/">pprof</a>
+        </td>
+    </tr>
+    {{end}}
     {{if .User.IsMod}}
     <tr>
         <td class=nowrap>最大耗时:</td>

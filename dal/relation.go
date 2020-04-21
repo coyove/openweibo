@@ -2,6 +2,7 @@ package dal
 
 import (
 	"log"
+	"math/rand"
 	"sort"
 	"strconv"
 	"strings"
@@ -65,7 +66,7 @@ func GetCommonFollowingList(from, to string, cursor string, n int) ([]FollowingS
 			continue
 		}
 
-		if time.Since(start).Seconds() > 0.2 {
+		if time.Since(start).Seconds() > 0.2+rand.Float64()/10 {
 			timedout = true
 			break
 		}
@@ -135,12 +136,7 @@ func GetCommonFollowingList(from, to string, cursor string, n int) ([]FollowingS
 	if timedout && cursor != "" {
 		// Continue calling the function to preload the data into cache
 		select {
-		case deferredGetCommonFollowingList <- getCommonFollowingListTask{
-			from:   from,
-			to:     to,
-			cursor: cursor,
-			n:      n,
-		}:
+		case deferredGetCommonFollowingList <- getCommonFollowingListTask{from, to, cursor, n}:
 		default:
 		}
 	}

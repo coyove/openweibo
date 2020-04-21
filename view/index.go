@@ -124,7 +124,7 @@ func Timeline(g *gin.Context) {
 		}
 
 		if pl.You != nil {
-			pl.User.Buildup(pl.You, dal.IsFollowing, dal.IsBlocking, dal.IsFollowingWithAcceptance)
+			pl.User.Buildup(pl.You)
 		}
 	default:
 		// View my timeline
@@ -133,7 +133,7 @@ func Timeline(g *gin.Context) {
 			return
 		}
 		pl.User = pl.You
-		pl.User.Buildup(pl.You, dal.IsFollowing, dal.IsBlocking, dal.IsFollowingWithAcceptance)
+		pl.User.Buildup(pl.You)
 	}
 
 	cursors := []ik.ID{}

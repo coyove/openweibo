@@ -136,7 +136,11 @@ func WalkMulti(media bool, n int, cursors ...ik.ID) (a []*model.Article, next []
 
 	for startTime := time.Now(); len(a) < n; {
 		if time.Since(startTime).Seconds() > 1 {
-			log.Println("[mgr.WalkMulti] Break out slow walk at", cursors)
+			if len(cursors) < 20 {
+				log.Println("[mgr.WalkMulti] Break out slow walk at", cursors)
+			} else {
+				log.Println("[mgr.WalkMulti] Break out slow walk with big cursors:", len(cursors))
+			}
 			break
 		}
 

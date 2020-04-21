@@ -60,7 +60,7 @@ func UserList(g *gin.Context) {
 		p.User = p.You
 	}
 
-	p.User.Buildup(p.You, dal.IsFollowing, dal.IsBlocking, dal.IsFollowingWithAcceptance)
+	p.User.Buildup(p.You)
 
 	switch p.ListType {
 	case "blacklist":
@@ -152,7 +152,7 @@ func APIGetUserInfoBox(g *gin.Context) {
 	}
 
 	if you := getUser(g); you != nil {
-		u.Buildup(you, dal.IsFollowing, dal.IsBlocking, dal.IsFollowingWithAcceptance)
+		u.Buildup(you)
 	}
 
 	s := middleware.RenderTemplateString("user_public.html", u)

@@ -18,6 +18,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func init() {
+	model.DalIsBlocking = IsBlocking
+	model.DalIsFollowing = IsFollowing
+	model.DalIsFollowingWithAcceptance = IsFollowingWithAcceptance
+}
+
 func GetUser(id string) (*model.User, error) {
 	if id == "" {
 		return nil, fmt.Errorf("empty user id")

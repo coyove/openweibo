@@ -12,8 +12,13 @@ import (
 	"github.com/coyove/iis/common"
 )
 
-var ErrNotExisted = errors.New("article not existed")
-var Dummy User = User{_IsYou: true}
+var (
+	ErrNotExisted                = errors.New("article not existed")
+	Dummy                        = User{_IsYou: true}
+	DalIsFollowing               func(string, string) bool
+	DalIsBlocking                func(string, string) bool
+	DalIsFollowingWithAcceptance func(string, *User) (bool, bool)
+)
 
 type Cmd string
 
@@ -158,21 +163,16 @@ func (u User) ShowList() byte { return u._ShowList }
 
 func (u User) Settings() UserSettings { return u._Settings }
 
-func (u *User) Buildup(you *User,
-	revIsFollowing func(string, string) bool,
-	revIsBlocking func(string, string) bool,
-	revIsFollowingWithAcceptance func(string, *User) (bool, bool)) {
-
-	following, accepted := revIsFollowingWithAcceptance(you.ID, u)
+func (u *User) Buildup(you *User) {
+	following, accepted := DalIsFollowingWithAcceptance(you.ID, u)
 	u._IsYou = you.ID == u.ID
 	if u._IsYou {
 		return
 	}
-
 	u._IsFollowing = following
 	u._IsFollowingNotAccepted = following && !accepted
-	u._IsFollowed = revIsFollowing(u.ID, you.ID)
-	u._IsBlocking = revIsBlocking(you.ID, u.ID)
+	u._IsFollowed = DalIsFollowing(u.ID, you.ID)
+	u._IsBlocking = DalIsBlocking(you.ID, u.ID)
 }
 
 func (u *User) SetShowList(t byte) { u._ShowList = t }

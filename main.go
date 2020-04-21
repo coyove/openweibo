@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
+	"net/http/pprof"
 	"os"
 	"runtime"
 	"strconv"
@@ -215,17 +216,21 @@ func main() {
 	// goforget.Incr("tagheat", "b", "c", "d")
 	// goforget.Incr("tagheat", "b")
 
-	// if common.Cfg.Domain == "" {
+	r.Handle("GET", "/debug/pprof/*name", func(g *gin.Context) {
+		u, _ := g.Get("user")
+		uu, _ := u.(*model.User)
+		if uu == nil || !uu.IsAdmin() {
+			g.Status(400)
+			return
+		}
+		name := strings.TrimPrefix(g.Param("name"), "/")
+		if name == "" {
+			pprof.Index(g.Writer, g.Request)
+		} else {
+			pprof.Handler(name).ServeHTTP(g.Writer, g.Request)
+		}
+	})
+
 	log.Fatal(r.Run(":5010"))
-	// } else {
-	// 	if !noHTTP {
-	// 		go func() {
-	// 			time.Sleep(time.Second)
-	// 			fmt.Println("HTTP server started on :80")
-	// 			log.Fatal(r.Run(":80"))
-	// 		}()
-	// 	}
-	// 	fmt.Println("HTTPS server started on :443")
 	// 	log.Fatal(autotls.Run(r, common.Cfg.Domain))
-	// }
 }
