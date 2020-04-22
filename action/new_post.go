@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/coyove/iis/common"
@@ -22,9 +23,15 @@ func hashIP(g *gin.Context) string {
 	if len(ip) == net.IPv4len {
 		ip[3] = 0 // \24
 	} else if len(ip) == net.IPv6len {
-		copy(ip[10:], "\x00\x00\x00\x00\x00\x00") // \80
+		ip4 := ip.To4()
+		if ip4 != nil {
+			ip = ip4
+			ip[3] = 0
+		} else {
+			copy(ip[10:], "\x00\x00\x00\x00\x00\x00") // \80
+		}
 	}
-	return ip.String()
+	return ip.String() + "/" + strconv.FormatInt(time.Now().Unix(), 36)
 }
 
 func APINew(g *gin.Context) {

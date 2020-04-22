@@ -84,7 +84,7 @@ func APISignup(g *gin.Context) {
 	u.Session = genSession()
 	u.Email = email
 	u.PasswordHash = hashPassword(password)
-	u.DataIP = "{" + ip + "}"
+	u.DataIP = ip
 	u.TSignup = uint32(time.Now().Unix())
 	u.TLogin = uint32(time.Now().Unix())
 	tok := ik.MakeUserToken(u)
@@ -127,8 +127,8 @@ func APILogin(g *gin.Context) {
 	u.Session = genSession()
 	u.TLogin = uint32(time.Now().Unix())
 
-	if ips := append(strings.Split(u.DataIP, ","), hashIP(g)); len(ips) > 5 {
-		u.DataIP = strings.Join(append(ips[:1], ips[len(ips)-4:]...), ",")
+	if ips := append(strings.Split(u.DataIP, ","), hashIP(g)); len(ips) > 3 {
+		u.DataIP = strings.Join(ips[len(ips)-3:], ",")
 	} else {
 		u.DataIP = strings.Join(ips, ",")
 	}

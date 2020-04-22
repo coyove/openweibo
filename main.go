@@ -139,6 +139,29 @@ func main() {
 		"getLastActiveTime": func(id string) time.Time {
 			return dal.LastActiveTime(id)
 		},
+		"ipChainLookup": func(chain string) [][3]interface{} {
+			res := [][3]interface{}{}
+			for _, part := range strings.Split(chain, ",") {
+				part = strings.Trim(strings.TrimSpace(part), "{}")
+				if len(part) == 0 {
+					continue
+				}
+				var date time.Time
+				var loc = "-"
+				var data = strings.Split(part, "/")
+				if common.Cfg.IPIPDB != nil {
+					if info, _ := common.Cfg.IPIPDB.FindInfo(data[0], "CN"); info != nil {
+						loc = info.CountryName + "-" + info.RegionName
+					}
+				}
+				if len(data) > 1 {
+					ts, _ := strconv.ParseInt(data[1], 36, 64)
+					date = time.Unix(ts, 0)
+				}
+				res = append(res, [3]interface{}{data[0], loc, date})
+			}
+			return res
+		},
 		"formatTime": func(a time.Time) template.HTML {
 			if a == (time.Time{}) || a.IsZero() || a.Unix() == 0 {
 				return template.HTML("<span class='time none'></span>")

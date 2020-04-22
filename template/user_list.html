@@ -132,7 +132,7 @@
             {{if and .TwoHopsFollowing .CommonFollowing}}
                 {{template "display_name.html" .FullUser}} 与其互相关注
             {{else if .TwoHopsFollowing}}
-                你关注的 {{template "display_name.html" .FullUser}} 也是其粉丝
+                {{template "display_name.html" .FullUser}} 也是其粉丝
             {{else if .CommonFollowing}}
                 你们共同关注了 {{template "display_name.html" .FullUser}}
             {{end}}

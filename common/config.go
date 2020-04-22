@@ -9,6 +9,8 @@ import (
 	"io/ioutil"
 	"net"
 	"regexp"
+
+	"github.com/ipipdotnet/ipdb-go"
 )
 
 var Cfg = struct {
@@ -31,11 +33,13 @@ var Cfg = struct {
 	DySecretKey    string   `yaml:"DySecretKey"`
 	RedisAddr      string   `yaml:"RedisAddr"`
 	ReadOnly       bool     `yaml:"ReadOnly"`
+	IPIPDatabase   string
 
 	// inited after Cfg being read
 	Blk               cipher.Block
 	KeyBytes          []byte
 	IPBlacklistParsed []*net.IPNet
+	IPIPDB            *ipdb.City
 }{
 	TokenTTL:       10,
 	IDTokenTTL:     600,
@@ -71,6 +75,13 @@ func MustLoadConfig() {
 		Cfg.IPBlacklistParsed = append(Cfg.IPBlacklistParsed, subnet)
 	}
 
+	if Cfg.IPIPDatabase != "" {
+		db, err := ipdb.NewCity(Cfg.IPIPDatabase)
+		if err != nil {
+			panic(err)
+		}
+		Cfg.IPIPDB = db
+	}
 }
 
 type CSSConfig struct {

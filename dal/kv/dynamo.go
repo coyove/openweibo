@@ -161,7 +161,7 @@ func (m *DynamoKV) Set(key string, value []byte) error {
 }
 
 func (m *DynamoKV) Set2(key1, key2 string, value []byte) error {
-	if err := m.cache.Add(key1+"..."+key2, locker); err != nil {
+	if err := m.cache.Add(key1+"?"+key2, locker); err != nil {
 		return err
 	}
 
@@ -184,7 +184,7 @@ func (m *DynamoKV) Set2(key1, key2 string, value []byte) error {
 
 	_, err := m.db.UpdateItem(in)
 	if err == nil {
-		m.cache.Add(key1+"..."+key2, value)
+		m.cache.Add(key1+"?"+key2, value)
 	}
 	return err
 }
