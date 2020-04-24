@@ -143,7 +143,11 @@ func APILogin(g *gin.Context) {
 	}); err != nil {
 		g.String(200, err.Error())
 	} else {
-		g.SetCookie("id", tok, 365*86400, "", "", false, false)
+		ttl := 0
+		if g.PostForm("remember") != "" {
+			ttl = 365 * 86400
+		}
+		g.SetCookie("id", tok, ttl, "", "", false, false)
 		g.String(200, "ok")
 	}
 }

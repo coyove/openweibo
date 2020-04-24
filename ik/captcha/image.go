@@ -57,12 +57,12 @@ func NewImage(id string, digits []byte, width, height int) *Image {
 	// Draw digits.
 	for _, n := range digits {
 		m.drawDigit(font[n%31], x, y)
-		x += m.numWidth + m.dotSize
+		x += m.numWidth * 3 / 4
 	}
 	// Draw strike-through line.
 	m.strikeThrough()
 	// Apply wave distortion.
-	m.distort(m.rng.Float(3, 8), m.rng.Float(100, 200))
+	m.distort(m.rng.Float(8, 10), m.rng.Float(100, 200))
 	// Fill image with random circles.
 	m.fillWithCircles(circleCount, m.dotSize)
 	return m
@@ -212,7 +212,6 @@ func (m *Image) strikeThrough() {
 }
 
 func (m *Image) drawDigit(digit []byte, x, y int) {
-	skf := m.rng.Float(-maxSkew, maxSkew)
 	xs := float64(x)
 	r := m.dotSize / 2
 	y += m.rng.Int(-r, r)
@@ -226,8 +225,8 @@ func (m *Image) drawDigit(digit []byte, x, y int) {
 				continue
 			}
 			m.drawCircle(x+xo*m.dotSize, y+yo*m.dotSize, r, 1)
+			m.drawCircle(x+xo*m.dotSize, y+yo*m.dotSize+1, r, 1)
 		}
-		xs += skf
 		x = int(xs)
 	}
 }
