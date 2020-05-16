@@ -1,61 +1,24 @@
 {{template "header.html" .}}
-<title>梨名板</title>
+<title>Fweibo</title>
 
-<div class=row style="text-align:center;padding:0.5em;margin:0">
-    <a class=gbutton style href="/user">注册新用户</a>
-</div>
-
-<div style="line-height: 2em">
+<div style="line-height: 2em;text-align:center">
     <!--[if lte IE 9]> 
         <div style="color:red">
         本站不支持IE9及以下版本
         </div>
     <![endif]-->
-    <div style="overflow: hidden; height: 180px;position:relative">
-        <div style="background-image: url(/eriri);
-                       background-repeat: no-repeat;
-                       background-size: cover;
-                       background-position-y: center;
-                       filter: blur(10px);
-                       -ms-filter: blur(10px);
-                       position: absolute;
-                       left: -10%;
-                       top: -10%;
-                       width: 120%;
-                       height: 120%;
-                       ">
-        </div>
-        <div style="margin: 15px auto;
-                    width: 150px;
-                    margin-left: -75px;
-                    height: 150px;
-                    overflow: hidden;
-                    border-radius: 50%;
-                    background-image: url(/eriri);
-                    background-repeat: no-repeat;
-                    background-size: cover;
-                    position: absolute;
-                    top: 0;
-                    left: 50%">
-        </div>
-    </div>
-    <form method="POST" action="/user" style="flex-grow:1;margin-top: 1em" onsubmit="return false">
+    <div style="overflow: hidden;margin:0 auto;position:relative;text-align:center;max-width:350px">
+        <div><img src="/s/assets/logo.png" style="width:100%;max-width:250px;margin:0.5em auto;display:block"></div>
+    <form method="POST" action="/user" style="flex-grow:1" onsubmit="return false">
         <table class="articles">
             <tr>
-                <td colspan=2 style="text-align:center">
-                    欢迎来到sserr.net，一个自由开放的微博系统
-                </td>
+                <td><input placeholder="ID" autofocus class=t name=username value required></td>
             </tr>
             <tr>
-                <td class=nowrap>用户名:</td>
-                <td><input autofocus class=t name=username value required></td>
+                <td><input placeholder="密码" type=password class=t name=password value required></td>
             </tr>
             <tr>
-                <td class=nowrap>密码:</td>
-                <td><input type=password class=t name=password value required></td>
-            </tr>
-            <tr>
-                <td colspan=2 style="text-align:right;line-height:2.5em">
+                <td style="text-align:right;line-height:2.5em">
                     <div style="float:left">
                         <input type=checkbox id=remember class=icon-input-checkbox>
                         <i class='icon-ok-circled2'></i>
@@ -70,8 +33,14 @@
                             })">登入</button>
                 </td>
             </tr>
+            <tr>
+                <td style="">
+                    欢迎来到fweibo (sserr.net)，一个自由开放的微博系统。<a style href="/user">注册新用户</a>
+                </td>
+            </tr>
         </table>
     </form>
+    </div>
 </div>
 
 
