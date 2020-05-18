@@ -1,14 +1,10 @@
 package view
 
 import (
-	"crypto/sha1"
-	"encoding/base64"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -28,53 +24,53 @@ func Home(g *gin.Context) {
 	}
 }
 
-var imgClient = &http.Client{Timeout: 1 * time.Second}
-
-func Image(g *gin.Context) {
-	img, _ := base64.StdEncoding.DecodeString(strings.TrimRight(g.Param("img"), ".jpg"))
-
-	hash := sha1.Sum(img)
-	cachepath := fmt.Sprintf("tmp/images/%x/%x", hash[0], hash[1:])
-
-	if _, err := os.Stat(cachepath); err == nil {
-		http.ServeFile(g.Writer, g.Request, cachepath)
-		return
-	}
-
-	u, err := url.Parse(string(img))
-	if err != nil || (u.Scheme != "https" && u.Scheme != "http") {
-		g.Status(404)
-		return
-	}
-
-	resp, err := imgClient.Get(u.String())
-	if err != nil {
-		log.Println("Image Proxy", err)
-		g.Status(500)
-		return
-	}
-
-	defer resp.Body.Close()
-
-	cachedir := filepath.Dir(cachepath)
-	os.MkdirAll(cachedir, 0777)
-
-	f, err := os.Create(cachepath)
-	if err != nil {
-		log.Println("Image Proxy, disk error:", err)
-		return
-	}
-
-	if _, err := io.Copy(f, resp.Body); err != nil {
-		log.Println("Image Proxy, disk copy error:", err)
-		f.Close()
-		os.Remove(cachepath)
-		g.Status(500)
-	} else {
-		f.Close()
-		http.ServeFile(g.Writer, g.Request, cachepath)
-	}
-}
+// var imgClient = &http.Client{Timeout: 1 * time.Second}
+//
+// func Image(g *gin.Context) {
+// 	img, _ := base64.StdEncoding.DecodeString(strings.TrimRight(g.Param("img"), ".jpg"))
+//
+// 	hash := sha1.Sum(img)
+// 	cachepath := fmt.Sprintf("tmp/images/%x/%x", hash[0], hash[1:])
+//
+// 	if _, err := os.Stat(cachepath); err == nil {
+// 		http.ServeFile(g.Writer, g.Request, cachepath)
+// 		return
+// 	}
+//
+// 	u, err := url.Parse(string(img))
+// 	if err != nil || (u.Scheme != "https" && u.Scheme != "http") {
+// 		g.Status(404)
+// 		return
+// 	}
+//
+// 	resp, err := imgClient.Get(u.String())
+// 	if err != nil {
+// 		log.Println("Image Proxy", err)
+// 		g.Status(500)
+// 		return
+// 	}
+//
+// 	defer resp.Body.Close()
+//
+// 	cachedir := filepath.Dir(cachepath)
+// 	os.MkdirAll(cachedir, 0777)
+//
+// 	f, err := os.Create(cachepath)
+// 	if err != nil {
+// 		log.Println("Image Proxy, disk error:", err)
+// 		return
+// 	}
+//
+// 	if _, err := io.Copy(f, resp.Body); err != nil {
+// 		log.Println("Image Proxy, disk copy error:", err)
+// 		f.Close()
+// 		os.Remove(cachepath)
+// 		g.Status(500)
+// 	} else {
+// 		f.Close()
+// 		http.ServeFile(g.Writer, g.Request, cachepath)
+// 	}
+// }
 
 func I(g *gin.Context) {
 	img := strings.TrimSuffix(g.Param("img"), ".jpg")

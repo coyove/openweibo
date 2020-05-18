@@ -338,6 +338,10 @@ img.avatar + .avatar-kimochi {
     overflow: hidden;
 }
 
+.media.cell {
+    margin:0.2em;display:inline-block;width:100px;height:100px;
+}
+
 .media a {
     display: block;
     width: 100%;

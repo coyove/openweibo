@@ -8,13 +8,15 @@ import (
 )
 
 var (
-	rxSan        = regexp.MustCompile(`(?m)(\n|\[img\]https?://\S+?\[/img\]|\[code\][\s\S]+?\[/code\]|<|https?://[^\s<>"'#\[\]]+|@\S+|#\S+)|\[mj\]\d+\[/mj\]`)
+	rxSan        = regexp.MustCompile(`(?m)(\n|\[imgs\][\s\S]+[/imgs\][\s\n]*|\[code\][\s\S]+?\[/code\]|<|https?://[^\s<>"'#\[\]]+|@\S+|#\S+)|\[mj\]\d+\[/mj\]`)
 	rxFirstImage = regexp.MustCompile(`(?i)(https?://\S+\.(png|jpg|gif|webp|jpeg)|\[img\]https?://\S+\[/img\])`)
 	rxMentions   = regexp.MustCompile(`((@|#)\S+)`)
 	rxAcCode     = regexp.MustCompile(`ac(\d+)`)
 	rxBiliAVCode = regexp.MustCompile(`(av(\d+)|BV(\w+))`)
 	rxWYYYCode   = regexp.MustCompile(`id=(\d+)`)
 	rxYTCode     = regexp.MustCompile(`(youtu\.be\/(\w+)|v=(\w+))`)
+
+	RevRenderTemplateString func(name string, v interface{}) string
 )
 
 func SoftTrunc(a string, n int) string {
@@ -68,8 +70,10 @@ func SanText(in string) string {
 		if strings.HasPrefix(in, "[code]") && strings.HasSuffix(in, "[/code]") {
 			return "<code>" + strings.TrimSpace(in[6:len(in)-7]) + "</code>"
 		}
-		if strings.HasPrefix(in, "[img]") && strings.HasSuffix(in, "[/img]") {
-			return "<a href='" + in[5:len(in)-6] + "' target=_blank>" + in[5:len(in)-6] + "</a>"
+		if strings.HasPrefix(in, "[imgs]") {
+			in = strings.TrimPrefix(strings.TrimSpace(in), "[imgs]")
+			in = RevRenderTemplateString("image.html", strings.Split(strings.TrimSuffix(in, "[/imgs]"), "\n"))
+			return strings.TrimSpace(in)
 		}
 		if strings.HasPrefix(in, "[mj]") {
 			return "<img class=majiang src='https://static.saraba1st.com/image/smiley/face2017/" + in[4:len(in)-5] + ".png'>"

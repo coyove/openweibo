@@ -1,0 +1,31 @@
+<div style="white-space:normal">
+{{range $i, $v := .}}
+    {{if eq $i 4}}
+    <div class="media cell tmpl-light-bg">
+        <button
+            class=gbutton
+            style="display:block;width:100%;height:100%"
+            onclick="
+            (function(el) {
+                el.style.display='none';
+                var cells = el.parentNode.querySelectorAll('.media.cell');
+                for (var i = 0; i < cells.length; i++) {
+                    if (cells[i] !== el)  {
+                        cells[i].style.display = null;
+                        var img = cells[i].querySelector('img');
+                        if (!img.src) img.src = img.getAttribute('data-src');
+                    }
+                }
+            })(this.parentNode)
+            ">+ {{sub (len $) 3}}</button>
+    </div>
+    {{end}}
+
+    {{$hide := ge $i 4}}
+    {{if $v}}
+    <div class="media cell" style="{{if $hide}}display:none{{end}}">
+        <a href="{{$v}}" target=_blank><img onload="adjustImage(this)" {{if $hide}}data-{{end}}src="{{$v}}"></a>
+    </div>
+    {{end}}
+{{end}}
+</div>

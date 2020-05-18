@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
@@ -88,9 +87,9 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 		}
 	}
 
-	if img := common.ExtractFirstImage(a2.Content); img != "" && a2.Media == "" {
-		a.MediaType, a.Media = "IMG", img
-	}
+	// if img := common.ExtractFirstImage(a2.Content); img != "" && a2.Media == "" {
+	// 	a.MediaType, a.Media = "IMG", img
+	// }
 
 	a.Content = a2.Content
 	a.ContentHTML = a2.ContentHTML()

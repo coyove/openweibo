@@ -87,7 +87,6 @@ func APINew(g *gin.Context) {
 			g.String(200, err.Error())
 			return
 		}
-		log.Println(a2, err)
 		g.String(200, "internal/error")
 		return
 	}

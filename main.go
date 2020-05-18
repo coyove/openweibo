@@ -139,6 +139,9 @@ func main() {
 		"getLastActiveTime": func(id string) time.Time {
 			return dal.LastActiveTime(id)
 		},
+		"sub": func(a, b int) int {
+			return a - b
+		},
 		"ipChainLookup": func(chain string) [][3]interface{} {
 			res := [][3]interface{}{}
 			for _, part := range strings.Split(chain, ",") {
@@ -190,7 +193,6 @@ func main() {
 
 	r.NoRoute(view.NotFound)
 	r.Handle("GET", "/", view.Home)
-	r.Handle("GET", "/img/:img", view.Image)
 	r.Handle("GET", "/i/:img", view.I)
 	r.Handle("GET", "/eriri", view.RandomEririImage)
 	r.Handle("GET", "/tag/:tag", view.Index)

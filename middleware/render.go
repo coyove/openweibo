@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/coyove/iis/common"
 	"github.com/gin-gonic/gin"
 )
 
@@ -18,6 +19,10 @@ var Survey struct {
 }
 
 var engine *gin.Engine
+
+func init() {
+	common.RevRenderTemplateString = RenderTemplateString
+}
 
 func loadTrafficCounter() {
 	tmppath := filepath.Join(os.TempDir(), "iis")
