@@ -20,6 +20,7 @@ import (
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/middleware"
 	"github.com/coyove/iis/model"
+	"github.com/coyove/iis/tfidf"
 	"github.com/coyove/iis/view"
 	"github.com/gin-gonic/gin"
 )
@@ -30,9 +31,11 @@ func main() {
 
 	common.MustLoadConfig()
 
-	dal.Init(&cache.RedisConfig{
+	redisConfig := &cache.RedisConfig{
 		Addr: common.Cfg.RedisAddr,
-	}, common.Cfg.DyRegion, common.Cfg.DyAccessKey, common.Cfg.DySecretKey)
+	}
+	dal.Init(redisConfig, common.Cfg.DyRegion, common.Cfg.DyAccessKey, common.Cfg.DySecretKey)
+	tfidf.Init(redisConfig)
 
 	if common.Cfg.RedisAddr != "" {
 		goforget.Init(&cache.RedisConfig{Addr: common.Cfg.RedisAddr, BatchWorkers: 10})
