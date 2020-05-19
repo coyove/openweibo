@@ -24,20 +24,20 @@
             trigger: '@',
             selectClass: 'highlight',
             containerClass: 'tribute-container',
-            selectTemplate: function (item) { return '@' + item.original.key; },
+            selectTemplate: function (item) { return '@' + item.original.id; },
             menuContainer: document.body,
             lookup: 'key',
             values: function remoteSearch(text, cb) {
                 $post("/api/search", { id: text }, function(results) {
                     if (results && results.length) {
                         results.forEach(function(t, i) {
-                            results[i] = { key: t.ID, is_tag: t.IsTag } 
+                            results[i] = { key: t.Display, id: t.ID, is_tag: t.IsTag } 
                         });
                     }
                     JSON.parse(window.localStorage.getItem('presets') || '[]')
                         .filter(function(t){ return t; })
                         .forEach(function(t) {
-                            results.push({ key: t.substring(1), is_tag: t.substring(0, 1) == '#' }) 
+                            results.push({ key: t, id: t.substring(1), is_tag: t.substring(0, 1) == '#' }) 
                         });
                     var seen = {};
                     results = results.filter(function(item) {
@@ -54,7 +54,7 @@
             trigger: '#',
             selectClass: 'highlight',
             containerClass: 'tribute-container',
-            selectTemplate: function (item) { return '#' + item.original.key; },
+            selectTemplate: function (item) { return '#' + item.original.id; },
             menuContainer: document.body,
             lookup: 'key',
             values: window.TRIBUTE_COL.values,

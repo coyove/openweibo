@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/coyove/iis/dal/kv/cache"
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 )
 
 var client *redis.Pool
