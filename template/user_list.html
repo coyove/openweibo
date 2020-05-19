@@ -35,56 +35,6 @@
     2. 被拉黑用户如果之前已经关注了你，则会自动取消且无法再次关注，同时无法看到你的时间线
 </div>
 {{end}}
-    <div class="tmpl-border tmpl-light-bg" style="border:solid 1px transparent;display:flex">
-        <div style="padding:0.5em 0 0.5em 0.5em;white-space:nowrap">搜索 @</div>
-        <div contentEditable=true id=search-id style="width:100%;border:none;padding:0.5em;display:flex;flex-wrap:wrap">
-        </div>
-    <script>
-        (function() {
-            var el = $q("#search-id");
-            el.addEventListener('keydown', function (evt) {
-                if (evt.keyCode === 13) {
-                    location.href = "/t/" + encodeURIComponent(el.innerText.replace(/(@|#)[\s\S]+$/,''))
-                    evt.preventDefault();
-                }
-            });
-            el.addEventListener('keyup', function() {
-                var v = el.innerText.replace(/(@|#)[\s\S]+$/,'');
-
-                if (el.BUSY) return;
-                if (!v) {
-                    el.innerHTML = '';
-                    return;
-                }
-
-                el.BUSY = true;
-                $post("/api/search", { id: '@' + v }, function(results) {
-                    for (var i = el.childNodes.length - 1; i > 0; i--) {
-                        el.removeChild(el.childNodes[i])
-                    }
-                    if (results && results.length) {
-
-                        results.forEach(function(e) {
-                            var opt = $q("<div>");
-                            opt.style.paddingLeft = '0.5em';
-                            var a = $q("<a>");
-                            opt.appendChild(a);
-                            a.innerText = e;
-                            a.onclick = function() {
-                                window.open('/t/' + encodeURIComponent(e));
-                            }
-                            el.appendChild(opt);
-                        })
-                    }
-                    el.BUSY = false;
-                }, function() {
-                    el.BUSY = false;
-                })
-            })
-        })()
-    </script>
-    </div>
-
     {{range .List}}
     {{if .FullUser}}
     <div style="display: flex; line-height: 2.5em">

@@ -37,7 +37,16 @@ $q("#unread-notify i").className += " tmpl-inbox-message-text";
             });
         }
 
-        (function() { expandNSFW(); })()
+        (function() {
+            expandNSFW();
+            $q("input,textarea").forEach(function(el) {
+                el.addEventListener("tribute-replaced", function(e) {
+                    if (e.detail.event.target.tagName === 'I') {
+                        console.log("Matched item:", e.detail.item.original);
+                    }
+                });
+            })
+        })()
     </script>
 
 <!-- Global site tag (gtag.js) - Google Analytics -->

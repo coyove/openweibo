@@ -15,6 +15,7 @@ import (
 	"github.com/coyove/iis/dal/forgettable/goforget"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
+	"github.com/coyove/iis/tfidf"
 	"github.com/gin-gonic/gin"
 )
 
@@ -145,7 +146,7 @@ func MentionUserAndTags(a *model.Article, ids []string, tags []string) error {
 		}); err != nil {
 			return err
 		}
-		common.AddTagToSearch(tag)
+		tfidf.IndexTag(tag)
 		goforget.Incr("tagheat", tag)
 	}
 	return nil

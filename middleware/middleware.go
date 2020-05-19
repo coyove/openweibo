@@ -15,6 +15,7 @@ import (
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
+	"github.com/coyove/iis/tfidf"
 	"github.com/gin-gonic/gin"
 )
 
@@ -44,6 +45,7 @@ func mwRenderPerf(g *gin.Context) {
 		if u, _ = dal.GetUserByToken(tok); u != nil {
 			g.Set("user", u)
 			dal.MarkUserActive(u.ID)
+			tfidf.IndexUser(u, false)
 		}
 	}
 

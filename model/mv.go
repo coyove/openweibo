@@ -213,7 +213,7 @@ func UnmarshalUser(b []byte) (*User, error) {
 		return nil, fmt.Errorf("failed to unmarshal: %q", b)
 	}
 
-	common.AddUserToSearch(a.ID)
+	// common.AddUserToSearch(a.ID)
 	return a, err
 }
 

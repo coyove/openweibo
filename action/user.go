@@ -14,6 +14,7 @@ import (
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/middleware"
 	"github.com/coyove/iis/model"
+	"github.com/coyove/iis/tfidf"
 	"github.com/gin-gonic/gin"
 )
 
@@ -172,15 +173,23 @@ func APIUserKimochi(g *gin.Context) {
 }
 
 func APISearch(g *gin.Context) {
-	uids := common.SearchUsers(g.PostForm("id"), 10)
+	type p struct {
+		ID      string
+		Display string
+		IsTag   bool
+	}
+	results := []p{}
+	uids, _ := tfidf.Search("su", g.PostForm("id"), 0, 10)
 	for i := range uids {
-		uids[i] = "@" + uids[i]
+		if u, _ := dal.GetUser(uids[i]); u != nil {
+			results = append(results, p{Display: u.DisplayName(), ID: uids[i]})
+		}
 	}
-	tags := common.SearchTags(g.PostForm("id"), 10)
+	tags, _ := tfidf.Search("st", g.PostForm("id"), 0, 10)
 	for _, t := range tags {
-		uids = append(uids, "#"+t)
+		results = append(results, p{Display: "#" + t, ID: t, IsTag: true})
 	}
-	g.JSON(200, uids)
+	g.JSON(200, results)
 }
 
 func APINewCaptcha(g *gin.Context) {
@@ -344,6 +353,7 @@ func APIUpdateUserSettings(g *gin.Context) {
 		g.Writer.Header().Add("X-Result",
 			url.PathEscape(middleware.RenderTemplateString("display_name.html", u2)))
 		g.Writer.Header().Add("X-Custom-Name", url.PathEscape(name))
+		tfidf.IndexUser(&u2, true)
 	case g.PostForm("set-avatar") != "":
 		_, err := writeAvatar(u, g.PostForm("avatar"))
 		if err != nil {

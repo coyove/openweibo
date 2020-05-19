@@ -2,7 +2,6 @@ package view
 
 import (
 	"log"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -13,6 +12,7 @@ import (
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/middleware"
 	"github.com/coyove/iis/model"
+	"github.com/coyove/iis/tfidf"
 	"github.com/gin-gonic/gin"
 )
 
@@ -66,6 +66,7 @@ func Index(g *gin.Context) {
 	a, _ := dal.GetArticle(ik.NewID(ik.IDTag, tag).String())
 	if a != nil {
 		pl.PostsUnderTag = int32(a.Replies)
+		tfidf.IndexTag(tag)
 	}
 
 	a2, next := dal.WalkMulti(pl.MediaOnly, int(common.Cfg.PostsPerPage), ik.NewID(ik.IDTag, tag))
@@ -99,13 +100,13 @@ func Timeline(g *gin.Context) {
 		pl.Checkpoints = makeCheckpoints(g)
 		pl.User, _ = dal.GetUserWithSettings(uid)
 		if pl.User == nil {
-			if res := common.SearchUsers(uid, 1); len(res) == 1 {
-				pl.User, _ = dal.GetUser(res[0])
-				if pl.User != nil {
-					g.Redirect(302, "/t/"+url.PathEscape(pl.User.ID))
-					return
-				}
-			}
+			// 	if res := common.SearchUsers(uid, 1); len(res) == 1 {
+			// 		pl.User, _ = dal.GetUser(res[0])
+			// 		if pl.User != nil {
+			// 			g.Redirect(302, "/t/"+url.PathEscape(pl.User.ID))
+			// 			return
+			// 		}
+			// 	}
 			NotFound(g)
 			return
 		}

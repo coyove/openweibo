@@ -49,6 +49,10 @@ func tf(v string) map[string]float64 {
 		return m
 	}
 
+	if len(rs) > 16 {
+		rs = rs[:16]
+	}
+
 	for i := 0; i < len(rs)-1; i++ {
 		m[string(rs[i:i+2])]++
 	}
@@ -87,7 +91,7 @@ func Index(ns, id, doc string) {
 	}()
 
 	if len(olddoc) >= 0 {
-		for k := range tf(doc) {
+		for k := range tf(olddoc) {
 			pipe.Send("ZREM", ns+"-"+k, id)
 		}
 	}
