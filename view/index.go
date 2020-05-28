@@ -59,9 +59,12 @@ func Index(g *gin.Context) {
 		ReplyView:     makeReplyView(g, ""),
 	}
 
-	if pl.You != nil {
-		pl.IsTagTimelineFollowed = dal.IsFollowing(pl.You.ID, pl.Tag)
+	if pl.You == nil {
+		redirectVisitor(g)
+		return
 	}
+
+	pl.IsTagTimelineFollowed = dal.IsFollowing(pl.You.ID, pl.Tag)
 
 	a, _ := dal.GetArticle(ik.NewID(ik.IDTag, tag).String())
 	if a != nil {
@@ -81,6 +84,11 @@ func Timeline(g *gin.Context) {
 		ReplyView: makeReplyView(g, ""),
 		You:       getUser(g),
 		MediaOnly: g.Query("media") != "",
+	}
+
+	if pl.You == nil {
+		redirectVisitor(g)
+		return
 	}
 
 	switch uid := g.Param("user"); {
@@ -129,10 +137,6 @@ func Timeline(g *gin.Context) {
 		}
 	default:
 		// View my timeline
-		if pl.You == nil {
-			g.Redirect(302, "/")
-			return
-		}
 		pl.User = pl.You
 		pl.User.Buildup(pl.You)
 	}
@@ -194,7 +198,7 @@ func Inbox(g *gin.Context) {
 	}
 
 	if pl.You == nil {
-		g.Redirect(302, "/")
+		redirectVisitor(g)
 		return
 	}
 
@@ -270,10 +274,15 @@ func APIReplies(g *gin.Context) {
 		return
 	}
 
-	pl.ParentArticle.from(parent, _NoReply, getUser(g))
+	you := getUser(g)
+	if you == nil {
+		redirectVisitor(g)
+		return
+	}
+
+	pl.ParentArticle.from(parent, _NoReply, you)
 	pl.ReplyView = makeReplyView(g, pid)
 
-	you := getUser(g)
 	if you != nil {
 		if dal.IsBlocking(pl.ParentArticle.Author.ID, you.ID) {
 			g.Status(404)

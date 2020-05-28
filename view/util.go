@@ -2,6 +2,7 @@ package view
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -61,4 +62,8 @@ func makeCheckpoints(g *gin.Context) []string {
 	}
 
 	return r
+}
+
+func redirectVisitor(g *gin.Context) {
+	g.Redirect(302, "/?redirect="+url.QueryEscape(g.Request.URL.String()))
 }

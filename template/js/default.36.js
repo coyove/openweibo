@@ -96,6 +96,13 @@ function $postReload(el, url, data) {
     $post(url, data, function(res) {
         stop();
         if (res != "ok") return res;
+        try {
+            var r = new URLSearchParams(window.location.search).get('redirect');
+            if (r) {
+                location.href = r;
+                return;
+            }
+        } catch(e) {}
         location.reload();
     }, stop)
 }

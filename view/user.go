@@ -51,7 +51,7 @@ func UserList(g *gin.Context) {
 
 	p.You = getUser(g)
 	if p.You == nil {
-		g.Redirect(302, "/user")
+		redirectVisitor(g)
 		return
 	}
 
@@ -119,7 +119,7 @@ func UserLikes(g *gin.Context) {
 	}
 
 	if p.You == nil {
-		g.Redirect(302, "/user")
+		redirectVisitor(g)
 		return
 	}
 
@@ -145,13 +145,20 @@ func UserLikes(g *gin.Context) {
 }
 
 func APIGetUserInfoBox(g *gin.Context) {
+	you := getUser(g)
+
+	if you == nil {
+		g.Status(400)
+		return
+	}
+
 	u, _ := dal.GetUserWithSettings(g.Param("id"))
 	if u == nil {
 		g.String(200, "internal/error")
 		return
 	}
 
-	if you := getUser(g); you != nil {
+	if you != nil {
 		u.Buildup(you)
 	}
 
