@@ -306,7 +306,7 @@ func APIReplies(g *gin.Context) {
 	}
 
 	a, next := dal.WalkReply(int(common.Cfg.PostsPerPage), parent.ReplyChain)
-	fromMultiple(&pl.Articles, a, _NoMoreParent|_ShowAvatar, getUser(g))
+	fromMultiple(&pl.Articles, a, _NoMoreParent|_NoCluster|_ShowAvatar, getUser(g))
 	pl.Next = next
 
 	g.Writer.Header().Add("X-Reply", "true")

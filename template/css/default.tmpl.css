@@ -180,6 +180,15 @@ div.subreply .row-header {
     margin: 0;
 }
 
+div.clusterreply .row-header {
+    background: transparent;
+    border-top: dashed 1px {{.Border}};
+}
+
+div.clusterreply {
+    margin: -0.5em;
+}
+
 div.subreply .post-author {
     margin-left: 0;
 }

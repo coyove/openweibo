@@ -3,6 +3,7 @@ package view
 import (
 	"encoding/base64"
 	"html/template"
+	"log"
 	"strings"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 
 type ArticleView struct {
 	ID            string
+	Others        []*ArticleView
 	Parent        *ArticleView
 	Author        *model.User
 	You           *model.User
@@ -24,6 +26,7 @@ type ArticleView struct {
 	NSFW          bool
 	NoAvatar      bool
 	NoReply       bool
+	AlsoReply     bool
 	StickOnTop    bool
 	Content       string
 	ContentHTML   template.HTML
@@ -38,6 +41,7 @@ const (
 	_NoMoreParent
 	_ShowAvatar
 	_NoReply
+	_NoCluster
 )
 
 func NewTopArticleView(a *model.Article, you *model.User) (av ArticleView) {
@@ -150,18 +154,53 @@ func fromMultiple(a *[]ArticleView, a2 []*model.Article, opt uint64, u *model.Us
 
 	lookup := map[string]*ArticleView{}
 	dedup := map[string]bool{}
+	cluster := map[string][]string{}
 
 	for i, v := range a2 {
 		(*a)[i].from(v, opt, u)
-		lookup[v.ID] = &(*a)[i]
+		lookup[(*a)[i].ID] = &(*a)[i]
 	}
 
+	// First pass, connect continous replies (r1 -> r2 -> ... -> first_post) into one post
 	for i, v := range *a {
-		if v.Parent != nil && lookup[v.Parent.ID] != nil {
-			p := lookup[v.Parent.ID]
-			p.NoAvatar = true
-			(*a)[i].Parent = p
-			dedup[p.ID] = true
+		if v.Parent != nil {
+			cluster[v.Parent.ID] = append(cluster[v.Parent.ID], v.ID) // will be used in second pass
+
+			if lookup[v.Parent.ID] != nil {
+				p := lookup[v.Parent.ID]
+				p.NoAvatar = true
+				(*a)[i].Parent = p
+				dedup[p.ID] = true
+			}
+		}
+	}
+
+	if opt&_NoCluster == 0 {
+		// Second pass, connect clustered replies (r1 -> p, r2 -> p ...., rn -> p) into one post
+	NEXT:
+		for _, rids := range cluster {
+			if len(rids) == 1 {
+				continue
+			}
+			for _, rid := range rids {
+				if dedup[rid] {
+					continue NEXT
+				}
+			}
+			// All posts are visible
+			r := lookup[rids[0]]
+			for i := 1; i < len(rids); i++ {
+				ri := lookup[rids[i]]
+				if ri == nil {
+					log.Println("[ClusterReplies] nil:", rids[i])
+					continue
+				}
+				ri.Parent = nil
+				ri.Others = nil
+				ri.AlsoReply = true
+				r.Others = append(r.Others, ri)
+				dedup[rids[i]] = true
+			}
 		}
 	}
 

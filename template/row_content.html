@@ -39,7 +39,11 @@
                 <span class=post-date>转发于 {{formatTime .CreateTime}}</span>
             {{end}}
         {{else}}
-            <span class=post-date>发布于 {{formatTime .CreateTime}}</span>
+            {{if .AlsoReply}}
+                <span class=post-date><b>同</b> &bull; 回复于 {{formatTime .CreateTime}}</span>
+            {{else}}
+                <span class=post-date>发布于 {{formatTime .CreateTime}}</span>
+            {{end}}
         {{end}}
     {{end}}
     </div>
@@ -109,6 +113,13 @@
         {{end}}
         {{end}}
     </div>
+    {{end}}
+
+
+    {{range .Others}}
+    <div class=clusterreply>
+            {{template "row_content.html" .}}
+        </div>
     {{end}}
 
     {{if .Parent}}
