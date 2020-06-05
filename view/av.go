@@ -1,12 +1,12 @@
 package view
 
 import (
-	"encoding/base64"
 	"html/template"
 	"log"
 	"strings"
 	"time"
 
+	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
@@ -25,7 +25,7 @@ type ArticleView struct {
 	Liked         bool
 	NSFW          bool
 	NoAvatar      bool
-	NoReply       bool
+	GreyOutReply  bool
 	AlsoReply     bool
 	StickOnTop    bool
 	Content       string
@@ -39,8 +39,8 @@ type ArticleView struct {
 const (
 	_ uint64 = 1 << iota
 	_NoMoreParent
-	_ShowAvatar
-	_NoReply
+	_ShowAuthorAvatar
+	_GreyOutReply
 	_NoCluster
 )
 
@@ -50,7 +50,7 @@ func NewTopArticleView(a *model.Article, you *model.User) (av ArticleView) {
 }
 
 func NewReplyArticleView(a *model.Article, you *model.User) (av ArticleView) {
-	av.from(a, _NoMoreParent|_ShowAvatar, you)
+	av.from(a, _NoMoreParent|_ShowAuthorAvatar, you)
 	return
 }
 
@@ -83,11 +83,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 		a.MediaType, a.Media = p[0], p[1]
 		switch a.MediaType {
 		case "IMG":
-			if strings.HasPrefix(a.Media, "LOCAL:") {
-				a.Media = "/i/" + a.Media[6:] + ".jpg"
-			} else {
-				a.Media = "/img/" + base64.StdEncoding.EncodeToString([]byte(a.Media)) + ".jpg"
-			}
+			a.Media = common.Cfg.MediaDomain + "/i/" + strings.TrimPrefix(a.Media, "LOCAL:") + ".jpg"
 		}
 	}
 
@@ -102,13 +98,13 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 		a.Parent = &ArticleView{}
 		if opt&_NoMoreParent == 0 {
 			p, _ := dal.GetArticle(a2.Parent)
-			a.Parent.from(p, opt&(^_NoReply)|_NoMoreParent, u)
+			a.Parent.from(p, opt&(^_GreyOutReply)|_NoMoreParent, u)
 		}
 	}
 
-	a.NoReply = opt&_NoReply > 0
+	a.GreyOutReply = opt&_GreyOutReply > 0
 	a.NoAvatar = opt&_NoMoreParent > 0
-	if opt&_ShowAvatar > 0 {
+	if opt&_ShowAuthorAvatar > 0 {
 		a.NoAvatar = false
 	}
 

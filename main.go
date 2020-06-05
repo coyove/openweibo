@@ -1,10 +1,12 @@
 package main
 
 import (
+	"crypto/tls"
+	"fmt"
 	"html/template"
 	"io/ioutil"
-	"log"
 	"math/rand"
+	"net/http"
 	"net/http/pprof"
 	"os"
 	"runtime"
@@ -23,6 +25,7 @@ import (
 	"github.com/coyove/iis/tfidf"
 	"github.com/coyove/iis/view"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 func main() {
@@ -259,6 +262,24 @@ func main() {
 		}
 	})
 
-	log.Fatal(r.Run(":5010"))
-	// 	log.Fatal(autotls.Run(r, common.Cfg.Domain))
+	if len(common.Cfg.Domains) > 0 {
+		go func() {
+			m := &autocert.Manager{
+				Cache:      autocert.DirCache("secret-dir"),
+				Prompt:     autocert.AcceptTOS,
+				HostPolicy: autocert.HostWhitelist(common.Cfg.Domains...),
+			}
+			s := &http.Server{
+				Addr:      ":https",
+				TLSConfig: m.TLSConfig(),
+				Handler:   r,
+			}
+			hello := &tls.ClientHelloInfo{ServerName: common.Cfg.Domains[0]}
+			_, err := m.GetCertificate(hello)
+			fmt.Println(err)
+			fmt.Println(s.ListenAndServeTLS("", ""))
+		}()
+	}
+
+	fmt.Println(r.Run(":5010"))
 }

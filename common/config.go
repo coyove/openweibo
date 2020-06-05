@@ -14,25 +14,26 @@ import (
 )
 
 var Cfg = struct {
-	Key            string   `yaml:"Key"`
-	RPCKey         string   `yaml:"RPCKey"`
-	Cooldown       int      `yaml:"Cooldown"`   // minute
-	TokenTTL       int64    `yaml:"TokenTTL"`   // minute
-	IDTokenTTL     int64    `yaml:"IDTokenTTL"` // second
-	MaxContent     int64    `yaml:"MaxContent"` // byte
-	MinContent     int64    `yaml:"MinContent"` // byte
-	AdminName      string   `yaml:"AdminName"`
-	PostsPerPage   int      `yaml:"PostsPerPage"`
-	MaxImagesCache int      `yaml:"MaxImagesCache"` // GB
-	Domain         string   `yaml:"Domain"`
-	IPBlacklist    []string `yaml:"IPBlacklist"`
-	MaxMentions    int      `yaml:"MaxMentions"`
-	DyRegion       string   `yaml:"DyRegion"`
-	CwRegion       string   `yaml:"CwRegion"`
-	DyAccessKey    string   `yaml:"DyAccessKey"`
-	DySecretKey    string   `yaml:"DySecretKey"`
-	RedisAddr      string   `yaml:"RedisAddr"`
-	ReadOnly       bool     `yaml:"ReadOnly"`
+	Key            string
+	RPCKey         string
+	Cooldown       int   // minute
+	TokenTTL       int64 // minute
+	IDTokenTTL     int64 // second
+	MaxContent     int64 // byte
+	MinContent     int64 // byte
+	AdminName      string
+	PostsPerPage   int
+	MaxImagesCache int // GB
+	Domains        []string
+	MediaDomain    string
+	IPBlacklist    []string
+	MaxMentions    int
+	DyRegion       string
+	CwRegion       string
+	DyAccessKey    string
+	DySecretKey    string
+	RedisAddr      string
+	ReadOnly       bool
 	IPIPDatabase   string
 
 	// inited after Cfg being read

@@ -228,7 +228,7 @@ func APITimeline(g *gin.Context) {
 		p.Next = next
 	} else if g.PostForm("reply") == "true" {
 		a, next := dal.WalkReply(int(common.Cfg.PostsPerPage), g.PostForm("cursors"))
-		fromMultiple(&articles, a, _NoMoreParent|_ShowAvatar, getUser(g))
+		fromMultiple(&articles, a, _NoMoreParent|_ShowAuthorAvatar, getUser(g))
 		p.Next = next
 	} else {
 		cursors, payload := ik.SplitIDs(g.PostForm("cursors"))
@@ -280,7 +280,7 @@ func APIReplies(g *gin.Context) {
 		return
 	}
 
-	pl.ParentArticle.from(parent, _NoReply, you)
+	pl.ParentArticle.from(parent, _GreyOutReply, you)
 	pl.ReplyView = makeReplyView(g, pid)
 
 	if you != nil {
@@ -306,7 +306,7 @@ func APIReplies(g *gin.Context) {
 	}
 
 	a, next := dal.WalkReply(int(common.Cfg.PostsPerPage), parent.ReplyChain)
-	fromMultiple(&pl.Articles, a, _NoMoreParent|_NoCluster|_ShowAvatar, getUser(g))
+	fromMultiple(&pl.Articles, a, _NoMoreParent|_NoCluster|_ShowAuthorAvatar, getUser(g))
 	pl.Next = next
 
 	g.Writer.Header().Add("X-Reply", "true")

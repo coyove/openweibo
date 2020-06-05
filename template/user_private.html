@@ -1,8 +1,7 @@
 <div class="status">
     <div class="title row-header" style="">
         <div style="white-space:nowrap;display:inline-block">
-            <img class="avatar" src="/avatar/{{.ID}}.jpg?q={{.Avatar}}" style="cursor:pointer;margin:0"
-                                                                        onclick="this.nextElementSibling.click()">
+            <img class="avatar" src="{{.AvatarURL}}" style="cursor:pointer;margin:0" onclick="this.nextElementSibling.click()">
             <input type=file style="display:none" onchange="onAvatarChanged(this)">
             <button class="gbutton tmpl-normal-text" onclick="this.previousElementSibling.click()">
                 <i class=icon-camera></i>
@@ -17,7 +16,7 @@
             </a>
             <div style="display:inline-block">
                 <div class="post-options post-options-emoji" onmouseover="loadKimochi(this)">
-                    <img src="/s/emoji/emoji{{.Kimochi}}.png" style="vertical-align: middle" kimochi={{.Kimochi}} class=kimochi-selector>
+                    <img src="{{.KimochiURL}}" style="vertical-align: middle" kimochi={{.Kimochi}} class=kimochi-selector>
                     <ul style="margin-left:-216px;direction:rtl"></ul>
                 </div>
             </div>

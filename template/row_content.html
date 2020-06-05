@@ -4,10 +4,9 @@
     <div class="row-header" style="line-height:{{if .NoAvatar}}24px{{else}}36px{{end}};display:flex">
         {{if not .NoAvatar}}
         <div class=avatar-container>
-            <img class="avatar" alt="{{.Author.ID}}" src="/avatar/{{.Author.ID}}.jpg?q={{.Author.Avatar}}"
-                                                     onmouseenter="showInfoBox(this,'{{.Author.ID}}')">
+            <img class="avatar" alt="{{.Author.ID}}" src="{{.Author.AvatarURL}}" onmouseenter="showInfoBox(this,'{{.Author.ID}}')">
             {{if .Author.Kimochi}}
-            <img class="avatar-kimochi" src="/s/emoji/emoji{{.Author.Kimochi}}.png">
+            <img class="avatar-kimochi" src="{{.Author.KimochiURL}}">
             {{end}}
         </div>
             {{template "display_name.html" .Author}}
@@ -88,7 +87,7 @@
         {{end}}
         {{end}}
 
-        <a class="reply-box {{if .NoReply}}tmpl-light-text{{end}}" href="javascript:showReply('{{.ID}}')">
+        <a class="reply-box {{if .GreyOutReply}}tmpl-light-text{{end}}" href="javascript:showReply('{{.ID}}')">
             <i class="icon-reply-outline"></i>
             {{if .Replies}}{{.Replies}}{{end}}
         </a>
