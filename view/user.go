@@ -17,16 +17,21 @@ import (
 )
 
 func User(g *gin.Context) {
+	m, _ := g.Cookie("mode")
 	p := struct {
-		UUID      string
-		Challenge string
-		Survey    interface{}
-		User      *model.User
+		UUID        string
+		Challenge   string
+		Survey      interface{}
+		User        *model.User
+		SiteKey     string
+		DarkCaptcha bool
 	}{
-		Survey: middleware.Survey,
+		Survey:      middleware.Survey,
+		SiteKey:     common.Cfg.HCaptchaSiteKey,
+		DarkCaptcha: m == "dark",
 	}
 
-	p.UUID, p.Challenge = ik.MakeToken(g)
+	// p.UUID, p.Challenge = ik.MakeToken(g)
 	p.User = getUser(g)
 	if p.User != nil {
 		p.User.SetShowList('S')

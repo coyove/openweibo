@@ -14,27 +14,29 @@ import (
 )
 
 var Cfg = struct {
-	Key            string
-	RPCKey         string
-	Cooldown       int   // minute
-	TokenTTL       int64 // minute
-	IDTokenTTL     int64 // second
-	MaxContent     int64 // byte
-	MinContent     int64 // byte
-	AdminName      string
-	PostsPerPage   int
-	MaxImagesCache int // GB
-	Domains        []string
-	MediaDomain    string
-	IPBlacklist    []string
-	MaxMentions    int
-	DyRegion       string
-	CwRegion       string
-	DyAccessKey    string
-	DySecretKey    string
-	RedisAddr      string
-	ReadOnly       bool
-	IPIPDatabase   string
+	Key             string
+	RPCKey          string
+	Cooldown        int   // minute
+	TokenTTL        int64 // minute
+	IDTokenTTL      int64 // second
+	MaxContent      int64 // byte
+	MinContent      int64 // byte
+	AdminName       string
+	PostsPerPage    int
+	MaxImagesCache  int // GB
+	Domains         []string
+	MediaDomain     string
+	IPBlacklist     []string
+	MaxMentions     int
+	DyRegion        string
+	CwRegion        string
+	DyAccessKey     string
+	DySecretKey     string
+	RedisAddr       string
+	ReadOnly        bool
+	IPIPDatabase    string
+	HCaptchaSiteKey string
+	HCaptchaSecKey  string
 
 	// inited after Cfg being read
 	Blk               cipher.Block
@@ -42,16 +44,18 @@ var Cfg = struct {
 	IPBlacklistParsed []*net.IPNet
 	IPIPDB            *ipdb.City
 }{
-	TokenTTL:       10,
-	IDTokenTTL:     600,
-	Key:            "0123456789abcdef",
-	AdminName:      "zzzz",
-	MaxContent:     4096,
-	MinContent:     8,
-	PostsPerPage:   30,
-	Cooldown:       5,
-	MaxMentions:    3,
-	MaxImagesCache: 10,
+	TokenTTL:        10,
+	IDTokenTTL:      600,
+	Key:             "0123456789abcdef",
+	AdminName:       "zzzz",
+	MaxContent:      4096,
+	MinContent:      8,
+	PostsPerPage:    30,
+	Cooldown:        5,
+	MaxMentions:     3,
+	MaxImagesCache:  10,
+	HCaptchaSiteKey: "10000000-ffff-ffff-ffff-000000000001",
+	HCaptchaSecKey:  "0x0000000000000000000000000000000000000000",
 }
 
 func MustLoadConfig() {
@@ -143,7 +147,7 @@ var CSSLightConfig = CSSConfig{
 	InboxMessage:      "#3f51b5",
 	AddFriend:         "#098",
 	RemoveFriend:      "#e16",
-	ToastBG:           "rgba(0,0,0,0.5)",
+	ToastBG:           "rgba(0,0,0,0.9)",
 	Toast:             "white",
 }
 
@@ -167,7 +171,7 @@ var CSSDarkConfig = CSSConfig{
 	RemoveFriend:      "#F06292",
 	PostButton:        "#488dc3",
 	PostButtonHover:   "#176caf",
-	ToastBG:           "rgba(255,255,255,0.5)",
+	ToastBG:           "rgba(255,255,255,0.9)",
 	Toast:             "black",
 	InboxMessage:      "inherit; text-shadow: 0 0 8px rgba(0,0,0,0.5);",
 

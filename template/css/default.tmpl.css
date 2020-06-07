@@ -97,6 +97,7 @@ a:hover {
 .articles {
     width: 100%;
     border-collapse: collapse;
+    text-align: left;
 }
 
 .articles > div {

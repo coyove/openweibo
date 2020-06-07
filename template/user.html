@@ -237,6 +237,9 @@
         <a href="/" class=gbutton>已有账号？点此登入</a>
     </div>
 
+    <script src="https://hcaptcha.com/1/api.js" async defer></script>
+
+    <div style="overflow: hidden;margin:0 auto;position:relative;text-align:center;max-width:350px">
 <form method="POST" action="/user" onsubmit='
                     var username = $q("[name=username]").value || "";
                     var password = $q("[name=password]").value || "";
@@ -256,12 +259,13 @@
                         username: username,
                         password: password,
                         email: $q("[name=email]").value,
-                        uuid: $q("[name=uuid]").value,
-                        answer: $q("[name=answer]").value,
+                        // uuid: $q("[name=uuid]").value,
+                        // answer: $q("[name=answer]").value,
+                        response: hcaptcha.getResponse(),
                     }, function(r) {
                         stop();
                         if (r !== "ok") {
-                            refreshCaptcha();
+                            hcaptcha.reset();
                             return r;
                         }
                         location.reload();
@@ -272,8 +276,7 @@
 
     <input type=hidden name=uuid value="{{.UUID}}">
     <tr>
-        <td>用户名:</td>
-        <td><input class=t maxlength=15 name=username onkeyup="checkID(this.value)"></td>
+        <td><input class=t maxlength=15 placeholder="用户名" name=username oninput="checkID(this.value)"></td>
     <script>
         function checkID(id) {
             var x = [], j = 0, filtered = false;
@@ -297,17 +300,25 @@
             $q("#id-output").innerHTML = "<b style='font-family:monospace'>@" + String.fromCharCode.apply(null, x) +
                 (filtered ? "&emsp;<span class=tmpl-red-text>(注意: 非法字符已过滤)</span></b>" : "</b>");
         }
+
+        (function() {
+            var c = 0;
+            setInterval(function() {
+                c++;
+                var btn = $q("[type=submit]")
+                    btn.disabled = typeof hcaptcha == 'undefined';
+                if (btn.disabled && c == 5) $q("#captcha-error").style.display = null;
+            }, 1000);
+        })()
     </script>
     </tr>
     <tr>
-        <td></td><td id="id-output">3~15英文，2~7中文</td>
+        <td id="id-output">3~15英文，2~7中文</td>
     </tr>
     <tr>
-        <td class=nowrap>密码: </td>
-        <td><input type=password class=t name=password></td>
+        <td><input type=password class=t placeholder="密码" name=password></td>
     </tr>
     <tr>
-        <td class=nowrap></td>
         <td>
             至少3英文字符
             <input type=checkbox class='icon-input-checkbox'
@@ -317,11 +328,10 @@
         </td>
     </tr>
     <tr>
-        <td>Email:</td>
-        <td><input type=email class=t name=email></td>
+        <td><input type=email class=t placeholder="邮箱" name=email></td>
     </tr>
-    <tr><td></td></tr>
     <tr>
+    <!--<tr>
         <td class=nowrap rowspan=2>验证码:</td>
         <td>
             <a href="javascript:refreshCaptcha()">
@@ -339,16 +349,23 @@
         }
     </script>
         </td>
+    </tr>-->
+        <td style="text-align:center">
+            <div class="h-captcha" data-sitekey="{{.SiteKey}}" data-size="compact" data-theme="{{if .DarkCaptcha}}dark{{end}}"></div>
+        </td>
+    </tr> 
+    <tr id="captcha-error" style="display:none">
+        <td>
+            如果长时间没有看到验证码，请联系站长：<a href="https://bbs.saraba1st.com/2b/thread-1902541-1-1.html" target=_blank>https://bbs.saraba1st.com/2b/thread-1902541-1-1.html</a>
+        </td>
     </tr>
     <tr>
-        <td><input size=6 maxlength=4 name="answer" style="padding: 0.5em"></td>
-    </tr> 
-    <tr>
-        <td></td> <td style="text-align:right">
-            <button class="gbutton" type=submit>注册</button>
+        <td style="text-align:right">
+            <button class="gbutton" type=submit disabled>注册</button>
         </td>
     </tr>
 </table>
+    </div>
 </form>
 {{end}}
 

@@ -5,14 +5,18 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"image"
 	"image/jpeg"
 	"io"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/ik"
@@ -20,6 +24,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/nfnt/resize"
 )
+
+var captchaClient = &http.Client{Timeout: 500 * time.Millisecond}
 
 func checkIP(g *gin.Context) string {
 	if u, _ := g.Get("user"); u != nil {
@@ -78,6 +84,23 @@ func checkCaptcha(g *gin.Context) string {
 	if ret := checkIP(g); ret != "" {
 		return ret
 	}
+
+	p := fmt.Sprintf("response=%s&secret=%s", g.PostForm("response"), common.Cfg.HCaptchaSecKey)
+	resp, err := captchaClient.Post("https://hcaptcha.com/siteverify", "application/x-www-form-urlencoded", strings.NewReader(p))
+	if err != nil {
+		log.Println("hcaptcha server failure:", err)
+		return "guard/failed-captcha"
+	}
+	buf, _ := ioutil.ReadAll(resp.Body)
+	resp.Body.Close()
+	m := map[string]interface{}{}
+	json.Unmarshal(buf, &m)
+
+	if ok, _ := m["success"].(bool); ok {
+		return ""
+	}
+
+	return "guard/failed-captcha:" + fmt.Sprint(m["error-codes"])
 
 	if !tokenok {
 		return "guard/token-expired"
