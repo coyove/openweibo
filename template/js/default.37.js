@@ -483,7 +483,6 @@ function showInfoBox(el, uid) {
         addtionalBoxes = [],
         startAt = new Date().getTime();
 
-    document.body.appendChild(div);
     div.innerHTML = $q("#dummy-user").innerHTML;
     div.querySelector('img.avatar').src = el.src || '';
     div.querySelector('img.avatar').onclick = null;
@@ -515,6 +514,7 @@ function showInfoBox(el, uid) {
     div.style.left = box.left - bodyBox.left + 'px';
     div.style.top = box.top - bodyBox.top + boxTopOffset + 'px';
     div.style.boxShadow = "0 1px 2px rgba(0, 0, 0, .3)";
+    document.body.appendChild(div);
 
     var reg = {
         valid: true,
@@ -647,3 +647,4 @@ function $aesgcm() {
 function isDarkMode() {
     return (document.cookie.match(/(^| )mode=([^;]+)/) || [])[2] === 'dark';
 }
+
