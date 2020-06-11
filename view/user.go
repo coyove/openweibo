@@ -97,6 +97,11 @@ var ig, _ = identicon.New("github", 5, 3)
 
 func Avatar(g *gin.Context) {
 	id := strings.TrimSuffix(g.Param("id"), ".jpg")
+	if len(id) == 0 {
+		g.Status(404)
+		return
+	}
+
 	hash := (model.User{ID: id}).IDHash()
 	path := fmt.Sprintf("tmp/images/%d/%016x@%s", hash%1024, hash, id)
 
