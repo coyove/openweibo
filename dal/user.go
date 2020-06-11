@@ -506,3 +506,12 @@ func LastActiveTime(uid string) time.Time {
 func MarkUserActive(uid string) {
 	m.activeUsers.Add("u/"+uid+"/last_active", []byte(strconv.FormatInt(time.Now().Unix(), 10)))
 }
+
+func CacheGet(key string) (string, bool) {
+	v, ok := m.activeUsers.Get(key)
+	return string(v), ok
+}
+
+func CacheSet(key string, value string) {
+	m.activeUsers.Add(key, []byte(value))
+}

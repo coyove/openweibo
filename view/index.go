@@ -44,6 +44,10 @@ type ArticleRepliesView struct {
 	ReplyView         ReplyView
 }
 
+func A(g *gin.Context) {
+	g.String(200, g.PostForm("code"))
+}
+
 func S(g *gin.Context) {
 	g.Redirect(302, "/t/master?pid=S"+g.Param("id"))
 }

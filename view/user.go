@@ -25,10 +25,16 @@ func User(g *gin.Context) {
 		User        *model.User
 		SiteKey     string
 		DarkCaptcha bool
+		OTT         string
+		OTTUsername string
+		OTTEmail    string
 	}{
 		Survey:      middleware.Survey,
 		SiteKey:     common.Cfg.HCaptchaSiteKey,
 		DarkCaptcha: m == "dark",
+		OTT:         g.Query("ott"),
+		OTTUsername: g.Query("ott-username"),
+		OTTEmail:    g.Query("ott-email"),
 	}
 
 	// p.UUID, p.Challenge = ik.MakeToken(g)

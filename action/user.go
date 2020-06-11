@@ -57,6 +57,7 @@ func APISignup(g *gin.Context) {
 		username = sanUsername(g.PostForm("username"))
 		email    = common.SoftTrunc(g.PostForm("email"), 64)
 		password = common.SoftTrunc(g.PostForm("password"), 32)
+		ott      = g.PostForm("ott")
 	)
 
 	if len(username) < 3 || len(password) < 3 {
@@ -64,9 +65,21 @@ func APISignup(g *gin.Context) {
 		return
 	}
 
-	if ret := checkCaptcha(g); ret != "" {
-		g.String(200, ret)
-		return
+	if ott != "" {
+		if !ik.ValidateOTT(g.ClientIP(), ott) {
+			g.String(200, "token/invalid-ott")
+			return
+		}
+
+		if flag, _ := dal.CacheGet(ott); flag == "1" {
+			g.String(200, "token/used-ott")
+			return
+		}
+	} else {
+		if ret := checkCaptcha(g); ret != "" {
+			g.String(200, ret)
+			return
+		}
 	}
 
 	switch username := strings.ToLower(username); {
@@ -106,6 +119,10 @@ func APISignup(g *gin.Context) {
 
 	g.SetCookie("id", tok, 365*86400, "", "", false, false)
 	g.String(200, "ok")
+
+	if ott != "" {
+		dal.CacheSet(ott, "1")
+	}
 }
 
 func APILogin(g *gin.Context) {

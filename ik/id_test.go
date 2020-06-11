@@ -1,8 +1,11 @@
 package ik
 
 import (
+	"crypto/aes"
 	"math/rand"
 	"testing"
+
+	"github.com/coyove/iis/common"
 )
 
 func TestID(t *testing.T) {
@@ -39,4 +42,12 @@ func TestCompressID(t *testing.T) {
 			t.Fatal(payload, payload2)
 		}
 	}
+}
+
+func TestOTT(t *testing.T) {
+	common.Cfg.Blk, _ = aes.NewCipher(make([]byte, 16))
+	tok := MakeOTT("a")
+	t.Log(tok)
+	t.Log(ValidateOTT("a", tok))
+	t.Log(ValidateOTT("abb", tok))
 }

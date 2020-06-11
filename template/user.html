@@ -262,6 +262,7 @@
                         // uuid: $q("[name=uuid]").value,
                         // answer: $q("[name=answer]").value,
                         response: hcaptcha.getResponse(),
+                        ott: $q("[name=ott]").value,
                     }, function(r) {
                         stop();
                         if (r !== "ok") {
@@ -272,11 +273,14 @@
                     }, stop)
 
                     return false;'>
+
+                    <input type=hidden name=ott value="{{.OTT}}">
+
     <table class="articles">
 
     <input type=hidden name=uuid value="{{.UUID}}">
     <tr>
-        <td><input class=t maxlength=15 placeholder="用户名" name=username oninput="checkID(this.value)"></td>
+        <td><input value="{{.OTTUsername}}" class=t maxlength=15 placeholder="用户名" name=username oninput="checkID(this.value)"></td>
     <script>
         function checkID(id) {
             var x = [], j = 0, filtered = false;
@@ -328,7 +332,7 @@
         </td>
     </tr>
     <tr>
-        <td><input type=email class=t placeholder="邮箱" name=email></td>
+        <td><input value="{{.OTTEmail}}" type=email class=t placeholder="邮箱" name=email></td>
     </tr>
     <tr>
     <!--<tr>
