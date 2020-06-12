@@ -150,7 +150,6 @@ nav a:hover {
 .paging {
     text-align: center;
     padding: 1em;
-    border-top: solid 1px {{.Border}};
 }
 
 .paging a {

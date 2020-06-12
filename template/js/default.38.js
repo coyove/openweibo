@@ -214,9 +214,9 @@ function lockArticle(el, id) {
     }
     div.appendChild(checkbox(0, "不限制回复"))
     div.appendChild(checkbox(1, "禁止回复"))
-    div.appendChild(checkbox(2, "我关注的人可以回复"))
-    div.appendChild(checkbox(3, "我关注的和我@的人可以回复"))
-    div.appendChild(checkbox(4, "我关注的和粉丝可以回复"))
+    div.appendChild(checkbox(2, "我关注的人可回复"))
+    div.appendChild(checkbox(3, "我关注的人和被@的人可回复"))
+    div.appendChild(checkbox(4, "我关注的人和我粉丝可回复"))
     document.body.appendChild(div)
 
     if (id) div.appendChild($html("<div style='margin:0.5em;text-align:center'><button class=gbutton>更新设置</div></div>"))
@@ -378,7 +378,7 @@ function preLoadMore(tlid, nextBtn) {
 }
 
 // Nested replies view
-function showReply(aid) {
+function showReply(aid, closeToHome) {
     // We have something popped up already, wait them to be removed first
     if (window.REGIONS && window.REGIONS.length) return;
 
@@ -415,8 +415,9 @@ function showReply(aid) {
 
     div.CLOSER = divclose.querySelector('.icon-left-small')
     div.CLOSER.onclick = function() {
-        div.parentNode.removeChild(div)
+        if (closeToHome) { location.href = "/t"; return }
 
+        div.parentNode.removeChild(div)
         if ($q('[data-parent]', true).length === 0) {
             history.pushState("", "", location.pathname + (window.IS_MEDIA ? '?media=1' : ''));
             document.body.style.overflow = null;

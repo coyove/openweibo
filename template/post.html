@@ -8,7 +8,7 @@
                 <button class=gbutton disabled>
                     {{if eq .ParentArticle.ReplyLockMode 1}}禁止回复{{end}}
                     {{if eq .ParentArticle.ReplyLockMode 2}}仅限作者关注的人回复{{end}}
-                    {{if eq .ParentArticle.ReplyLockMode 3}}仅限作者关注和@的人回复{{end}}
+                    {{if eq .ParentArticle.ReplyLockMode 3}}仅限作者关注和被@的人回复{{end}}
                     {{if eq .ParentArticle.ReplyLockMode 4}}仅限作者关注的和其粉丝回复{{end}}
                 </button>
             </div>

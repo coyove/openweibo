@@ -241,40 +241,25 @@
 
     <div style="overflow: hidden;margin:0 auto;position:relative;text-align:center;max-width:350px">
 <form method="POST" action="/user" onsubmit='
-                    var username = $q("[name=username]").value || "";
-                    var password = $q("[name=password]").value || "";
-
-                    if (username.length < 3) {
-                        $popup("用户名过短 (>=3字节)")
-                        return false;
-                    }
-
-                    if (password.length < 3) {
-                        $popup("密码过短 (>=3字节)")
-                        return false;
-                    }
+                    var v = function(k) { return $q("[name="+k+"]").value || "" };
+                    var data = {
+                        username: v("username"), password: v("password"), email: v("email"), uuid: v("uuid"), answer: v("answer"),
+                    };
+                    if (data.username.length < 3) { $popup("用户名过短 (至少3字节)"); return false; }
+                    if (data.password.length < 3) { $popup("密码过短 (至少3字节)"); return false; }
+                    try { data.response = hcaptcha.getResponse() } catch (e) {}
 
                     var stop = $wait($q("[type=submit]"))
-                    $post("/api2/signup", {
-                        username: username,
-                        password: password,
-                        email: $q("[name=email]").value,
-                        // uuid: $q("[name=uuid]").value,
-                        // answer: $q("[name=answer]").value,
-                        response: hcaptcha.getResponse(),
-                        ott: $q("[name=ott]").value,
-                    }, function(r) {
+                    $post("/api2/signup", data, function(r) {
                         stop();
                         if (r !== "ok") {
-                            hcaptcha.reset();
+                            try { hcaptcha.reset(); } catch(e) {}
+                            refreshCaptcha();
                             return r;
                         }
                         location.reload();
                     }, stop)
-
                     return false;'>
-
-                    <input type=hidden name=ott value="{{.OTT}}">
 
     <table class="articles">
 
@@ -307,11 +292,15 @@
 
         (function() {
             var c = 0;
-            setInterval(function() {
+            var i = setInterval(function() {
                 c++;
                 var btn = $q("[type=submit]")
-                    btn.disabled = typeof hcaptcha == 'undefined';
-                if (btn.disabled && c == 5) $q("#captcha-error").style.display = null;
+                btn.disabled = typeof hcaptcha == 'undefined';
+                if (btn.disabled && c == 5) {
+                    $q("#captcha-error").style.display = null;
+                    btn.disabled = null;
+                    clearInterval(i);
+                }
             }, 1000);
         })()
     </script>
@@ -334,13 +323,14 @@
     <tr>
         <td><input value="{{.OTTEmail}}" type=email class=t placeholder="邮箱" name=email></td>
     </tr>
-    <tr>
-    <!--<tr>
-        <td class=nowrap rowspan=2>验证码:</td>
+    <tr id="captcha-error" style="display:none">
         <td>
+            <div>
             <a href="javascript:refreshCaptcha()">
                 <img name=captcha src="data:image/png;base64,{{.Challenge}}" style="background: white">
             </a>
+            </div>
+            <input class=t placeholder="验证码" name=answer>
     <script>
         function refreshCaptcha() {
             var stop = $wait($q("button[type=submit]"))
@@ -353,14 +343,10 @@
         }
     </script>
         </td>
-    </tr>-->
+    </tr>
+    <tr>
         <td style="text-align:center">
             <div class="h-captcha" data-sitekey="{{.SiteKey}}" data-size="compact" data-theme="{{if .DarkCaptcha}}dark{{end}}"></div>
-        </td>
-    </tr> 
-    <tr id="captcha-error" style="display:none">
-        <td>
-            如果长时间没有看到验证码，请联系站长：<a href="https://bbs.saraba1st.com/2b/thread-1902541-1-1.html" target=_blank>https://bbs.saraba1st.com/2b/thread-1902541-1-1.html</a>
         </td>
     </tr>
     <tr>

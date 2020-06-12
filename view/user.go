@@ -37,7 +37,7 @@ func User(g *gin.Context) {
 		OTTEmail:    g.Query("ott-email"),
 	}
 
-	// p.UUID, p.Challenge = ik.MakeToken(g)
+	p.UUID, p.Challenge = ik.MakeToken(g)
 	p.User = getUser(g)
 	if p.User != nil {
 		p.User.SetShowList('S')
