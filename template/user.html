@@ -245,12 +245,12 @@
                     var password = $q("[name=password]").value || "";
 
                     if (username.length < 3) {
-                        $popup("用户名过短 (至少3字节)")
+                        $popup("用户名过短 (>=3字节)")
                         return false;
                     }
 
                     if (password.length < 3) {
-                        $popup("密码过短 (至少3字节)")
+                        $popup("密码过短 (>=3字节)")
                         return false;
                     }
 
@@ -259,15 +259,14 @@
                         username: username,
                         password: password,
                         email: $q("[name=email]").value,
-                        avatar: $q("[name=avatar]").src,
                         // uuid: $q("[name=uuid]").value,
                         // answer: $q("[name=answer]").value,
-                        {{if not .OTT}}response: hcaptcha.getResponse(),{{end}}
+                        response: hcaptcha.getResponse(),
                         ott: $q("[name=ott]").value,
                     }, function(r) {
                         stop();
                         if (r !== "ok") {
-                            {{if not .OTT}}hcaptcha.reset();{{end}}
+                            hcaptcha.reset();
                             return r;
                         }
                         location.reload();
@@ -280,11 +279,6 @@
     <table class="articles">
 
     <input type=hidden name=uuid value="{{.UUID}}">
-    <tr style="{{if not .OTT}}display:none{{end}}">
-        <td>
-            <div style="width:100%;overflow:hidden"><img name=avatar src="{{.OTTAvatar}}"></div>
-        </td>
-    </tr>
     <tr>
         <td><input value="{{.OTTUsername}}" class=t maxlength=15 placeholder="用户名" name=username oninput="checkID(this.value)"></td>
     <script>
@@ -310,6 +304,16 @@
             $q("#id-output").innerHTML = "<b style='font-family:monospace'>@" + String.fromCharCode.apply(null, x) +
                 (filtered ? "&emsp;<span class=tmpl-red-text>(注意: 非法字符已过滤)</span></b>" : "</b>");
         }
+
+        (function() {
+            var c = 0;
+            setInterval(function() {
+                c++;
+                var btn = $q("[type=submit]")
+                    btn.disabled = typeof hcaptcha == 'undefined';
+                if (btn.disabled && c == 5) $q("#captcha-error").style.display = null;
+            }, 1000);
+        })()
     </script>
     </tr>
     <tr>
@@ -330,18 +334,6 @@
     <tr>
         <td><input value="{{.OTTEmail}}" type=email class=t placeholder="邮箱" name=email></td>
     </tr>
-    {{if not .OTT}}
-    <script>
-        (function() {
-            var c = 0;
-            setInterval(function() {
-                c++;
-                var btn = $q("[type=submit]")
-                    btn.disabled = typeof hcaptcha == 'undefined';
-                if (btn.disabled && c == 5) $q("#captcha-error").style.display = null;
-            }, 1000);
-        })()
-    </script>
     <tr>
     <!--<tr>
         <td class=nowrap rowspan=2>验证码:</td>
@@ -371,18 +363,9 @@
             如果长时间没有看到验证码，请联系站长：<a href="https://bbs.saraba1st.com/2b/thread-1902541-1-1.html" target=_blank>https://bbs.saraba1st.com/2b/thread-1902541-1-1.html</a>
         </td>
     </tr>
-    {{end}}
     <tr>
         <td style="text-align:right">
-    {{if not .OTT}}
-        <a href="/weibo_sso" class=gbutton style="float:left;color:#ec192c">微博账号注册</a>
-    {{end}}
-            <button class="gbutton" type=submit {{if not .OTT}}disabled{{end}}>注册</button>
-        </td>
-    </tr>
-    <tr>
-        <td>
-            本站只使用新浪微博信息作为注册信息，在注册完毕后您可以在微博的“管理中心-我的应用”里取消对本站的授权
+            <button class="gbutton" type=submit disabled>注册</button>
         </td>
     </tr>
 </table>

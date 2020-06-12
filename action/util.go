@@ -189,19 +189,8 @@ func writeImage(u *model.User, imageName, image string) (string, error) {
 }
 
 func writeAvatar(u *model.User, image string) (string, error) {
-	var dec io.Reader
-	if strings.HasPrefix(image, "http") {
-		client := &http.Client{Timeout: time.Second * 2}
-		resp, err := client.Get(image)
-		if err != nil {
-			return "", err
-		}
-		defer resp.Body.Close()
-		dec = resp.Body
-	} else {
-		image = image[strings.Index(image, ",")+1:]
-		dec = base64.NewDecoder(base64.StdEncoding, strings.NewReader(image))
-	}
+	image = image[strings.Index(image, ",")+1:]
+	dec := base64.NewDecoder(base64.StdEncoding, strings.NewReader(image))
 
 	hash := u.IDHash()
 	path := fmt.Sprintf("tmp/images/%d/", hash%1024)

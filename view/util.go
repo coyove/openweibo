@@ -11,10 +11,7 @@ import (
 )
 
 func NotFound(g *gin.Context) {
-	p := struct {
-		Accept bool
-		Err    string
-	}{g.GetBool("need-accept"), g.GetString("error")}
+	p := struct{ Accept bool }{g.GetBool("need-accept")}
 	g.HTML(404, "error.html", p)
 }
 

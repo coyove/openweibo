@@ -19,26 +19,22 @@ import (
 func User(g *gin.Context) {
 	m, _ := g.Cookie("mode")
 	p := struct {
-		UUID          string
-		Challenge     string
-		Survey        interface{}
-		User          *model.User
-		SiteKey       string
-		DarkCaptcha   bool
-		OTT           string
-		OTTUsername   string
-		OTTEmail      string
-		OTTCustomName string
-		OTTAvatar     string
+		UUID        string
+		Challenge   string
+		Survey      interface{}
+		User        *model.User
+		SiteKey     string
+		DarkCaptcha bool
+		OTT         string
+		OTTUsername string
+		OTTEmail    string
 	}{
-		Survey:        middleware.Survey,
-		SiteKey:       common.Cfg.HCaptchaSiteKey,
-		DarkCaptcha:   m == "dark",
-		OTT:           g.Query("ott"),
-		OTTUsername:   g.Query("ott-username"),
-		OTTEmail:      g.Query("ott-email"),
-		OTTCustomName: g.Query("ott-customname"),
-		OTTAvatar:     g.Query("ott-avatar"),
+		Survey:      middleware.Survey,
+		SiteKey:     common.Cfg.HCaptchaSiteKey,
+		DarkCaptcha: m == "dark",
+		OTT:         g.Query("ott"),
+		OTTUsername: g.Query("ott-username"),
+		OTTEmail:    g.Query("ott-email"),
 	}
 
 	// p.UUID, p.Challenge = ik.MakeToken(g)
