@@ -3,6 +3,7 @@ package action
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"net/url"
 	"strconv"
 	"strings"
@@ -58,6 +59,7 @@ func APISignup(g *gin.Context) {
 		email    = common.SoftTrunc(g.PostForm("email"), 64)
 		password = common.SoftTrunc(g.PostForm("password"), 32)
 		ott      = g.PostForm("ott")
+		avatar   = g.PostForm("avatar")
 	)
 
 	if len(username) < 3 || len(password) < 3 {
@@ -122,6 +124,18 @@ func APISignup(g *gin.Context) {
 
 	if ott != "" {
 		dal.CacheSet(ott, "1")
+	}
+
+	if avatar != "" {
+		go func() {
+			if _, err := writeAvatar(u, avatar); err != nil {
+				log.Println("[Signup] avatar URL rewrite error", err, u)
+			}
+			dal.DoUpdateUser(&dal.UpdateUserRequest{
+				ID:     u.ID,
+				Avatar: aws.Uint32(uint32(time.Now().Unix())),
+			})
+		}()
 	}
 }
 

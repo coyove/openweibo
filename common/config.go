@@ -37,6 +37,9 @@ var Cfg = struct {
 	IPIPDatabase    string
 	HCaptchaSiteKey string
 	HCaptchaSecKey  string
+	WeiboOAuthID    string
+	WeiboOAuthSec   string
+	WeiboOAuthRedir string
 
 	// inited after Cfg being read
 	Blk               cipher.Block

@@ -198,6 +198,10 @@ func main() {
 	r.Static("/s/", "template")
 
 	r.NoRoute(view.NotFound)
+
+	r.Handle("GET", "/weibo_sso", view.WeiboSSO)
+	r.Handle("GET", "/weibo_oauth_callback", view.WeiboCallback)
+
 	r.Handle("GET", "/", view.Home)
 	r.Handle("GET", "/i/:img", view.I)
 	r.Handle("GET", "/eriri", view.RandomEririImage)
