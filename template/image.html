@@ -24,7 +24,7 @@
     {{$hide := ge $i 4}}
     {{if $v}}
     <div class="media cell" style="{{if $hide}}display:none{{end}}">
-        <a href="{{$v}}" target=_blank><img onload="adjustImage(this)" {{if $hide}}data-{{end}}src="{{$v}}"></a>
+        <a target=_blank><img onload="adjustImage(this)" {{if $hide}}data-{{end}}src="{{$v}}"></a>
     </div>
     {{end}}
 {{end}}

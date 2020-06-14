@@ -61,9 +61,9 @@
                         class="gbutton nsfw-clicker">
                     {{if .NSFW}}展开<i class="icon-transgender-alt"></i>NSFW图片{{else}}展开图片{{end}}
                 </button>
-                <a href="{{.Media}}" target=_blank><img onload="adjustImage(this)"></a>
+                <a target=_blank><img onload="adjustImage(this)"></a>
             {{else}}
-                <a href="{{.Media}}" target=_blank><img onload="adjustImage(this)" src="{{.Media}}?thumb=1"></a>
+                <a target=_blank><img onload="adjustImage(this)" src="{{.Media}}?thumb=1"></a>
             {{end}}
             <span class=long-image>长图</span>
         </div>

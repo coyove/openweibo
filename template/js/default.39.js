@@ -565,6 +565,25 @@ function adjustImage(img) {
     }
 
     div.style.backgroundImage = 'url(' + img.src + ')';
+    div.onclick = function() {
+        if (!div.hasAttribute("enlarge")) {
+            div.setAttribute("enlarge", "enlarge")
+            div.style.width = "100%";
+            var r = div.getBoundingClientRect();
+            var h = r.width / ratio;
+            div.style.height = h + "px";
+
+            var imgload = new Image();
+            imgload.src = img.src.replace(/thumb=1/, '');
+            imgload.onload = function() {
+                img.src = imgload.src; // trigger adjustImage
+            }
+        } else {
+            div.removeAttribute("enlarge")
+            div.style.width = null;
+            div.style.height = null;
+        }
+    }
 }
 
 function adjustVideoIFrame(el, src) {
