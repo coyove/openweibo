@@ -264,7 +264,7 @@ func WalkLikes(media bool, n int, cursor string) (a []*model.Article, next strin
 	return a, cursor
 }
 
-func Post(a *model.Article, author *model.User, noMaster bool) (*model.Article, error) {
+func Post(a *model.Article, author *model.User) (*model.Article, error) {
 	a.ID = ik.NewGeneralID().String()
 	a.Author = author.ID
 
@@ -276,7 +276,7 @@ func Post(a *model.Article, author *model.User, noMaster bool) (*model.Article, 
 	}
 
 	go func() {
-		if !noMaster {
+		if a.PostOptions&model.PostOptionNoMasterTimeline == 0 {
 			master := "master"
 			if r := rand.Intn(Masters); r > 0 {
 				master += strconv.Itoa(r)

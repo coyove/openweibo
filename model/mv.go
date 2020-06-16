@@ -41,6 +41,8 @@ const (
 	ReplyLockFollowingsCan
 	ReplyLockFollowingsMentionsCan
 	ReplyLockFollowingsFollowersCan
+
+	PostOptionNoMasterTimeline byte = 1 << iota
 )
 
 type Article struct {
@@ -48,6 +50,7 @@ type Article struct {
 	Replies       int               `json:"rs,omitempty"`
 	Likes         int32             `json:"like,omitempty"`
 	ReplyLockMode byte              `json:"lm,omitempty"`
+	PostOptions   byte              `json:"po,omitempty"`
 	NSFW          bool              `json:"nsfw,omitempty"`
 	Content       string            `json:"content,omitempty"`
 	Media         string            `json:"M,omitempty"`
@@ -102,6 +105,7 @@ func UnmarshalArticle(b []byte) (*Article, error) {
 	if a.ID == "" {
 		return nil, fmt.Errorf("failed to unmarshal: %q", b)
 	}
+	indexArticle(a)
 	return a, err
 }
 

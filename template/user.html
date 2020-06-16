@@ -298,6 +298,7 @@
                 btn.disabled = typeof hcaptcha == 'undefined';
                 if (btn.disabled && c == 5) {
                     $q("#captcha-error").style.display = null;
+                    $q(".h-captcha").style.display = 'none';
                     btn.disabled = null;
                     clearInterval(i);
                 }

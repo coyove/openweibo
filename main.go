@@ -39,6 +39,7 @@ func main() {
 	}
 	dal.Init(redisConfig, common.Cfg.DyRegion, common.Cfg.DyAccessKey, common.Cfg.DySecretKey)
 	tfidf.Init(redisConfig)
+	model.OpenBleve("bleve.search")
 
 	if common.Cfg.RedisAddr != "" {
 		goforget.Init(&cache.RedisConfig{Addr: common.Cfg.RedisAddr, BatchWorkers: 10})
@@ -208,6 +209,7 @@ func main() {
 	r.Handle("GET", "/likes/:uid", view.UserLikes)
 	r.Handle("GET", "/t", view.Timeline)
 	r.Handle("GET", "/t/:user", view.Timeline)
+	r.Handle("GET", "/search/:query", view.Search)
 	r.Handle("GET", "/S/:id", view.S)
 	r.Handle("GET", "/inbox", view.Inbox)
 	r.Handle("GET", "/avatar/:id", view.Avatar)

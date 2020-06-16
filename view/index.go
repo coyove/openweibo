@@ -315,3 +315,8 @@ func APIReplies(g *gin.Context) {
 	g.Writer.Header().Add("X-Reply", "true")
 	g.HTML(200, "post.html", pl)
 }
+
+func Search(g *gin.Context) {
+	a, _ := model.SearchArticle(g.Param("query"), 0, 10)
+	g.JSON(200, a)
+}

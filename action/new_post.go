@@ -81,7 +81,11 @@ func APINew(g *gin.Context) {
 	}
 	a.SetStickOnTop(g.PostForm("stick_on_top") != "")
 
-	a2, err := dal.Post(a, u, g.PostForm("no_master") == "1")
+	if g.PostForm("no_master") == "1" {
+		a.PostOptions |= model.PostOptionNoMasterTimeline
+	}
+
+	a2, err := dal.Post(a, u)
 	if err != nil {
 		if err.Error() == "multiple/stick-on-top" {
 			g.String(200, err.Error())
