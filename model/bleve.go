@@ -1,9 +1,11 @@
+// TODO
 package model
 
 import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/blevesearch/bleve"
@@ -14,6 +16,7 @@ var (
 	bleveIndex     bleve.Index
 	bleveFastCache *lru.Cache
 	bleveWorker    chan *Article
+	blevePath      string
 	BleveIndexed   int
 )
 
@@ -29,6 +32,7 @@ func OpenBleve(path string) {
 	bleveIndex = index
 	bleveWorker = make(chan *Article, 1024)
 	bleveFastCache = lru.NewCache(1024)
+	blevePath = path
 	go indexArticleWorker()
 }
 
@@ -64,11 +68,19 @@ func indexArticleWorker() {
 
 	for a := range bleveWorker {
 		count, _ := bleveIndex.DocCount()
-		if int(count) > BleveIndexed {
-			BleveIndexed = int(count)
-		}
 		w(a)
+		binfo, _ := os.Stat(blevePath)
+		if binfo != nil {
+			mb := binfo.Size() / 1024 / 1024
+			count = count*1e6 + uint64(mb)
+		}
+		BleveIndexed = int(count)
 	}
+}
+
+func SearchMetrics() string {
+	p, _ := bleveIndex.Stats().MarshalJSON()
+	return string(p)
 }
 
 func SearchArticle(q string, timeout time.Duration, start, limit int) ([]string, int, error) {

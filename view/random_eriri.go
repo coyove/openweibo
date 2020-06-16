@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"regexp"
 	"sync"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -48,12 +47,12 @@ func getEririWorker() {
 }
 
 func init() {
-	go func() {
-		for {
-			getEririWorker()
-			time.Sleep(time.Minute * 10)
-		}
-	}()
+	// go func() {
+	// 	for {
+	// 		getEririWorker()
+	// 		time.Sleep(time.Minute * 10)
+	// 	}
+	// }()
 }
 
 func RandomEririImage(g *gin.Context) {
