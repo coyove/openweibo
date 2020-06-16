@@ -210,6 +210,7 @@ func main() {
 	r.Handle("GET", "/t", view.Timeline)
 	r.Handle("GET", "/t/:user", view.Timeline)
 	r.Handle("GET", "/search/:query", view.Search)
+	r.Handle("GET", "/search", view.Search)
 	r.Handle("GET", "/S/:id", view.S)
 	r.Handle("GET", "/inbox", view.Inbox)
 	r.Handle("GET", "/avatar/:id", view.Avatar)

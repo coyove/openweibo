@@ -17,6 +17,20 @@
     <title>{{.User.DisplayName}} 的收藏</title>
 {{else if .IsTagTimeline}}
     <title>{{.Tag}} ({{.PostsUnderTag}})</title>
+{{else if .IsSearchTimeline}}
+    <title>{{.Tag}} 的搜索结果</title>
+    <div class="status-box">
+        <form onsubmit="location.href='/search/'+encodeURIComponent(this.querySelector('input').value);return false">
+            <div class="status">
+                <div class=title>
+                    <div style="display:flex;width:100%;margin:0.5em 0" class="tmpl-border tmpl-input-bg">
+                        <input style="width:100%;line-height:1.5em;text-align:left" placeholder="搜索" class=t value="{{.Tag}}">
+                        <input type=submit style="position: absolute; left: -9999px">
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
 {{else}}
     <div class="status-box">
         <title>我的时间线</title>
@@ -36,8 +50,15 @@
     {{end}}
 
 <div style='padding:0 0.5em;cursor:pointer;line-height:2.5em' class=tmpl-row-light-bg>
-{{if not .IsInbox}}
-
+{{if .IsInbox}}
+    <button style="margin:0.5em 0" class=gbutton onclick="$postReload(this,'/api/clear_inbox',{})">清空全部提醒</button>
+{{else if .IsSearchTimeline}}
+    {{if .Tag}}
+        共搜索到 {{.PostsUnderTag}} 条结果
+    {{else}}
+        已索引 {{.PostsUnderTag}} 条状态
+    {{end}}
+{{else}}
     {{if or .IsTagTimeline .IsUserLikeTimeline}}
     <div class="tl-checkpoints post-options" style="padding:0.5em 0;margin:0 0.5em;font-weight:bold;white-space:nowrap">
         {{if .IsTagTimeline}}
@@ -78,6 +99,7 @@
             {{end}}
         </ul>
     </div>
+
     <div class="tl-checkpoints post-options" style="padding:0.5em 0;">
         <div style=>
             <input type=checkbox id=auto-expand-nsfw class=icon-input-checkbox
@@ -86,8 +108,6 @@
             <label for=auto-expand-nsfw>展开NSFW</label>
         </div>
     </div>
-{{else}}
-    <button style="margin:0.5em 0" class=gbutton onclick="$postReload(this,'/api/clear_inbox',{})">清空全部提醒</button>
 {{end}}
 </div>
 
@@ -103,7 +123,12 @@
     <button
         value="{{.Next}}"
         class="gbutton load-more"
-        onclick="loadMore('timeline{{.ReplyView.UUID}}',this,{likes:{{.IsUserLikeTimeline}},media:{{.MediaOnly}},})">更多...</button>
+        onclick="loadMore('timeline{{.ReplyView.UUID}}',this,{
+            search:{{.IsSearchTimeline}},
+            searchtag:{{.Tag}},
+            likes:{{.IsUserLikeTimeline}},
+            media:{{.MediaOnly}},
+        })">更多...</button>
 
     <script>
         preLoadMore("timeline{{.ReplyView.UUID}}", $q("#timeline{{.ReplyView.UUID}} + .paging > .load-more"));
@@ -115,6 +140,8 @@
             没有更多{{.User.ID}}的状态了
         {{else if .IsInbox}}
             没有更多提醒了
+        {{else if .IsSearchTimeline}}
+            {{if .Tag}} 没有更多结果了 {{end}}
         {{else}}
             没有更多状态了
         {{end}}

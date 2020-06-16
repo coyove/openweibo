@@ -1,6 +1,8 @@
 package view
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -20,12 +22,13 @@ type ArticlesTimelineView struct {
 	Articles              []ArticleView
 	Next                  string
 	Tag                   string
-	PostsUnderTag         int32
+	PostsUnderTag         int
 	IsInbox               bool
 	IsUserTimeline        bool
 	IsUserLikeTimeline    bool
 	IsTagTimelineFollowed bool
 	IsTagTimeline         bool
+	IsSearchTimeline      bool
 	ShowNewPost           bool
 	MediaOnly             bool
 	User                  *model.User
@@ -71,7 +74,7 @@ func Index(g *gin.Context) {
 
 	a, _ := dal.GetArticle(ik.NewID(ik.IDTag, tag).String())
 	if a != nil {
-		pl.PostsUnderTag = int32(a.Replies)
+		pl.PostsUnderTag = a.Replies
 		tfidf.IndexTag(tag)
 	}
 
@@ -225,7 +228,18 @@ func APITimeline(g *gin.Context) {
 	}{}
 
 	var articles []ArticleView
-	if g.PostForm("likes") == "true" {
+	if g.PostForm("search") == "true" {
+		you := getUser(g)
+		if you == nil {
+			g.Status(403)
+			return
+		}
+
+		start, _ := strconv.Atoi(g.PostForm("cursors"))
+		a, next, _ := searchArticles(you, g.PostForm("searchtag"), start, nil)
+		fromMultiple(&articles, a, 0, getUser(g))
+		p.Next = next
+	} else if g.PostForm("likes") == "true" {
 		a, next := dal.WalkLikes(g.PostForm("media") == "true", int(common.Cfg.PostsPerPage), g.PostForm("cursors"))
 		fromMultiple(&articles, a, 0, getUser(g))
 		p.Next = next
@@ -279,7 +293,7 @@ func APIReplies(g *gin.Context) {
 
 	you := getUser(g)
 	if you == nil {
-		redirectVisitor(g)
+		g.Status(403)
 		return
 	}
 
@@ -317,6 +331,71 @@ func APIReplies(g *gin.Context) {
 }
 
 func Search(g *gin.Context) {
-	a, _ := model.SearchArticle(g.Param("query"), 0, 10)
-	g.JSON(200, a)
+	pl := ArticlesTimelineView{
+		ReplyView:        makeReplyView(g, ""),
+		You:              getUser(g),
+		User:             getUser(g),
+		Tag:              g.Param("query"),
+		IsSearchTimeline: true,
+	}
+
+	if pl.You == nil {
+		redirectVisitor(g)
+		return
+	}
+
+	if pl.Tag == "" {
+		pl.PostsUnderTag = model.BleveIndexed
+		g.HTML(200, "timeline.html", pl)
+		return
+	}
+
+	as, next, err := searchArticles(pl.You, pl.Tag, 0, &pl.PostsUnderTag)
+	if err != nil {
+		g.Set("error", err.Error())
+		NotFound(g)
+		return
+	}
+
+	pl.Next = next
+	fromMultiple(&pl.Articles, as, 0, pl.You)
+	g.HTML(200, "timeline.html", pl)
+
+}
+
+func searchArticles(u *model.User, query string, start int, totalCount *int) ([]*model.Article, string, error) {
+	timeout := time.Millisecond * 500
+	if u.IsMod() {
+		timeout = time.Second * 5
+	}
+
+	res, count, err := model.SearchArticle(query, timeout, start, common.Cfg.PostsPerPage+1)
+	if err != nil {
+		if err.Error() == context.DeadlineExceeded.Error() {
+			return nil, "", fmt.Errorf("search-timeout")
+		}
+		return nil, "", fmt.Errorf("server-error")
+	}
+	if totalCount != nil {
+		*totalCount = (count)
+	}
+
+	as := []*model.Article{}
+	for _, id := range res {
+		if a, _ := dal.GetArticle(id); a != nil {
+			if ik.ParseID(a.ID).Header() == ik.IDGeneral {
+				as = append(as, a)
+			}
+		}
+	}
+
+	var next string
+	if len(res) >= common.Cfg.PostsPerPage+1 {
+		if len(as) >= common.Cfg.PostsPerPage+1 {
+			as = as[:common.Cfg.PostsPerPage]
+		}
+		next = strconv.Itoa(start + common.Cfg.PostsPerPage)
+	}
+
+	return as, next, nil
 }

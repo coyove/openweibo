@@ -14,6 +14,7 @@ var (
 	bleveIndex     bleve.Index
 	bleveFastCache *lru.Cache
 	bleveWorker    chan *Article
+	BleveIndexed   int
 )
 
 func OpenBleve(path string) {
@@ -62,31 +63,35 @@ func indexArticleWorker() {
 	}
 
 	for a := range bleveWorker {
+		count, _ := bleveIndex.DocCount()
+		if int(count) > BleveIndexed {
+			BleveIndexed = int(count)
+		}
 		w(a)
 	}
 }
 
-func SearchArticle(q string, start, limit int) ([]string, error) {
-	query := bleve.NewQueryStringQuery(q)
+func SearchArticle(q string, timeout time.Duration, start, limit int) ([]string, int, error) {
+	query := bleve.NewMatchQuery(q)
 	req := bleve.NewSearchRequest(query)
 	req.From = start
 	req.Size = limit
+	req.SortBy([]string{"-_id"})
 
 	if bleve.MemoryNeededForSearchResult(req) > 1024*1024 {
-		return nil, fmt.Errorf("complex query")
+		return nil, 0, fmt.Errorf("complex query")
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-
 	res, err := bleveIndex.SearchInContext(ctx, req)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	ids := []string{}
 	for i := range res.Hits {
 		ids = append(ids, res.Hits[i].ID)
 	}
-	return ids, nil
+	return ids, int(res.Total), nil
 }
