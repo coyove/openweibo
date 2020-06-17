@@ -121,7 +121,7 @@ function loadKimochi(el) {
         a.appendChild(img);
         a.onclick = (function(i, img) {
             return function() {
-                img.src = '/s/assets/spinner.gif';
+                img.src = '/s/assets/spinner2.gif';
                 $post('/api/user_kimochi', {k: i}, function(resp) {
                     if (resp === 'ok')  location.reload(); 
                 });
@@ -574,10 +574,20 @@ function adjustImage(img) {
             div.style.height = h + "px";
 
             var imgload = new Image();
+            var imgprogress = new Image(), divC = $q("<div>");
+
             imgload.src = img.src.replace(/thumb=1/, '');
             imgload.onload = function() {
                 img.src = imgload.src; // trigger adjustImage
+                div.removeChild(divC);
             }
+
+            imgprogress.className = 'loading-progress';
+            imgprogress.src =  '/s/assets/spinner.gif';
+            imgprogress.setAttribute('style', 'opacity:unset;display:block;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);');
+            divC.setAttribute('style', 'position:absolute;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,0.33);');
+            divC.appendChild(imgprogress);
+            div.appendChild(divC);
         } else {
             div.removeAttribute("enlarge")
             div.style.width = null;
