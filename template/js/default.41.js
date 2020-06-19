@@ -550,13 +550,18 @@ function showInfoBox(el, uid) {
 function adjustImage(img) {
     var ratio = img.width / img.height,
         div = img.parentNode.parentNode,
-        note = div.querySelector('.long-image');
+        note = div.querySelector('.long-image'),
+        r = div.getBoundingClientRect();
 
     if (ratio < 0.33 || ratio > 3) {
         div.style.backgroundSize = 'contain';
         note.style.display = 'block';
     } else {
         div.style.backgroundSize = 'cover';
+    }
+
+    if (img.width <= r.width * 0.9 && img.height <= r.height * 0.9) {
+        div.style.backgroundSize = 'auto';
     }
 
     if (img.src.match(/mime~gif/)) {
@@ -573,21 +578,22 @@ function adjustImage(img) {
             var h = r.width / ratio;
             div.style.height = h + "px";
 
-            var imgload = new Image();
-            var imgprogress = new Image(), divC = $q("<div>");
+            var imgload = new Image(), imgprogress = new Image(), divC = $q("<div>"), loaded = false;
 
             imgload.src = img.src.replace(/thumb=1/, '');
             imgload.onload = function() {
+                loaded = true;
                 img.src = imgload.src; // trigger adjustImage
-                div.removeChild(divC);
+                try { div.removeChild(divC) } catch (e) {}
             }
 
-            imgprogress.className = 'loading-progress';
             imgprogress.src =  '/s/assets/spinner.gif';
             imgprogress.setAttribute('style', 'opacity:unset;display:block;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);');
-            divC.setAttribute('style', 'position:absolute;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,0.33);');
+            divC.className = 'image-loading-div';
             divC.appendChild(imgprogress);
             div.appendChild(divC);
+
+            setTimeout(function() { if (!loaded) divC.style.opacity = '1' }, 100)
         } else {
             div.removeAttribute("enlarge")
             div.style.width = null;

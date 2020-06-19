@@ -66,6 +66,7 @@
                 <a target=_blank><img onload="adjustImage(this)" src="{{.Media}}?thumb=1"></a>
             {{end}}
             <span class=long-image>长图</span>
+            <div class=open-blank onclick='window.open("{{.Media}}");event.stopPropagation()'><i class="icon-export-alt"></i></div>
         </div>
     {{end}}
 
