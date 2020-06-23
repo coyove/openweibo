@@ -40,6 +40,9 @@ func indexArticle(a *Article) {
 	if a.PostOptions&PostOptionNoMasterTimeline != 0 {
 		return
 	}
+	if a.PostOptions&PostOptionNoSearch != 0 {
+		return
+	}
 	if !(len(a.ID) == 12 && a.ID[0] == 'S') {
 		return
 	}

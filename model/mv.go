@@ -43,6 +43,7 @@ const (
 	ReplyLockFollowingsFollowersCan
 
 	PostOptionNoMasterTimeline byte = 1 << iota
+	PostOptionNoSearch
 )
 
 type Article struct {

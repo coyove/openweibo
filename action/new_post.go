@@ -85,6 +85,10 @@ func APINew(g *gin.Context) {
 		a.PostOptions |= model.PostOptionNoMasterTimeline
 	}
 
+	if u.Settings().DoFollowerNeedsAcceptance() {
+		a.PostOptions |= model.PostOptionNoSearch
+	}
+
 	a2, err := dal.Post(a, u)
 	if err != nil {
 		if err.Error() == "multiple/stick-on-top" {
@@ -139,6 +143,10 @@ func doReply(g *gin.Context) {
 		Author:        u.ID,
 		IP:            ip,
 		ReplyLockMode: byte(rlm),
+	}
+
+	if noTimeline || u.Settings().DoFollowerNeedsAcceptance() {
+		a.PostOptions |= model.PostOptionNoSearch
 	}
 
 	a2, err := dal.PostReply(reply, a, u, noTimeline)
