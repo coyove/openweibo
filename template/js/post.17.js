@@ -13,11 +13,15 @@ function onPost(uuid, el, p) {
         window.localStorage.setItem("presets", JSON.stringify(e));
     }
 
+    var ids = [];
+    $q('#' + cid + ' .dz-remove', true).forEach(function(el) {
+        var u = el.getAttribute("data-uri"); u ? ids.push(u) : 0;
+    })
+
     var stop = $wait(el);
     $post("/api2/new", {
         content: ta.value,
-        image64: image64.value,
-        image_name: image64.IMAGE_NAME || "",
+        media: ids.join(';'),
         nsfw: $q("#" + cid + " [name=isnsfw]").checked ? "1" : "",
         no_master: $q("#" + cid + " [name=nomaster]").checked ? "1" : "",
         no_timeline: $q("#" + cid + " [name=notimeline]").checked ? "1" : "",
@@ -30,9 +34,7 @@ function onPost(uuid, el, p) {
             return res;
         } else {
             ta.value = "";
-            image64.value = "";
-            image.value = null;
-            image.onchange();
+            $q('#' + cid + ' .dropzone').UPLOADER.removeAllFiles();
         }
         var div = $q("<div>")
         div.innerHTML = decodeURIComponent(res.substring(3));

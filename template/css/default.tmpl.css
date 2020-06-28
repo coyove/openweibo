@@ -345,10 +345,15 @@ img.avatar + .avatar-kimochi {
     width: 200px;
     position: relative;
     overflow: hidden;
+    cursor: pointer;
 }
 
 .media.cell {
-    margin:0.2em;display:inline-block;width:100px;height:100px;
+    margin:0.2em;display:inline-block;width:120px;height:120px;
+}
+
+.media.cell.large {
+    width: 200px; height:200px;
 }
 
 .media a {
@@ -532,6 +537,7 @@ div.reply-lock-notify {
 .tmpl-orange-text { color: {{.OrangeText}} !important }
 .tmpl-green-text { color: {{.GreenText}} !important }
 .tmpl-border { border-color: {{.Border}} !important }
+.tmpl-dark-border { border-color: {{.DarkBorder}} !important }
 .tmpl-light-bg { background: {{.LightBG}} !important }
 .tmpl-row-light-bg { background: {{.Row}} !important }
 .tmpl-inbox-message-text { color: {{.InboxMessage}} !important }

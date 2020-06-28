@@ -95,6 +95,7 @@ type CSSConfig struct {
 	Link              string
 	Navbar            string
 	Border            string
+	DarkBorder        string
 	NormalText        string
 	LightText         string
 	MidGrayText       string
@@ -129,6 +130,7 @@ var CSSLightConfig = CSSConfig{
 	Link:              "#2a66d9",
 	Navbar:            "#feb",
 	Border:            "#ddd",
+	DarkBorder:        "#ddd",
 	NormalText:        "#233",
 	LightText:         "#aaa",
 	MidGrayText:       "#666",
@@ -161,6 +163,7 @@ var CSSDarkConfig = CSSConfig{
 	RowHeader:         "rgba(255,255,255,0.07)",
 	Navbar:            "#121923",
 	Border:            "#234456",
+	DarkBorder:        "#093248",
 	NormalText:        "#eee",
 	LightBG:           "#192a40",
 	DropdownItemHover: "rgba(255,255,255,0.15)",

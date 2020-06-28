@@ -201,6 +201,7 @@ func main() {
 	r.NoRoute(view.NotFound)
 	r.Handle("GET", "/", view.Home)
 	r.Handle("GET", "/i/:img", view.I)
+	r.Handle("GET", "/upload", view.Upload)
 	r.Handle("GET", "/eriri", view.RandomEririImage)
 	r.Handle("GET", "/tag/:tag", view.Index)
 	r.Handle("GET", "/user", view.User)
@@ -217,6 +218,7 @@ func main() {
 	r.Handle("GET", "/mod/user", view.ModUser)
 	r.Handle("GET", "/mod/kv", view.ModKV)
 
+	r.Handle("POST", "/api/upload_image", action.APIUpload)
 	r.Handle("POST", "/api/p/:parent", view.APIReplies)
 	r.Handle("POST", "/api/u/:id", view.APIGetUserInfoBox)
 	r.Handle("POST", "/api/timeline", view.APITimeline)

@@ -385,6 +385,8 @@ function showReply(aid, closeToHome) {
     // User selected some texts on the page, so we won't pop up
     if (window.getSelection && window.getSelection().type == 'Range') return;
 
+    $q(".image-uploader.dropzone", true).forEach(function(el) { el.UPLOADER ? el.UPLOADER.removeAllFiles() :0})
+
     var div = $q('<div>');
     div.id = 'Z' + Math.random().toString(36).substr(2, 5);
     div.className = 'div-inner-reply tmpl-body-bg';
@@ -433,9 +435,12 @@ function showReply(aid, closeToHome) {
         div.innerHTML = h;
         div.style.backgroundImage = null;
         var rows = div.querySelector('.rows'),
-            box = div.querySelector(".reply-table textarea");
+            box = div.querySelector(".reply-table textarea"),
+            uploader = div.querySelector(".reply-table .image-uploader");
 
         if (box) window.TRIBUTER.attach(box);
+        if (uploader) attachImageUploader(uploader);
+
         rows.insertBefore(divclose.querySelector('.row'), rows.firstChild);
         rows.insertBefore($q("nav", true)[0].cloneNode(true), rows.firstChild);
     });
@@ -684,3 +689,22 @@ function isDarkMode() {
     return (document.cookie.match(/(^| )mode=([^;]+)/) || [])[2] === 'dark';
 }
 
+function attachImageUploader(el) {
+    if (el.hasAttribute("uploader")) return;
+
+    el.UPLOADER = new Dropzone(el, {
+        url: "/api/upload_image",
+        maxFilesize: 16,
+        maxFilesize: 3,
+        addRemoveLinks: true,
+        dictRemoveFile: "删除",
+        dictFileTooBig: "文件过大 {{filesize}}M, Max: {{maxFilesize}}M",
+    }).on("success", function(f, id) {
+        f._removeLink.setAttribute('data-uri', id);
+        // var div = $q("<div>");
+        // div.innerHTML = "<i class='icon-transgender-alt'></i>";
+        // f._removeLink.parentNode.appendChild(div);
+    });
+
+    el.setAttribute("uploader", "true");
+}

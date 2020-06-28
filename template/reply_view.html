@@ -34,19 +34,6 @@
                 </div>
 
                 <div class="post-options">
-                    <button class=gbutton>图片<span class='image-size'></span><i class="icon-down-dir right"></i></button>
-                    <ul style="width: 120px; height: 120px">
-                        <!-- Three as a Whole -->
-                        <button class=gbutton style="width: 100%; height: 100%" onclick="this.nextElementSibling.click()">
-                            <span class=icon-picture></span><span>选择</span>
-                        </button>
-                        <input type=file style="display:none" onchange="onImageChanged(this)">
-                        <input type=hidden name=image64>
-                        <!-- Three as a Whole -->
-                    </ul>
-                </div>
-
-                <div class="post-options">
                     <button class=gbutton>选项<i class="icon-down-dir right"></i></button>
                     <ul>
                         <li>
@@ -58,7 +45,7 @@
                         <li>
                             <span onclick="insertTag(this, '{{.UUID}}','[imgs]\n','图片URL\n一行一张','\n[/imgs]')">
                                 <i class=icon-code></i>
-                                插入多张图
+                                插入多张图URL
                             </span>
                         </li>
                         {{if .ReplyTo}}
@@ -98,13 +85,21 @@
         </tr>
 
         <tr>
+            <td style="padding-top: 0">
+                <div class="image-uploader dropzone tmpl-dark-border" style="border: dashed 1px #ccc;background:rgba(0,0,0,0.05)">
+                    <input type="file" multiple style="display:none" name="file">
+                </div>
+            </td>
+        </tr>
+
+        <tr>
             <td style="padding:0" colspan=2>
                 <textarea
                     name=content
                     maxlength=1024
                     placeholder="写下你的想法..."
                     rows=6
-                    style="background-color:transparent;padding:0 0.66em 0.66em;border:none;display:block;overflow:hidden;resize:none"></textarea>
+                    style="background-color:transparent;padding:0.66em;border:none;display:block;overflow:hidden;resize:none"></textarea>
 
                 <div class="post-button icon-comment" onclick="onPost('{{.UUID}}', this, '{{.ReplyTo}}')"></div>
             </td>
@@ -114,4 +109,5 @@
 
     <script>
         window.TRIBUTER.attach(document.querySelectorAll("#rv-{{.UUID}} textarea"));
+        attachImageUploader($q("#rv-{{.UUID}} .image-uploader"));
     </script>

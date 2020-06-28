@@ -1,8 +1,10 @@
 package action
 
 import (
+	"bufio"
 	"log"
 	"net"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -43,7 +45,7 @@ func APINew(g *gin.Context) {
 	var (
 		ip      = hashIP(g)
 		content = common.SoftTrunc(g.PostForm("content"), int(common.Cfg.MaxContent))
-		image   = g.PostForm("image64")
+		image   = g.PostForm("media")
 		rlm, _  = strconv.Atoi(g.PostForm("reply_lock"))
 		err     error
 	)
@@ -65,10 +67,6 @@ func APINew(g *gin.Context) {
 	}
 
 	if image != "" {
-		if image, err = writeImage(u, g.PostForm("image_name"), image); err != nil {
-			g.String(200, err.Error())
-			return
-		}
 		image = "IMG:" + image
 	}
 
@@ -108,7 +106,7 @@ func doReply(g *gin.Context) {
 		reply   = g.PostForm("parent")
 		ip      = hashIP(g)
 		content = common.SoftTrunc(g.PostForm("content"), int(common.Cfg.MaxContent))
-		image   = g.PostForm("image64")
+		image   = g.PostForm("media")
 		nsfw    = g.PostForm("nsfw") != ""
 		rlm, _  = strconv.Atoi(g.PostForm("reply_lock"))
 		err     error
@@ -126,11 +124,6 @@ func doReply(g *gin.Context) {
 	}
 
 	if image != "" {
-		image, err = writeImage(u, g.PostForm("image_name"), image)
-		if err != nil {
-			g.String(200, err.Error())
-			return
-		}
 		image = "IMG:" + image
 	}
 
@@ -244,4 +237,42 @@ func APIDropTop(g *gin.Context) {
 	}
 
 	g.String(200, "ok")
+}
+
+func APIUpload(g *gin.Context) {
+	u2, _ := g.Get("user")
+	u, _ := u2.(*model.User)
+	if u == nil {
+		g.String(500, "error")
+		return
+	}
+
+	file, header, err := g.Request.FormFile("file")
+	if err != nil {
+		g.String(500, "error")
+		return
+	}
+	defer file.Close()
+	filename := header.Filename
+	// fmt.Println(filename)
+
+	rd := bufio.NewReader(file)
+	tmp, _ := rd.Peek(1024)
+	switch ct := http.DetectContentType(tmp); ct {
+	case "image/png", "image/jpeg", "image/gif":
+		hash := uint64(0)
+		for _, v := range tmp {
+			hash = hash*31 + uint64(v)
+		}
+		v, err := writeImageReader(u, filename, hash, rd, ct == "image/gif")
+		if err != nil {
+			log.Println("image api:", err)
+			g.String(500, "server-error")
+			return
+		}
+		g.String(200, v)
+	default:
+		g.String(500, "invalid-type")
+	}
+
 }

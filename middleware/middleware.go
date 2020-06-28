@@ -120,7 +120,7 @@ func New(prod bool) *gin.Engine {
 	log.SetFlags(log.Lshortfile | log.Ltime | log.Ldate)
 
 	r := gin.New()
-	r.Use(gin.Recovery(), mwRenderPerf, mwIPThrot)
+	r.Use(gin.Recovery(), mwRenderPerf, mwIPThrot, RequestSizeLimiter(3*1024*1024))
 
 	loadTrafficCounter()
 

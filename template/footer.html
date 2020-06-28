@@ -39,7 +39,7 @@ $q("#unread-notify i").className += " tmpl-inbox-message-text";
 
         (function() {
             expandNSFW();
-            $q("input,textarea").forEach(function(el) {
+            $q("input,textarea", true).forEach(function(el) {
                 el.addEventListener("tribute-replaced", function(e) {
                     if (e.detail.event.target.tagName === 'I') {
                         console.log("Matched item:", e.detail.item.original);

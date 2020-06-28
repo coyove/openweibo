@@ -93,6 +93,10 @@ func I(g *gin.Context) {
 	}
 }
 
+func Upload(g *gin.Context) {
+	g.HTML(200, "imageuploader.html", nil)
+}
+
 func init() {
 	dirMaxSize := common.Cfg.MaxImagesCache * 1024 * 1024 * 1024 / (1024)
 

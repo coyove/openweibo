@@ -30,7 +30,7 @@ type ArticleView struct {
 	StickOnTop    bool
 	Content       string
 	ContentHTML   template.HTML
-	Media         string
+	Media         template.HTML
 	MediaType     string
 	History       string
 	CreateTime    time.Time
@@ -80,10 +80,14 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 	}
 
 	if p := strings.SplitN(a2.Media, ":", 2); len(p) == 2 {
-		a.MediaType, a.Media = p[0], p[1]
+		a.MediaType = p[0]
 		switch a.MediaType {
 		case "IMG":
-			a.Media = common.Cfg.MediaDomain + "/i/" + strings.TrimPrefix(a.Media, "LOCAL:") + ".jpg"
+			var urls []string
+			for _, p := range strings.Split(p[1], ";") {
+				urls = append(urls, common.Cfg.MediaDomain+"/i/"+strings.TrimPrefix(p, "LOCAL:")+".jpg")
+			}
+			a.Media = template.HTML(common.RevRenderTemplateString("image.html", urls))
 		}
 	}
 

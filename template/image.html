@@ -17,15 +17,16 @@
                     }
                 }
             })(this.parentNode)
-            ">+ {{sub (len $) 3}}</button>
+            ">+ {{sub (len $) 4}}</button>
     </div>
     {{end}}
 
     {{$hide := ge $i 4}}
     {{if $v}}
-    <div class="media cell" style="{{if $hide}}display:none{{end}}">
+    <div class="media cell {{if eq (len $) 1}}large{{end}}" style="{{if $hide}}display:none{{end}}">
         <a target=_blank><img onload="adjustImage(this)" {{if $hide}}data-{{end}}src="{{$v}}"></a>
         <div class=open-blank onclick='window.open("{{$v}}");event.stopPropagation()'><i class="icon-export-alt"></i></div>
+        <span class=long-image>长图</span>
     </div>
     {{end}}
 {{end}}

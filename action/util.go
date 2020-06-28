@@ -158,7 +158,10 @@ func writeImage(u *model.User, imageName, image string) (string, error) {
 		hash = hash*31 + uint64(image[i])
 	}
 	hash = hash&0xfffffffffffff000 | (uint64(len(image)/4*3/1024) & 0xfff)
+	return writeImageReader(u, imageName, hash, dec, gif)
+}
 
+func writeImageReader(u *model.User, imageName string, hash uint64, dec io.Reader, gif bool) (string, error) {
 	path := fmt.Sprintf("tmp/images/%d/", hash%1024)
 	fn := fmt.Sprintf("%016x", hash)
 
@@ -179,11 +182,11 @@ func writeImage(u *model.User, imageName, image string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer of.Close()
-
 	n, err := io.Copy(of, dec)
+	of.Close()
+
 	if n > 100*1024 { // thumbnail
-		if err := writeThumbnail(path+fn+"@thumb", image, 200); err != nil {
+		if err := writeThumbnail(path+fn+"@thumb", path+fn, 200); err != nil {
 			log.Println("WriteImage:", err)
 		}
 	}
@@ -213,9 +216,14 @@ func writeAvatar(u *model.User, image string) (string, error) {
 	return fn, err
 }
 
-func writeThumbnail(path string, base64Data string, throtWidth int) error {
-	r := strings.NewReader(base64Data)
-	config, _, err := image.DecodeConfig(base64.NewDecoder(base64.StdEncoding, r))
+func writeThumbnail(path string, srcimg string, throtWidth int) error {
+	data, err := os.Open(srcimg)
+	if err != nil {
+		return err
+	}
+	defer data.Close()
+
+	config, _, err := image.DecodeConfig(data)
 	if err != nil {
 		return err
 	}
@@ -224,8 +232,8 @@ func writeThumbnail(path string, base64Data string, throtWidth int) error {
 		return nil
 	}
 
-	r.Reset(base64Data)
-	src, _, err := image.Decode(base64.NewDecoder(base64.StdEncoding, r))
+	data.Seek(0, 0)
+	src, _, err := image.Decode(data)
 	if err != nil {
 		return err
 	}
