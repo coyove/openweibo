@@ -699,6 +699,7 @@ function attachImageUploader(el) {
         addRemoveLinks: true,
         dictRemoveFile: "删除",
         dictFileTooBig: "文件过大 {{filesize}}M, Max: {{maxFilesize}}M",
+        dictCancelUpload: "取消",
     }).on("success", function(f, id) {
         f._removeLink.setAttribute('data-uri', id);
         // var div = $q("<div>");

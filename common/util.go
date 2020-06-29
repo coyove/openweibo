@@ -70,11 +70,11 @@ func SanText(in string) string {
 		if strings.HasPrefix(in, "[code]") && strings.HasSuffix(in, "[/code]") {
 			return "<code>" + strings.TrimSpace(in[6:len(in)-7]) + "</code>"
 		}
-		if strings.HasPrefix(in, "[imgs]") {
-			in = strings.TrimPrefix(strings.TrimSpace(in), "[imgs]")
-			in = RevRenderTemplateString("image.html", strings.Split(strings.TrimSuffix(in, "[/imgs]"), "\n"))
-			return strings.TrimSpace(in)
-		}
+		// if strings.HasPrefix(in, "[imgs]") {
+		// 	in = strings.TrimPrefix(strings.TrimSpace(in), "[imgs]")
+		// 	in = RevRenderTemplateString("image.html", strings.Split(strings.TrimSuffix(in, "[/imgs]"), "\n"))
+		// 	return strings.TrimSpace(in)
+		// }
 		if strings.HasPrefix(in, "[mj]") {
 			return "<img class=majiang src='https://static.saraba1st.com/image/smiley/face2017/" + in[4:len(in)-5] + ".png'>"
 		}

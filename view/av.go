@@ -83,11 +83,20 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 		a.MediaType = p[0]
 		switch a.MediaType {
 		case "IMG":
-			var urls []string
-			for _, p := range strings.Split(p[1], ";") {
-				urls = append(urls, common.Cfg.MediaDomain+"/i/"+strings.TrimPrefix(p, "LOCAL:")+".jpg")
+			var pl struct {
+				Urls     []string
+				InitShow int
+				NSFW     bool
 			}
-			a.Media = template.HTML(common.RevRenderTemplateString("image.html", urls))
+			for _, p := range strings.Split(p[1], ";") {
+				pl.Urls = append(pl.Urls, common.Cfg.MediaDomain+"/i/"+strings.TrimPrefix(p, "LOCAL:")+".jpg")
+			}
+			if pl.NSFW = a.NSFW; pl.NSFW {
+				pl.InitShow = 0
+			} else {
+				pl.InitShow = 4
+			}
+			a.Media = template.HTML(common.RevRenderTemplateString("image.html", pl))
 		}
 	}
 
