@@ -34,6 +34,13 @@
                 </div>
 
                 <div class="post-options">
+                    <button class=gbutton onclick="
+                        $q('#rv-{{.UUID}} [name=tr-image-uploader]').style.display = null;
+                        $q('#rv-{{.UUID}} [name=tr-image-uploader] div.image-uploader').click();
+                        ">图片<i class="icon-down-dir right"></i></button>
+                </div>
+
+                <div class="post-options">
                     <button class=gbutton>选项<i class="icon-down-dir right"></i></button>
                     <ul>
                         <li>
@@ -84,7 +91,7 @@
             </td>
         </tr>
 
-        <tr>
+        <tr name="tr-image-uploader" style="display:none">
             <td style="padding-top: 0">
                 <div class="image-uploader dropzone tmpl-dark-border" style="border: dashed 1px #ccc;background:rgba(0,0,0,0.05)">
                     <input type="file" multiple style="display:none" name="file">

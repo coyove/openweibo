@@ -54,6 +54,14 @@ func SoftTruncDisplayWidth(a string, w int) string {
 	return string(r)
 }
 
+func SanMedia(media string) string {
+	media = SoftTrunc(media, 1024)
+	if strings.Count(media, ";") < 16 {
+		return media
+	}
+	return strings.Join(strings.Split(media, ";")[:16], ";")
+}
+
 func SanText(in string) string {
 	newLines := 0
 	in = rxSan.ReplaceAllStringFunc(in, func(in string) string {

@@ -90,6 +90,9 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 			}
 			for _, p := range strings.Split(p[1], ";") {
 				pl.Urls = append(pl.Urls, common.Cfg.MediaDomain+"/i/"+strings.TrimPrefix(p, "LOCAL:")+".jpg")
+				if len(pl.Urls) == 15 {
+					break
+				}
 			}
 			if pl.NSFW = a.NSFW; pl.NSFW {
 				pl.InitShow = 0

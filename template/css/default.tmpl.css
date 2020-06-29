@@ -340,7 +340,7 @@ img.avatar + .avatar-kimochi {
     background-repeat: no-repeat;
     background-position: center;
     background-color: white;
-    border-radius: 5px;
+    border-radius: 10px;
     height: 200px;
     width: 200px;
     position: relative;
@@ -372,28 +372,34 @@ img.avatar + .avatar-kimochi {
     height: 100%;
 }
 
-.media .long-image {
-    position: absolute;
+.media .image-index.long-image {
     display: none;
+    left: initial; width: initial;
     right: 4px;
-    bottom: 4px;
-    padding: 0.2em 0.5em;
-    background: rgba(0,0,0,0.4);
-    color: white;
-    border-radius: 4px;
+    padding: 0 1em;
 }
 
-.media .open-blank {
+.media .image-index.open-blank {
     position: absolute;
-    top: 4px;
-    color: rgba(0,0,0,0.5);
-    font-size: 2em;
-    display: none;
+    bottom: 4px; left: 30px;
+    font-size: 9px;
+    padding: 0 1em;
     cursor: pointer;
+    display: none;
+    width: initial; height: 22px; line-height: 22px;
 }
 
-.media[enlarge=enlarge] .open-blank {
-    display: block;
+.media .image-index {
+    color: #eee;
+    display: block; position: absolute;
+    text-align: center; font-size: 9px;
+    bottom: 4px; left: 4px;
+    background: rgba(0,0,0,0.66);
+    width: 22px; height: 22px; line-height: 22px; border-radius: 11px;
+}
+
+.media[enlarge=enlarge] .image-index.image-enlarge-badge {
+    display: block !important;
 }
 
 .post-date {

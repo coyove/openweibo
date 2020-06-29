@@ -45,7 +45,7 @@ func APINew(g *gin.Context) {
 	var (
 		ip      = hashIP(g)
 		content = common.SoftTrunc(g.PostForm("content"), int(common.Cfg.MaxContent))
-		image   = g.PostForm("media")
+		image   = common.SanMedia(g.PostForm("media"))
 		rlm, _  = strconv.Atoi(g.PostForm("reply_lock"))
 		err     error
 	)
@@ -106,7 +106,7 @@ func doReply(g *gin.Context) {
 		reply   = g.PostForm("parent")
 		ip      = hashIP(g)
 		content = common.SoftTrunc(g.PostForm("content"), int(common.Cfg.MaxContent))
-		image   = g.PostForm("media")
+		image   = common.SanMedia(g.PostForm("media"))
 		nsfw    = g.PostForm("nsfw") != ""
 		rlm, _  = strconv.Atoi(g.PostForm("reply_lock"))
 		err     error
