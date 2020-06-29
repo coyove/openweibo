@@ -350,6 +350,7 @@ img.avatar + .avatar-kimochi {
 
 .media.cell {
     margin:0.2em;display:inline-block;width:120px;height:120px;
+    vertical-align:top;
 }
 
 .media.cell.large {
