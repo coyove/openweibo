@@ -18,6 +18,7 @@ import (
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/dal/forgettable/goforget"
+	"github.com/coyove/iis/dal/kv"
 	"github.com/coyove/iis/dal/kv/cache"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/middleware"
@@ -37,7 +38,14 @@ func main() {
 	redisConfig := &cache.RedisConfig{
 		Addr: common.Cfg.RedisAddr,
 	}
+
 	dal.Init(redisConfig, common.Cfg.DyRegion, common.Cfg.DyAccessKey, common.Cfg.DySecretKey)
+
+	if common.Cfg.S3Region != "" {
+		dal.S3 = kv.NewS3Storage(common.Cfg.S3Endpoint, common.Cfg.S3Region, common.Cfg.S3Bucket,
+			common.Cfg.S3AccessKey, common.Cfg.S3SecretKey)
+	}
+
 	tfidf.Init(redisConfig)
 	model.OpenBleve("bleve.search")
 
@@ -200,8 +208,8 @@ func main() {
 
 	r.NoRoute(view.NotFound)
 	r.Handle("GET", "/", view.Home)
-	r.Handle("GET", "/i/:img", view.I)
-	r.Handle("GET", "/upload", view.Upload)
+	r.Handle("GET", "/i/*img", view.I)
+	r.Handle("GET", "/avatar/:id", view.Avatar)
 	r.Handle("GET", "/eriri", view.RandomEririImage)
 	r.Handle("GET", "/tag/:tag", view.Index)
 	r.Handle("GET", "/user", view.User)
@@ -214,7 +222,6 @@ func main() {
 	r.Handle("GET", "/search", view.Search)
 	r.Handle("GET", "/S/:id", view.S)
 	r.Handle("GET", "/inbox", view.Inbox)
-	r.Handle("GET", "/avatar/:id", view.Avatar)
 	r.Handle("GET", "/mod/user", view.ModUser)
 	r.Handle("GET", "/mod/kv", view.ModKV)
 

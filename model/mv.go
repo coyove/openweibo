@@ -143,11 +143,11 @@ func (u User) Marshal() []byte {
 }
 
 func (u User) AvatarURL() string {
-	return fmt.Sprintf("%s/avatar/%s.jpg?q=%d", common.Cfg.MediaDomain, u.ID, u.Avatar)
+	return fmt.Sprintf("/avatar/%s?q=%d", u.ID, u.Avatar)
 }
 
 func (u User) KimochiURL() string {
-	return fmt.Sprintf("%s/s/emoji/emoji%d.png", common.Cfg.MediaDomain, u.Kimochi)
+	return fmt.Sprintf("/s/emoji/emoji%d.png", u.Kimochi)
 }
 
 func (u User) DisplayName() string {

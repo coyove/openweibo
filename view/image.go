@@ -2,17 +2,9 @@ package view
 
 import (
 	"fmt"
-	"io/ioutil"
-	"log"
 	"net/http"
-	"os"
-	"path/filepath"
-	"sort"
-	"strconv"
 	"strings"
-	"time"
 
-	"github.com/coyove/iis/common"
 	"github.com/gin-gonic/gin"
 )
 
@@ -73,84 +65,74 @@ func Home(g *gin.Context) {
 // }
 
 func I(g *gin.Context) {
-	img := strings.TrimSuffix(g.Param("img"), ".jpg")
-	if len(img) > 16 {
-		x, _ := strconv.ParseUint(img[:16], 16, 64)
-		cachepath := fmt.Sprintf("tmp/images/%d/%s", x%1024, img)
-
-		if g.Query("thumb") != "" {
-			path := cachepath + "@thumb"
-			if _, err := os.Stat(path); err != nil {
-				path = cachepath
-			}
-			http.ServeFile(g.Writer, g.Request, path)
-		} else {
-			http.ServeFile(g.Writer, g.Request, cachepath)
-		}
-	} else {
-		cachepath := fmt.Sprintf("tmp/images/%s/%s", img[:2], img)
+	img := g.Param("img")
+	switch {
+	case strings.HasPrefix(img, "/s/"):
+		http.ServeFile(g.Writer, g.Request, "template/"+img[3:])
+	case strings.HasPrefix(img, "/thumb/"):
+		img = img[6:]
+		fallthrough
+	default:
+		img = img[1:]
+		cachepath := fmt.Sprintf("tmp/images/%s", img)
 		http.ServeFile(g.Writer, g.Request, cachepath)
 	}
 }
 
-func Upload(g *gin.Context) {
-	g.HTML(200, "imageuploader.html", nil)
-}
-
-func init() {
-	dirMaxSize := common.Cfg.MaxImagesCache * 1024 * 1024 * 1024 / (1024)
-
-	go func() {
-		for {
-			dirs, _ := ioutil.ReadDir("tmp/images")
-			if len(dirs) == 0 {
-				time.Sleep(time.Hour)
-				continue
-			}
-
-			for _, dir := range dirs {
-				if !dir.IsDir() {
-					continue
-				}
-
-				path := filepath.Join("tmp/images", dir.Name())
-				files, _ := ioutil.ReadDir(path)
-
-				totalSize := 0
-				for _, f := range files {
-					totalSize += int(f.Size())
-				}
-
-				if totalSize > dirMaxSize {
-					// too many files, purging the oldest
-					start, old := time.Now(), totalSize
-
-					sort.Slice(files, func(i, j int) bool {
-						return files[i].ModTime().Before(files[j].ModTime())
-					})
-
-					for _, f := range files {
-						if strings.Contains(f.Name(), "@") {
-							// user avatars, keep them whenever possible
-							continue
-						}
-
-						path := filepath.Join(path, f.Name())
-						totalSize -= int(f.Size())
-						os.Remove(path)
-
-						if totalSize <= dirMaxSize {
-							break
-						}
-					}
-
-					log.Println("Image Purger:", path, "old size:", old, dirMaxSize, "purged in", time.Since(start))
-				} else {
-					log.Println("Image Purger OK:", path, "size:", totalSize, dirMaxSize, ":", totalSize*100/dirMaxSize, "%")
-				}
-
-				time.Sleep(time.Minute)
-			}
-		}
-	}()
-}
+// func init() {
+// 	dirMaxSize := common.Cfg.MaxImagesCache * 1024 * 1024 * 1024 / (1024)
+//
+// 	go func() {
+// 		for {
+// 			dirs, _ := ioutil.ReadDir("tmp/images")
+// 			if len(dirs) == 0 {
+// 				time.Sleep(time.Hour)
+// 				continue
+// 			}
+//
+// 			for _, dir := range dirs {
+// 				if !dir.IsDir() {
+// 					continue
+// 				}
+//
+// 				path := filepath.Join("tmp/images", dir.Name())
+// 				files, _ := ioutil.ReadDir(path)
+//
+// 				totalSize := 0
+// 				for _, f := range files {
+// 					totalSize += int(f.Size())
+// 				}
+//
+// 				if totalSize > dirMaxSize {
+// 					// too many files, purging the oldest
+// 					start, old := time.Now(), totalSize
+//
+// 					sort.Slice(files, func(i, j int) bool {
+// 						return files[i].ModTime().Before(files[j].ModTime())
+// 					})
+//
+// 					for _, f := range files {
+// 						if strings.Contains(f.Name(), "@") {
+// 							// user avatars, keep them whenever possible
+// 							continue
+// 						}
+//
+// 						path := filepath.Join(path, f.Name())
+// 						totalSize -= int(f.Size())
+// 						os.Remove(path)
+//
+// 						if totalSize <= dirMaxSize {
+// 							break
+// 						}
+// 					}
+//
+// 					log.Println("Image Purger:", path, "old size:", old, dirMaxSize, "purged in", time.Since(start))
+// 				} else {
+// 					log.Println("Image Purger OK:", path, "size:", totalSize, dirMaxSize, ":", totalSize*100/dirMaxSize, "%")
+// 				}
+//
+// 				time.Sleep(time.Minute)
+// 			}
+// 		}
+// 	}()
+// }

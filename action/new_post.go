@@ -3,6 +3,8 @@ package action
 import (
 	"bufio"
 	"log"
+	"mime"
+	"mime/multipart"
 	"net"
 	"net/http"
 	"net/url"
@@ -247,16 +249,27 @@ func APIUpload(g *gin.Context) {
 		return
 	}
 
-	file, header, err := g.Request.FormFile("file")
-	if err != nil {
-		g.String(500, "error")
+	d, params, err := mime.ParseMediaType(g.GetHeader("Content-Type"))
+	if err != nil || !(d == "multipart/form-data" || d == "multipart/mixed") {
+		g.String(500, "error-not-multipart")
 		return
 	}
-	defer file.Close()
-	filename := header.Filename
-	// fmt.Println(filename)
 
-	rd := bufio.NewReader(file)
+	boundary, ok := params["boundary"]
+	if !ok {
+		g.String(500, "error-no-boundary")
+		return
+	}
+
+	mprd := multipart.NewReader(g.Request.Body, boundary)
+	part, err := mprd.NextPart()
+	if err != nil {
+		log.Println("Upload:", err)
+		g.String(500, "error-no-part")
+	}
+	defer part.Close()
+
+	rd := bufio.NewReader(part)
 	tmp, _ := rd.Peek(1024)
 	switch ct := http.DetectContentType(tmp); ct {
 	case "image/png", "image/jpeg", "image/gif":
@@ -264,7 +277,7 @@ func APIUpload(g *gin.Context) {
 		for _, v := range tmp {
 			hash = hash*31 + uint64(v)
 		}
-		v, err := writeImageReader(u, filename, hash, rd, ct == "image/gif")
+		v, err := writeImageReader(u, part.FileName(), hash, rd, ct)
 		if err != nil {
 			log.Println("image api:", err)
 			g.String(500, "server-error")

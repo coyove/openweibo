@@ -569,7 +569,7 @@ function adjustImage(img) {
         div.style.backgroundSize = 'auto';
     }
 
-    if (img.src.match(/mime~gif/)) {
+    if (img.src.match(/\.gif$/)) {
         note.style.display = 'block';
         note.innerText = 'GIF';
     }
@@ -585,10 +585,12 @@ function adjustImage(img) {
 
             var imgload = new Image(), imgprogress = new Image(), divC = $q("<div>"), loaded = false;
 
-            imgload.src = img.src.replace(/thumb=1/, '');
+            imgload.src = img.src.replace(/\/thumb\//, '/');
             imgload.onload = function() {
                 loaded = true;
-                img.src = imgload.src; // trigger adjustImage
+                img.onload = null;
+                img.src = imgload.src;
+                div.style.backgroundImage = 'url(' + img.src + ')';
                 try { div.removeChild(divC) } catch (e) {}
             }
 

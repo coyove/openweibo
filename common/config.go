@@ -32,6 +32,11 @@ var Cfg = struct {
 	CwRegion        string
 	DyAccessKey     string
 	DySecretKey     string
+	S3AccessKey     string
+	S3SecretKey     string
+	S3Region        string
+	S3Endpoint      string
+	S3Bucket        string
 	RedisAddr       string
 	ReadOnly        bool
 	IPIPDatabase    string
@@ -44,6 +49,7 @@ var Cfg = struct {
 	IPBlacklistParsed []*net.IPNet
 	IPIPDB            *ipdb.City
 }{
+	MediaDomain:     "/i",
 	TokenTTL:        10,
 	IDTokenTTL:      600,
 	Key:             "0123456789abcdef",

@@ -18,6 +18,7 @@ import (
 )
 
 var Masters = 10
+var S3 *kv.S3Storage
 
 var m struct {
 	db          KeyValueOp

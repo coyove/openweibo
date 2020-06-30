@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"strings"
 
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal"
@@ -106,17 +104,22 @@ func UserList(g *gin.Context) {
 var ig, _ = identicon.New("github", 5, 3)
 
 func Avatar(g *gin.Context) {
-	id := strings.TrimSuffix(g.Param("id"), ".jpg")
+	id := g.Param("id")
 	if len(id) == 0 {
 		g.Status(404)
 		return
 	}
 
 	hash := (model.User{ID: id}).IDHash()
-	path := fmt.Sprintf("tmp/images/%d/%016x@%s", hash%1024, hash, id)
+	path := fmt.Sprintf("tmp/images/%016x@%s", hash, id)
 
-	if _, err := os.Stat(path); err == nil {
-		http.ServeFile(g.Writer, g.Request, path)
+	if g.Query("q") != "0" {
+		if common.Cfg.S3Region != "" {
+			path := fmt.Sprintf("%s/%016x@%s", common.Cfg.MediaDomain, hash, id)
+			g.Redirect(307, path)
+		} else {
+			http.ServeFile(g.Writer, g.Request, path)
+		}
 	} else {
 		ii, err := ig.Draw("iis" + id)
 		if err != nil {

@@ -1,14 +1,13 @@
 package action
 
 import (
+	"bytes"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"image"
-	"image/jpeg"
 	"io"
 	"io/ioutil"
 	"log"
@@ -19,10 +18,10 @@ import (
 	"time"
 
 	"github.com/coyove/iis/common"
+	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
 	"github.com/gin-gonic/gin"
-	"github.com/nfnt/resize"
 )
 
 var captchaClient = &http.Client{Timeout: 500 * time.Millisecond}
@@ -148,21 +147,8 @@ func genSession() string {
 	return base64.URLEncoding.EncodeToString(p[:])
 }
 
-func writeImage(u *model.User, imageName, image string) (string, error) {
-	gif := strings.HasPrefix(image, "data:image/gif")
-	image = image[strings.Index(image, ",")+1:]
-	dec := base64.NewDecoder(base64.StdEncoding, strings.NewReader(image))
-
-	hash := uint64(0)
-	for i := len(image) - 1; i >= 0 && i >= len(image)-1024; i-- {
-		hash = hash*31 + uint64(image[i])
-	}
-	hash = hash&0xfffffffffffff000 | (uint64(len(image)/4*3/1024) & 0xfff)
-	return writeImageReader(u, imageName, hash, dec, gif)
-}
-
-func writeImageReader(u *model.User, imageName string, hash uint64, dec io.Reader, gif bool) (string, error) {
-	path := fmt.Sprintf("tmp/images/%d/", hash%1024)
+func writeImageReader(u *model.User, imageName string, hash uint64, dec io.Reader, ct string) (string, error) {
+	path := "tmp/images/"
 	fn := fmt.Sprintf("%016x", hash)
 
 	if imageName != "" {
@@ -173,84 +159,109 @@ func writeImageReader(u *model.User, imageName string, hash uint64, dec io.Reade
 		fn += "_" + u.ID
 	}
 
-	if gif {
+	if dal.S3 != nil {
+		fn += mimeToExt(ct)
+		return "LOCAL:" + fn, dal.S3.Put(fn, ct, dec)
+	}
+
+	if ct == "image/gif" {
 		fn += "_mime~gif"
 	}
 
-	os.MkdirAll(path, 0777)
 	of, err := os.OpenFile(path+fn, os.O_CREATE|os.O_WRONLY, 0777)
 	if err != nil {
 		return "", err
 	}
-	n, err := io.Copy(of, dec)
+	_, err = io.Copy(of, dec)
 	of.Close()
 
-	if n > 100*1024 { // thumbnail
-		if err := writeThumbnail(path+fn+"@thumb", path+fn, 200); err != nil {
-			log.Println("WriteImage:", err)
-		}
-	}
+	// if n > 100*1024 { // thumbnail
+	// 	if err := writeThumbnail(path+fn+"@thumb", path+fn, 200); err != nil {
+	// 		log.Println("WriteImage:", err)
+	// 	}
+	// }
 
 	return "LOCAL:" + fn, err
 }
 
+func mimeToExt(mime string) string {
+	switch mime {
+	case "image/jpeg":
+		return ".jpg"
+	case "image/png":
+		return ".png"
+	case "image/gif":
+		return ".gif"
+	default:
+		return ""
+	}
+}
+
 func writeAvatar(u *model.User, image string) (string, error) {
+	const max = 150 * 1024 * 4 / 3
+
 	image = image[strings.Index(image, ",")+1:]
-	dec := base64.NewDecoder(base64.StdEncoding, strings.NewReader(image))
+	if len(image) > max {
+		image = image[:max]
+	}
+	buf, err := base64.StdEncoding.DecodeString(image)
+	if err != nil {
+		return "", err
+	}
 
 	hash := u.IDHash()
-	path := fmt.Sprintf("tmp/images/%d/", hash%1024)
+	path := "tmp/images/"
 	fn := fmt.Sprintf("%016x@%s", hash, u.ID)
 
-	os.MkdirAll(path, 0777)
+	if dal.S3 != nil {
+		ct := http.DetectContentType(buf)
+		return fn, dal.S3.Put(fn, ct, bytes.NewReader(buf))
+	}
+
 	of, err := os.OpenFile(path+fn, os.O_CREATE|os.O_WRONLY, 0777)
 	if err != nil {
 		return "", err
 	}
-	defer of.Close()
-
-	_, err = io.CopyN(of, dec, 150*1024)
-	if err == io.EOF {
-		err = nil
-	}
+	_, err = of.Write(buf)
+	of.Close()
 	return fn, err
 }
 
-func writeThumbnail(path string, srcimg string, throtWidth int) error {
-	data, err := os.Open(srcimg)
-	if err != nil {
-		return err
-	}
-	defer data.Close()
-
-	config, _, err := image.DecodeConfig(data)
-	if err != nil {
-		return err
-	}
-
-	if config.Width <= throtWidth || config.Height <= throtWidth {
-		return nil
-	}
-
-	data.Seek(0, 0)
-	src, _, err := image.Decode(data)
-	if err != nil {
-		return err
-	}
-
-	var canvas image.Image
-
-	if config.Width > config.Height {
-		canvas = resize.Resize(0, uint(throtWidth), src, resize.Lanczos3)
-	} else {
-		canvas = resize.Resize(uint(throtWidth), 0, src, resize.Lanczos3)
-	}
-
-	w, err := os.Create(path)
-	if err != nil {
-		return err
-	}
-	defer w.Close()
-
-	return jpeg.Encode(w, canvas, &jpeg.Options{Quality: 66})
-}
+// func writeThumbnail(path string, srcimg string, throtWidth int) error {
+// 	data, err := os.Open(srcimg)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer data.Close()
+//
+// 	config, _, err := image.DecodeConfig(data)
+// 	if err != nil {
+// 		return err
+// 	}
+//
+// 	if config.Width <= throtWidth || config.Height <= throtWidth {
+// 		return nil
+// 	}
+//
+// 	data.Seek(0, 0)
+// 	src, _, err := image.Decode(data)
+// 	if err != nil {
+// 		return err
+// 	}
+//
+// 	var canvas image.Image
+//
+// 	if config.Width > config.Height {
+// 		canvas = resize.Resize(0, uint(throtWidth), src, resize.Lanczos3)
+// 	} else {
+// 		canvas = resize.Resize(uint(throtWidth), 0, src, resize.Lanczos3)
+// 	}
+//
+// 	w, err := os.Create(path)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer w.Close()
+//
+// 	return jpeg.Encode(w, canvas, &jpeg.Options{Quality: 66})
+// }
