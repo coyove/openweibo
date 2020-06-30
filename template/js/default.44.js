@@ -588,9 +588,7 @@ function adjustImage(img) {
             imgload.src = img.src.replace(/\/thumb\//, '/');
             imgload.onload = function() {
                 loaded = true;
-                img.onload = null;
                 img.src = imgload.src;
-                div.style.backgroundImage = 'url(' + img.src + ')';
                 try { div.removeChild(divC) } catch (e) {}
             }
 
