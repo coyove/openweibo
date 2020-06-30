@@ -249,6 +249,11 @@ func APIUpload(g *gin.Context) {
 		return
 	}
 
+	if !ik.BAdd(u.ID) {
+		g.String(500, "cooldown")
+		return
+	}
+
 	d, params, err := mime.ParseMediaType(g.GetHeader("Content-Type"))
 	if err != nil || !(d == "multipart/form-data" || d == "multipart/mixed") {
 		g.String(500, "error-not-multipart")

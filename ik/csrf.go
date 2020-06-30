@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
+	"sync"
 	"time"
 
 	"github.com/coyove/common/lru"
@@ -16,7 +17,43 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var Dedup = lru.NewCache(1024)
+var (
+	Dedup          = lru.NewCache(1024)
+	burstableDedup [1024]struct {
+		sync.Mutex
+		start time.Time
+		count int
+	}
+	maxBurst      = 20
+	burstCooldown = 30000
+)
+
+func init() {
+	go func() {
+		// e.g. max 15 requests in 30 seconds, that's 0.5 r/s, so we tick every 2s
+		for range time.Tick(time.Duration(burstCooldown/maxBurst) * time.Millisecond) {
+			for i := range burstableDedup {
+				b := &burstableDedup[i]
+				b.Lock()
+				if b.count > 1 {
+					b.count--
+				}
+				b.Unlock()
+			}
+		}
+	}()
+}
+
+func BAdd(key string) bool {
+	b := &burstableDedup[common.Hash32(key)%uint32(len(burstableDedup))]
+	b.Lock()
+	defer b.Unlock()
+	if b.count <= maxBurst {
+		b.count++
+		return true
+	}
+	return false
+}
 
 func MakeToken(g *gin.Context) (string, string) {
 	var x [4]byte
