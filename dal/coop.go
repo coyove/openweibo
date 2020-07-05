@@ -315,7 +315,7 @@ func DoInsertArticle(r *InsertArticleRequest) (A model.Article, E error) {
 	return a, nil
 }
 
-func DoUpdateOrInsertCmdArticle(rr *UpdateOrInsertCmdArticleRequest) (updated bool, err error) {
+func DoUpdateOrInsertCmdArticle(rr *UpdateOrInsertCmdArticleRequest) (updated, inserted bool, err error) {
 	common.LockKey(rr.ArticleID)
 	defer common.UnlockKey(rr.ArticleID)
 
@@ -338,20 +338,20 @@ func DoUpdateOrInsertCmdArticle(rr *UpdateOrInsertCmdArticleRequest) (updated bo
 				}
 			}
 
-			updated = true
+			updated, inserted = true, true
 			_, err = DoInsertArticle(&InsertArticleRequest{
 				ID:      rr.InsertUnderChainID,
 				Article: *a,
 				NoLock:  coDistribute(rr.ArticleID) == coDistribute(rr.InsertUnderChainID), // deadlock fix
 			})
 		}
-		return updated, err
+		return updated, inserted, err
 	}
 
 	updated = a.Extras[rr.Cmd] != strconv.FormatBool(rr.CmdValue)
 	a.Extras[rr.Cmd] = strconv.FormatBool(rr.CmdValue)
 
-	return updated, m.db.Set(a.ID, a.Marshal())
+	return updated, false, m.db.Set(a.ID, a.Marshal())
 }
 
 func coDistribute(id string) uint16 {

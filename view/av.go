@@ -130,6 +130,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 	case model.CmdInboxReply, model.CmdInboxMention:
 		p, _ := dal.GetArticle(a2.Extras["article_id"])
 		if p == nil {
+			*a = ArticleView{}
 			return a
 		}
 
@@ -143,21 +144,26 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 		}
 		a.from(dummy, opt, u)
 		a.Cmd = model.CmdInboxFwAccepted
-	case model.CmdInboxLike:
+	case model.CmdInboxLike, model.CmdTimelineLike:
 		p, _ := dal.GetArticle(a2.Extras["article_id"])
-
 		if p == nil {
+			*a = ArticleView{}
+			return a
+		}
+
+		if !dal.IsLiking(a2.Extras["from"], p.ID) {
+			*a = ArticleView{}
 			return a
 		}
 
 		dummy := &model.Article{
 			ID:         ik.NewGeneralID().String(),
-			CreateTime: p.CreateTime,
-			Cmd:        model.CmdInboxLike,
+			CreateTime: a2.CreateTime,
 			Author:     a2.Extras["from"],
 			Parent:     p.ID,
 		}
 		a.from(dummy, opt, u)
+		a.Cmd = string(a2.Cmd)
 	}
 
 	return a
@@ -221,6 +227,9 @@ func fromMultiple(a *[]ArticleView, a2 []*model.Article, opt uint64, u *model.Us
 	newa := make([]ArticleView, 0, len(*a))
 	for _, v := range *a {
 		if dedup[v.ID] {
+			continue
+		}
+		if v.ID == "" {
 			continue
 		}
 		newa = append(newa, v)

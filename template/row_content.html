@@ -1,4 +1,4 @@
-{{$isInboxLike := or (eq .Cmd "inbox-like") (eq .Cmd "inbox-fw-accepted")}}
+{{$isInboxLike := or (eq .Cmd "inbox-like") (eq .Cmd "timeline-like") (eq .Cmd "inbox-fw-accepted")}}
 
 <div data-id="{{.ID}}" style="padding:0.5em 0.5em 0 0.5em" class="row">
     <div class="row-header" style="line-height:{{if .NoAvatar}}24px{{else}}36px{{end}};display:flex">
@@ -23,6 +23,8 @@
         <span class=post-date>于 {{formatTime .CreateTime}} @了你</span>
     {{else if eq .Cmd "inbox-fw-accepted"}}
         <span class=post-date>于 {{formatTime .CreateTime}} 承认了你的关注</span>
+    {{else if eq .Cmd "timeline-like"}}
+        <span class=post-date>于 {{formatTime .CreateTime}} 喜欢了该状态</span>
     {{else if $isInboxLike}}
         <span class=post-date>于 {{formatTime .CreateTime}} 喜欢了你的状态</span>
     {{else}}

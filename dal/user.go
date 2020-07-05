@@ -214,7 +214,7 @@ func FollowUser(from, to string, following bool) (E error) {
 }
 
 func notifyNewFollower(from, to string, following bool) (E error) {
-	updated, err := DoUpdateOrInsertCmdArticle(&UpdateOrInsertCmdArticleRequest{
+	updated, _, err := DoUpdateOrInsertCmdArticle(&UpdateOrInsertCmdArticleRequest{
 		ArticleID:          makeFollowedID(to, from),
 		ToSubject:          from,
 		InsertUnderChainID: ik.NewID(ik.IDFollower, to).String(),
@@ -242,7 +242,7 @@ func BlockUser(from, to string, blocking bool) (E error) {
 		}
 	}
 
-	_, err := DoUpdateOrInsertCmdArticle(&UpdateOrInsertCmdArticleRequest{
+	_, _, err := DoUpdateOrInsertCmdArticle(&UpdateOrInsertCmdArticleRequest{
 		ArticleID:          makeBlockID(from, to),
 		ToSubject:          to,
 		InsertUnderChainID: ik.NewID(ik.IDBlacklist, from).String(),
@@ -274,7 +274,7 @@ func AcceptUser(from, to string, accept bool) (E error) {
 }
 
 func LikeArticle(from, to string, liking bool) (E error) {
-	updated, err := DoUpdateOrInsertCmdArticle(&UpdateOrInsertCmdArticleRequest{
+	updated, inserted, err := DoUpdateOrInsertCmdArticle(&UpdateOrInsertCmdArticleRequest{
 		ArticleID:          makeLikeID(from, to),
 		InsertUnderChainID: ik.NewID(ik.IDLike, from).String(),
 		Cmd:                model.CmdLike,
@@ -287,22 +287,41 @@ func LikeArticle(from, to string, liking bool) (E error) {
 	if updated {
 		go func() {
 			a, err := DoUpdateArticle(&UpdateArticleRequest{ID: to, IncDecLikes: aws.Bool(liking)})
-			if !(err == nil && IsFollowing(a.Author, from) && liking) {
+			if err != nil {
+				log.Println("LikeArticle error:", err)
 				return
 			}
-			// if the author followed 'from', notify the author that his articles has been liked by 'from'
-			DoInsertArticle(&InsertArticleRequest{
-				ID: ik.NewID(ik.IDInbox, a.Author).String(),
-				Article: model.Article{
-					ID:  ik.NewGeneralID().String(),
-					Cmd: model.CmdInboxLike,
-					Extras: map[string]string{
-						"from":       from,
-						"article_id": to,
+
+			if inserted && liking {
+				// insert an article into 'from''s timeline
+				DoInsertArticle(&InsertArticleRequest{
+					ID: ik.NewID(ik.IDAuthor, from).String(),
+					Article: model.Article{
+						ID:  ik.NewGeneralID().String(),
+						Cmd: model.CmdTimelineLike,
+						Extras: map[string]string{
+							"from":       from,
+							"article_id": to,
+						},
 					},
-				},
-			})
-			DoUpdateUser(&UpdateUserRequest{ID: a.Author, IncDecUnread: aws.Bool(true)})
+				})
+
+				// if the author followed 'from', notify the author that his articles has been liked by 'from'
+				if IsFollowing(a.Author, from) {
+					DoInsertArticle(&InsertArticleRequest{
+						ID: ik.NewID(ik.IDInbox, a.Author).String(),
+						Article: model.Article{
+							ID:  ik.NewGeneralID().String(),
+							Cmd: model.CmdInboxLike,
+							Extras: map[string]string{
+								"from":       from,
+								"article_id": to,
+							},
+						},
+					})
+					DoUpdateUser(&UpdateUserRequest{ID: a.Author, IncDecUnread: aws.Bool(true)})
+				}
+			}
 		}()
 	}
 	return nil

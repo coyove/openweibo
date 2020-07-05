@@ -26,12 +26,13 @@ const (
 	CmdNone            Cmd = ""
 	CmdInboxReply          = "inbox-reply"
 	CmdInboxMention        = "inbox-mention"
-	CmdInboxLike           = "inbox-like"
 	CmdInboxFwAccepted     = "inbox-fw-accepted"
 	CmdFollow              = "follow"
 	CmdFollowed            = "followed"
 	CmdBlock               = "block"
-	CmdLike                = "like"
+	CmdLike                = "like"          // indicate the raw cmd article
+	CmdInboxLike           = "inbox-like"    // indicate the notification shown in inbox
+	CmdTimelineLike        = "timeline-like" // indicate the notification shown in timeline
 
 	DeletionMarker = "[[b19b8759-391b-460a-beb0-16f5f334c34f]]"
 )
