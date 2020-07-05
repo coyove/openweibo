@@ -574,6 +574,11 @@ function adjustImage(img) {
         note.innerText = 'GIF';
     }
 
+    if (div.hasAttribute("enlarge")) {
+        // Raw image and its thumbnail may have different w/h ratios, so recalc is needed
+        div.style.height = div.getBoundingClientRect().width / ratio + "px";
+    }
+
     div.style.backgroundImage = 'url(' + img.src + ')';
     div.onclick = function() {
         if (!div.hasAttribute("enlarge")) {
@@ -588,7 +593,7 @@ function adjustImage(img) {
             imgload.src = img.src.replace(/\/thumb\//, '/');
             imgload.onload = function() {
                 loaded = true;
-                img.src = imgload.src;
+                img.src = imgload.src; // trigger adjustImage() again
                 try { div.removeChild(divC) } catch (e) {}
             }
 

@@ -24,7 +24,7 @@ var (
 		start time.Time
 		count int
 	}
-	maxBurst      = 20
+	maxBurst      = 10
 	burstCooldown = 30000
 )
 

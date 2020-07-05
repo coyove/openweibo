@@ -1,7 +1,8 @@
 <div>
+{{$one := eq (len .Urls) 1}}
 {{range $i, $v := .Urls}}
     {{if eq $i $.InitShow}}
-    <div class="media cell tmpl-light-bg" style="border:solid 1px rgba(0,0,0,0.1)">
+    <div class="media cell {{if $one}}large{{end}} tmpl-light-bg" style="border:solid 1px rgba(0,0,0,0.1)">
         <button
             class="gbutton {{if $.NSFW}}nsfw-clicker{{end}}"
             style="display:block;width:100%;height:100%"
@@ -18,7 +19,9 @@
                 }
             })(this.parentNode)
             ">
+            {{if not $one}}
             + {{sub (len $.Urls) $.InitShow}}
+            {{end}}
             {{if $.NSFW}}
             <a style="display:inline" value=true><i class="icon-transgender-alt"></i> <span class=tmpl-orange-text>NSFW</span></a>
             {{end}}
@@ -27,9 +30,8 @@
     {{end}}
 
     {{$hide := ge $i $.InitShow}}
-    {{$one := eq (len $.Urls) 1}}
     {{if $v}}
-    <div class="media cell {{if $one}}large{{end}}" style="{{if $hide}}display:none{{end}}">
+    <div class="media cell {{if $one}}large{{end}}" style="{{if $hide}}display:none{{end}};background-image:url(/s/assets/spinner2.gif)">
         <a target=_blank><img onload="adjustImage(this)" {{if $hide}}data-{{end}}src="{{index $.Thumbs $i}}"></a>
         <div class="image-index open-blank image-enlarge-badge" onclick='window.open("{{$v}}");event.stopPropagation()'>原图 <i class=icon-export-alt></i></div>
         <span class="image-index long-image">长图</span>
