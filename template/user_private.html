@@ -1,7 +1,7 @@
 <div class="status">
     <div class="title row-header" style="">
         <div style="white-space:nowrap;display:inline-block">
-            <img class="avatar" src="{{.AvatarURL}}" style="cursor:pointer;margin:0" onclick="this.nextElementSibling.click()">
+            <img class="avatar" {{template "avatar.html" .}} style="cursor:pointer;margin:0" onclick="this.nextElementSibling.click()">
             <input type=file style="display:none" onchange="onAvatarChanged(this)">
             <button class="gbutton tmpl-normal-text" onclick="this.previousElementSibling.click()">
                 <i class=icon-camera></i>

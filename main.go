@@ -288,7 +288,7 @@ func main() {
 			}
 			hello := &tls.ClientHelloInfo{ServerName: common.Cfg.Domains[0]}
 			_, err := m.GetCertificate(hello)
-			fmt.Println(err)
+			fmt.Println("ssl test:", err)
 			fmt.Println(s.ListenAndServeTLS("", ""))
 		}()
 	}

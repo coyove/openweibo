@@ -16,6 +16,7 @@ import (
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
 	"github.com/coyove/iis/tfidf"
+	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 )
 
@@ -120,7 +121,7 @@ func New(prod bool) *gin.Engine {
 	log.SetFlags(log.Lshortfile | log.Ltime | log.Ldate)
 
 	r := gin.New()
-	r.Use(gin.Recovery(), mwRenderPerf, mwIPThrot, RequestSizeLimiter(3*1024*1024))
+	r.Use(gin.Recovery(), gzip.Gzip(gzip.DefaultCompression), mwRenderPerf, mwIPThrot, RequestSizeLimiter(3*1024*1024))
 
 	loadTrafficCounter()
 

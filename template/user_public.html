@@ -2,7 +2,7 @@
     <div class="row-header title" style="text-align:left">
         <div style="flex:0 48px">
             <div class=avatar-container>
-                <img class="avatar" src="{{.AvatarURL}}" onclick="location.href='/t/{{.ID}}'">
+                <img class="avatar" {{template "avatar.html" .}} onclick="location.href='/t/{{.ID}}'">
             {{if .Kimochi}}
             <img class="avatar-kimochi" src="{{.KimochiURL}}">
             {{end}}

@@ -2,7 +2,6 @@ package view
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/coyove/iis/common"
@@ -11,7 +10,6 @@ import (
 	"github.com/coyove/iis/middleware"
 	"github.com/coyove/iis/model"
 	"github.com/gin-gonic/gin"
-	"github.com/nullrocks/identicon"
 )
 
 func User(g *gin.Context) {
@@ -101,7 +99,7 @@ func UserList(g *gin.Context) {
 	g.HTML(200, "user_list.html", p)
 }
 
-var ig, _ = identicon.New("github", 5, 3)
+// var ig, _ = identicon.New("github", 5, 3)
 
 func Avatar(g *gin.Context) {
 	id := g.Param("id")
@@ -113,24 +111,24 @@ func Avatar(g *gin.Context) {
 	hash := (model.User{ID: id}).IDHash()
 	path := fmt.Sprintf("tmp/images/%016x@%s", hash, id)
 
-	if g.Query("q") != "0" {
-		if common.Cfg.S3Region != "" {
-			path := fmt.Sprintf("%s/%016x@%s", common.Cfg.MediaDomain, hash, id)
-			g.Redirect(307, path)
-		} else {
-			http.ServeFile(g.Writer, g.Request, path)
-		}
+	// 	if g.Query("q") != "0" {
+	if common.Cfg.S3Region != "" {
+		path := fmt.Sprintf("%s/%016x@%s?q=%s", common.Cfg.MediaDomain, hash, id, g.Query("q"))
+		g.Redirect(302, path)
 	} else {
-		ii, err := ig.Draw("iis" + id)
-		if err != nil {
-			log.Println(err)
-			g.Status(404)
-			return
-		}
-		g.Writer.Header().Add("Content-Type", "image/jpeg")
-		g.Writer.Header().Add("Cache-Control", "public")
-		ii.Jpeg(100, 80, g.Writer)
+		http.ServeFile(g.Writer, g.Request, path)
 	}
+	// 	} else {
+	// 		ii, err := ig.Draw("iis" + id)
+	// 		if err != nil {
+	// 			log.Println(err)
+	// 			g.Status(404)
+	// 			return
+	// 		}
+	// 		g.Writer.Header().Add("Content-Type", "image/jpeg")
+	// 		g.Writer.Header().Add("Cache-Control", "public")
+	// 		ii.Jpeg(100, 80, g.Writer)
+	// 	}
 }
 
 func UserLikes(g *gin.Context) {

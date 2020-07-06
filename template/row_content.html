@@ -4,7 +4,7 @@
     <div class="row-header" style="line-height:{{if .NoAvatar}}24px{{else}}36px{{end}};display:flex">
         {{if not .NoAvatar}}
         <div class=avatar-container>
-            <img class="avatar" alt="{{.Author.ID}}" src="{{.Author.AvatarURL}}" onmouseenter="showInfoBox(this,'{{.Author.ID}}')">
+            <img class="avatar" alt="{{.Author.ID}}" {{template "avatar.html" .Author}} onmouseenter="showInfoBox(this,'{{.Author.ID}}')">
             {{if .Author.Kimochi}}
             <img class="avatar-kimochi" src="{{.Author.KimochiURL}}">
             {{end}}
@@ -24,9 +24,9 @@
     {{else if eq .Cmd "inbox-fw-accepted"}}
         <span class=post-date>于 {{formatTime .CreateTime}} 承认了你的关注</span>
     {{else if eq .Cmd "timeline-like"}}
-        <span class=post-date>于 {{formatTime .CreateTime}} 喜欢了该状态</span>
+        <span class=post-date>于 {{formatTime .CreateTime}} 喜欢</span>
     {{else if $isInboxLike}}
-        <span class=post-date>于 {{formatTime .CreateTime}} 喜欢了你的状态</span>
+        <span class=post-date>于 {{formatTime .CreateTime}} 喜欢</span>
     {{else}}
         {{if .You.IsMod}}
         <span>
