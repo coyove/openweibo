@@ -380,6 +380,12 @@ img.avatar + .avatar-kimochi {
     padding: 0 1em;
 }
 
+.media .image-index.image-next {
+    display: none; 
+    left: 50%; width: initial; transform: translateX(-50%);
+    padding: 0 1em;
+}
+
 .media .image-index.open-blank {
     position: absolute;
     bottom: 4px; left: 30px;
@@ -399,7 +405,8 @@ img.avatar + .avatar-kimochi {
     width: 22px; height: 22px; line-height: 22px; border-radius: 11px;
 }
 
-.media[enlarge=enlarge] .image-index.image-enlarge-badge {
+.media[enlarge=enlarge] .image-index.image-enlarge-badge,
+.media[enlarge=enlarge] .image-index.image-next {
     display: block !important;
 }
 
