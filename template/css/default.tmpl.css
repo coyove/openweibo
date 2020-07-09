@@ -181,7 +181,7 @@ div.subreply .row-header {
 }
 
 div.clusterreply .row-header {
-    background: transparent;
+    background: {{.ClusterRowHeader}};
     border-top: dashed 1px {{.Border}};
 }
 

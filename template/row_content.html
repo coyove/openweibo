@@ -24,7 +24,11 @@
     {{else if eq .Cmd "inbox-fw-accepted"}}
         <span class=post-date>于 {{formatTime .CreateTime}} 承认了你的关注</span>
     {{else if eq .Cmd "timeline-like"}}
-        <span class=post-date>于 {{formatTime .CreateTime}} 喜欢</span>
+        {{if .AlsoReply}}
+            <span class=post-date>&bull;&bull;&bull; 同喜欢于 {{formatTime .CreateTime}}</span>
+        {{else}}
+            <span class=post-date>于 {{formatTime .CreateTime}} 喜欢</span>
+        {{end}}
     {{else if $isInboxLike}}
         <span class=post-date>于 {{formatTime .CreateTime}} 喜欢</span>
     {{else}}
@@ -41,7 +45,7 @@
             {{end}}
         {{else}}
             {{if .AlsoReply}}
-                <span class=post-date><b>同</b> &bull; 回复于 {{formatTime .CreateTime}}</span>
+                <span class=post-date>&bull;&bull;&bull; 同回复于 {{formatTime .CreateTime}}</span>
             {{else}}
                 <span class=post-date>发布于 {{formatTime .CreateTime}}</span>
             {{end}}
@@ -111,7 +115,7 @@
 
     {{if .Parent}}
     {{if .Parent.ID}}
-    <div style="position:relative;margin:0 -0.5em;{{if not $isInboxLike}}border-top:solid 1px transparent{{end}}" class="tmpl-border quoted-sep">
+    <div style="position:relative;margin:0 -0.5em;{{if or .Others (not $isInboxLike)}}border-top:solid 1px transparent{{end}}" class="tmpl-border quoted-sep">
         <div style="position:absolute;left:0.5em;top:0.5em" class=tmpl-light-text>
             <i class=icon-quote-left></i>
         </div>

@@ -108,6 +108,7 @@ type CSSConfig struct {
 	LightBG           string
 	Row               string
 	RowHeader         string
+	ClusterRowHeader  string
 	FoobarHoverBottom string
 	TextShadow        string
 	ModText           string
@@ -143,6 +144,7 @@ var CSSLightConfig = CSSConfig{
 	LightBG:           "#fafbfc",
 	Row:               "#f6f6f6",
 	RowHeader:         "rgba(0,0,0,0.04)",
+	ClusterRowHeader:  "rgba(0,0,0,0.015)",
 	FoobarHoverBottom: "#677",
 	TextShadow:        "#677",
 	ModText:           "#673ab7",
@@ -167,6 +169,7 @@ var CSSDarkConfig = CSSConfig{
 	ButtonDisabled:    "#666",
 	Row:               "#0d131b",
 	RowHeader:         "rgba(255,255,255,0.07)",
+	ClusterRowHeader:  "rgba(255,255,255,0.03)",
 	Navbar:            "#121923",
 	Border:            "#234456",
 	DarkBorder:        "#093248",
