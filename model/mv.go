@@ -236,6 +236,7 @@ type UserSettings struct {
 	FoldImages                 bool      `json:"foldi,omitempty"`
 	OnlyMyFollowingsCanFollow  bool      `json:"mffm,omitempty"`
 	OnlyMyFollowingsCanMention bool      `json:"mfcm,omitempty"`
+	HideLikesInTimeline        bool      `json:"slit,omitempty"`
 	Description                string    `json:"desc,omitempty"`
 	FollowerNeedsAcceptance    time.Time `json:"pdfollow,omitempty"`
 }

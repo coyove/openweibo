@@ -237,7 +237,7 @@ func APILike(g *gin.Context) {
 		return
 	}
 
-	err := dal.LikeArticle(u.ID, to, g.PostForm("like") != "")
+	err := dal.LikeArticle(u, to, g.PostForm("like") != "")
 	if err != nil {
 		g.String(200, err.Error())
 	} else {
@@ -328,6 +328,14 @@ func APIUpdateUserSettings(g *gin.Context) {
 		if _, err := dal.DoUpdateUser(&dal.UpdateUserRequest{
 			ID:          u.ID,
 			SettingMFFM: aws.Bool(g.PostForm("mffm") != ""),
+		}); err != nil {
+			g.String(200, err.Error())
+			return
+		}
+	case g.PostForm("set-slit") != "":
+		if _, err := dal.DoUpdateUser(&dal.UpdateUserRequest{
+			ID:          u.ID,
+			SettingSLIT: aws.Bool(g.PostForm("slit") != ""),
 		}); err != nil {
 			g.String(200, err.Error())
 			return

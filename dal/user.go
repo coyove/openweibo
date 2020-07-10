@@ -273,7 +273,8 @@ func AcceptUser(from, to string, accept bool) (E error) {
 	}).Marshal())
 }
 
-func LikeArticle(from, to string, liking bool) (E error) {
+func LikeArticle(u *model.User, to string, liking bool) (E error) {
+	from := u.ID
 	updated, inserted, err := DoUpdateOrInsertCmdArticle(&UpdateOrInsertCmdArticleRequest{
 		ArticleID:          makeLikeID(from, to),
 		InsertUnderChainID: ik.NewID(ik.IDLike, from).String(),
@@ -294,17 +295,19 @@ func LikeArticle(from, to string, liking bool) (E error) {
 
 			if inserted && liking {
 				// insert an article into 'from''s timeline
-				DoInsertArticle(&InsertArticleRequest{
-					ID: ik.NewID(ik.IDAuthor, from).String(),
-					Article: model.Article{
-						ID:  ik.NewGeneralID().String(),
-						Cmd: model.CmdTimelineLike,
-						Extras: map[string]string{
-							"from":       from,
-							"article_id": to,
+				if !u.Settings().HideLikesInTimeline {
+					DoInsertArticle(&InsertArticleRequest{
+						ID: ik.NewID(ik.IDAuthor, from).String(),
+						Article: model.Article{
+							ID:  ik.NewGeneralID().String(),
+							Cmd: model.CmdTimelineLike,
+							Extras: map[string]string{
+								"from":       from,
+								"article_id": to,
+							},
 						},
-					},
-				})
+					})
+				}
 
 				// if the author followed 'from', notify the author that his articles has been liked by 'from'
 				if IsFollowing(a.Author, from) {

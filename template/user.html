@@ -124,7 +124,7 @@
                                    class=icon-input-checkbox
                                    onchange="updateSetting(this,'mfcm',this.checked?'1':'')">
                             <i class='icon-ok-circled2'></i>
-                            <label for=mfcm>屏蔽我没关注的人的回复和@提醒</label>
+                            <label for=mfcm>屏蔽你没关注的人的回复和@提醒</label>
                         </td>
                     </tr>
                     <tr>
@@ -133,7 +133,16 @@
                                    class=icon-input-checkbox
                                    onchange="updateSetting(this,'mffm',this.checked?'1':'')">
                             <i class='icon-ok-circled2'></i>
-                            <label for=mffm>只有我关注的人可以关注我</label>
+                            <label for=mffm>只有你关注的人可以关注你</label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type=checkbox {{if .User.Settings.HideLikesInTimeline}}checked{{end}} id=slit
+                                   class=icon-input-checkbox
+                                   onchange="updateSetting(this,'slit',this.checked?'1':'')">
+                            <i class='icon-ok-circled2'></i>
+                            <label for=slit>不在时间轴里显示你“喜欢了”状态</label>
                         </td>
                     </tr>
                 </table>
@@ -153,7 +162,7 @@
                                    class=icon-input-checkbox
                                    onchange="updateSetting(this,'fw-accept',this.checked?'1':'')">
                             <i class='icon-ok-circled2'></i>
-                            <label for=fw-accept>新关注者关注我前需要我的确认</label>
+                            <label for=fw-accept>新关注者关注你前需要你的确认</label>
                         </td>
                     </tr>
                     <tr>
