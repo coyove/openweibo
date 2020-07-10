@@ -40,7 +40,7 @@
         <span
             class="image-index image-next"
             onclick='(function(_this) {
-                _this.parentNode.parentNode.querySelector("button").click()
+                try { _this.parentNode.parentNode.querySelector("button").click() } catch (e) {}
                 var el = _this.parentNode.parentNode.querySelector("[image-index=\"{{sub $i -1}}\"]");
                 el.click();
                 el.scrollIntoView();
