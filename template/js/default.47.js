@@ -556,7 +556,8 @@ function adjustImage(img) {
     var ratio = img.width / img.height,
         div = img.parentNode.parentNode,
         note = div.querySelector('.long-image'),
-        r = div.getBoundingClientRect();
+        r = div.getBoundingClientRect(),
+        smallimg = false;
 
     if (ratio < 0.33 || ratio > 3) {
         div.style.backgroundSize = 'contain';
@@ -567,6 +568,7 @@ function adjustImage(img) {
 
     if (img.width <= r.width * 0.9 && img.height <= r.height * 0.9) {
         div.style.backgroundSize = 'auto';
+        smallimg = true;
     }
 
     if (img.src.match(/\.gif$/)) {
@@ -577,6 +579,7 @@ function adjustImage(img) {
     if (div.hasAttribute("enlarge")) {
         // Raw image and its thumbnail may have different w/h ratios, so recalc is needed
         div.style.height = div.getBoundingClientRect().width / ratio + "px";
+        if (smallimg) div.style.height = img.height + "px";
     }
 
     div.style.backgroundImage = 'url(' + img.src + ')';
