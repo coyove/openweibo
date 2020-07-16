@@ -130,7 +130,7 @@ pre {
 nav {
     line-height: 3em;
     background: {{.Navbar}};
-    border-bottom: solid 2px {{.RowHeader}};
+    border-bottom: solid 2px {{.NavbarBottom}};
 }
 
 nav a {
@@ -549,6 +549,7 @@ div.reply-lock-notify {
 .tmpl-mid-text { color: {{.MidGrayText}} !important }
 .tmpl-red-text { color: {{.RedText}} !important }
 .tmpl-orange-text { color: {{.OrangeText}} !important }
+.tmpl-nsfw-text { color: {{.NSFWText}} !important }
 .tmpl-green-text { color: {{.GreenText}} !important }
 .tmpl-border { border-color: {{.Border}} !important }
 .tmpl-dark-border { border-color: {{.DarkBorder}} !important }

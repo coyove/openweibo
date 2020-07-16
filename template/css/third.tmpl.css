@@ -161,11 +161,14 @@
 .post-options [name="reply-lock"][value="0"] .icon-lock-open {
     display: block 
 }
-a[value=true] .icon-transgender-alt {
-    color: {{.OrangeText}};
+a[value=true] .icon-eye-off {
+    color: {{.NSFWText}};
 }
-a[value=false] .icon-transgender-alt {
+a[value=false] .icon-eye-off {
     color: {{.LightText}};
+}
+a[value=false] .icon-eye-off:before {
+    content: '\e81e';
 }
 
 .tribute-container {

@@ -100,6 +100,7 @@ type CSSConfig struct {
 	InputBG           string
 	Link              string
 	Navbar            string
+	NavbarBottom      string
 	Border            string
 	DarkBorder        string
 	NormalText        string
@@ -118,6 +119,7 @@ type CSSConfig struct {
 	RedText           string
 	GreenText         string
 	OrangeText        string
+	NSFWText          string
 	InboxMessage      string
 	AddFriend         string
 	RemoveFriend      string
@@ -136,6 +138,7 @@ var CSSLightConfig = CSSConfig{
 	ButtonDisabled:    "rgba(var(--pure-material-onsurface-rgb, 0, 0, 0), 0.38)",
 	Link:              "#2a66d9",
 	Navbar:            "#feb",
+	NavbarBottom:      "rgba(0,0,0,0.04)",
 	Border:            "#ddd",
 	DarkBorder:        "#ddd",
 	NormalText:        "#233",
@@ -154,6 +157,7 @@ var CSSLightConfig = CSSConfig{
 	RedText:           "#f52",
 	GreenText:         "#4a5",
 	OrangeText:        "#f90",
+	NSFWText:          "#bb7ab0",
 	InboxMessage:      "#3f51b5",
 	AddFriend:         "#098",
 	RemoveFriend:      "#e16",
@@ -170,7 +174,8 @@ var CSSDarkConfig = CSSConfig{
 	Row:               "#0d131b",
 	RowHeader:         "rgba(255,255,255,0.07)",
 	ClusterRowHeader:  "rgba(255,255,255,0.03)",
-	Navbar:            "#121923",
+	Navbar:            "#312244",
+	NavbarBottom:      "#09080a",
 	Border:            "#234456",
 	DarkBorder:        "#093248",
 	NormalText:        "#eee",
@@ -185,13 +190,14 @@ var CSSDarkConfig = CSSConfig{
 	PostButtonHover:   "#176caf",
 	ToastBG:           "rgba(255,255,255,0.9)",
 	Toast:             "black",
-	InboxMessage:      "inherit; text-shadow: 0 0 8px rgba(0,0,0,0.5);",
+	InboxMessage:      "#ffeb3b",
 
 	FoobarHoverBottom: "#677",
 	TextShadow:        "#677",
 	RedText:           "#f52",
 	GreenText:         "#4a5",
 	OrangeText:        "#f90",
+	NSFWText:          "#bb7ab0",
 	AddFriend:         "#098",
 }
 
