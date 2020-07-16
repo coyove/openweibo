@@ -190,7 +190,7 @@ var CSSDarkConfig = CSSConfig{
 	PostButtonHover:   "#176caf",
 	ToastBG:           "rgba(255,255,255,0.9)",
 	Toast:             "black",
-	InboxMessage:      "#ffeb3b",
+	InboxMessage:      "#ffe082",
 
 	FoobarHoverBottom: "#677",
 	TextShadow:        "#677",

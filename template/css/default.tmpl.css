@@ -383,7 +383,8 @@ img.avatar + .avatar-kimochi {
 .media .image-index.image-next {
     display: none; 
     left: 50%; width: initial; transform: translateX(-50%);
-    padding: 0 1em;
+    line-height: 32px; height:32px; width: 32px; border-radius:50%;
+    font-size: 18px;
 }
 
 .media .image-index.open-blank {

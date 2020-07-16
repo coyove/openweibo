@@ -578,8 +578,11 @@ function adjustImage(img) {
 
     if (div.hasAttribute("enlarge")) {
         // Raw image and its thumbnail may have different w/h ratios, so recalc is needed
-        div.style.height = div.getBoundingClientRect().width / ratio + "px";
-        if (smallimg) div.style.height = img.height + "px";
+        // div.style.height = div.getBoundingClientRect().width / ratio + "px";
+        // if (smallimg) div.style.height = img.height + "px";
+        div.style.height = window.innerHeight + "px";
+        div.scrollIntoView();
+        div.style.backgroundSize = 'contain';
     }
 
     div.style.backgroundImage = 'url(' + img.src + ')';
@@ -587,9 +590,12 @@ function adjustImage(img) {
         if (!div.hasAttribute("enlarge")) {
             div.setAttribute("enlarge", "enlarge")
             div.style.width = "100%";
-            var r = div.getBoundingClientRect();
-            var h = r.width / ratio;
-            div.style.height = h + "px";
+            div.style.height = window.innerHeight + "px";
+            div.scrollIntoView();
+
+//             var r = div.getBoundingClientRect();
+//             var h = r.width / ratio;
+//             div.style.height = h + "px";
 
             var imgload = new Image(), imgprogress = new Image(), divC = $q("<div>"), loaded = false;
 

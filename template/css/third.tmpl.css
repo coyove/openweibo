@@ -107,6 +107,10 @@
 .control.icon-left-small:hover,.control.icon-link:hover {
     color: {{.MidGrayText}}
 }
+.media .image-index.image-next:before {
+    margin-left: 0;
+    margin-right: 0;
+}
 .follow-block .icon-user-plus {
     color: {{.AddFriend}} 
 }

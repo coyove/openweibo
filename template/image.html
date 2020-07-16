@@ -38,20 +38,17 @@
         <span class="image-index image-enlarge-badge" style="{{if $one}}display:none{{end}}">{{printf "%X" (sub $i -1)}}</span>
         {{if ne $i (sub (len $.Urls) 1)}}
         <span
-            class="image-index image-next"
+            class="image-index image-next icon-down-big"
             onclick='(function(_this) {
                 try { _this.parentNode.parentNode.querySelector("button").click() } catch (e) {}
                 var el = _this.parentNode.parentNode.querySelector("[image-index=\"{{sub $i -1}}\"]");
                 el.click();
                 el.scrollIntoView();
-                _this.style.setProperty("display", "none", "important");
                 event.stopPropagation();
-            })(this)'>
-            下一张
-        </span>
+            })(this)'></span>
         {{else if not $one}}
         <span
-            class="image-index image-next"
+            class="image-index image-next icon-ok"
             onclick='(function(_this) {
                 _this = _this.parentNode.parentNode;
                 var els = _this.querySelectorAll(".media.cell");
@@ -61,7 +58,6 @@
                 _this.querySelector("[image-index=\"0\"]").scrollIntoView();
                 event.stopPropagation();
             })(this)'>
-            收起全部
         </span>
         {{end}}
     </div>
