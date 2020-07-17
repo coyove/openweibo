@@ -63,10 +63,18 @@ func MGetArticlesFromCache(keys ...string) map[string]*model.Article {
 }
 
 func GetArticle(id string, dontOverrideNextID ...bool) (*model.Article, error) {
+	return getterArticle(m.db.Get, id, dontOverrideNextID...)
+}
+
+func WeakGetArticle(id string, dontOverrideNextID ...bool) (*model.Article, error) {
+	return getterArticle(m.db.WeakGet, id, dontOverrideNextID...)
+}
+
+func getterArticle(getter func(string) ([]byte, error), id string, dontOverrideNextID ...bool) (*model.Article, error) {
 	if id == "" {
 		return nil, fmt.Errorf("empty ArticleID")
 	}
-	p, err := m.db.Get(id)
+	p, err := getter(id)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +88,7 @@ func GetArticle(id string, dontOverrideNextID ...bool) (*model.Article, error) {
 	if a.ReferID == "" {
 		return a, nil
 	}
-	a2, err := GetArticle(a.ReferID)
+	a2, err := getterArticle(getter, a.ReferID)
 	if err != nil {
 		return nil, err
 	}

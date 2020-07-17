@@ -18,11 +18,9 @@ var (
 
 type KeyValueOp interface {
 	Get(string) ([]byte, error)
-	Get2(string, string) ([]byte, error)
+	WeakGet(string) ([]byte, error)
 	Set(string, []byte) error
-	Set2(string, string, []byte) error
 	SetGlobalCache(*cache.GlobalCache)
-	Range(string, string, int) ([][]byte, string, error)
 }
 
 func IsCrawler(g *gin.Context) bool {

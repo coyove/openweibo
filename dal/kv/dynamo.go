@@ -3,6 +3,8 @@ package kv
 import (
 	"bytes"
 	"log"
+	"math"
+	"math/rand"
 	"net/http"
 	"time"
 
@@ -10,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/coyove/common/lru"
 	"github.com/coyove/iis/dal/kv/cache"
 	//sync "github.com/sasha-s/go-deadlock"
 )
@@ -17,11 +20,18 @@ import (
 var (
 	dyTable  = "iis"
 	dyTable2 = "iis2"
+	ttl      = time.Minute
 )
 
+type weakEntry struct {
+	data []byte
+	dead time.Time
+}
+
 type DynamoKV struct {
-	cache *cache.GlobalCache
-	db    *dynamodb.DynamoDB
+	cache     *cache.GlobalCache
+	weakCache *lru.Cache
+	db        *dynamodb.DynamoDB
 }
 
 func NewDynamoKV(region, accessKey, secretKey string) *DynamoKV {
@@ -44,13 +54,28 @@ func NewDynamoKV(region, accessKey, secretKey string) *DynamoKV {
 		panic(err)
 	}
 	r := &DynamoKV{
-		db: db,
+		db:        db,
+		weakCache: lru.NewCache(1e4),
 	}
 	return r
 }
 
 func (m *DynamoKV) SetGlobalCache(c *cache.GlobalCache) {
 	m.cache = c
+}
+
+func (m *DynamoKV) WeakGet(k string) ([]byte, error) {
+	if v, ok := m.weakCache.Get(k); ok {
+		e := v.(weakEntry)
+		if time.Now().Before(e.dead) {
+			return e.data, nil
+		}
+		if rand.Float64() <= 1.0/math.Log10(time.Since(e.dead).Seconds()) {
+			return e.data, nil
+		}
+	}
+
+	return m.Get(k)
 }
 
 func (m *DynamoKV) Get(key string) ([]byte, error) {
@@ -87,6 +112,7 @@ func (m *DynamoKV) Get(key string) ([]byte, error) {
 		if err := m.cache.Add(key, v); err != nil {
 			log.Println("KV add:", err)
 		}
+		m.weakCache.Add(key, &weakEntry{v, time.Now().Add(ttl)})
 	}
 
 	return v, err
@@ -156,6 +182,7 @@ func (m *DynamoKV) Set(key string, value []byte) error {
 	_, err := m.db.UpdateItem(in)
 	if err == nil {
 		m.cache.Add(key, value)
+		m.weakCache.Add(key, &weakEntry{value, time.Now().Add(ttl)})
 	}
 	return err
 }

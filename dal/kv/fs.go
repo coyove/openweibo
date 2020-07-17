@@ -11,13 +11,15 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/coyove/common/lru"
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal/kv/cache"
 	//sync "github.com/sasha-s/go-deadlock"
 )
 
 type DiskKV struct {
-	cache *cache.GlobalCache
+	cache     *cache.GlobalCache
+	weakCache *lru.Cache
 }
 
 func NewDiskKV() *DiskKV {
@@ -26,7 +28,9 @@ func NewDiskKV() *DiskKV {
 		panic(err)
 	}
 
-	r := &DiskKV{}
+	r := &DiskKV{
+		weakCache: lru.NewCache(1e4),
+	}
 	return r
 }
 
@@ -42,6 +46,18 @@ func calcPath2(key1, key2 string) (string, string) {
 
 func (m *DiskKV) SetGlobalCache(c *cache.GlobalCache) {
 	m.cache = c
+}
+
+func (m *DiskKV) WeakGet(k string) ([]byte, error) {
+	if rand.Intn(10) == 0 {
+		return m.Get(k)
+	}
+
+	if v, ok := m.weakCache.Get(k); ok {
+		return v.([]byte), nil
+	}
+
+	return m.Get(k)
 }
 
 func (m *DiskKV) Get(key string) ([]byte, error) {
@@ -74,6 +90,7 @@ func (m *DiskKV) Get(key string) ([]byte, error) {
 	if err == nil {
 		if !nocache {
 			m.cache.Add(key, v)
+			m.weakCache.Add(key, v)
 		}
 	}
 
@@ -135,6 +152,7 @@ func (m *DiskKV) Set(key string, value []byte) error {
 		if err := m.cache.Add(key, value); err != nil {
 			log.Println("KV add:", err)
 		}
+		m.weakCache.Add(key, value)
 	}
 	return err
 }

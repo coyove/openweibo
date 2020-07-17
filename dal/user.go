@@ -26,11 +26,19 @@ func init() {
 }
 
 func GetUser(id string) (*model.User, error) {
+	return getterUser(m.db.Get, id)
+}
+
+func WeakGetUser(id string) (*model.User, error) {
+	return getterUser(m.db.WeakGet, id)
+}
+
+func getterUser(getter func(string) ([]byte, error), id string) (*model.User, error) {
 	if id == "" {
 		return nil, fmt.Errorf("empty user id")
 	}
 
-	p, err := m.db.Get("u/" + id)
+	p, err := getter("u/" + id)
 	if err != nil {
 		return nil, err
 	}
