@@ -49,7 +49,7 @@
         {{template "reply_view.html" .ReplyView}}
     {{end}}
 
-<div style='padding:0 0.5em;cursor:pointer;line-height:2.5em' class=tmpl-row-light-bg>
+<div style='padding:0 0.5em;cursor:pointer;line-height:2.5em' class=tmpl-navbar-titlebar-bg>
 {{if .IsInbox}}
     <button style="margin:0.5em 0" class=gbutton onclick="$postReload(this,'/api/clear_inbox',{})">清空全部提醒</button>
 {{else if .IsSearchTimeline}}

@@ -27,7 +27,7 @@
         {{if .AlsoReply}}
             <span class=post-date>&bull;&bull;&bull; 同喜欢于 {{formatTime .CreateTime}}</span>
         {{else}}
-            <span class=post-date>于 {{formatTime .CreateTime}} 喜欢</span>
+            <span class=post-date>喜欢于 {{formatTime .CreateTime}}</span>
         {{end}}
     {{else if $isInboxLike}}
         <span class=post-date>于 {{formatTime .CreateTime}} 喜欢</span>

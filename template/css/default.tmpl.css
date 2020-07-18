@@ -556,6 +556,7 @@ div.reply-lock-notify {
 .tmpl-dark-border { border-color: {{.DarkBorder}} !important }
 .tmpl-light-bg { background: {{.LightBG}} !important }
 .tmpl-row-light-bg { background: {{.Row}} !important }
+.tmpl-navbar-titlebar-bg { background: {{.NavbarTitlebar}} !important }
 .tmpl-inbox-message-text { color: {{.InboxMessage}} !important }
 .tmpl-input-bg { background: {{.InputBG}} !important }
 .tmpl-body-bg { background-color: {{.BodyBG}} !important }
