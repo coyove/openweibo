@@ -180,7 +180,13 @@ func WalkMulti(media bool, n int, cursors ...ik.ID) (a []*model.Article, next []
 			break
 		}
 
-		p, err := GetArticle(latest.String())
+		p, err := WeakGetArticle(latest.String())
+		// Calling WeakGet instead of Get will cause:
+		//   1. Deleted article may be reappeared
+		//   2. Likes/Replies number may not be accurate, along with other updatable fields
+		// If we are deploying IIS on a single machine, none of the above cases will be a problem
+		// With distibuted IIS, users may see different results each time they refresh the page
+
 		if err == nil {
 			ok := !idm[p.ID] && p.Content != model.DeletionMarker && !latest.IsRoot()
 			// 1. 'p' is not duplicated

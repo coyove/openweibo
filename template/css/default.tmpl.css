@@ -384,7 +384,7 @@ img.avatar + .avatar-kimochi {
     display: none; 
     left: 50%; width: initial; transform: translateX(-50%);
     line-height: 32px; height:32px; width: 32px; border-radius:50%;
-    font-size: 18px;
+    font-size: 16px;
 }
 
 .media .image-index.open-blank {

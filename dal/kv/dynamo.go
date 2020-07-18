@@ -20,12 +20,11 @@ import (
 var (
 	dyTable  = "iis"
 	dyTable2 = "iis2"
-	ttl      = time.Minute
 )
 
 type weakEntry struct {
 	data []byte
-	dead time.Time
+	born time.Time
 }
 
 type DynamoKV struct {
@@ -66,11 +65,8 @@ func (m *DynamoKV) SetGlobalCache(c *cache.GlobalCache) {
 
 func (m *DynamoKV) WeakGet(k string) ([]byte, error) {
 	if v, ok := m.weakCache.Get(k); ok {
-		e := v.(weakEntry)
-		if time.Now().Before(e.dead) {
-			return e.data, nil
-		}
-		if rand.Float64() <= 1.0/math.Log10(time.Since(e.dead).Seconds()) {
+		e := v.(*weakEntry)
+		if rand.Float64() <= 1.0/math.Log10(time.Since(e.born).Seconds()+1) {
 			return e.data, nil
 		}
 	}
@@ -112,7 +108,7 @@ func (m *DynamoKV) Get(key string) ([]byte, error) {
 		if err := m.cache.Add(key, v); err != nil {
 			log.Println("KV add:", err)
 		}
-		m.weakCache.Add(key, &weakEntry{v, time.Now().Add(ttl)})
+		m.weakCache.Add(key, &weakEntry{v, time.Now()})
 	}
 
 	return v, err
@@ -182,7 +178,7 @@ func (m *DynamoKV) Set(key string, value []byte) error {
 	_, err := m.db.UpdateItem(in)
 	if err == nil {
 		m.cache.Add(key, value)
-		m.weakCache.Add(key, &weakEntry{value, time.Now().Add(ttl)})
+		m.weakCache.Add(key, &weakEntry{value, time.Now()})
 	}
 	return err
 }

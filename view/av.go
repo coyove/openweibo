@@ -68,7 +68,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 	a.Cmd = string(a2.Cmd)
 	a.CreateTime = a2.CreateTime
 	a.History = a2.History
-	a.Author, _ = dal.GetUser(a2.Author)
+	a.Author, _ = dal.WeakGetUser(a2.Author)
 	if a.Author == nil {
 		a.Author = (&model.User{ID: a2.Author}).SetInvalid()
 	}
@@ -115,7 +115,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 	if a2.Parent != "" {
 		a.Parent = &ArticleView{}
 		if opt&_NoMoreParent == 0 {
-			p, _ := dal.GetArticle(a2.Parent)
+			p, _ := dal.WeakGetArticle(a2.Parent)
 			a.Parent.from(p, opt&(^_GreyOutReply)|_NoMoreParent, u)
 		}
 	}
@@ -128,7 +128,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 
 	switch a2.Cmd {
 	case model.CmdInboxReply, model.CmdInboxMention:
-		p, _ := dal.GetArticle(a2.Extras["article_id"])
+		p, _ := dal.WeakGetArticle(a2.Extras["article_id"])
 		if p == nil {
 			*a = ArticleView{}
 			return a
@@ -145,7 +145,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 		a.from(dummy, opt, u)
 		a.Cmd = model.CmdInboxFwAccepted
 	case model.CmdInboxLike, model.CmdTimelineLike:
-		p, _ := dal.GetArticle(a2.Extras["article_id"])
+		p, _ := dal.WeakGetArticle(a2.Extras["article_id"])
 		if p == nil {
 			*a = ArticleView{}
 			return a
