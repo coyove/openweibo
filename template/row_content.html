@@ -24,11 +24,10 @@
     {{else if eq .Cmd "inbox-fw-accepted"}}
         <span class=post-date>于 {{formatTime .CreateTime}} 承认了你的关注</span>
     {{else if eq .Cmd "timeline-like"}}
-        {{if .AlsoReply}}
-            <span class=post-date>&bull;&bull;&bull; 同喜欢于 {{formatTime .CreateTime}}</span>
-        {{else}}
-            <span class=post-date>喜欢于 {{formatTime .CreateTime}}</span>
-        {{end}}
+        <span class=post-date>
+            {{if or .Others .AlsoReply}}<i class=icon-down-big></i>{{end}}
+            {{if .AlsoReply}}同{{end}}喜欢于 {{formatTime .CreateTime}}
+        </span>
     {{else if $isInboxLike}}
         <span class=post-date>于 {{formatTime .CreateTime}} 喜欢</span>
     {{else}}
@@ -44,11 +43,10 @@
                 <span class=post-date>转发于 {{formatTime .CreateTime}}</span>
             {{end}}
         {{else}}
-            {{if .AlsoReply}}
-                <span class=post-date>&bull;&bull;&bull; 同回复于 {{formatTime .CreateTime}}</span>
-            {{else}}
-                <span class=post-date>发布于 {{formatTime .CreateTime}}</span>
-            {{end}}
+            <span class=post-date>
+                {{if or .Others .AlsoReply}}<i class=icon-down-big></i>{{end}}
+                {{if .AlsoReply}}同{{end}}回复于 {{formatTime .CreateTime}}
+            </span>
         {{end}}
     {{end}}
     </div>
