@@ -127,6 +127,7 @@ type CSSConfig struct {
 	ButtonDisabled    string
 	ToastBG           string
 	Toast             string
+	ClsReplyIndicator string
 
 	Mode string
 }
@@ -163,6 +164,7 @@ var CSSLightConfig = CSSConfig{
 	RemoveFriend:      "#e16",
 	ToastBG:           "rgba(0,0,0,0.9)",
 	Toast:             "white",
+	ClsReplyIndicator: "#00bcd4",
 }
 
 var CSSDarkConfig = CSSConfig{
@@ -199,6 +201,7 @@ var CSSDarkConfig = CSSConfig{
 	OrangeText:        "#f90",
 	NSFWText:          "#bb7ab0",
 	AddFriend:         "#098",
+	ClsReplyIndicator: "#00bcd4",
 }
 
 func (c *CSSConfig) WriteTemplate(path string, t string) {

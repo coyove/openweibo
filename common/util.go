@@ -8,12 +8,12 @@ import (
 )
 
 var (
-	rxSan        = regexp.MustCompile(`(?m)(\n|\[imgs\][\s\S]+[/imgs\][\s\n]*|\[code\][\s\S]+?\[/code\]|<|https?://[^\s<>"'#\[\]]+|@\S+|#\S+)|\[mj\]\d+\[/mj\]`)
+	rxSan        = regexp.MustCompile(`(?m)(\n|\[imgs\][\s\S]+[/imgs\][\s\n]*|\[code\][\s\S]+?\[/code\]|<|https?://[^\s<>"'#\[\]]+|@\S+|#[^# ]+)|\[mj\]\d+\[/mj\]`)
 	rxFirstImage = regexp.MustCompile(`(?i)(https?://\S+\.(png|jpg|gif|webp|jpeg)|\[img\]https?://\S+\[/img\])`)
-	rxMentions   = regexp.MustCompile(`((@|#)\S+)`)
+	rxMentions   = regexp.MustCompile(`((@|#)[^@# ]+)`)
 	rxAcCode     = regexp.MustCompile(`ac(\d+)`)
 	rxBiliAVCode = regexp.MustCompile(`(av(\d+)|BV(\w+))`)
-	rxWYYYCode   = regexp.MustCompile(`id=(\d+)`)
+	rxWYYYCode   = regexp.MustCompile(`([^r]id=|song/)(\d+)`)
 	rxYTCode     = regexp.MustCompile(`(youtu\.be\/(\w+)|v=(\w+))`)
 
 	RevRenderTemplateString func(name string, v interface{}) string
@@ -128,11 +128,11 @@ func SanText(in string) string {
 
 		if strings.Contains(in, "music.163") {
 			res := rxWYYYCode.FindAllStringSubmatch(in, 1)
-			if len(res) == 1 && len(res[0]) == 2 {
+			if len(res) == 1 && len(res[0]) == 3 {
 				return strings.Replace(makeVideoButton("#e60125",
-					"yy"+res[0][1],
-					"https://music.163.com/outchain/player?type=2&auto=0&height=66&id="+res[0][1],
-					"https://music.163.com/song?id="+res[0][1]), "<iframe ", "<iframe fixed-height=80 ", 1)
+					"yy"+res[0][2],
+					"https://music.163.com/outchain/player?type=2&auto=0&height=66&id="+res[0][2],
+					"https://music.163.com/song?id="+res[0][2]), "<iframe ", "<iframe fixed-height=80 ", 1)
 			}
 		}
 

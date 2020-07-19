@@ -25,7 +25,7 @@
         <span class=post-date>于 {{formatTime .CreateTime}} 承认了你的关注</span>
     {{else if eq .Cmd "timeline-like"}}
         <span class=post-date>
-            {{if or .Others .AlsoReply}}<i class=icon-down-big></i>{{end}}
+            {{if or .Others .AlsoReply}}<i class='cls-reply icon-down-big'></i>{{end}}
             {{if .AlsoReply}}同{{end}}喜欢于 {{formatTime .CreateTime}}
         </span>
     {{else if $isInboxLike}}
@@ -37,15 +37,24 @@
         </span>
         {{end}}
         {{if .Parent}}
-            {{if .Content}}
-                <span class=post-date>回复于 {{formatTime .CreateTime}}</span>
-            {{else}}
-                <span class=post-date>转发于 {{formatTime .CreateTime}}</span>
+            <span class=post-date>
+            {{if .Others}}
+                <i class='cls-reply icon-down-big'></i>
             {{end}}
+            {{if .Content}}
+                回复于 {{formatTime .CreateTime}}
+            {{else}}
+                转发于 {{formatTime .CreateTime}}
+            {{end}}
+            </span>
         {{else}}
             <span class=post-date>
-                {{if or .Others .AlsoReply}}<i class=icon-down-big></i>{{end}}
-                {{if .AlsoReply}}同{{end}}回复于 {{formatTime .CreateTime}}
+                {{if .AlsoReply}}
+                    <i class='cls-reply icon-down-big'></i>
+                    同回复于 {{formatTime .CreateTime}}
+                {{else}}
+                    发布于 {{formatTime .CreateTime}}
+                {{end}}
             </span>
         {{end}}
     {{end}}

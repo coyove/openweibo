@@ -91,6 +91,9 @@
 .gbutton:hover {
     text-decoration: none;
 }
+.icon-down-big.cls-reply {
+    color: {{.ClsReplyIndicator}}
+}
 .icon-flow-merge:before {
     margin-left: 0 !important 
 }

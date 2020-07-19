@@ -181,11 +181,11 @@ div.subreply .row-header {
 }
 
 div.clusterreply .row-header {
-    border-top: solid 1px {{.Border}};
+    border-top: dashed 1px {{.Border}};
 }
 
 div.clusterreply {
-    margin: -0.66em -0.5em;
+    margin: -0.75em -0.5em;
 }
 
 div.subreply .post-author {
@@ -198,7 +198,7 @@ div.rows.replies .row, div.subreply .row {
 
 div.row {
     background: {{.Row}};
-    margin: 0.66em 0;
+    margin: 0.75em 0;
     overflow: hidden;
 }
 
