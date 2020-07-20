@@ -102,6 +102,7 @@ type CSSConfig struct {
 	Navbar            string
 	NavbarBottom      string
 	NavbarTitlebar    string
+	UserBoxTitle      string
 	Border            string
 	DarkBorder        string
 	NormalText        string
@@ -141,6 +142,7 @@ var CSSLightConfig = CSSConfig{
 	Navbar:            "#feb",
 	NavbarBottom:      "rgba(0,0,0,0.04)",
 	NavbarTitlebar:    "#f6f6f6",
+	UserBoxTitle:      "rgba(0,0,0,0.04)",
 	Border:            "#ddd",
 	DarkBorder:        "#ddd",
 	NormalText:        "#233",
@@ -178,6 +180,7 @@ var CSSDarkConfig = CSSConfig{
 	Navbar:            "#2d162d",
 	NavbarBottom:      "#09080a",
 	NavbarTitlebar:    "#281a28",
+	UserBoxTitle:      "#171523",
 	Border:            "#234456",
 	DarkBorder:        "#093248",
 	NormalText:        "#eee",

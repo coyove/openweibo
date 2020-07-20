@@ -8,7 +8,12 @@
 .articles tr td:last-child {
     word-break: break-all;
 }
+.hint:after {
+    width: 150px;
+    white-space: pre-wrap !important;
+}
     </style>
+    <link rel="stylesheet" href="/s/assets/hint.min.css" />
 
     <div class="status-box">
         <div>{{template "user_private.html" .User}}</div>
@@ -16,37 +21,52 @@
 
     <div class="status-box" >
         <div class="status">
-            <div class="title row-header" style="text-align:center"><b style="flex-grow: 1">用户信息</b></div>
+            <div class="title tmpl-userbox-title row-header" style="text-align:center"><b style="flex-grow: 1">用户信息</b></div>
 
             <div class=title>
                 <table class="articles" style="margin-top: 0.5em;text-align:left">
                     <tr>
-                        <td>上次登入:</td>
-                        <td style='text-align:right'>{{.User.Login.Format "2006-01-02 15:04:05"}}</td>
+                        <td>
+                            <div class="tmpl-border tmpl-input-bg" style="display:flex;align-items:center;border:solid 1px white">
+                                <input name=custom-name class=t placeholder="昵称" value="{{.User.CustomName}}" style="border:none">
+                                <span style="margin:0 0.5em;flex-shrink:0;opacity:0.8">@{{.User.ID}}</span>
+                                <button
+                                    style="flex-shrink:0;margin:0.25em"
+                                    class="gbutton tmpl-green-text"
+                                    onclick="updateSetting(this,'custom-name',$q('[name=custom-name]').value)">
+                                    <i class=icon-pencil></i>
+                                </button>
+                            </div>
+                        </td>
                     </tr>
                     <tr>
-                        <td>注册于:</td>
-                        <td style='text-align:right'>{{.User.Signup.Format "2006-01-02 15:04:05"}}</td>
+                        <td>
+                            <div class="tmpl-border tmpl-input-bg" style="display:flex;align-items:center;border:solid 1px white">
+                            <input name=email class=t value="{{.User.Email}}" type=email style="border:none">
+                            <button 
+                                style="flex-shrink:0;margin:0.25em"
+                                class="gbutton tmpl-green-text"
+                                onclick="updateSetting(this,'email',$q('[name=email]').value)">
+                                <i class=icon-pencil></i>
+                            </button>
+                            </div>
+                        </td>
                     </tr>
+                </table>
+            </div>
+
+            <div class=title>
+                <table class="articles" style="margin:0.5em 0;text-align:left">
                     <tr>
-                        <td colspan=2 style="text-align:center">
+                        <td class=nowrap>登入历史:</td>
+                        <td colspan=2 style='text-align:right'>
                             <a class="gbutton tmpl-red-text" href="#"
                                onclick="confirm('确认登出 {{.User.DisplayName}}')?$postReload(this, '/api2/logout',{}):0">
                                 <i class="icon-logout"></i> 退出账号
                             </a>
                         </td>
                     </tr>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div class="status-box" >
-        <div class="status">
-            <div class="title row-header" style="text-align:center"><b style="flex-grow: 1">登入记录</b></div>
-
-            <div class=title>
-                <table class="articles" style="text-align:left">
+            
                     {{range ipChainLookup .User.DataIP}}
                     <tr>
                         <td class=nowrap>{{index . 0}}</td>
@@ -55,37 +75,13 @@
                     </tr>
                     {{end}}
                 </table>
-            </div>
+            </div> 
         </div>
     </div>
 
     <div class="status-box">
         <div class="status">
-            <div class="title row-header" style="text-align:center"><b style="flex-grow: 1">昵称 @ID</b></div>
-
-            <div class=title>
-                <table class="articles" style="margin: 0.5em 0;text-align:left">
-                    <tr>
-                        <td>
-                            <input name=custom-name class=t value="{{.User.CustomName}}">
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class=nowrap style="text-align:center">
-                            <button class=gbutton onclick="updateSetting(this,'custom-name',$q('[name=custom-name]').value)">
-                                更新昵称
-                            </button>
-                        </td>
-                    </tr> 
-
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div class="status-box">
-        <div class="status">
-            <div class="title row-header" style="text-align:center"><b style="flex-grow: 1">一般设置</b></div>
+            <div class="title tmpl-userbox-title row-header" style="text-align:center"><b style="flex-grow: 1">设置</b></div>
 
             <div class=title>
                 <table class="articles" style="margin: 0.5em 0;text-align:left">
@@ -124,7 +120,9 @@
                                    class=icon-input-checkbox
                                    onchange="updateSetting(this,'mfcm',this.checked?'1':'')">
                             <i class='icon-ok-circled2'></i>
-                            <label for=mfcm>屏蔽你没关注的人的回复和@提醒</label>
+                            <label for=mfcm>屏蔽你没关注的人的回复和@提醒</label>&nbsp;
+                            <label class="hint hint--left" aria-label="他们依旧可以回复/@你，但你不会收到提醒">(?)</label>
+
                         </td>
                     </tr>
                     <tr>
@@ -145,30 +143,15 @@
                             <label for=slit>不在时间轴里显示你“喜欢了”状态</label>
                         </td>
                     </tr>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div class="status-box">
-        <div class="status">
-            <div class="title row-header" style="text-align:center"><b style="flex-grow: 1">隐私</b></div>
-
-            <div class=title>
-                <table class="articles" style="margin-top: 0.5em;text-align:left">
                     <tr>
                         <td>
                             <input type=checkbox {{if .User.Settings.DoFollowerNeedsAcceptance}}checked{{end}} id=fw-accept
                                    class=icon-input-checkbox
                                    onchange="updateSetting(this,'fw-accept',this.checked?'1':'')">
                             <i class='icon-ok-circled2'></i>
-                            <label for=fw-accept>新关注者关注你前需要你的确认</label>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <div>1. 未确认的关注者无法查看你的时间线（他人转发/广场发言除外）</div>
-                            <div>2. 如果限制了只有“关注者”可以回复你的状态，则这类人无法回复你</div>
+                            <label for=fw-accept>新关注者关注你前需要你的确认</label>&nbsp;
+                            <label class="hint hint--left" aria-label="1. 未确认的关注者无法查看你的时间线（他人转发/广场发言除外）
+2. 如果限制了只有“关注者”可以回复你的状态，则这类人无法回复你">(?)</label>
                         </td>
                     </tr>
                 </table>
@@ -178,23 +161,10 @@
 
     <div class="status-box">
         <div class="status">
-            <div class="title row-header" style="text-align:center"><b style="flex-grow: 1">安全</b></div>
+            <div class="title tmpl-userbox-title row-header" style="text-align:center"><b style="flex-grow: 1">安全</b></div>
 
             <div class=title>
                 <table class="articles" style="margin-top: 0.5em;text-align:left">
-                    <tr>
-                        <td class=nowrap>Email:</td>
-                        <td>
-                            <input name=email class=t value="{{.User.Email}}" type=email>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class=nowrap colspan=2 style="text-align:center">
-                            <button class=gbutton onclick="updateSetting(this,'email',$q('[name=email]').value)">
-                                更新邮箱
-                            </button>
-                        </td>
-                    </tr> 
                     <tr>
                         <td class=nowrap>原密码:</td>
                         <td><input name=old-password type=password class=t></td>

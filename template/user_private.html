@@ -1,5 +1,5 @@
 <div class="status">
-    <div class="title row-header" style="">
+    <div class="title tmpl-userbox-title row-header" style="">
         <div style="white-space:nowrap;display:inline-block">
             <img class="avatar" {{template "avatar.html" .}} style="cursor:pointer;margin:0" onclick="this.nextElementSibling.click()">
             <input type=file style="display:none" onchange="onAvatarChanged(this)">
@@ -33,7 +33,7 @@
             value="{{.Settings.Description}}">
         <button class="gbutton tmpl-green-text"
                 style="margin:0.25em;flex-shrink:0"
-                onclick="updateSetting(this, 'description', this.previousElementSibling.value)">更新</button>
+                onclick="updateSetting(this, 'description', this.previousElementSibling.value)"><i class=icon-pencil></i></button>
         </div>
     </div>
 

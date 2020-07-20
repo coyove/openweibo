@@ -198,9 +198,9 @@ func main() {
 				return template.HTML("<span class='time hour'>" + strconv.Itoa(int(s)/3600) + "</span>")
 			}
 			if s < 7*86400 {
-				return template.HTML("<span class='time day'>" + strconv.Itoa(int(s)/86400) + "</span>")
+				return template.HTML("<span title='" + a.Format(time.ANSIC) + "' class='time day'>" + strconv.Itoa(int(s)/86400) + "</span>")
 			}
-			return template.HTML("<span class='time' data='" + strconv.FormatInt(a.Unix(), 10) + "'>" + a.Format("2006-01-02") + "</span>")
+			return template.HTML("<span title='" + a.Format(time.ANSIC) + "' class='time' data='" + strconv.FormatInt(a.Unix(), 10) + "'>" + a.Format("2006-01-02") + "</span>")
 		},
 	})
 	r.LoadHTMLGlob("template/*.html")

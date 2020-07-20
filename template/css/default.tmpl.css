@@ -560,3 +560,4 @@ div.reply-lock-notify {
 .tmpl-inbox-message-text { color: {{.InboxMessage}} !important }
 .tmpl-input-bg { background: {{.InputBG}} !important }
 .tmpl-body-bg { background-color: {{.BodyBG}} !important }
+.tmpl-userbox-title { background-color: {{.UserBoxTitle}} !important }
