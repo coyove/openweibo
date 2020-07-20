@@ -591,11 +591,8 @@ function adjustImage(img) {
             div.setAttribute("enlarge", "enlarge")
             div.style.width = "100%";
             div.style.height = window.innerHeight + "px";
+            div.style.borderRadius = '0';
             div.scrollIntoView();
-
-//             var r = div.getBoundingClientRect();
-//             var h = r.width / ratio;
-//             div.style.height = h + "px";
 
             var imgload = new Image(), imgprogress = new Image(), divC = $q("<div>"), loaded = false;
 
@@ -615,6 +612,7 @@ function adjustImage(img) {
             setTimeout(function() { if (!loaded) divC.style.opacity = '1' }, 100)
         } else {
             div.removeAttribute("enlarge")
+            div.style.borderRadius = null;
             div.style.width = null;
             div.style.height = null;
         }

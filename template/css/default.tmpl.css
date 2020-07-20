@@ -86,7 +86,7 @@ a:hover {
 
 .container {
     width: 100%;
-    max-width: 750px;
+    max-width: 680px;
     margin: 0 auto;
     position: relative;
     min-height: 100%;
@@ -182,6 +182,7 @@ div.subreply .row-header {
 
 div.clusterreply .row-header {
     border-top: dashed 1px {{.Border}};
+    background: transparent;
 }
 
 div.clusterreply {
@@ -290,7 +291,7 @@ span.abbr:after {
     transition: background 0.5s;
 }
 
-.status .title > span:hover { background: {{.RowHeader}}; }
+.status .title > span:hover { background: {{.Row}}; }
 
 .status .sub-status { font-weight: normal; }
 
