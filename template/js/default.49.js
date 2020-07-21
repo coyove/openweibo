@@ -625,9 +625,8 @@ function adjustVideoIFrame(el, src) {
     el = el.nextSibling;
     el.style.display = null;
     var box = el.getBoundingClientRect();
-    var w = box.right - box.left, h = 400;
-    var dh = (w < 500) ? h : w / 16 * 9;
-    el.style.height = (el.getAttribute("fixed-height") || dh) + 'px';
+    var w = box.right - box.left;
+    el.style.height = (el.getAttribute("fixed-height") || (w*0.75)) + 'px';
     el.src = src;
 }
 

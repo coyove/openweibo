@@ -112,12 +112,12 @@ func Avatar(g *gin.Context) {
 	path := fmt.Sprintf("tmp/images/%016x@%s", hash, id)
 
 	// 	if g.Query("q") != "0" {
-	if common.Cfg.S3Region != "" {
-		path := fmt.Sprintf("%s/%016x@%s?q=%s", common.Cfg.MediaDomain, hash, id, g.Query("q"))
-		g.Redirect(302, path)
-	} else {
-		http.ServeFile(g.Writer, g.Request, path)
-	}
+	// if common.Cfg.S3Region != "" {
+	// 	path := fmt.Sprintf("%s/%016x@%s?q=%s", common.Cfg.MediaDomain, hash, id, g.Query("q"))
+	// 	g.Redirect(302, path)
+	// } else {
+	http.ServeFile(g.Writer, g.Request, path)
+	// }
 	// 	} else {
 	// 		ii, err := ig.Draw("iis" + id)
 	// 		if err != nil {

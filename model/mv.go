@@ -144,7 +144,12 @@ func (u User) Marshal() []byte {
 }
 
 func (u User) AvatarURL() string {
-	return fmt.Sprintf("/avatar/%s?q=%d", u.ID, u.Avatar)
+	if common.Cfg.MediaDomain != "" {
+		path := fmt.Sprintf("%s/%016x@%s?q=%d", common.Cfg.MediaDomain, u.IDHash(), u.ID, u.Avatar)
+		return path //fmt.Sprintf("/avatar/%s?q=%d", u.ID, u.Avatar)
+	} else {
+		return fmt.Sprintf("/avatar/%s?q=%d", u.ID, u.Avatar)
+	}
 }
 
 func (u User) KimochiURL() string {
