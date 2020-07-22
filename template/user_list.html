@@ -38,7 +38,7 @@
     {{range .List}}
     {{if .FullUser}}
     <div style="display: flex; line-height: 2.5em">
-        <div style="flex: 0 48px; min-width: 90px; white-space: nowrap">{{formatTime .Time}}</div>
+        <div style="flex-shrink:0;white-space:nowrap;margin-right:0.5em">{{formatTime .Time}}</div>
         {{if ne $.ListType "twohops"}}
         <div style="flex: 1 100%; overflow: hidden; text-overflow: ellipsis;">
             {{template "display_name.html" .FullUser}}

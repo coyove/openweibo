@@ -244,7 +244,7 @@ span.time.day:after { content: '天前' }
 span.time.none:after { content: '无' }
 span.time.now:after { content: '刚刚' }
 span.time i { font-style: normal; opacity: 0.6 }
-@media only screen and (max-width: 400px) { span.time i { display:none } }
+@media only screen and (max-width: 550px) { span.time i { display:none } }
 
 span.deleted:after {
     content: '内容已删除，不要想了';
