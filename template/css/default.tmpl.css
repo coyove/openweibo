@@ -268,6 +268,10 @@ span.abbr:after {
     width: 100%;
 }
 
+{{if eq .Mode "dark"}}
+.user-info-box .status { border: solid 1px {{.DarkBorder}}; }
+{{end}}
+
 .status span a i[class^="icon-"] {
     text-decoration: none !important;
     font-size: 16px;

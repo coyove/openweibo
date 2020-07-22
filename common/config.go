@@ -42,6 +42,9 @@ var Cfg = struct {
 	IPIPDatabase    string
 	HCaptchaSiteKey string
 	HCaptchaSecKey  string
+	SMTPServer      string
+	SMTPEmail       string
+	SMTPPassword    string
 
 	// inited after Cfg being read
 	Blk               cipher.Block
@@ -64,8 +67,8 @@ var Cfg = struct {
 	HCaptchaSecKey:  "0x0000000000000000000000000000000000000000",
 }
 
-func MustLoadConfig() {
-	buf, err := ioutil.ReadFile("config.json")
+func MustLoadConfig(path string) {
+	buf, err := ioutil.ReadFile(path)
 	if err != nil {
 		panic(err)
 	}

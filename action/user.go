@@ -2,7 +2,12 @@ package action
 
 import (
 	"bytes"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
 	"net/url"
 	"strconv"
 	"strings"
@@ -415,6 +420,49 @@ func APIUpdateUserPassword(g *gin.Context) {
 	hp := hashPassword(newPassword)
 	if _, err := dal.DoUpdateUser(&dal.UpdateUserRequest{ID: u.ID, PasswordHash: &hp}); err != nil {
 		g.String(200, err.Error())
+		return
+	}
+	g.String(200, "ok")
+}
+
+func APIResetUserPassword(g *gin.Context) {
+	u := dal.GetUserByContext(g)
+	if u == nil {
+		g.String(200, "internal/error")
+		return
+	}
+	if res := checkIP(g); res != "" {
+		g.String(200, res)
+		return
+	}
+
+	username := sanUsername(g.PostForm("username"))
+	email := common.SoftTrunc(g.PostForm("email"), 64)
+
+	u, err := dal.GetUser(username)
+	if err != nil {
+		log.Println("Reset password, get user err: %v", err)
+		g.String(200, "internal/error")
+		return
+	}
+	if u.Email != email {
+		log.Println("Reset password, email not matched: %q, %q", u.Email, email)
+		g.String(200, "internal/error")
+		return
+	}
+
+	newPassword, _ := ioutil.ReadAll(io.LimitReader(rand.Reader, 8))
+	hp := hashPassword(hex.EncodeToString(newPassword))
+	if _, err := dal.DoUpdateUser(&dal.UpdateUserRequest{ID: u.ID, PasswordHash: &hp}); err != nil {
+		g.String(200, err.Error())
+		return
+	}
+
+	if err := common.SendMail(email,
+		"Password Reset",
+		fmt.Sprintf("Username: %q, New Password: %v", u.ID, hex.EncodeToString(newPassword))); err != nil {
+		log.Println("Reset password, email send failure: %v", err)
+		g.String(200, "internal/error")
 		return
 	}
 	g.String(200, "ok")

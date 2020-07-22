@@ -16,3 +16,4 @@ unifont
 .css.prod.
 *.test.css
 bleve.search
+*.swp

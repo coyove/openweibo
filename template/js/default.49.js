@@ -489,6 +489,7 @@ function showInfoBox(el, uid) {
         addtionalBoxes = [],
         startAt = new Date().getTime();
 
+    div.className = 'user-info-box';
     div.innerHTML = $q("#dummy-user").innerHTML;
     div.querySelector('img.avatar').src = el.src || '';
     div.querySelector('img.avatar').onclick = null;

@@ -33,7 +33,7 @@ func main() {
 	rand.Seed(time.Now().Unix())
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
-	common.MustLoadConfig()
+	common.MustLoadConfig("config.json")
 
 	redisConfig := &cache.RedisConfig{
 		Addr: common.Cfg.RedisAddr,
