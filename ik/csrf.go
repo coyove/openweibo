@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
+	"fmt"
 	"sync"
 	"time"
 
@@ -157,15 +158,38 @@ func MakeUserToken(u *model.User) string {
 		return ""
 	}
 
-	length := len(u.ID) + 1 + len(u.Session)
-	length = (length + 7) / 8 * 8
+	var p bytes.Buffer
+	p.WriteString(u.ID)
+	p.WriteByte(0)
+	p.WriteString(u.Session)
+	buf := p.Bytes()
 
-	x := make([]byte, length)
-	copy(x, u.Session)
-	copy(x[len(u.Session)+1:], u.ID)
+	var nonce [12]byte
+	rand.Read(nonce[:])
+	gcm, _ := cipher.NewGCM(common.Cfg.Blk)
+	return base64.URLEncoding.EncodeToString(append(gcm.Seal(buf[:0], nonce[:], buf, nil), nonce[:]...))
+}
 
-	for i := 0; i <= len(x)-16; i += 8 {
-		common.Cfg.Blk.Encrypt(x[i:], x[i:])
+func ParseUserToken(tok string) (id, session string, err error) {
+	u, err := base64.URLEncoding.DecodeString(tok)
+	if err != nil {
+		return "", "", err
 	}
-	return base64.StdEncoding.EncodeToString(x)
+	if len(u) < 12 {
+		return "", "", fmt.Errorf("token too short")
+	}
+
+	nonce := u[len(u)-12:]
+	gcm, _ := cipher.NewGCM(common.Cfg.Blk)
+
+	opened, err := gcm.Open(nil, nonce[:], u[:len(u)-12], nil)
+	if err != nil {
+		return "", "", err
+	}
+
+	parts := bytes.Split(opened, []byte{0})
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid bytes: %v", opened)
+	}
+	return string(parts[0]), string(parts[1]), nil
 }

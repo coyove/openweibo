@@ -1,8 +1,6 @@
 package dal
 
 import (
-	"bytes"
-	"encoding/base64"
 	"fmt"
 	"log"
 	"sort"
@@ -76,25 +74,11 @@ func GetUserByContext(g *gin.Context) *model.User {
 }
 
 func GetUserByToken(tok string) (*model.User, error) {
-	if tok == "" {
-		return nil, fmt.Errorf("invalid token")
-	}
-
-	x, err := base64.StdEncoding.DecodeString(tok)
+	id, session, err := ik.ParseUserToken(tok)
 	if err != nil {
 		return nil, err
 	}
 
-	for i := len(x) - 16; i >= 0; i -= 8 {
-		common.Cfg.Blk.Decrypt(x[i:], x[i:])
-	}
-
-	parts := bytes.SplitN(x, []byte("\x00"), 3)
-	if len(parts) < 2 {
-		return nil, fmt.Errorf("invalid token format")
-	}
-
-	session, id := parts[0], parts[1]
 	u, err := GetUserWithSettings(string(id))
 	if err != nil {
 		return nil, err

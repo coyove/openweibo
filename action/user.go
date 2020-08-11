@@ -147,7 +147,7 @@ func APILogin(g *gin.Context) {
 		return
 	}
 
-	u.Session = genSession()
+	// u.Session = genSession()
 	u.TLogin = uint32(time.Now().Unix())
 
 	if ips := append(strings.Split(u.DataIP, ","), hashIP(g)); len(ips) > 3 {
