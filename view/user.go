@@ -168,10 +168,10 @@ func UserLikes(g *gin.Context) {
 func APIGetUserInfoBox(g *gin.Context) {
 	you := getUser(g)
 
-	if you == nil {
-		g.Status(400)
-		return
-	}
+	// if you == nil {
+	// 	g.Status(400)
+	// 	return
+	// }
 
 	u, _ := dal.GetUserWithSettings(g.Param("id"))
 	if u == nil {

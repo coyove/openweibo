@@ -54,7 +54,7 @@ func APINew(g *gin.Context) {
 
 	u := dal.GetUserByContext(g)
 	if u == nil {
-		g.String(200, "user/not-logged-in")
+		g.String(200, "user/404")
 		return
 	}
 
@@ -116,7 +116,7 @@ func doReply(g *gin.Context) {
 
 	u := dal.GetUserByContext(g)
 	if u == nil {
-		g.String(200, "user/not-logged-in")
+		g.String(200, "user/404")
 		return
 	}
 
@@ -158,7 +158,7 @@ func doReply(g *gin.Context) {
 func APIDeleteArticle(g *gin.Context) {
 	u := dal.GetUserByContext(g)
 	if u == nil {
-		g.String(200, "user/not-logged-in")
+		g.String(200, "user/404")
 		return
 	}
 
@@ -177,7 +177,7 @@ func APIDeleteArticle(g *gin.Context) {
 func APIToggleNSFWArticle(g *gin.Context) {
 	u := dal.GetUserByContext(g)
 	if u == nil {
-		g.String(200, "user/not-logged-in")
+		g.String(200, "user/404")
 		return
 	}
 
@@ -196,7 +196,7 @@ func APIToggleNSFWArticle(g *gin.Context) {
 func APIToggleLockArticle(g *gin.Context) {
 	u := dal.GetUserByContext(g)
 	if u == nil {
-		g.String(200, "user/not-logged-in")
+		g.String(200, "user/404")
 		return
 	}
 
@@ -220,7 +220,7 @@ func APIToggleLockArticle(g *gin.Context) {
 func APIDropTop(g *gin.Context) {
 	u := dal.GetUserByContext(g)
 	if u == nil {
-		g.String(200, "user/not-logged-in")
+		g.String(200, "user/404")
 		return
 	}
 
@@ -245,7 +245,7 @@ func APIUpload(g *gin.Context) {
 	u2, _ := g.Get("user")
 	u, _ := u2.(*model.User)
 	if u == nil {
-		g.String(500, "error")
+		g.String(500, "user/404")
 		return
 	}
 

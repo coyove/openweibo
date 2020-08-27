@@ -65,12 +65,14 @@ func Index(g *gin.Context) {
 		ReplyView:     makeReplyView(g, ""),
 	}
 
-	if pl.You == nil {
-		redirectVisitor(g)
-		return
-	}
+	// if pl.You == nil {
+	// 	redirectVisitor(g)
+	// 	return
+	// }
 
-	pl.IsTagTimelineFollowed = dal.IsFollowing(pl.You.ID, pl.Tag)
+	if pl.You != nil {
+		pl.IsTagTimelineFollowed = dal.IsFollowing(pl.You.ID, pl.Tag)
+	}
 
 	a, _ := dal.GetArticle(ik.NewID(ik.IDTag, tag).String())
 	if a != nil {
@@ -92,10 +94,10 @@ func Timeline(g *gin.Context) {
 		MediaOnly: g.Query("media") != "",
 	}
 
-	if pl.You == nil {
-		redirectVisitor(g)
-		return
-	}
+	// if pl.You == nil {
+	// 	redirectVisitor(g)
+	// 	return
+	// }
 
 	switch uid := g.Param("user"); {
 	case strings.HasPrefix(uid, "#"):
@@ -129,12 +131,11 @@ func Timeline(g *gin.Context) {
 			if pl.You == nil {
 				NotFound(g)
 				return
-			} else {
-				if following, accepted := dal.IsFollowingWithAcceptance(pl.You.ID, pl.User); !following || !accepted {
-					g.Set("need-accept", true)
-					NotFound(g)
-					return
-				}
+			}
+			if following, accepted := dal.IsFollowingWithAcceptance(pl.You.ID, pl.User); !following || !accepted {
+				g.Set("need-accept", true)
+				NotFound(g)
+				return
 			}
 		}
 
@@ -143,6 +144,10 @@ func Timeline(g *gin.Context) {
 		}
 	default:
 		// View my timeline
+		if pl.You == nil {
+			redirectVisitor(g)
+			return
+		}
 		pl.User = pl.You
 		pl.User.Buildup(pl.You)
 	}
@@ -293,6 +298,7 @@ func APIReplies(g *gin.Context) {
 
 	you := getUser(g)
 	if you == nil {
+		g.Writer.Header().Add("X-Reason", "user/404")
 		g.Status(403)
 		return
 	}

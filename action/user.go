@@ -178,7 +178,7 @@ func APILogin(g *gin.Context) {
 func APIUserKimochi(g *gin.Context) {
 	u := dal.GetUserByContext(g)
 	if u == nil {
-		g.String(200, "internal/error")
+		g.String(200, "user/404")
 		return
 	}
 
@@ -227,7 +227,7 @@ func APILike(g *gin.Context) {
 	u := dal.GetUserByContext(g)
 
 	if u == nil {
-		g.String(200, "internal/error")
+		g.String(200, "user/404")
 		return
 	}
 
@@ -265,7 +265,12 @@ func APILogout(g *gin.Context) {
 
 func APIFollowBlock(g *gin.Context) {
 	u, to := dal.GetUserByContext(g), g.PostForm("to")
-	if u == nil || to == "" || u.ID == to {
+	if u == nil {
+		g.String(200, "user/404")
+		return
+	}
+
+	if to == "" || u.ID == to {
 		g.String(200, "internal/error")
 		return
 	}
@@ -300,7 +305,7 @@ func APIFollowBlock(g *gin.Context) {
 func APIUpdateUserSettings(g *gin.Context) {
 	u := dal.GetUserByContext(g)
 	if u == nil {
-		g.String(200, "internal/error")
+		g.String(200, "user/404")
 		return
 	}
 
@@ -401,7 +406,7 @@ func APIUpdateUserSettings(g *gin.Context) {
 func APIUpdateUserPassword(g *gin.Context) {
 	u := dal.GetUserByContext(g)
 	if u == nil {
-		g.String(200, "internal/error")
+		g.String(200, "user/404")
 		return
 	}
 	if res := checkIP(g); res != "" {
@@ -428,7 +433,7 @@ func APIUpdateUserPassword(g *gin.Context) {
 func APIResetUserPassword(g *gin.Context) {
 	u := dal.GetUserByContext(g)
 	if u == nil {
-		g.String(200, "internal/error")
+		g.String(200, "user/404")
 		return
 	}
 	if res := checkIP(g); res != "" {
@@ -471,7 +476,7 @@ func APIResetUserPassword(g *gin.Context) {
 func APIClearInbox(g *gin.Context) {
 	u := dal.GetUserByContext(g)
 	if u == nil {
-		g.String(200, "internal/error")
+		g.String(200, "user/404")
 		return
 	}
 	if err := dal.ClearInbox(u.ID); err != nil {

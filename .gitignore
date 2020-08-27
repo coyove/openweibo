@@ -17,3 +17,4 @@ unifont
 *.test.css
 bleve.search
 *.swp
+dump.rdb

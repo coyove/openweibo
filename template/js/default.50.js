@@ -77,8 +77,9 @@ function $post(url, data, cb, errorcb) {
             $popup('<i class=icon-ok-circled></i>' + cbres.substring(3));
         } else {
             if (errorcb) errorcb(xml)
-            var text = "错误状态: " + xml.status;
+            var text = "错误状态: " + xml.status, reason = xml.getResponseHeader("X-Reason");
             if (xml.status === 404) text = "内容未找到";
+            if (reason) text = __i18n(reason);
             $popup('<i class=icon-cancel-circled-1></i>' + (cbres || text));
         }
     }
@@ -295,7 +296,7 @@ function __i18n(t) {
         return "服务端异常";
     if (t === "guard/id-not-existed")
         return "ID不存在";
-    if (t === "user/not-logged-in")
+    if (t === "user/404")
         return "请登入后操作";
     if (t === "password/invalid-too-short")
         return "密码太短或不符";

@@ -1,9 +1,5 @@
 {{template "header.html" .}}
 
-{{if .User}}
-
-<title>{{.User.DisplayName}}</title>
-
 <style>
 .articles tr td:last-child {
     word-break: break-all;
@@ -13,7 +9,21 @@
     white-space: pre-wrap !important;
     line-height: 1.5em !important;
 }
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
 </style>
+
+{{if .User}}
+
+<title>{{.User.DisplayName}}</title>
 
     <link rel="stylesheet" href="/s/assets/hint.min.css" />
 
@@ -217,14 +227,7 @@
 {{else}}
 
 <title>注册</title>
-
-    <div class=row style="text-align:center;padding:0.5em;margin-top:0">
-        <a href="/" class=gbutton>已有账号？点此登入</a>
-    </div>
-
-    <script src="https://hcaptcha.com/1/api.js" async defer></script>
-
-    <div style="overflow: hidden;margin:0 auto;position:relative;text-align:center;max-width:350px">
+    <div style="overflow: hidden;margin:1em auto;position:relative;text-align:center;max-width:350px">
 <form method="POST" action="/user" onsubmit='
                     var v = function(k) { return $q("[name="+k+"]").value || "" };
                     var data = {
@@ -232,13 +235,11 @@
                     };
                     if (data.username.length < 3) { $popup("用户名过短 (至少3字节)"); return false; }
                     if (data.password.length < 3) { $popup("密码过短 (至少3字节)"); return false; }
-                    try { data.response = hcaptcha.getResponse() } catch (e) {}
 
                     var stop = $wait($q("[type=submit]"))
                     $post("/api2/signup", data, function(r) {
                         stop();
                         if (r !== "ok") {
-                            try { hcaptcha.reset(); } catch(e) {}
                             refreshCaptcha();
                             return r;
                         }
@@ -274,31 +275,16 @@
             $q("#id-output").innerHTML = "<b style='font-family:monospace'>@" + String.fromCharCode.apply(null, x) +
                 (filtered ? "&emsp;<span class=tmpl-red-text>(注意: 非法字符已过滤)</span></b>" : "</b>");
         }
-
-        (function() {
-            var c = 0;
-            var i = setInterval(function() {
-                c++;
-                var btn = $q("[type=submit]")
-                btn.disabled = typeof hcaptcha == 'undefined';
-                if (btn.disabled && c == 5) {
-                    $q("#captcha-error").style.display = null;
-                    $q(".h-captcha").style.display = 'none';
-                    btn.disabled = null;
-                    clearInterval(i);
-                }
-            }, 1000);
-        })()
     </script>
     </tr>
     <tr>
-        <td id="id-output">3~15英文，2~7中文</td>
+        <td style="padding-top:0" id="id-output">3~15英文，2~7中文</td>
     </tr>
     <tr>
         <td><input type=password class=t placeholder="密码" name=password></td>
     </tr>
     <tr>
-        <td>
+        <td style="padding-top:0">
             至少3英文字符
             <input type=checkbox class='icon-input-checkbox'
                 id=show-password onchange="$q('[name=password]').type=this.checked?'text':'password'">
@@ -309,14 +295,17 @@
     <tr>
         <td><input value="{{.OTTEmail}}" type=email class=t placeholder="邮箱" name=email></td>
     </tr>
-    <tr id="captcha-error" style="display:none">
+    <tr>
         <td>
-            <div>
+            <div style="display:flex">
+                <div style="flex-grow:0">
+                <div style="width:120px">
             <a href="javascript:refreshCaptcha()">
-                <img name=captcha src="data:image/png;base64,{{.Challenge}}" style="background: white">
+                <img name=captcha src="data:image/png;base64,{{.Challenge}}" style="background:white;width:100%;border-radius:4px;display:block;margin-bottom:0.5em;box-shadow:0 1px 2px rgba(0,0,0,0.4),0 -1px 1px rgba(0,0,0,0.05)">
             </a>
+            <input style="width:100%" type=number class=t placeholder="验证码(4数字)" name=answer>
             </div>
-            <input class=t placeholder="验证码" name=answer>
+                </div>
     <script>
         function refreshCaptcha() {
             var stop = $wait($q("button[type=submit]"))
@@ -328,16 +317,15 @@
             }, stop)
         }
     </script>
-        </td>
-    </tr>
-    <tr>
-        <td style="text-align:center">
-            <div class="h-captcha" data-sitekey="{{.SiteKey}}" data-size="compact" data-theme="{{if .DarkCaptcha}}dark{{end}}"></div>
+            <div style="flex-grow:1;display:flex;flex-direction:column;margin-left:0.5em;text-align:right">
+                <div style="flex-grow:1"><a href="/" class="gbutton tmpl-green-text"><i class=icon-home></i>已有账号？登入</a></div>
+                <div><button  class="gbutton" type=submit>注册</button></div>
+            </div>
+            </div>
         </td>
     </tr>
     <tr>
         <td style="text-align:right">
-            <button class="gbutton" type=submit disabled>注册</button>
         </td>
     </tr>
 </table>
