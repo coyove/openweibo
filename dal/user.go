@@ -10,7 +10,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/coyove/iis/common"
-	"github.com/coyove/iis/dal/forgettable/goforget"
+	"github.com/coyove/iis/dal/tagrank"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
 	"github.com/coyove/iis/tfidf"
@@ -108,7 +108,7 @@ func MentionUserAndTags(a *model.Article, ids []string, tags []string) error {
 			continue
 		}
 
-		if _, err := DoInsertArticle(&InsertArticleRequest{
+		if _, _, err := DoInsertArticle(&InsertArticleRequest{
 			ID: ik.NewID(ik.IDInbox, id).String(),
 			Article: model.Article{
 				ID:  ik.NewGeneralID().String(),
@@ -128,18 +128,19 @@ func MentionUserAndTags(a *model.Article, ids []string, tags []string) error {
 	}
 
 	for _, tag := range tags {
-		if _, err := DoInsertArticle(&InsertArticleRequest{
+		_, root, err := DoInsertArticle(&InsertArticleRequest{
 			ID: ik.NewID(ik.IDTag, tag).String(),
 			Article: model.Article{
 				ID:      ik.NewGeneralID().String(),
 				ReferID: a.ID,
 				Media:   a.Media,
 			},
-		}); err != nil {
+		})
+		if err != nil {
 			return err
 		}
 		tfidf.IndexTag(tag)
-		goforget.Incr("tagheat", tag)
+		tagrank.Update(tag, root.CreateTime, root.Replies)
 	}
 	return nil
 }
@@ -181,7 +182,7 @@ func FollowUser(from, to string, following bool) (E error) {
 			return err
 		}
 		updated = true
-		_, err := DoInsertArticle(&InsertArticleRequest{
+		_, _, err := DoInsertArticle(&InsertArticleRequest{
 			ID: ik.NewID(ik.IDFollowing, from).String(),
 			Article: model.Article{
 				ID:     followID,

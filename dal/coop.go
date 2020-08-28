@@ -235,7 +235,7 @@ func DoUpdateArticleExtra(rr *UpdateArticleExtraRequest) (string, error) {
 	return oldExtraValue, m.db.Set(a.ID, a.Marshal())
 }
 
-func DoInsertArticle(r *InsertArticleRequest) (A model.Article, E error) {
+func DoInsertArticle(r *InsertArticleRequest) (A, R model.Article, E error) {
 	rootID := r.ID
 	a := r.Article
 
@@ -251,12 +251,12 @@ func DoInsertArticle(r *InsertArticleRequest) (A model.Article, E error) {
 
 	root, err := GetArticle(rootID)
 	if err != nil && err != model.ErrNotExisted {
-		return model.Article{}, err
+		return model.Article{}, model.Article{}, err
 	}
 
 	if err == model.ErrNotExisted {
 		if r.AsReply {
-			return model.Article{}, err
+			return model.Article{}, model.Article{}, err
 		}
 		root = &model.Article{
 			ID:         rootID,
@@ -308,14 +308,14 @@ func DoInsertArticle(r *InsertArticleRequest) (A model.Article, E error) {
 	}
 
 	if err := m.db.Set(a.ID, a.Marshal()); err != nil {
-		return model.Article{}, err
+		return model.Article{}, model.Article{}, err
 	}
 
 	if err := m.db.Set(root.ID, root.Marshal()); err != nil {
-		return model.Article{}, err
+		return model.Article{}, model.Article{}, err
 	}
 
-	return a, nil
+	return a, *root, nil
 }
 
 func DoUpdateOrInsertCmdArticle(rr *UpdateOrInsertCmdArticleRequest) (updated, inserted bool, err error) {
@@ -342,7 +342,7 @@ func DoUpdateOrInsertCmdArticle(rr *UpdateOrInsertCmdArticleRequest) (updated, i
 			}
 
 			updated, inserted = true, true
-			_, err = DoInsertArticle(&InsertArticleRequest{
+			_, _, err = DoInsertArticle(&InsertArticleRequest{
 				ID:      rr.InsertUnderChainID,
 				Article: *a,
 				NoLock:  coDistribute(rr.ArticleID) == coDistribute(rr.InsertUnderChainID), // deadlock fix

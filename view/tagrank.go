@@ -1,12 +1,11 @@
 package view
 
 import (
-	"sort"
 	"sync"
 	"time"
 
 	"github.com/coyove/iis/dal"
-	"github.com/coyove/iis/dal/forgettable/goforget"
+	"github.com/coyove/iis/dal/tagrank"
 	"github.com/coyove/iis/ik"
 	"github.com/gin-gonic/gin"
 )
@@ -23,14 +22,14 @@ type HotTag struct {
 
 var (
 	tagHeatOnce  sync.Once
-	tagHeatCache goforget.Distribution
+	tagHeatCache []string
 )
 
 func TagHeat(g *gin.Context) []HotTag {
 	tagHeatOnce.Do(func() {
 		go func() {
 			for {
-				tagHeatCache = goforget.TopN("tagheat", 5)
+				tagHeatCache = tagrank.TopN(5)
 				time.Sleep(time.Second * 5)
 			}
 		}()
@@ -44,9 +43,9 @@ func TagHeat(g *gin.Context) []HotTag {
 	res := tagHeatCache
 	// res.Data["a"] = &goforget.CmdValue{Count: 10, P: 100}
 
-	tags := make([]HotTag, len(res.Data))
+	tags := make([]HotTag, len(res))
 
-	for k, r := range res.Data {
+	for _, k := range res {
 		x := &tags[i]
 		a, _ := dal.GetArticle(ik.NewID(ik.IDTag, k).String())
 		if a != nil {
@@ -54,17 +53,12 @@ func TagHeat(g *gin.Context) []HotTag {
 			av.from(a, 0, u)
 			x.Tag = av
 			x.LastUpdated = ik.ParseID(a.NextID).Time()
+			x.Count = a.Replies
 		}
 		x.IsFollowing = dal.IsFollowing(u.ID, "#"+k)
 		x.Name, x.FullName = k, "#"+k
-		x.Score = r.P
-		x.Count = r.Count
 		i++
 	}
-
-	sort.Slice(tags, func(i, j int) bool {
-		return tags[i].Score > tags[j].Score
-	})
 
 	return tags
 }

@@ -27,7 +27,7 @@ type zset struct {
 
 type GlobalCache struct {
 	local *lru.Cache
-	c     *redis.Pool
+	Pool  *redis.Pool
 	batch chan *batchGetTask
 	zmu   sync.Mutex
 	z     []*zset
@@ -63,7 +63,7 @@ func NewGlobalCache(localSize int64, config *RedisConfig) *GlobalCache {
 			config.BatchWorkers = 1
 		}
 
-		gc.c = redis.NewPool(func() (redis.Conn, error) {
+		gc.Pool = redis.NewPool(func() (redis.Conn, error) {
 			return redis.Dial("tcp", config.Addr, options...)
 		}, config.MaxIdle)
 
@@ -105,7 +105,7 @@ func NewGlobalCache(localSize int64, config *RedisConfig) *GlobalCache {
 						keys[i] = tasks[i].key
 					}
 
-					c := gc.c.Get()
+					c := gc.Pool.Get()
 					res, err := redis.Strings(c.Do("MGET", keys...))
 					c.Close()
 
@@ -144,7 +144,7 @@ func (gc *GlobalCache) Get(k string) ([]byte, bool) {
 	// defer func(a time.Time) {
 	// 	log.Println(time.Since(a))
 	// }(time.Now())
-	if gc.c == nil {
+	if gc.Pool == nil {
 		v, _ := gc.local.Get(k)
 		p, ok := v.([]byte)
 		return p, ok
@@ -161,12 +161,12 @@ func (gc *GlobalCache) Get(k string) ([]byte, bool) {
 }
 
 func (gc *GlobalCache) Add(k string, v []byte) error {
-	if gc.c == nil {
+	if gc.Pool == nil {
 		gc.local.Add(k, v)
 		return nil
 	}
 
-	c := gc.c.Get()
+	c := gc.Pool.Get()
 	defer c.Close()
 
 	if _, err := c.Do("SET", k, append(v, '$')); err != nil {
@@ -178,7 +178,7 @@ func (gc *GlobalCache) Add(k string, v []byte) error {
 
 func (gc *GlobalCache) MGet(keys ...string) map[string][]byte {
 	m := map[string][]byte{}
-	if gc.c == nil {
+	if gc.Pool == nil {
 		for _, k := range keys {
 			v, _ := gc.local.Get(k)
 			buf, ok := v.([]byte)
@@ -189,7 +189,7 @@ func (gc *GlobalCache) MGet(keys ...string) map[string][]byte {
 		return m
 	}
 
-	c := gc.c.Get()
+	c := gc.Pool.Get()
 	defer c.Close()
 
 	args := []interface{}{}

@@ -283,7 +283,7 @@ func Post(a *model.Article, author *model.User) (*model.Article, error) {
 	a.ID = ik.NewGeneralID().String()
 	a.Author = author.ID
 
-	if _, err := DoInsertArticle(&InsertArticleRequest{
+	if _, _, err := DoInsertArticle(&InsertArticleRequest{
 		ID:      ik.NewID(ik.IDAuthor, a.Author).String(),
 		Article: *a,
 	}); err != nil {
@@ -362,7 +362,7 @@ func PostReply(parent string, a *model.Article, author *model.User, noTimeline b
 	a.ID = ik.NewGeneralID().String()
 	a.Parent = p.ID
 
-	a2, err := DoInsertArticle(&InsertArticleRequest{ID: p.ID, Article: *a, AsReply: true})
+	a2, _, err := DoInsertArticle(&InsertArticleRequest{ID: p.ID, Article: *a, AsReply: true})
 	if err != nil {
 		return nil, err
 	}
@@ -370,7 +370,7 @@ func PostReply(parent string, a *model.Article, author *model.User, noTimeline b
 
 	if !noTimeline {
 		// Add reply to its timeline
-		if _, err := DoInsertArticle(&InsertArticleRequest{
+		if _, _, err := DoInsertArticle(&InsertArticleRequest{
 			ID:      ik.NewID(ik.IDAuthor, a.Author).String(),
 			Article: *a,
 		}); err != nil {
@@ -384,7 +384,7 @@ func PostReply(parent string, a *model.Article, author *model.User, noTimeline b
 				return
 			}
 
-			if _, err := DoInsertArticle(&InsertArticleRequest{
+			if _, _, err := DoInsertArticle(&InsertArticleRequest{
 				ID: ik.NewID(ik.IDInbox, p.Author).String(),
 				Article: model.Article{
 					ID:  ik.NewGeneralID().String(),

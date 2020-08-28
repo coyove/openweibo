@@ -17,9 +17,9 @@ import (
 	"github.com/coyove/iis/action"
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal"
-	"github.com/coyove/iis/dal/forgettable/goforget"
 	"github.com/coyove/iis/dal/kv"
 	"github.com/coyove/iis/dal/kv/cache"
+	"github.com/coyove/iis/dal/tagrank"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/middleware"
 	"github.com/coyove/iis/model"
@@ -50,7 +50,7 @@ func main() {
 	model.OpenBleve("bleve.search")
 
 	if common.Cfg.RedisAddr != "" {
-		goforget.Init(&cache.RedisConfig{Addr: common.Cfg.RedisAddr, BatchWorkers: 10})
+		tagrank.Init(&cache.RedisConfig{Addr: common.Cfg.RedisAddr, BatchWorkers: 10})
 	}
 
 	if os.Getenv("BENCH") == "1" {
@@ -253,12 +253,6 @@ func main() {
 	r.Handle("POST", "/rpc/user_info", action.RPCGetUserInfo)
 
 	r.Handle("GET", "/loaderio-4d068f605f9b693f6ca28a8ca23435c6", func(g *gin.Context) { g.String(200, ("loaderio-4d068f605f9b693f6ca28a8ca23435c6")) })
-
-	// goforget.Incr("tagheat", "a", "b", "c")
-	// goforget.Incr("tagheat", "a", "b", "d")
-	// time.Sleep(time.Second)
-	// goforget.Incr("tagheat", "b", "c", "d")
-	// goforget.Incr("tagheat", "b")
 
 	r.Handle("GET", "/debug/pprof/*name", func(g *gin.Context) {
 		u, _ := g.Get("user")
