@@ -14,17 +14,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coyove/iis/action"
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/dal/kv"
-	"github.com/coyove/iis/dal/kv/cache"
 	"github.com/coyove/iis/dal/tagrank"
+	"github.com/coyove/iis/handler"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/middleware"
 	"github.com/coyove/iis/model"
-	"github.com/coyove/iis/tfidf"
-	"github.com/coyove/iis/view"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/acme/autocert"
 )
@@ -35,7 +32,7 @@ func main() {
 
 	common.MustLoadConfig("config.json")
 
-	redisConfig := &cache.RedisConfig{
+	redisConfig := &kv.RedisConfig{
 		Addr: common.Cfg.RedisAddr,
 	}
 
@@ -46,61 +43,9 @@ func main() {
 			common.Cfg.S3AccessKey, common.Cfg.S3SecretKey)
 	}
 
-	tfidf.Init(redisConfig)
+	model.Init(redisConfig)
 	model.OpenBleve("bleve.search")
-
-	if common.Cfg.RedisAddr != "" {
-		tagrank.Init(&cache.RedisConfig{Addr: common.Cfg.RedisAddr, BatchWorkers: 10})
-	}
-
-	if os.Getenv("BENCH") == "1" {
-		// 	ids := []string{}
-		// 	names := []string{"aa", "bb", "cc", "dd"}
-		// 	N := 40
-
-		// 	for i := 0; i < N; i++ {
-		// 		time.Sleep(time.Second)
-		// 		aid, _ := dal.Post(&model.Article{
-		// 			Content: "BENCH " + strconv.Itoa(i) + " post",
-		// 			IP:      "127.0.0.0",
-		// 			NSFW:    true,
-		// 		}, &model.User{
-		// 			ID: names[rand.Intn(len(names))],
-		// 		}, false)
-		// 		ids = append(ids, aid.ID)
-		// 	}
-
-		// 	wg := sync.WaitGroup{}
-		// 	for k := 0; k < 2; k++ {
-		// 		wg.Add(1)
-		// 		// go func() {
-		// 		// 	time.Sleep(time.Second)
-		// 		// 	x := append(names, "", "", "")
-		// 		// 	m.Walk(ik.IDTagCategory, x[rand.Intn(len(x))], "", rand.Intn(N/2)+N/2)
-		// 		// 	wg.Done()
-		// 		// }()
-
-		// 		for i := 0; i < 50; i++ {
-		// 			wg.Add(1)
-		// 			go func(i int) {
-		// 				parent := ids[0]
-		// 				if rand.Intn(4) == 1 {
-		// 					parent = ids[rand.Intn(len(ids))]
-		// 				}
-		// 				aid, _ := dal.PostReply(parent, "BENCH "+strconv.Itoa(i)+" reply", "", &model.User{
-		// 					ID: names[rand.Intn(len(names))],
-		// 				}, "127.0.0.0", false, false)
-		// 				ids = append(ids, aid.ID)
-
-		// 				if i%10 == 0 {
-		// 					log.Println("Progress", i)
-		// 				}
-		// 				wg.Done()
-		// 			}(i)
-		// 		}
-		// 		wg.Wait()
-		// 	}
-	}
+	tagrank.Init(redisConfig)
 
 	prodMode := common.Cfg.Key != "0123456789abcdef"
 
@@ -207,50 +152,49 @@ func main() {
 	r.LoadHTMLGlob("template/*.html")
 	r.Static("/s/", "template")
 
-	r.NoRoute(view.NotFound)
-	r.Handle("GET", "/", view.Home)
-	r.Handle("GET", "/i/*img", view.I)
-	r.Handle("GET", "/avatar/:id", view.Avatar)
-	r.Handle("GET", "/eriri", view.RandomEririImage)
-	r.Handle("GET", "/tag/:tag", view.Index)
-	r.Handle("GET", "/user", view.User)
-	r.Handle("GET", "/user/:type", view.UserList)
-	r.Handle("GET", "/user/:type/:uid", view.UserList)
-	r.Handle("GET", "/likes/:uid", view.UserLikes)
-	r.Handle("GET", "/t", view.Timeline)
-	r.Handle("GET", "/t/:user", view.Timeline)
-	r.Handle("GET", "/search/:query", view.Search)
-	r.Handle("GET", "/search", view.Search)
-	r.Handle("GET", "/S/:id", view.S)
-	r.Handle("GET", "/inbox", view.Inbox)
-	r.Handle("GET", "/mod/user", view.ModUser)
-	r.Handle("GET", "/mod/kv", view.ModKV)
+	r.NoRoute(handler.NotFound)
+	r.Handle("GET", "/", handler.Home)
+	r.Handle("GET", "/i/*img", handler.LocalImage)
+	r.Handle("GET", "/avatar/:id", handler.Avatar)
+	r.Handle("GET", "/tag/:tag", handler.TagTimeline)
+	r.Handle("GET", "/user", handler.User)
+	r.Handle("GET", "/user/:type", handler.UserList)
+	r.Handle("GET", "/user/:type/:uid", handler.UserList)
+	r.Handle("GET", "/likes/:uid", handler.UserLikes)
+	r.Handle("GET", "/t", handler.Timeline)
+	r.Handle("GET", "/t/:user", handler.Timeline)
+	r.Handle("GET", "/search/:query", handler.Search)
+	r.Handle("GET", "/search", handler.Search)
+	r.Handle("GET", "/S/:id", handler.S)
+	r.Handle("GET", "/inbox", handler.Inbox)
+	r.Handle("GET", "/mod/user", handler.ModUser)
+	r.Handle("GET", "/mod/kv", handler.ModKV)
 
-	r.Handle("POST", "/api/upload_image", action.APIUpload)
-	r.Handle("POST", "/api/p/:parent", view.APIReplies)
-	r.Handle("POST", "/api/u/:id", view.APIGetUserInfoBox)
-	r.Handle("POST", "/api/timeline", view.APITimeline)
-	r.Handle("POST", "/api/user_kimochi", action.APIUserKimochi)
-	r.Handle("POST", "/api/new_captcha", action.APINewCaptcha)
-	r.Handle("POST", "/api/search", action.APISearch)
-	r.Handle("POST", "/api/ban", action.APIBan)
-	r.Handle("POST", "/api/promote_mod", action.APIPromoteMod)
-	r.Handle("POST", "/api/mod_kv", action.APIModKV)
-	r.Handle("POST", "/api/user_settings", action.APIUpdateUserSettings)
-	r.Handle("POST", "/api/clear_inbox", action.APIClearInbox)
-	r.Handle("POST", "/api2/follow_block", action.APIFollowBlock)
-	r.Handle("POST", "/api2/like_article", action.APILike)
-	r.Handle("POST", "/api2/signup", action.APISignup)
-	r.Handle("POST", "/api2/login", action.APILogin)
-	r.Handle("POST", "/api2/logout", action.APILogout)
-	r.Handle("POST", "/api2/new", action.APINew)
-	r.Handle("POST", "/api2/user_password", action.APIUpdateUserPassword)
-	r.Handle("POST", "/api2/delete", action.APIDeleteArticle)
-	r.Handle("POST", "/api2/toggle_nsfw", action.APIToggleNSFWArticle)
-	r.Handle("POST", "/api2/toggle_lock", action.APIToggleLockArticle)
-	r.Handle("POST", "/api2/drop_top", action.APIDropTop)
+	r.Handle("POST", "/api/upload_image", handler.APIUpload)
+	r.Handle("POST", "/api/p/:parent", handler.APIReplies)
+	r.Handle("POST", "/api/u/:id", handler.APIGetUserInfoBox)
+	r.Handle("POST", "/api/timeline", handler.APITimeline)
+	r.Handle("POST", "/api/user_kimochi", handler.APIUserKimochi)
+	r.Handle("POST", "/api/new_captcha", handler.APINewCaptcha)
+	r.Handle("POST", "/api/search", handler.APISearch)
+	r.Handle("POST", "/api/ban", handler.APIBan)
+	r.Handle("POST", "/api/promote_mod", handler.APIPromoteMod)
+	r.Handle("POST", "/api/mod_kv", handler.APIModKV)
+	r.Handle("POST", "/api/user_settings", handler.APIUpdateUserSettings)
+	r.Handle("POST", "/api/clear_inbox", handler.APIClearInbox)
+	r.Handle("POST", "/api2/follow_block", handler.APIFollowBlock)
+	r.Handle("POST", "/api2/like_article", handler.APILike)
+	r.Handle("POST", "/api2/signup", handler.APISignup)
+	r.Handle("POST", "/api2/login", handler.APILogin)
+	r.Handle("POST", "/api2/logout", handler.APILogout)
+	r.Handle("POST", "/api2/new", handler.APINew)
+	r.Handle("POST", "/api2/user_password", handler.APIUpdateUserPassword)
+	r.Handle("POST", "/api2/delete", handler.APIDeleteArticle)
+	r.Handle("POST", "/api2/toggle_nsfw", handler.APIToggleNSFWArticle)
+	r.Handle("POST", "/api2/toggle_lock", handler.APIToggleLockArticle)
+	r.Handle("POST", "/api2/drop_top", handler.APIDropTop)
 
-	r.Handle("POST", "/rpc/user_info", action.RPCGetUserInfo)
+	r.Handle("POST", "/rpc/user_info", handler.RPCGetUserInfo)
 
 	r.Handle("GET", "/loaderio-4d068f605f9b693f6ca28a8ca23435c6", func(g *gin.Context) { g.String(200, ("loaderio-4d068f605f9b693f6ca28a8ca23435c6")) })
 
@@ -288,5 +232,5 @@ func main() {
 		}()
 	}
 
-	fmt.Println(r.Run(":5010"))
+	fmt.Println(r.Run("127.0.0.1:5010"))
 }

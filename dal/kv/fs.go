@@ -13,12 +13,11 @@ import (
 
 	"github.com/coyove/common/lru"
 	"github.com/coyove/iis/common"
-	"github.com/coyove/iis/dal/kv/cache"
 	//sync "github.com/sasha-s/go-deadlock"
 )
 
 type DiskKV struct {
-	cache     *cache.GlobalCache
+	cache     *GlobalCache
 	weakCache *lru.Cache
 }
 
@@ -44,7 +43,7 @@ func calcPath2(key1, key2 string) (string, string) {
 	return dir, dir + "/" + key2
 }
 
-func (m *DiskKV) SetGlobalCache(c *cache.GlobalCache) {
+func (m *DiskKV) SetGlobalCache(c *GlobalCache) {
 	m.cache = c
 }
 

@@ -1,13 +1,12 @@
-package tfidf
+package model
 
 import (
+	"github.com/coyove/iis/dal/kv"
 	"testing"
-
-	"github.com/coyove/iis/dal/kv/cache"
 )
 
 func TestSearch(t *testing.T) {
-	Init(&cache.RedisConfig{
+	Init(&kv.RedisConfig{
 		Addr: "devbox0:6379",
 	})
 	Index("test", "1", "cyoyovte")

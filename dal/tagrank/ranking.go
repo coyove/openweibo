@@ -2,19 +2,19 @@ package tagrank
 
 import (
 	"fmt"
+	"github.com/coyove/iis/dal/kv"
 	"log"
 	"math"
 	"time"
 
-	"github.com/coyove/iis/dal/kv/cache"
 	"github.com/gomodule/redigo/redis"
 )
 
 var p *redis.Pool
 var TooOld = time.Hour * 24 * 7
 
-func Init(redisConfig *cache.RedisConfig) {
-	p = cache.NewGlobalCache(1024, redisConfig).Pool
+func Init(redisConfig *kv.RedisConfig) {
+	p = kv.NewGlobalCache(redisConfig).Pool
 }
 
 func Update(tag string, createTime time.Time, totalCount int) {

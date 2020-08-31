@@ -1,4 +1,4 @@
-package action
+package handler
 
 import (
 	"bytes"
@@ -12,8 +12,10 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -23,6 +25,70 @@ import (
 	"github.com/coyove/iis/model"
 	"github.com/gin-gonic/gin"
 )
+
+func NotFound(g *gin.Context) {
+	p := struct {
+		Accept bool
+		Msg    string
+	}{
+		g.GetBool("need-accept"),
+		g.GetString("error"),
+	}
+	g.HTML(404, "error.html", p)
+}
+
+func getUser(g *gin.Context) *model.User {
+	u, _ := g.Get("user")
+	u2, _ := u.(*model.User)
+	return u2
+}
+
+type ReplyView struct {
+	UUID    string
+	PID     string
+	ReplyTo string
+}
+
+func makeReplyView(g *gin.Context, reply string) ReplyView {
+	r := ReplyView{}
+	r.UUID = strconv.FormatInt(time.Now().UnixNano(), 16)
+	r.ReplyTo = reply
+	r.PID = g.Query("pid")
+	return r
+}
+
+func makeCheckpoints(g *gin.Context) []string {
+	r := []string{}
+
+	for y, m := time.Now().Year(), int(time.Now().Month()); ; {
+		m--
+		if m == 0 {
+			y, m = y-1, 12
+		}
+
+		if y < 2020 {
+			break
+		}
+
+		r = append(r, fmt.Sprintf("%04d-%02d", y, m))
+
+		if y == 2020 && m == 1 {
+			// 2020-01 is the genesis
+			break
+		}
+
+		if len(r) >= 6 {
+			// return 6 checkpoints (months) at most
+			break
+		}
+	}
+
+	return r
+}
+
+func redirectVisitor(g *gin.Context) {
+	g.Redirect(302, "/?redirect="+url.QueryEscape(g.Request.URL.String()))
+}
 
 var captchaClient = &http.Client{Timeout: 500 * time.Millisecond}
 
@@ -226,42 +292,3 @@ func writeAvatar(u *model.User, image string) (string, error) {
 	of.Close()
 	return fn, err
 }
-
-// func writeThumbnail(path string, srcimg string, throtWidth int) error {
-// 	data, err := os.Open(srcimg)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer data.Close()
-//
-// 	config, _, err := image.DecodeConfig(data)
-// 	if err != nil {
-// 		return err
-// 	}
-//
-// 	if config.Width <= throtWidth || config.Height <= throtWidth {
-// 		return nil
-// 	}
-//
-// 	data.Seek(0, 0)
-// 	src, _, err := image.Decode(data)
-// 	if err != nil {
-// 		return err
-// 	}
-//
-// 	var canvas image.Image
-//
-// 	if config.Width > config.Height {
-// 		canvas = resize.Resize(0, uint(throtWidth), src, resize.Lanczos3)
-// 	} else {
-// 		canvas = resize.Resize(uint(throtWidth), 0, src, resize.Lanczos3)
-// 	}
-//
-// 	w, err := os.Create(path)
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer w.Close()
-//
-// 	return jpeg.Encode(w, canvas, &jpeg.Options{Quality: 66})
-// }

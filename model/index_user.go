@@ -1,12 +1,10 @@
-package tfidf
+package model
 
 import (
 	"time"
-
-	"github.com/coyove/iis/model"
 )
 
-var userIndexQueue = make(chan *model.User, 1024)
+var userIndexQueue = make(chan *User, 1024)
 var tagIndexQueue = make(chan string, 1024)
 
 func init() {
@@ -49,7 +47,7 @@ func init() {
 	}()
 }
 
-func IndexUser(u *model.User, immediate bool) {
+func IndexUser(u *User, immediate bool) {
 	if immediate {
 		Index("su", u.ID, u.ID+u.CustomName)
 	} else {

@@ -2,13 +2,13 @@ package dal
 
 import (
 	"crypto/sha1"
+	"github.com/coyove/iis/dal/kv"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/coyove/iis/dal/kv/cache"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,7 +20,7 @@ type KeyValueOp interface {
 	Get(string) ([]byte, error)
 	WeakGet(string) ([]byte, error)
 	Set(string, []byte) error
-	SetGlobalCache(*cache.GlobalCache)
+	SetGlobalCache(*kv.GlobalCache)
 }
 
 func IsCrawler(g *gin.Context) bool {

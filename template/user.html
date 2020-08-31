@@ -212,16 +212,6 @@ input[type=number] {
         <td>{{.SearchSurvey}}</td>
     </tr>
     {{end}}
-    {{if .User.IsMod}}
-    <tr>
-        <td class=nowrap>最大耗时:</td>
-        <td>{{.Survey.Max}}ms</td>
-    </tr>
-    <tr>
-        <td class=nowrap>流出流量:</td>
-        <td>{{.Survey.Written}}b</td>
-    </tr>
-    {{end}}
 </table>
 
 {{else}}

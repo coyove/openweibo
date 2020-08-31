@@ -1,4 +1,4 @@
-package tfidf
+package model
 
 import (
 	"log"
@@ -7,34 +7,15 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/coyove/iis/dal/kv/cache"
+	"github.com/coyove/iis/dal/kv"
+
 	"github.com/gomodule/redigo/redis"
 )
 
 var client *redis.Pool
 
-func Init(config *cache.RedisConfig) {
-	options := []redis.DialOption{}
-
-	if config.Timeout == 0 {
-		config.Timeout = time.Millisecond * 100
-	}
-
-	options = append(options, redis.DialConnectTimeout(config.Timeout))
-	options = append(options, redis.DialReadTimeout(config.Timeout))
-	options = append(options, redis.DialWriteTimeout(config.Timeout))
-
-	if config.MaxIdle == 0 {
-		config.MaxIdle = 10
-	}
-
-	if config.BatchWorkers == 0 {
-		config.BatchWorkers = 1
-	}
-
-	client = redis.NewPool(func() (redis.Conn, error) {
-		return redis.Dial("tcp", config.Addr, options...)
-	}, config.MaxIdle)
+func Init(config *kv.RedisConfig) {
+	client = kv.NewGlobalCache(config).Pool
 }
 
 func tf(v string) map[string]float64 {

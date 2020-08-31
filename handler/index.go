@@ -1,9 +1,10 @@
-package view
+package handler
 
 import (
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -14,7 +15,6 @@ import (
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/middleware"
 	"github.com/coyove/iis/model"
-	"github.com/coyove/iis/tfidf"
 	"github.com/gin-gonic/gin"
 )
 
@@ -47,14 +47,20 @@ type ArticleRepliesView struct {
 	ReplyView         ReplyView
 }
 
+func Home(g *gin.Context) {
+	if getUser(g) != nil {
+		g.Redirect(302, "/t")
+	} else {
+		g.HTML(200, "home.html", nil)
+	}
+}
+
 func S(g *gin.Context) {
-	var p = struct {
-		ID string
-	}{"S" + g.Param("id")}
+	var p = struct{ ID string }{"S" + g.Param("id")}
 	g.HTML(200, "S.html", p)
 }
 
-func Index(g *gin.Context) {
+func TagTimeline(g *gin.Context) {
 	tag := g.Param("tag")
 	pl := ArticlesTimelineView{
 		Tag:           "#" + tag,
@@ -77,7 +83,7 @@ func Index(g *gin.Context) {
 	a, _ := dal.GetArticle(ik.NewID(ik.IDTag, tag).String())
 	if a != nil {
 		pl.PostsUnderTag = a.Replies
-		tfidf.IndexTag(tag)
+		model.IndexTag(tag)
 	}
 
 	a2, next := dal.WalkMulti(pl.MediaOnly, int(common.Cfg.PostsPerPage), ik.NewID(ik.IDTag, tag))
@@ -366,7 +372,6 @@ func Search(g *gin.Context) {
 	pl.Next = next
 	fromMultiple(&pl.Articles, as, 0, pl.You)
 	g.HTML(200, "timeline.html", pl)
-
 }
 
 func searchArticles(u *model.User, query string, start int, totalCount *int) ([]*model.Article, string, error) {
@@ -404,4 +409,19 @@ func searchArticles(u *model.User, query string, start int, totalCount *int) ([]
 	}
 
 	return as, next, nil
+}
+
+func LocalImage(g *gin.Context) {
+	img := g.Param("img")
+	switch {
+	case strings.HasPrefix(img, "/s/"):
+		http.ServeFile(g.Writer, g.Request, "template/"+img[3:])
+	case strings.HasPrefix(img, "/thumb/"):
+		img = img[6:]
+		fallthrough
+	default:
+		img = img[1:]
+		cachepath := fmt.Sprintf("tmp/images/%s", img)
+		http.ServeFile(g.Writer, g.Request, cachepath)
+	}
 }

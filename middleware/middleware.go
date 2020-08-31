@@ -7,7 +7,6 @@ import (
 	"net"
 	"os"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/coyove/iis/common"
@@ -15,8 +14,6 @@ import (
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
-	"github.com/coyove/iis/tfidf"
-	"github.com/gin-contrib/gzip"
 	"github.com/gin-gonic/gin"
 )
 
@@ -46,7 +43,7 @@ func mwRenderPerf(g *gin.Context) {
 		if u, _ = dal.GetUserByToken(tok); u != nil {
 			g.Set("user", u)
 			dal.MarkUserActive(u.ID)
-			tfidf.IndexUser(u, false)
+			model.IndexUser(u, false)
 		}
 	}
 
@@ -55,10 +52,10 @@ func mwRenderPerf(g *gin.Context) {
 	g.Next()
 	msec := time.Since(start).Nanoseconds() / 1e6
 
-	if msec > Survey.Max {
-		Survey.Max = msec
-	}
-	atomic.AddInt64(&Survey.Written, int64(g.Writer.Size()))
+	// if msec > Survey.Max {
+	// 	Survey.Max = msec
+	// }
+	// atomic.AddInt64(&Survey.Written, int64(g.Writer.Size()))
 
 	x := g.Writer.Header().Get("Content-Type")
 	if strings.HasPrefix(x, "text/html") && g.Writer.Header().Get("X-Reply") != "true" {
@@ -121,9 +118,9 @@ func New(prod bool) *gin.Engine {
 	log.SetFlags(log.Lshortfile | log.Ltime | log.Ldate)
 
 	r := gin.New()
-	r.Use(gin.Recovery(), gzip.Gzip(gzip.DefaultCompression), mwRenderPerf, mwIPThrot, RequestSizeLimiter(3*1024*1024))
+	r.Use(gin.Recovery(), mwRenderPerf, mwIPThrot, RequestSizeLimiter(3*1024*1024))
 
-	loadTrafficCounter()
+	// loadTrafficCounter()
 
 	engine = r
 	return r

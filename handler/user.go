@@ -1,4 +1,4 @@
-package view
+package handler
 
 import (
 	"fmt"
@@ -17,7 +17,6 @@ func User(g *gin.Context) {
 	p := struct {
 		UUID         string
 		Challenge    string
-		Survey       interface{}
 		SearchSurvey string
 		User         *model.User
 		SiteKey      string
@@ -26,7 +25,6 @@ func User(g *gin.Context) {
 		OTTUsername  string
 		OTTEmail     string
 	}{
-		Survey:      middleware.Survey,
 		SiteKey:     common.Cfg.HCaptchaSiteKey,
 		DarkCaptcha: m == "dark",
 		OTT:         g.Query("ott"),

@@ -268,3 +268,16 @@ func SendMail(to, subject, body string) error {
 	}
 	return c.Quit()
 }
+
+func Hash32(n string) (h uint32) {
+	h = 2166136261
+	for i := 0; i < len(n); i++ {
+		h = h * 16777619
+		h = h ^ uint32(n[i])
+	}
+	return
+}
+
+func Hash16(n string) (h uint16) {
+	return uint16(Hash32(n))
+}

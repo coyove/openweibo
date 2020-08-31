@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal/kv"
-	"github.com/coyove/iis/dal/kv/cache"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
 )
@@ -22,12 +21,10 @@ var S3 *kv.S3Storage
 
 var m struct {
 	db          KeyValueOp
-	activeUsers *cache.GlobalCache
+	activeUsers *kv.GlobalCache
 }
 
-func Init(redisConfig *cache.RedisConfig, region string, ak, sk string) {
-	const CacheSize int64 = 10000
-
+func Init(redisConfig *kv.RedisConfig, region string, ak, sk string) {
 	var db KeyValueOp
 
 	if region == "" {
@@ -36,7 +33,7 @@ func Init(redisConfig *cache.RedisConfig, region string, ak, sk string) {
 		db = kv.NewDynamoKV(region, ak, sk)
 	}
 
-	c := cache.NewGlobalCache(CacheSize, redisConfig)
+	c := kv.NewGlobalCache(redisConfig)
 	db.SetGlobalCache(c)
 
 	m.db = db

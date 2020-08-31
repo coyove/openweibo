@@ -13,7 +13,6 @@ import (
 	"github.com/coyove/iis/dal/tagrank"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
-	"github.com/coyove/iis/tfidf"
 	"github.com/gin-gonic/gin"
 )
 
@@ -139,7 +138,7 @@ func MentionUserAndTags(a *model.Article, ids []string, tags []string) error {
 		if err != nil {
 			return err
 		}
-		tfidf.IndexTag(tag)
+		model.IndexTag(tag)
 		tagrank.Update(tag, root.CreateTime, root.Replies)
 	}
 	return nil

@@ -13,7 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/coyove/common/lru"
-	"github.com/coyove/iis/dal/kv/cache"
 	//sync "github.com/sasha-s/go-deadlock"
 )
 
@@ -28,7 +27,7 @@ type weakEntry struct {
 }
 
 type DynamoKV struct {
-	cache     *cache.GlobalCache
+	cache     *GlobalCache
 	weakCache *lru.Cache
 	db        *dynamodb.DynamoDB
 }
@@ -59,7 +58,7 @@ func NewDynamoKV(region, accessKey, secretKey string) *DynamoKV {
 	return r
 }
 
-func (m *DynamoKV) SetGlobalCache(c *cache.GlobalCache) {
+func (m *DynamoKV) SetGlobalCache(c *GlobalCache) {
 	m.cache = c
 }
 

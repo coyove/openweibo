@@ -1,4 +1,4 @@
-package action
+package handler
 
 import (
 	"bufio"
@@ -18,7 +18,6 @@ import (
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/middleware"
 	"github.com/coyove/iis/model"
-	"github.com/coyove/iis/view"
 	"github.com/gin-gonic/gin"
 )
 
@@ -100,7 +99,7 @@ func APINew(g *gin.Context) {
 	}
 
 	g.String(200, "ok:"+url.PathEscape(middleware.RenderTemplateString("row_content.html",
-		view.NewTopArticleView(a2, u))))
+		NewTopArticleView(a2, u))))
 }
 
 func doReply(g *gin.Context) {
@@ -152,7 +151,7 @@ func doReply(g *gin.Context) {
 	}
 
 	g.String(200, "ok:"+url.PathEscape(middleware.RenderTemplateString("row_content.html",
-		view.NewReplyArticleView(a2, u))))
+		NewReplyArticleView(a2, u))))
 }
 
 func APIDeleteArticle(g *gin.Context) {
