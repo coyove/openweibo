@@ -213,7 +213,7 @@ func genSession() string {
 	return base64.URLEncoding.EncodeToString(p[:])
 }
 
-func writeImageReader(u *model.User, imageName string, hash uint64, dec io.Reader, ct string) (string, error) {
+func writeImageReader(u *model.User, imageName string, hash uint64, dec io.Reader, ct string, large bool) (string, error) {
 	path := "tmp/images/"
 	fn := fmt.Sprintf("%016x", hash)
 
@@ -227,6 +227,27 @@ func writeImageReader(u *model.User, imageName string, hash uint64, dec io.Reade
 
 	if dal.S3 != nil {
 		fn += mimeToExt(ct)
+
+		if large {
+			of, err := ioutil.TempFile("", "")
+			if err != nil {
+				return "", err
+			}
+			size, err := io.Copy(of, dec)
+			if err != nil {
+				of.Close()
+				return "", err
+			}
+			go func() {
+				of.Seek(0, 0)
+				err := dal.S3.Put(fn, ct, of)
+				of.Close()
+				log.Println("Large upload:", fn, size, "S3 err:", err, "purge:", os.Remove(of.Name()))
+			}()
+			x := "LOCAL:" + fn
+			return "CHECK(" + common.Cfg.MediaDomain + "/" + fn + ")-" + x, nil
+		}
+
 		return "LOCAL:" + fn, dal.S3.Put(fn, ct, dec)
 	}
 

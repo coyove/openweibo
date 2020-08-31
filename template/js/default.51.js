@@ -708,16 +708,24 @@ function attachImageUploader(el) {
     el.UPLOADER = new Dropzone(el, {
         url: "/api/upload_image",
         maxFilesize: 16,
-        maxFilesize: 3,
+        maxFilesize: 5,
         addRemoveLinks: true,
         dictRemoveFile: "删除",
         dictFileTooBig: "文件过大 {{filesize}}M, Max: {{maxFilesize}}M",
         dictCancelUpload: "取消",
     }).on("success", function(f, id) {
+        var m = id.match(/^CHECK\((.+)\)-(.+)/);
+        if (m && m.length == 3) {
+            var stop = $wait(f._removeLink.parentNode.querySelector('.dz-success-mark'));
+            var h = setInterval(function() {
+                console.log("large check:", m[1])
+                var img = new Image();
+                img.onload = function() { clearInterval(h); stop(); }
+                img.src = m[1];
+            }, 1500)
+            id = m[2]
+        }
         f._removeLink.setAttribute('data-uri', id);
-        // var div = $q("<div>");
-        // div.innerHTML = "<i class='icon-transgender-alt'></i>";
-        // f._removeLink.parentNode.appendChild(div);
     });
 
     el.setAttribute("uploader", "true");

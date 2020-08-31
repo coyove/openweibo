@@ -273,6 +273,9 @@ func APIUpload(g *gin.Context) {
 	}
 	defer part.Close()
 
+	cl, _ := strconv.ParseInt(g.GetHeader("Content-Length"), 10, 64)
+	large := cl > 1*1024*1024
+
 	rd := bufio.NewReader(part)
 	tmp, _ := rd.Peek(1024)
 	switch ct := http.DetectContentType(tmp); ct {
@@ -281,7 +284,7 @@ func APIUpload(g *gin.Context) {
 		for _, v := range tmp {
 			hash = hash*31 + uint64(v)
 		}
-		v, err := writeImageReader(u, part.FileName(), hash, rd, ct)
+		v, err := writeImageReader(u, part.FileName(), hash, rd, ct, large)
 		if err != nil {
 			log.Println("image api:", err)
 			g.String(500, "server-error")

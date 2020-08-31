@@ -232,5 +232,5 @@ func main() {
 		}()
 	}
 
-	fmt.Println(r.Run("127.0.0.1:5010"))
+	fmt.Println(r.Run(":5010"))
 }

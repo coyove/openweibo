@@ -218,8 +218,8 @@ a[value=false] .icon-eye-off:before {
     border: solid 1px {{.Border}};
     overflow: hidden;
 }
-.dz-success-mark svg path {
-    fill: {{.Link}};
+.dz-success-mark {
+    color: {{.Link}};
 }
 .dz-default:after {
   color: {{.Button}};
