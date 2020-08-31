@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/blevesearch/bleve"
+	"github.com/blevesearch/bleve/analysis/lang/cjk"
 	"github.com/coyove/common/lru"
 )
 
@@ -21,7 +22,17 @@ var (
 )
 
 func OpenBleve(path string) {
+	fieldMapping := bleve.NewTextFieldMapping()
+	fieldMapping.Analyzer = cjk.AnalyzerName
+
+	docMapping := bleve.NewDocumentMapping()
+	docMapping.DefaultAnalyzer = cjk.AnalyzerName
+	docMapping.AddFieldMappingsAt("content", fieldMapping)
+
 	mapping := bleve.NewIndexMapping()
+	mapping.DefaultAnalyzer = cjk.AnalyzerName
+	mapping.DefaultMapping = docMapping
+
 	index, err := bleve.New(path, mapping)
 	if err != nil {
 		index, err = bleve.Open(path)
@@ -75,7 +86,7 @@ func indexArticleWorker() {
 		binfo, _ := os.Stat(blevePath)
 		if binfo != nil {
 			mb := binfo.Size() / 1024 / 1024
-			count = count*1e6 + uint64(mb)
+			count = count*1e3 + uint64(mb)
 		}
 		BleveIndexed = int(count)
 	}
