@@ -24,7 +24,7 @@
             <div class="status">
                 <div class=title>
                     <div style="display:flex;width:100%;margin:0.5em 0" class="tmpl-border tmpl-input-bg">
-                        <input style="width:100%;line-height:1.5em;text-align:left" placeholder="搜索" class=t value="{{.Tag}}">
+                        <input style="width:100%;line-height:1.5em;text-align:left" placeholder="搜索" class=t value="{{.Tag}}" autofocus>
                         <input type=submit style="position: absolute; left: -9999px">
                     </div>
                 </div>
@@ -56,7 +56,7 @@
     {{if .Tag}}
         共搜索到 {{.PostsUnderTag}} 条结果
     {{else}}
-        index+{{.PostsUnderTag}}
+        搜索限制: 前100条记录
     {{end}}
 {{else}}
     {{if or .IsTagTimeline .IsUserLikeTimeline}}
@@ -137,7 +137,11 @@
     {{else}}
     <a class="gbutton tmpl-light-text" href="#">
         {{if .IsUserTimeline}}
-            没有更多{{.User.ID}}的状态了
+            {{if eq .User.ID "master"}}
+                没有更多状态了
+            {{else}}
+                没有更多{{.User.ID}}的状态了
+            {{end}}
         {{else if .IsInbox}}
             没有更多提醒了
         {{else if .IsSearchTimeline}}

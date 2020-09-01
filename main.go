@@ -45,7 +45,6 @@ func main() {
 	}
 
 	model.Init(redisConfig)
-	model.OpenBleve("bleve.search")
 	tagrank.Init(redisConfig)
 
 	prodMode := common.Cfg.Key != "0123456789abcdef"

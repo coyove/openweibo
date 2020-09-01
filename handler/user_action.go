@@ -200,13 +200,13 @@ func APISearch(g *gin.Context) {
 		IsTag   bool
 	}
 	results := []p{}
-	uids, _ := model.Search("su", g.PostForm("id"), 0, 10)
+	uids, _, _ := model.Search("su", g.PostForm("id"), 0, 10)
 	for i := range uids {
 		if u, _ := dal.GetUser(uids[i]); u != nil {
 			results = append(results, p{Display: u.DisplayName(), ID: uids[i]})
 		}
 	}
-	tags, _ := model.Search("st", g.PostForm("id"), 0, 10)
+	tags, _, _ := model.Search("st", g.PostForm("id"), 0, 10)
 	for _, t := range tags {
 		results = append(results, p{Display: "#" + t, ID: t, IsTag: true})
 	}

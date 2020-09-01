@@ -2,10 +2,11 @@ package tagrank
 
 import (
 	"fmt"
-	"github.com/coyove/iis/dal/kv"
 	"log"
 	"math"
 	"time"
+
+	"github.com/coyove/iis/dal/kv"
 
 	"github.com/gomodule/redigo/redis"
 )
@@ -38,6 +39,7 @@ func TopN(n int) []string {
 
 	curMark := float64(time.Now().Unix()) / 45000
 	c.Do("ZREMRANGEBYSCORE", "tagrank", "-inf", fmt.Sprintf("(%f", curMark-TooOld.Seconds()/45000))
+	c.Do("ZREMRANGEBYRANK", "tagrank", "0", "-1000")
 
 	res, err := redis.Strings(c.Do("ZREVRANGE", "tagrank", 0, n-1))
 	if err != nil {

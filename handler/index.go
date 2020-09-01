@@ -357,7 +357,6 @@ func Search(g *gin.Context) {
 	}
 
 	if pl.Tag == "" {
-		pl.PostsUnderTag = model.BleveIndexed
 		g.HTML(200, "timeline.html", pl)
 		return
 	}

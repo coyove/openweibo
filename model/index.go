@@ -5,8 +5,11 @@ import (
 	"math"
 	"math/rand"
 	"strconv"
+	"strings"
 	"time"
+	"unicode/utf8"
 
+	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal/kv"
 
 	"github.com/gomodule/redigo/redis"
@@ -18,48 +21,36 @@ func Init(config *kv.RedisConfig) {
 	client = kv.NewGlobalCache(config).Pool
 }
 
-func tf(v string) map[string]float64 {
-	m := map[string]float64{}
+func tf(v string) (m map[string]float64) {
 	if len(v) == 0 {
 		return m
 	}
 
-	rs := []rune(v)
-	if len(rs) == 1 {
+	m = map[string]float64{}
+	r, l := utf8.DecodeRuneInString(v)
+	if r != utf8.RuneError && l == len(v) {
 		m[v] = 1
 		return m
 	}
 
-	if len(rs) > 16 {
-		rs = rs[:16]
+	for len(m) < 512 {
+		r, l1 := utf8.DecodeRuneInString(v)
+		if r == utf8.RuneError || l1 == 0 || l1 == len(v) {
+			break
+		}
+		_, l2 := utf8.DecodeRuneInString(v[l1:])
+		m[strings.ToLower(v[:l1+l2])]++
+		v = v[l1:]
 	}
 
-	for i := 0; i < len(rs)-1; i++ {
-		m[string(rs[i:i+2])]++
-	}
 	for k, v := range m {
-		m[k] = v / float64(len(rs))
+		m[k] = v / float64(len(m))
 	}
 	return m
 }
 
-func simpleget(key string) (string, error) {
-	c := client.Get()
-	v, err := redis.String(c.Do("GET", key))
-	c.Close()
-	if err == redis.ErrNil {
-		err = nil
-	}
-	return v, err
-}
-
-func Index(ns, id, doc string) {
-	olddoc, err := simpleget(ns + "-" + id)
-	if err != nil {
-		log.Println("[Index] get old doc:", err)
-	}
-
-	if len(doc) == 0 && len(olddoc) == 0 {
+func Index(ns, id string, docs ...string) {
+	if len(docs) == 0 || len(docs[0]) == 0 {
 		return
 	}
 
@@ -71,23 +62,20 @@ func Index(ns, id, doc string) {
 		pipe.Close()
 	}()
 
-	if len(olddoc) >= 0 {
-		for k := range tf(olddoc) {
-			pipe.Send("ZREM", ns+"-"+k, id)
-		}
-	}
-	if len(doc) >= 0 {
+	for _, doc := range docs {
 		for k, v := range tf(doc) {
-			pipe.Send("ZADD", ns+"-"+k, v, id)
+			redisKey := ns + "-" + k
+			pipe.Send("ZREMRANGEBYRANK", redisKey, 0, -100)
+			pipe.Send("ZADD", redisKey, v, id)
 		}
-		pipe.Send("SET", ns+"-"+id, doc)
 	}
 }
 
-func Search(ns, query string, start, n int) ([]string, error) {
+func Search(ns, query string, start, n int) ([]string, int, error) {
 	if len(query) == 0 {
-		return nil, nil
+		return nil, 0, nil
 	}
+	query = common.SoftTrunc(query, 32)
 
 	redisKeys := []string{}
 	for k := range tf(query) {
@@ -113,7 +101,7 @@ func Search(ns, query string, start, n int) ([]string, error) {
 			sizes = append(sizes, s)
 		}
 	}(); err != nil && err != redis.ErrNil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	tempKey := ns + strconv.FormatInt(time.Now().UnixNano()^rand.Int63(), 36)
@@ -129,11 +117,12 @@ func Search(ns, query string, start, n int) ([]string, error) {
 	}
 
 	if len(idfs) == 0 {
-		return nil, nil
+		return nil, 0, nil
 	}
 
 	pipe.Do("ZUNIONSTORE", append(append(args, "WEIGHTS"), idfs...)...)
 	ids, err := redis.Strings(pipe.Do("ZREVRANGE", tempKey, start, start+n-1))
+	total, _ := redis.Int(pipe.Do("ZCARD", tempKey))
 	pipe.Do("DEL", tempKey)
-	return ids, err
+	return ids, total, err
 }
