@@ -55,6 +55,11 @@
             {{if not .IsYou}}
             <a href="/user/twohops/{{.ID}}" class="tmpl-link-text icon-connectdevelop">关系</a>
             {{end}}
+
+            {{$iploc := .RecentIPLocation}}
+            {{if $iploc}}
+            <i class=icon-location></i><b>{{$iploc}}</b>
+            {{end}}
             </div><!--
         --></pre>
     </div>

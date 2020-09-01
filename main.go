@@ -31,6 +31,7 @@ func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	common.MustLoadConfig("config.json")
+	common.LoadIPLocation()
 
 	redisConfig := &kv.RedisConfig{
 		Addr: common.Cfg.RedisAddr,
@@ -110,13 +111,8 @@ func main() {
 					continue
 				}
 				var date time.Time
-				var loc = "-"
-				var data = strings.Split(part, "/")
-				if common.Cfg.IPIPDB != nil {
-					if info, _ := common.Cfg.IPIPDB.FindInfo(data[0], "CN"); info != nil {
-						loc = info.CountryName + "-" + info.RegionName
-					}
-				}
+				data := strings.Split(part, "/")
+				loc, _ := common.LookupIP(data[0])
 				if len(data) > 1 {
 					ts, _ := strconv.ParseInt(data[1], 36, 64)
 					date = time.Unix(ts, 0)

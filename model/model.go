@@ -169,6 +169,22 @@ func (u User) DisplayName() string {
 	return u.CustomName + " (" + marker + u.ID + ")"
 }
 
+func (u User) RecentIPLocation() string {
+	if u.Settings().HideLocation {
+		return ""
+	}
+	for _, part := range strings.Split(u.DataIP, ",") {
+		part = strings.Trim(strings.TrimSpace(part), "{}")
+		if len(part) == 0 {
+			continue
+		}
+		var data = strings.Split(part, "/")
+		_, loc := common.LookupIP(data[0])
+		return loc
+	}
+	return ""
+}
+
 func (u User) IsFollowing() bool { return u._IsFollowing }
 
 func (u User) IsFollowingNotAccepted() bool { return u._IsFollowingNotAccepted }
@@ -242,6 +258,7 @@ type UserSettings struct {
 	OnlyMyFollowingsCanFollow  bool      `json:"mffm,omitempty"`
 	OnlyMyFollowingsCanMention bool      `json:"mfcm,omitempty"`
 	HideLikesInTimeline        bool      `json:"slit,omitempty"`
+	HideLocation               bool      `json:"hl,omitempty"`
 	Description                string    `json:"desc,omitempty"`
 	FollowerNeedsAcceptance    time.Time `json:"pdfollow,omitempty"`
 }

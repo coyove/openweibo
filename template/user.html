@@ -139,6 +139,15 @@ input[type=number] {
                     </tr>
                     <tr>
                         <td>
+                            <input type=checkbox {{if .User.Settings.HideLocation}}checked{{end}} id=hl
+                                   class=icon-input-checkbox
+                                   onchange="updateSetting(this,'hl',this.checked?'1':'')">
+                            <i class='icon-ok-circled2'></i>
+                            <label for=hl>隐藏我的IP位置</label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
                             <input type=checkbox {{if .User.Settings.OnlyMyFollowingsCanFollow}}checked{{end}} id=mffm
                                    class=icon-input-checkbox
                                    onchange="updateSetting(this,'mffm',this.checked?'1':'')">

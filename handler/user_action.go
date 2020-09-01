@@ -341,6 +341,14 @@ func APIUpdateUserSettings(g *gin.Context) {
 			g.String(200, err.Error())
 			return
 		}
+	case g.PostForm("set-hl") != "":
+		if _, err := dal.DoUpdateUser(&dal.UpdateUserRequest{
+			ID:        u.ID,
+			SettingHL: aws.Bool(g.PostForm("hl") != ""),
+		}); err != nil {
+			g.String(200, err.Error())
+			return
+		}
 	case g.PostForm("set-slit") != "":
 		if _, err := dal.DoUpdateUser(&dal.UpdateUserRequest{
 			ID:          u.ID,

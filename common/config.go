@@ -9,8 +9,6 @@ import (
 	"io/ioutil"
 	"net"
 	"regexp"
-
-	"github.com/ipipdotnet/ipdb-go"
 )
 
 var Cfg = struct {
@@ -39,7 +37,6 @@ var Cfg = struct {
 	S3Bucket        string
 	RedisAddr       string
 	ReadOnly        bool
-	IPIPDatabase    string
 	HCaptchaSiteKey string
 	HCaptchaSecKey  string
 	SMTPServer      string
@@ -50,7 +47,6 @@ var Cfg = struct {
 	Blk               cipher.Block
 	KeyBytes          []byte
 	IPBlacklistParsed []*net.IPNet
-	IPIPDB            *ipdb.City
 }{
 	MediaDomain:     "/i",
 	TokenTTL:        10,
@@ -87,14 +83,6 @@ func MustLoadConfig(path string) {
 	for _, addr := range Cfg.IPBlacklist {
 		_, subnet, _ := net.ParseCIDR(addr)
 		Cfg.IPBlacklistParsed = append(Cfg.IPBlacklistParsed, subnet)
-	}
-
-	if Cfg.IPIPDatabase != "" {
-		db, err := ipdb.NewCity(Cfg.IPIPDatabase)
-		if err != nil {
-			panic(err)
-		}
-		Cfg.IPIPDB = db
 	}
 }
 

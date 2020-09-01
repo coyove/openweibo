@@ -35,6 +35,7 @@ type (
 		SettingFoldImages  *bool
 		SettingDescription *string
 		SettingMFFM        *bool
+		SettingHL          *bool
 		SettingMFCM        *bool
 		SettingSLIT        *bool
 		SettingFwAccept    *bool
@@ -85,6 +86,7 @@ func DoUpdateUser(rr *UpdateUserRequest) (model.User, error) {
 		rr.SettingMFFM != nil ||
 		rr.SettingMFCM != nil ||
 		rr.SettingFwAccept != nil ||
+		rr.SettingHL != nil ||
 		rr.SettingSLIT != nil {
 
 		sid := "u/" + id + "/settings"
@@ -97,6 +99,7 @@ func DoUpdateUser(rr *UpdateUserRequest) (model.User, error) {
 		setIfValid(&u.OnlyMyFollowingsCanFollow, rr.SettingMFFM)
 		setIfValid(&u.OnlyMyFollowingsCanMention, rr.SettingMFCM)
 		setIfValid(&u.HideLikesInTimeline, rr.SettingSLIT)
+		setIfValid(&u.HideLocation, rr.SettingHL)
 
 		if rr.SettingFwAccept != nil {
 			if *rr.SettingFwAccept {
