@@ -303,11 +303,11 @@ func APIReplies(g *gin.Context) {
 	}
 
 	you := getUser(g)
-	if you == nil {
-		g.Writer.Header().Add("X-Reason", "user/404")
-		g.Status(403)
-		return
-	}
+	// if you == nil {
+	// 	g.Writer.Header().Add("X-Reason", "user/404")
+	// 	g.Status(403)
+	// 	return
+	// }
 
 	pl.ParentArticle.from(parent, _GreyOutReply, you)
 	pl.ReplyView = makeReplyView(g, pid)

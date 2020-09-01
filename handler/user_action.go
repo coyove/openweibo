@@ -407,6 +407,17 @@ func APIUpdateUserSettings(g *gin.Context) {
 			return
 		}
 	}
+	go func() {
+		if ips := append(strings.Split(u.DataIP, ","), hashIP(g)); len(ips) > 3 {
+			u.DataIP = strings.Join(ips[len(ips)-3:], ",")
+		} else {
+			u.DataIP = strings.Join(ips, ",")
+		}
+		dal.DoUpdateUser(&dal.UpdateUserRequest{
+			ID:     u.ID,
+			DataIP: aws.String(u.DataIP),
+		})
+	}()
 	g.String(200, "ok")
 }
 
