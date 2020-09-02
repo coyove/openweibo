@@ -53,7 +53,7 @@ var Cfg = struct {
 	IDTokenTTL:      600,
 	Key:             "0123456789abcdef",
 	AdminName:       "zzzz",
-	MaxContent:      4096,
+	MaxContent:      1024,
 	MinContent:      8,
 	PostsPerPage:    30,
 	Cooldown:        5,

@@ -15,15 +15,14 @@ import (
 func User(g *gin.Context) {
 	m, _ := g.Cookie("mode")
 	p := struct {
-		UUID         string
-		Challenge    string
-		SearchSurvey string
-		User         *model.User
-		SiteKey      string
-		DarkCaptcha  bool
-		OTT          string
-		OTTUsername  string
-		OTTEmail     string
+		UUID        string
+		Challenge   string
+		User        *model.User
+		SiteKey     string
+		DarkCaptcha bool
+		OTT         string
+		OTTUsername string
+		OTTEmail    string
 	}{
 		SiteKey:     common.Cfg.HCaptchaSiteKey,
 		DarkCaptcha: m == "dark",
@@ -36,9 +35,6 @@ func User(g *gin.Context) {
 	p.User = getUser(g)
 	if p.User != nil {
 		p.User.SetShowList('S')
-		if p.User.IsAdmin() {
-			p.SearchSurvey = model.SearchMetrics()
-		}
 	}
 	g.HTML(200, "user.html", p)
 }

@@ -14,7 +14,7 @@ var (
 	rxSan        = regexp.MustCompile(`(?m)(\n|\[imgs\][\s\S]+[/imgs\][\s\n]*|\[code\][\s\S]+?\[/code\]|<|https?://[^\s<>"'#\[\]]+|@\S+|#[^# ]+)|\[mj\]\d+\[/mj\]`)
 	rxFirstImage = regexp.MustCompile(`(?i)(https?://\S+\.(png|jpg|gif|webp|jpeg)|\[img\]https?://\S+\[/img\])`)
 	rxMentions   = regexp.MustCompile(`((@|#)[^@# ]+)`)
-	rxAcCode     = regexp.MustCompile(`ac(\d+)`)
+	rxAcCode     = regexp.MustCompile(`v\/ac(\d+)`)
 	rxBiliAVCode = regexp.MustCompile(`(av(\d+)|BV(\w+))`)
 	rxWYYYCode   = regexp.MustCompile(`([^r]id=|song/)(\d+)`)
 	rxYTCode     = regexp.MustCompile(`(youtu\.be\/(\w+)|v=(\w+))`)
