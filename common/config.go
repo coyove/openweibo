@@ -89,6 +89,7 @@ func MustLoadConfig(path string) {
 
 type CSSConfig struct {
 	BodyBG            string // main background color
+	ContainerBG       string
 	InputBG           string
 	Link              string
 	Navbar            string
@@ -127,7 +128,8 @@ type CSSConfig struct {
 
 var CSSLightConfig = CSSConfig{
 	InputBG:           "#fff",
-	BodyBG:            "#fff",
+	BodyBG:            "#fcfcfc",
+	ContainerBG:       "#fff",
 	Button:            "rgb(var(--pure-material-primary-rgb, 33, 150, 243))",
 	ButtonDisabled:    "rgba(var(--pure-material-onsurface-rgb, 0, 0, 0), 0.38)",
 	Link:              "#2a66d9",
@@ -163,13 +165,14 @@ var CSSLightConfig = CSSConfig{
 
 var CSSDarkConfig = CSSConfig{
 	Mode:              "dark",
-	BodyBG:            "#1b2838",
+	BodyBG:            "#273a50",
+	ContainerBG:       "#1b2838",
 	InputBG:           "#2a3f5a",
 	Button:            "#67c1f5",
 	ButtonDisabled:    "#666",
 	Row:               "#111822",
 	RowHeader:         "#080808",
-	Navbar:            "#2d162d",
+	Navbar:            "#402040",
 	NavbarBottom:      "#09080a",
 	NavbarTitlebar:    "#281a28",
 	UserBoxTitle:      "#171523",
