@@ -222,38 +222,7 @@ a[value=false] .icon-eye-off:before {
     color: {{.Link}};
 }
 .dz-default:after {
-  color: {{.Button}};
+    color: {{.MidGrayText}};
     content: '图片';
 }
-.dz-default:before {
-  font-family: "fontello";
-  font-style: normal;
-  font-weight: normal;
-  speak: never;
- 
-  display: inline-block;
-  text-decoration: inherit;
-  width: 1em;
-  margin-right: .2em;
-  text-align: center;
-  /* opacity: .8; */
- 
-  /* For safety - reset parent styles, that can break glyph codes*/
-  font-variant: normal;
-  text-transform: none;
- 
-  /* fix buttons height, for twitter bootstrap */
-  line-height: 1em;
- 
-  /* Animation center compensation - margins should be symmetric */
-  /* remove if not needed */
-  margin-right: .5em;
- 
-  /* you can be more comfortable with increased icons size */
-  /* font-size: 120%; */
- 
-  /* Uncomment for 3D effect */
-  /* text-shadow: 1px 1px 1px rgba(127, 127, 127, 0.3); */
-  content: '\e802';
-  color: {{.Button}};
-}
+

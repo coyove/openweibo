@@ -34,13 +34,6 @@
                 </div>
 
                 <div class="post-options">
-                    <button class=gbutton onclick="
-                        $q('#rv-{{.UUID}} [name=tr-image-uploader]').style.display = null;
-                        $q('#rv-{{.UUID}} [name=tr-image-uploader] div.image-uploader').click();
-                        ">图片<i class="icon-down-dir right"></i></button>
-                </div>
-
-                <div class="post-options">
                     <button class=gbutton>选项<i class="icon-down-dir right"></i></button>
                     <ul>
                         <li>
@@ -91,16 +84,8 @@
             </td>
         </tr>
 
-        <tr name="tr-image-uploader" style="display:none">
-            <td style="padding-top: 0">
-                <div class="image-uploader dropzone tmpl-dark-border" style="border: dashed 1px #ccc;background:rgba(0,0,0,0.05)">
-                    <input type="file" multiple style="display:none" name="file">
-                </div>
-            </td>
-        </tr>
-
         <tr>
-            <td style="padding:0" colspan=2>
+            <td style="padding:0;position:relative" colspan=2>
                 <textarea
                     name=content
                     maxlength=1024
@@ -111,6 +96,15 @@
                 <div class="post-button icon-comment" onclick="onPost('{{.UUID}}', this, '{{.ReplyTo}}')"></div>
             </td>
         </tr>
+
+        <tr name="tr-image-uploader">
+            <td style="padding: 0">
+                <div class="image-uploader dropzone tmpl-dark-border">
+                    <input type="file" multiple style="display:none" name="file">
+                </div>
+            </td>
+        </tr>
+
     </table>
 </div>
 
