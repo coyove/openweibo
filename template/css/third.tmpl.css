@@ -155,6 +155,9 @@
 .icon-reply-outline.replied:before {
     transform:rotate(-135deg); 
 }
+.post-options [name="anon"][value="1"] .icon-user-secret {
+    color: {{.GreenText}};
+}
 .post-options [name="reply-lock"]:not([value="0"]) .icon-lock {
     display: block;
     color: {{.GreenText}};
