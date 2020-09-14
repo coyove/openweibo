@@ -23,6 +23,7 @@ function onPost(uuid, el, p) {
         content: ta.value,
         media: ids.join(';'),
         nsfw: $q("#" + cid + " [name=isnsfw]").checked ? "1" : "",
+        anon: $q("#" + cid + " [name=anon]").checked ? "1" : "",
         no_master: $q("#" + cid + " [name=nomaster]").checked ? "1" : "",
         no_timeline: $q("#" + cid + " [name=notimeline]").checked ? "1" : "",
         stick_on_top: $q("#" + cid + " [name=stickontop]").checked ? "1" : "",

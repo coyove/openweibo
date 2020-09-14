@@ -479,6 +479,7 @@ function updateSetting(el, field, value, cb, errcb) {
 }
 
 function showInfoBox(el, uid) {
+    if (uid.substr(0,1) == "?") return;
     if (el.BLOCK) return;
     el.BLOCK = true;
 

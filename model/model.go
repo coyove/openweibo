@@ -54,6 +54,7 @@ type Article struct {
 	ReplyLockMode byte              `json:"lm,omitempty"`
 	PostOptions   byte              `json:"po,omitempty"`
 	NSFW          bool              `json:"nsfw,omitempty"`
+	Anonymous     bool              `json:"anon,omitempty"`
 	Content       string            `json:"content,omitempty"`
 	Media         string            `json:"M,omitempty"`
 	Author        string            `json:"author,omitempty"`
@@ -134,6 +135,7 @@ type User struct {
 	_IsBlocking             bool
 	_IsYou                  bool
 	_IsInvalid              bool
+	_IsAnon                 bool
 	_ShowList               byte
 	_Settings               UserSettings
 }
@@ -197,7 +199,11 @@ func (u User) IsYou() bool { return u._IsYou }
 
 func (u User) IsInvalid() bool { return u._IsInvalid }
 
+func (u User) IsAnon() bool { return u._IsAnon }
+
 func (u *User) SetInvalid() *User { u._IsInvalid = true; return u }
+
+func (u *User) SetIsAnon(v bool) *User { u._IsAnon = v; return u }
 
 func (u User) ShowList() byte { return u._ShowList }
 

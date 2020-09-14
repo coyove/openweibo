@@ -61,6 +61,11 @@
                             <label for="notimeline{{.UUID}}">不同步至我的时间线</label>
                         </li>
                         {{else}}
+			<li>
+                            <input type=checkbox name=anon id="anon{{.UUID}}" class=icon-input-checkbox>
+                            <i class=icon-ok-circled2></i>
+                            <label for="anon{{.UUID}}">匿名</label>
+                        </li>
                         <li>
                             <input type=checkbox name=nomaster id="nomaster{{.UUID}}" class=icon-input-checkbox>
                             <i class=icon-ok-circled2></i>

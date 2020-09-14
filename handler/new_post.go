@@ -76,6 +76,7 @@ func APINew(g *gin.Context) {
 		Media:         image,
 		IP:            ip,
 		NSFW:          g.PostForm("nsfw") != "",
+		Anonymous:     g.PostForm("anon") != "",
 		ReplyLockMode: byte(rlm),
 	}
 	a.SetStickOnTop(g.PostForm("stick_on_top") != "")

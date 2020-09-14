@@ -1,3 +1,8 @@
+{{if .IsAnon}}
+<span class=post-author>
+    <strong class=tmpl-mid-text>* 匿名 *</strong>
+</span>
+{{else}}
 <span class=post-author data="{{.CustomName}}">
     {{if .Banned}}<span><strong>封禁</strong></span>{{end}}
     <a href="/t/{{urlquery .ID}}" class="tmpl-normal-text">
@@ -21,3 +26,4 @@
     | 设置
     {{end}}
 </span>
+{{end}}

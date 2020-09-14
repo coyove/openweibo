@@ -200,6 +200,18 @@ func Timeline(g *gin.Context) {
 	}
 
 	a, next := dal.WalkMulti(pl.MediaOnly, int(common.Cfg.PostsPerPage), cursors...)
+	if pl.IsUserTimeline && pl.User.ID != "master" {
+		// Remove anonymous articles from single UserTimeline because otherwise we are just idiots
+		lastIsAnon := false // this ensure no one can post two adjacent anonymous articles
+		for i := len(a) - 1; i >= 0; i-- {
+			if a[i].Anonymous && !lastIsAnon {
+				a = append(a[:i], a[i+1:]...)
+				lastIsAnon = true
+			} else {
+				lastIsAnon = false
+			}
+		}
+	}
 	fromMultiple(&pl.Articles, a, 0, pl.You)
 
 	pl.Next = ik.CombineIDs([]byte(pendingFCursor), next...)

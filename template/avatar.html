@@ -1,5 +1,5 @@
 {{if .Avatar}}
-                    src="{{.AvatarURL}}" 
-                    {{else}}
-                    src=":" onerror="this.src=createAvatar('{{.ID}}').toDataURL('image/jpeg')"
-                            {{end}}
+    src="{{.AvatarURL}}" 
+{{else}}
+    src="/404-page" onerror="this.src=createAvatar('{{.ID}}').toDataURL('image/jpeg')"
+{{end}}

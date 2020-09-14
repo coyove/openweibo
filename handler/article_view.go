@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"html/template"
 	"log"
 	"strings"
@@ -68,10 +69,17 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 	a.Cmd = string(a2.Cmd)
 	a.CreateTime = a2.CreateTime
 	a.History = a2.History
+
 	a.Author, _ = dal.WeakGetUser(a2.Author)
 	if a.Author == nil {
 		a.Author = (&model.User{ID: a2.Author}).SetInvalid()
 	}
+	if a2.Anonymous {
+		a.Author.SetIsAnon(true)
+		a.Author.ID = fmt.Sprintf("?%d", time.Now().UnixNano()/1e3)
+		a.Author.Avatar = 0
+	}
+
 	a.You = u
 	if a.You == nil {
 		a.You = &model.User{}
