@@ -5,12 +5,16 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"sort"
 	"strconv"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/coyove/iis/common"
+	"github.com/coyove/iis/dal/ctr"
 	"github.com/coyove/iis/dal/kv"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
@@ -22,6 +26,7 @@ var S3 *kv.S3Storage
 var m struct {
 	db          KeyValueOp
 	activeUsers *kv.GlobalCache
+	ctr         *ctr.Counter
 }
 
 func Init(redisConfig *kv.RedisConfig, region string, ak, sk string) {
@@ -29,8 +34,22 @@ func Init(redisConfig *kv.RedisConfig, region string, ak, sk string) {
 
 	if region == "" {
 		db = kv.NewDiskKV()
+		os.MkdirAll("tmp/ctr", 0777)
+		m.ctr = ctr.New(100, &ctr.FSBack{Dir: "tmp/ctr"})
 	} else {
 		db = kv.NewDynamoKV(region, ak, sk)
+		sess, err := session.NewSession(&aws.Config{
+			Region:      aws.String(region),
+			Credentials: credentials.NewStaticCredentials(ak, sk, ""),
+		})
+		if err != nil {
+			panic(err)
+		}
+		dy, err := ctr.NewDynamoBack("counter", sess)
+		if err != nil {
+			panic(err)
+		}
+		m.ctr = ctr.New(100, dy)
 	}
 
 	c := kv.NewGlobalCache(redisConfig)
@@ -89,6 +108,16 @@ func getterArticle(getter func(string) ([]byte, error), id string, dontOverrideN
 	if err != nil {
 		return nil, err
 	}
+
+	if a2.AID == 0 && ik.ParseID(a2.ID).Header() == ik.IDGeneral {
+		aid, err := m.ctr.Get()
+		if err != nil {
+			log.Println("fill aid", err)
+		} else {
+			a2.AID = aid
+		}
+	}
+
 	if len(dontOverrideNextID) == 1 && dontOverrideNextID[0] {
 		return a2, nil
 	}

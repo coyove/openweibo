@@ -10,12 +10,12 @@ import (
 
 type FSBack struct {
 	sync.Mutex
-	dir string
+	Dir string
 }
 
 func (m *FSBack) Set(k int64, v int64) int64 {
 	m.Lock()
-	path := m.dir + "/" + fmt.Sprint(k)
+	path := m.Dir + "/" + fmt.Sprint(k)
 	buf, _ := ioutil.ReadFile(path)
 	old, _ := strconv.ParseInt(string(buf), 10, 64)
 	ioutil.WriteFile(path, []byte(fmt.Sprint(v)), 0777)
@@ -26,7 +26,7 @@ func (m *FSBack) Set(k int64, v int64) int64 {
 func (m *FSBack) Put(k int64, v int64) (int64, bool) {
 	m.Lock()
 	defer m.Unlock()
-	path := m.dir + "/" + fmt.Sprint(k)
+	path := m.Dir + "/" + fmt.Sprint(k)
 	if _, err := os.Stat(path); err == nil {
 		buf, _ := ioutil.ReadFile(path)
 		old, _ := strconv.ParseInt(string(buf), 10, 64)

@@ -49,6 +49,7 @@ const (
 
 type Article struct {
 	ID            string            `json:"id"`
+	AID           int64             `json:"Ai,omitempty"`
 	Replies       int               `json:"rs,omitempty"`
 	Likes         int32             `json:"like,omitempty"`
 	ReplyLockMode byte              `json:"lm,omitempty"`

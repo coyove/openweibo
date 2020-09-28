@@ -40,7 +40,7 @@ func New(stride int64, backend Backend) *Counter {
 	c := &Counter{
 		bk:     backend,
 		stride: stride,
-		in:     make(chan int64, stride*2/3),
+		in:     make(chan int64, stride/2),
 	}
 	go func() {
 		for {
