@@ -56,8 +56,17 @@ func Home(g *gin.Context) {
 }
 
 func S(g *gin.Context) {
-	var p = struct{ ID string }{"S" + g.Param("id")}
-	g.HTML(200, "S.html", p)
+	id := "S" + g.Param("id")
+	if g.Query("raw") != "" {
+		a, err := dal.GetArticle(id)
+		if err != nil {
+			NotFound(g)
+			return
+		}
+		g.String(200, a.Content)
+		return
+	}
+	g.HTML(200, "S.html", struct{ ID string }{id})
 }
 
 func TagTimeline(g *gin.Context) {
