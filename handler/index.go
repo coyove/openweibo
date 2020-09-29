@@ -60,13 +60,16 @@ func S(g *gin.Context) {
 	if g.Query("raw") != "" {
 		a, err := dal.GetArticle(id)
 		if err != nil {
+			log.Println(err)
 			NotFound(g)
 			return
 		}
 		g.String(200, a.Content)
 		return
 	}
-	g.HTML(200, "S.html", struct{ ID string }{id})
+	g.HTML(200, "S.html", struct {
+		ID, ShortID string
+	}{id, g.Query("short")})
 }
 
 func TagTimeline(g *gin.Context) {
@@ -77,7 +80,6 @@ func TagTimeline(g *gin.Context) {
 		User:          &model.User{},
 		IsTagTimeline: true,
 		MediaOnly:     g.Query("media") != "",
-		ReplyView:     makeReplyView(g, ""),
 	}
 
 	// if pl.You == nil {
@@ -109,6 +111,10 @@ func Timeline(g *gin.Context) {
 		MediaOnly: g.Query("media") != "",
 	}
 
+	if pid := g.Query("pid"); pid != "" {
+		g.Redirect(302, "/S/"+pid[1:])
+		return
+	}
 	// if pl.You == nil {
 	// 	redirectVisitor(g)
 	// 	return
@@ -229,10 +235,9 @@ func Timeline(g *gin.Context) {
 
 func Inbox(g *gin.Context) {
 	pl := ArticlesTimelineView{
-		ReplyView: makeReplyView(g, ""),
-		You:       getUser(g),
-		User:      getUser(g),
-		IsInbox:   true,
+		You:     getUser(g),
+		User:    getUser(g),
+		IsInbox: true,
 	}
 
 	if pl.You == nil {
@@ -365,7 +370,6 @@ func APIReplies(g *gin.Context) {
 
 func Search(g *gin.Context) {
 	pl := ArticlesTimelineView{
-		ReplyView:        makeReplyView(g, ""),
 		You:              getUser(g),
 		User:             getUser(g),
 		Tag:              g.Param("query"),

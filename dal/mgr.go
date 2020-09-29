@@ -22,11 +22,11 @@ import (
 
 var Masters = 10
 var S3 *kv.S3Storage
+var Ctr *ctr.Counter
 
 var m struct {
 	db          KeyValueOp
 	activeUsers *kv.GlobalCache
-	ctr         *ctr.Counter
 }
 
 func Init(redisConfig *kv.RedisConfig, region string, ak, sk string) {
@@ -35,7 +35,7 @@ func Init(redisConfig *kv.RedisConfig, region string, ak, sk string) {
 	if region == "" {
 		db = kv.NewDiskKV()
 		os.MkdirAll("tmp/ctr", 0777)
-		m.ctr = ctr.New(100, &ctr.FSBack{Dir: "tmp/ctr"})
+		Ctr = ctr.New(100, &ctr.FSBack{Dir: "tmp/ctr"})
 	} else {
 		db = kv.NewDynamoKV(region, ak, sk)
 		sess, err := session.NewSession(&aws.Config{
@@ -49,7 +49,7 @@ func Init(redisConfig *kv.RedisConfig, region string, ak, sk string) {
 		if err != nil {
 			panic(err)
 		}
-		m.ctr = ctr.New(100, dy)
+		Ctr = ctr.New(100, dy)
 	}
 
 	c := kv.NewGlobalCache(redisConfig)
@@ -108,16 +108,6 @@ func getterArticle(getter func(string) ([]byte, error), id string, dontOverrideN
 	if err != nil {
 		return nil, err
 	}
-
-	if a2.AID == 0 && ik.ParseID(a2.ID).Header() == ik.IDGeneral {
-		aid, err := m.ctr.Get()
-		if err != nil {
-			log.Println("fill aid", err)
-		} else {
-			a2.AID = aid
-		}
-	}
-
 	if len(dontOverrideNextID) == 1 && dontOverrideNextID[0] {
 		return a2, nil
 	}

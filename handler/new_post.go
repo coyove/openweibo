@@ -79,7 +79,12 @@ func APINew(g *gin.Context) {
 		Anonymous:     g.PostForm("anon") != "",
 		ReplyLockMode: byte(rlm),
 	}
+
 	a.SetStickOnTop(g.PostForm("stick_on_top") != "")
+	a.AID, err = dal.Ctr.Get()
+	if err != nil {
+		log.Println("AID", err)
+	}
 
 	if g.PostForm("no_master") == "1" {
 		a.PostOptions |= model.PostOptionNoMasterTimeline
@@ -138,6 +143,10 @@ func doReply(g *gin.Context) {
 		Author:        u.ID,
 		IP:            ip,
 		ReplyLockMode: byte(rlm),
+	}
+	a.AID, err = dal.Ctr.Get()
+	if err != nil {
+		log.Println("AID", err)
 	}
 
 	if noTimeline || u.Settings().DoFollowerNeedsAcceptance() {

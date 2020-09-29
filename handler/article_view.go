@@ -15,6 +15,7 @@ import (
 
 type ArticleView struct {
 	ID            string
+	ShortID       string
 	Others        []*ArticleView
 	Parent        *ArticleView
 	Author        *model.User
@@ -61,6 +62,10 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 	}
 
 	a.ID = a2.ID
+	if a2.AID != 0 {
+		a.ShortID, _ = ik.StringifyShortId(a2.AID)
+	}
+
 	a.Replies = int(a2.Replies)
 	a.Likes = int(a2.Likes)
 	a.ReplyLockMode = a2.ReplyLockMode

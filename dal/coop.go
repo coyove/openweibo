@@ -314,6 +314,14 @@ func DoInsertArticle(r *InsertArticleRequest) (A, R model.Article, E error) {
 		return model.Article{}, model.Article{}, err
 	}
 
+	if a.AID != 0 {
+		go func() {
+			if err := m.db.Set("fw/"+fmt.Sprint(a.AID), []byte(a.ID)); err != nil {
+				log.Println(err)
+			}
+		}()
+	}
+
 	if err := m.db.Set(root.ID, root.Marshal()); err != nil {
 		return model.Article{}, model.Article{}, err
 	}

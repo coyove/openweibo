@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -26,7 +27,28 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var rxShortID = regexp.MustCompile(`\d{4}-?\d{4}-?\d{4}`)
+
 func NotFound(g *gin.Context) {
+	if path := strings.TrimPrefix(g.Request.URL.Path, "/"); rxShortID.MatchString(path) {
+		id := strings.Replace(path, "-", "", -1)
+		shortID, _ := strconv.ParseInt(id, 10, 64)
+		aid, err := ik.ParseShortId(shortID)
+		if err != nil {
+			log.Println(err)
+			goto SKIP
+		}
+		buf, err := dal.ModKV().WeakGet("fw/" + fmt.Sprint(aid))
+		if err != nil || len(buf) == 0 {
+			log.Println(err)
+			goto SKIP
+		}
+		tmp, _ := ik.StringifyShortId(aid)
+		g.Redirect(302, "/S/"+string(buf)[1:]+"?short="+tmp+"&"+g.Request.URL.Query().Encode())
+		return
+	}
+
+SKIP:
 	p := struct {
 		Accept bool
 		Msg    string
@@ -45,7 +67,6 @@ func getUser(g *gin.Context) *model.User {
 
 type ReplyView struct {
 	UUID    string
-	PID     string
 	ReplyTo string
 }
 
@@ -53,7 +74,6 @@ func makeReplyView(g *gin.Context, reply string) ReplyView {
 	r := ReplyView{}
 	r.UUID = strconv.FormatInt(time.Now().UnixNano(), 16)
 	r.ReplyTo = reply
-	r.PID = g.Query("pid")
 	return r
 }
 

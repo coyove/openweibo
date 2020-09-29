@@ -379,7 +379,7 @@ function preLoadMore(tlid, nextBtn) {
 }
 
 // Nested replies view
-function showReply(aid, closeToHome) {
+function showReply(aid, closeToHome, shortid) {
     // We have something popped up already, wait them to be removed first
     if (window.REGIONS && window.REGIONS.length) return;
 
@@ -411,7 +411,7 @@ function showReply(aid, closeToHome) {
         "<div style='margin:0 auto' class='container rows replies'><div class=row style='padding:0.5em;line-height:30px;display:flex'>" +
         "<i class='control icon-left-small'></i>" + 
         "<input style='margin:0 0.5em;width:100%;text-align:center;border:none;background:transparent;cursor:pointer' value='" +
-        location.protocol + "//" +  location.host + "/S/" + aid.substring(1) +
+            location.protocol + "//" +  location.host + "/" + (shortid ? shortid : "S/" + aid.substring(1)) +
         "' onclick='this.select();document.execCommand(\"copy\");$popup(\"已复制\")' readonly>" +
         "<i class='control icon-link' onclick='this.previousElementSibling.click()'></i>" + 
         "</div></div>");

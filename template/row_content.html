@@ -81,7 +81,7 @@
         {{end}}
         {{end}}
 
-        <a class="reply-box {{if .GreyOutReply}}tmpl-light-text{{end}}" href="javascript:showReply('{{.ID}}')">
+        <a class="reply-box {{if .GreyOutReply}}tmpl-light-text{{end}}" href="javascript:showReply('{{.ID}}', false, '{{.ShortID}}')">
             <i class="icon-reply-outline"></i>
             {{if .Replies}}{{.Replies}}{{end}}
         </a>
