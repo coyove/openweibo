@@ -4,7 +4,6 @@
     <link href="/s/fonts/fontello-embedded.css?ver=32" rel="stylesheet" type="text/css" media="all">
     <link rel="stylesheet" href="/s/assets/dropzone.min.css?ver=3" />
     <script src="/s/js/default.54.js"></script>
-    <script src="/s/js/newgen.1.js"></script>
     <script src="/s/js/post.19.js"></script>
     <script src="/s/js/tribute.min.js"></script>
     <script src="/s/assets/dropzone.min.js"></script>
@@ -67,41 +66,9 @@
 
         window.TRIBUTER = new Tribute({
             collection: [window.TRIBUTE_COL, window.TRIBUTE_COL_TAGS],
-        });
+	});
 
-        window.onmousemove = function(e) {
-            if (!window.REGTICK) {
-                window.requestAnimationFrame(function() {
-                    var x = e.clientX || e.left, y = e.clientY || e.top;
-                    window.REGIONS = (window.REGIONS || []).filter(function(rect) { return rect.valid; })
-                    window.REGIONS.forEach(function(rect) {
-                        var inside = false, margin = 5;
-                        rect.boxes.forEach(function(el) {
-                            var box = el.getBoundingClientRect();
-                            inside = inside || (
-                                x >= box.left - margin &&
-                                x <= box.right + margin &&
-                                y >= box.top - margin &&
-                                y <= box.bottom + margin);
-                        })
-                        if (!inside) {
-                            try {
-                                rect.callback(x, y);
-                            } catch(e) {
-                                console.log(e)
-                            }
-                            rect.valid = false;
-                        }
-                    })
-                    window.REGTICK = false;
-                });
-                window.REGTICK = true;
-            }
-        }
-        window.ontouchend = function(e) {
-            var el = e.changedTouches[0];
-            if (el) window.onmousemove(el);
-        }
+      window.DUMMY_USER_HTML = "{{emptyUser}}";
     </script>
     </head>
 

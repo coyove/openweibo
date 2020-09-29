@@ -82,9 +82,9 @@ func main() {
 		"cssVersion": func() string {
 			return cssVersion
 		},
-		"emptyUser": func() model.User {
+		"emptyUser": func() string {
 			u := model.Dummy
-			return u
+			return middleware.RenderTemplateString("user_public.html", u)
 		},
 		"blend": func(args ...interface{}) interface{} {
 			return args

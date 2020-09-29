@@ -36,9 +36,10 @@
         <div class="image-index open-blank image-enlarge-badge" onclick='window.open("{{$v}}");event.stopPropagation()'>原图 <i class=icon-export-alt></i></div>
         <span class="image-index long-image">长图</span>
         <span class="image-index image-enlarge-badge" style="{{if $one}}display:none{{end}}">{{printf "%X" (sub $i -1)}}</span>
+	<!--
         {{if ne $i (sub (len $.Urls) 1)}}
         <span
-            class="image-index image-next icon-down-big"
+            class="image-index image-next icon-up-big"
             onclick='(function(_this) {
                 try { _this.parentNode.parentNode.querySelector("button").click() } catch (e) {}
                 var el = _this.parentNode.parentNode.querySelector("[image-index=\"{{sub $i -1}}\"]");
@@ -60,6 +61,7 @@
             })(this)'>
         </span>
         {{end}}
+-->
     </div>
     {{end}}
 {{end}}

@@ -1,3 +1,38 @@
+window.onmousemove = function(e) {
+    if (!window.REGTICK) {
+	window.requestAnimationFrame(function() {
+	    var x = e.clientX || e.left, y = e.clientY || e.top;
+	    window.REGIONS = (window.REGIONS || []).filter(function(rect) { return rect.valid; })
+	    window.REGIONS.forEach(function(rect) {
+		var inside = false, margin = 5;
+		rect.boxes.forEach(function(el) {
+		    var box = el.getBoundingClientRect();
+		    inside = inside || (
+			x >= box.left - margin &&
+			    x <= box.right + margin &&
+			    y >= box.top - margin &&
+			    y <= box.bottom + margin);
+		})
+		if (!inside) {
+		    try {
+			rect.callback(x, y);
+		    } catch(e) {
+			console.log(e)
+		    }
+		    rect.valid = false;
+		}
+	    })
+	    window.REGTICK = false;
+	});
+	window.REGTICK = true;
+    }
+}
+
+window.ontouchend = function(e) {
+    var el = e.changedTouches[0];
+    if (el) window.onmousemove(el);
+}
+
 function $q(q, multi) {
     if (q.match(/^<\S+>$/)) return document.createElement(q.substring(1, q.length - 1));
     var el = document.querySelectorAll(q), ela = [];
@@ -6,10 +41,60 @@ function $q(q, multi) {
     return ela;
 }
 
-function $html(h) {
-    var div = $q("<div>")
-    div.innerHTML = h;
-    return div.firstElementChild
+function isString(a) {
+    return (Object.prototype.toString.call(a) === '[object String]');
+}
+
+function $html() {
+    var lastInputId;
+    var camel = function(e) {
+	return e.replace(/([A-Z])/g, function(u){return "-"+u.toLowerCase()})
+    }
+    var w = function(args) {
+	var div = document.createElement("div"), h = '';
+	for (var i in args) {
+	    var a = args[i];
+	    if (isString(a)) {
+		h += a + ' '
+	    } else {
+		var el = document.createElement(a.tag);
+		if (a.tag == 'button') el.setAttribute('class', 'gbutton');
+
+		var _append = function(a) {
+		    if (isString(a)) {
+			el.appendChild(document.createTextNode(a));
+		    } else if (Object.prototype.toString.call(a) === '[object Array]') {
+			for (var i in a) _append(w([ a[i] ]));
+		    } else {
+			el.appendChild(a.tagName ? a : w([a]));
+		    }
+		}
+		for (var k in a) {
+		    if (k === 'tag') continue;
+		    if (k === 'style') {
+			var style = '';
+			for (var name in a[k])
+			    style += camel(name) + ':' + a[k][name] + ';';
+			el.setAttribute("style", style);
+		    } else if (k === "checked" || k === "selected" || k === 'readonly') {
+			a[k] ? el.setAttribute(k, k) : 0;
+		    } else if (k === "children") {
+			_append(a[k]);
+		    } else {
+			el.setAttribute(camel(k), isString(a[k]) ? a[k].replace('$last-input-id', lastInputId) : a[k]);
+		    }
+		}
+		if (el.tagName == 'INPUT' && !el.id) {
+		    lastInputId = btoa('' + Math.random()).replace('=', '');
+		    el.id = lastInputId;
+		}
+		h += el.outerHTML;
+	    }
+	}
+	div.innerHTML = h;
+	return div.firstElementChild
+    }
+    return w(arguments);
 }
 
 function $value(el) {
@@ -113,7 +198,7 @@ function loadKimochi(el) {
     if (ul.childNodes.length) return;
 
     for (var i = 0; i <= 44; i++) {
-        var li = z.html('<li>'), a = z.html('<a>'), img = z.html('<img>');
+        var li = $html({tag:'li'}), a = $html({tag:'a'}), img = $html({tag:'img'});
         img.src = '/s/emoji/emoji' + i + '.png';
         if (i == 0) {
             img.className = 'kimochi-selector';
@@ -196,8 +281,11 @@ function dropTopArticle(el, id) {
 }
 
 function lockArticle(el, id) {
-    var div = $html('<div style="position:absolute;box-shadow:0 1px 5px rgba(0,0,0,.3);" class=tmpl-light-bg></div>'),
-        box = el.getBoundingClientRect(),
+    var div = $html({
+	tag: 'div',
+	style: {position:'absolute', boxShadow: '0 1px 5px rgba(0,0,0,.3)'},
+	class: 'tmpl-light-bg'
+    }), box = el.getBoundingClientRect(),
         bodyBox = document.body.getBoundingClientRect(),
         currentValue = $value(el),
         reg = {};
@@ -206,12 +294,22 @@ function lockArticle(el, id) {
     div.style.top = box.bottom - bodyBox.top + "px";
 
     var checkbox = function(i, t) {
-        var xid = "lala" + (Math.random() * 1000).toFixed(0);
-        var r = $html("<div style='margin:0.5em'>" +
-            "<input value=" + i + " type=radio name=reply-lock class=icon-input-checkbox id=" +
-            xid + (i == currentValue ? " checked" : "") + ">" +
-            "<i class='icon-ok-circled2'></i> <label for=" + xid + ">" + t + "</label></div>")
-        return r;
+	return $html({
+	    tag: "div",
+	    style: {margin: "0.5em"},
+	    children: [
+		{
+		    tag: 'input',
+		    value: i,
+		    type: "radio",
+		    name: "reply-lock",
+		    class: "icon-input-checkbox",
+		    checked: i == currentValue
+		}, 
+		{tag: 'i', class: "icon-ok-circled2"},
+		{tag: 'label', for: '$last-input-id', children: t}
+	    ]
+	})
     }
     div.appendChild(checkbox(0, "不限制回复"))
     div.appendChild(checkbox(1, "禁止回复"))
@@ -220,7 +318,11 @@ function lockArticle(el, id) {
     div.appendChild(checkbox(4, "我关注的人和我粉丝可回复"))
     document.body.appendChild(div)
 
-    if (id) div.appendChild($html("<div style='margin:0.5em;text-align:center'><button class=gbutton>更新设置</div></div>"))
+    if (id) div.appendChild($html({
+	tag: 'div',
+	style: {margin: '0.5em', textAlign: 'center'},
+	children: {tag: 'button', children: '更新设置'}
+    }))
 
     reg = { valid: true, boxes: [el, div], callback: function(x, y) {
         if (!id) {
@@ -239,9 +341,9 @@ function lockArticle(el, id) {
             stop();
             if (res != "ok") return res;
             el.setAttribute("value", v)
-            el.innerHTML = v > 0 ?
-                '<i class="tmpl-normal-text icon-lock"></i>' :
-                '<i class="tmpl-light-text icon-lock-open"></i>'
+            el.innerHTML = $html({
+		tag: 'i', class: v > 0 ? "tmpl-normal-text icon-lock" : "tmpl-light-text icon-lock-open"
+	    }).outerHTML;
             return "ok:回复设置更新"
         }, stop);
     }
@@ -263,18 +365,20 @@ function followBlock(el, m, id) {
     $post("/api2/follow_block", obj, function(res) {
         stop();
         if (res != "ok") return res;
-        el.setAttribute("value", obj[m] == "" ? "false" : "true");
+
+	var on = obj[m] != "";
+	el.setAttribute("value", on ? "true" : "false");
         if (m == "follow") {
-            el.innerHTML = '<i class=' + ((obj[m] != "") ? "icon-heart-broken" : "icon-user-plus") + "></i>";
-            return "ok:" + ((obj[m] != "") ? "已关注" + id : "已取消关注" + id);
+            el.innerHTML = $html({tag:'i',class: on ? "icon-heart-broken" : "icon-user-plus"}).outerHTML;
+            return "ok:" + (on ? "已关注" : "已取消关注") + id;
         } else if (m == "accept") {
             el.style.display = "none";
         } else {
             el = el.querySelector('i');
-            el.className = el.className.replace(/block-\S+/, '') + " block-" + (obj[m] != "");
+            el.className = el.className.replace(/block-\S+/, '') + " block-" + on;
             el = el.nextElementSibling;
-            if (el) el.innerText = obj[m] != "" ? "解除" : "拉黑";
-            return "ok:" + ((obj[m] != "") ? "已拉黑" + id : "已解除" + id + "拉黑状态")
+            if (el) el.innerText = on ? "解除" : "拉黑";
+            return "ok:" + (on ? "已拉黑" + id : "已解除" + id + "拉黑状态")
         }
     }, stop)
 }
@@ -384,33 +488,54 @@ function showReply(aid, closeToHome, shortid) {
 
     $q(".image-uploader.dropzone", true).forEach(function(el) { el.UPLOADER ? el.UPLOADER.removeAllFiles() :0})
 
-    var div = $q('<div>');
-    div.id = 'Z' + Math.random().toString(36).substr(2, 5);
-    div.className = 'div-inner-reply tmpl-body-bg';
-    div.style.position = 'fixed';
-    div.style.left = '0';
-    div.style.top = '0';
-    div.style.width = '100%';
-    div.style.height = '100%';
-    div.style.backgroundColor = 'white';
-    div.style.overflowY = 'scroll';
-    div.style.overflowX = 'hidden';
-    div.style.backgroundImage = 'url(/s/assets/spinner.gif)';
-    div.style.backgroundRepeat = 'no-repeat';
-    div.style.backgroundPosition = 'center center';
-
     // Close duplicated windows before opening a new one
     $q("[data-parent='" + aid + "']", true).forEach(function(e) { e.CLOSER.click(); });
-    div.setAttribute('data-parent', aid);
 
-    var divclose = $html(
-        "<div style='margin:0 auto' class='container rows replies'><div class=row style='padding:0.5em;line-height:30px;display:flex'>" +
-        "<i class='control icon-left-small'></i>" + 
-        "<input style='margin:0 0.5em;width:100%;text-align:center;border:none;background:transparent;cursor:pointer' value='" +
-            location.protocol + "//" +  location.host + "/" + (shortid ? shortid : "S/" + aid.substring(1)) +
-        "' onclick='this.select();document.execCommand(\"copy\");$popup(\"已复制\")' readonly>" +
-        "<i class='control icon-link' onclick='this.previousElementSibling.click()'></i>" + 
-        "</div></div>");
+    var div = $html({
+	tag: 'div',
+	id: 'Z' + Math.random().toString(36).substr(2, 5),
+	class: 'div-inner-reply tmpl-body-bg',
+	style: {
+	    position: 'fixed',
+	    left: '0',
+	    top: '0',
+	    width: '100%',
+	    height: '100%',
+	    overflowY: 'scroll',
+	    overflowX: 'hidden',
+	    backgroundImage: 'url(/s/assets/spinner.gif)',
+	    backgroundRepeat: 'no-repeat',
+	    backgroundPosition: 'center center'
+	},
+	dataParent: aid
+    }), divclose = $html({
+	tag: 'div',
+	style: {margin: '0 auto'},
+	class: 'container rows replies',
+	children: {
+	    tag: 'div',
+	    class: 'row',
+	    style: {padding: '0.5em', lineHeight: '30px', display: 'flex'},
+	    children: [
+		{tag: 'i', class: 'control icon-left-small'},
+		{
+		    tag: 'input',
+		    style: {
+			margin:'0 0.5em',
+			width:'100%',
+			textAlign: 'center',
+			border:'none',
+			background:'transparent',
+			cursor:'pointer'
+		    },
+		    value: location.protocol + "//" + location.host + "/" + (shortid ? shortid : "S/" + aid.substring(1)),
+		    readonly: true,
+		    onclick: 'this.select();document.execCommand("copy");$popup("已复制")'
+		},
+		{tag: 'i', class: 'control icon-link', onclick: "this.previousElementSibling.click()"},
+	    ]
+	}
+    })
 
     div.CLOSER = divclose.querySelector('.icon-left-small')
     div.CLOSER.onclick = function() {
@@ -418,7 +543,7 @@ function showReply(aid, closeToHome, shortid) {
 
         div.parentNode.removeChild(div)
         if ($q('[data-parent]', true).length === 0) {
-            history.pushState("", "", location.pathname + (window.IS_MEDIA ? '?media=1' : ''));
+            history.pushState("", "", window.ORI_HERF);
             document.body.style.overflow = null;
         }
     }
@@ -442,7 +567,7 @@ function showReply(aid, closeToHome, shortid) {
         rows.insertBefore($q("nav", true)[0].cloneNode(true), rows.firstChild);
     });
 
-    window.IS_MEDIA = window.IS_MEDIA || location.search.indexOf('media') >= 0;
+    if (!location.href.match(/\?pid=/)) window.ORI_HERF = location.href;
     history.pushState("", "", location.pathname + "?pid=" + encodeURIComponent(aid) + location.hash + "#" + div.id)
 }
 
@@ -488,7 +613,7 @@ function showInfoBox(el, uid) {
         startAt = new Date().getTime();
 
     div.className = 'user-info-box';
-    div.innerHTML = $q("#dummy-user").innerHTML;
+    div.innerHTML = window.DUMMY_USER_HTML;
     div.querySelector('img.avatar').src = el.src || '';
     div.querySelector('img.avatar').onclick = null;
 
@@ -614,6 +739,7 @@ function adjustImage(img) {
             div.style.borderRadius = null;
             div.style.width = null;
             div.style.height = null;
+	    div.parentNode.querySelector('[image-index="0"]').scrollIntoView();
         }
     }
 }
@@ -627,72 +753,6 @@ function adjustVideoIFrame(el, src) {
     var w = box.right - box.left;
     el.style.height = (el.getAttribute("fixed-height") || (w*0.75)) + 'px';
     el.src = src;
-}
-
-function $aesgcm() {
-    function $getKey(key) {
-        var k = new Uint8Array(16);
-        k.forEach(function(v, i) { k[i] = key.charCodeAt(i) || 1; })
-        return window.crypto.subtle.importKey('raw', k, {
-            name: 'AES-GCM',
-            length: 256
-        }, false, ['encrypt', 'decrypt'])
-    }
-
-    function $tohex(a) {
-        var text = "";
-        (new Uint8Array(a)).forEach(function(v) {
-            text += ("00" + v.toString(16)).slice(-2)
-        })
-        return text;
-    }
-
-    function $fromhex(text) {
-        var a = new Uint8Array(text.length / 2);
-        a.forEach(function(v, i) {
-            a[i] = parseInt(text.substr(i * 2, 2), 16)
-        })
-        return a;
-    }
-
-    function $encrypt(str, key, cb) {
-        var iv = window.crypto.getRandomValues(new Uint8Array(12));
-        var algoEncrypt = {
-            name: 'AES-GCM',
-            iv: iv,
-            tagLength: 128
-        };
-        $getKey(key).then(function (key) {
-            var buf = new ArrayBuffer(str.length * 2);
-            var bufView = new Uint16Array(buf);
-            for (var i = 0, strLen = str.length; i < strLen; i++) {
-                bufView[i] = str.charCodeAt(i);
-            }
-            return window.crypto.subtle.encrypt(algoEncrypt, key, buf);
-        }).then(function (cipherText) {
-            cb($tohex(cipherText) + $tohex(iv));
-        });
-    }
-
-    function $decrypt(str, key, cb) {
-        $getKey(key).then(function (key) {
-            return window.crypto.subtle.decrypt({
-                name: 'AES-GCM',
-                iv: $fromhex(str.substr(str.length - 24, 24)),
-                tagLength: 128
-            }, key, $fromhex(str.substring(0, str.length - 24)));
-        }).then(function (data) {
-            data = String.fromCharCode.apply(null, new Uint16Array(data));
-            cb(data)
-        }).catch(function (err) {
-            cb(false)
-        });
-    }
-
-    return {
-        "encrypt": $encrypt,
-        "decrypt": $decrypt,
-    }
 }
 
 function isDarkMode() {
