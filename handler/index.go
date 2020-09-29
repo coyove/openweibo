@@ -407,9 +407,9 @@ func searchArticles(u *model.User, query string, start int, totalCount *int) ([]
 	res, count, err := model.SearchArticle(query, timeout, start, common.Cfg.PostsPerPage+1)
 	if err != nil {
 		if err.Error() == context.DeadlineExceeded.Error() {
-			return nil, "", fmt.Errorf("search-timeout")
+			return nil, "", fmt.Errorf("search_timeout")
 		}
-		return nil, "", fmt.Errorf("server-error")
+		return nil, "", fmt.Errorf("internal_error")
 	}
 	if totalCount != nil {
 		*totalCount = (count)

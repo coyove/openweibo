@@ -280,37 +280,33 @@ function followBlock(el, m, id) {
 }
 
 function __i18n(t) {
-    if (t.match(/guard\/cooling-down\/([0-9\.]+)s/)) 
-        return "请等待" + t.split("/").pop();
-    if (t === "guard/failed-captcha")
+    if (t.match(/cooldown`([0-9\.]+)s/)) 
+        return "请等待" + t.split("`").pop();
+    if (t === "captcha_failed")
         return "无效验证码";
-    if (t === "guard/token-expired")
+    if (t === "expired_session")
         return "Token过期，请重试";
-    if (t === "content/too-short")
+    if (t === "content_too_short")
         return "正文过短";
-    if (t === "title/too-short")
-        return "标题过短";
-    if (t === "error/can-not-reply")
+    if (t === "cannot_reply")
         return "无法回复";
-    if (t === "internal/error")
+    if (t === "internal_error")
         return "服务端异常";
-    if (t === "guard/id-not-existed")
-        return "ID不存在";
-    if (t === "user/404")
+    if (t === "user_not_found")
         return "请登入后操作";
-    if (t === "password/invalid-too-short")
-        return "密码太短或不符";
-    if (t === "id/already-existed")
+    if (t === "new_password_too_short")
+        return "新密码太短";
+    if (t === "old_password_invalid")
+        return "旧密码不符";
+    if (t === "duplicated_id")
         return "ID已存在";
-    if (t === "id/too-short")
+    if (t === "id_too_short")
         return "无效ID";
-    if (t === "user/not-allowed")
+    if (t === "user_not_permitted")
         return "无权限";
-    if (t === "follow/to-blocked")
-        return "已被拉黑";
-    if (t === "follow/to-following-required")
-        return "需要对方先关注你";
-    if (t === "error/block-tag")
+    if (t === "cannot_follow")
+        return "无法关注";
+    if (t === "cannot_block_tag")
         return "无法拉黑标签";
     return t;
 }

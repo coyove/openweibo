@@ -124,13 +124,13 @@ func DoUpdateUser(rr *UpdateUserRequest) (model.User, error) {
 
 	if rr.Signup {
 		if len(u.PasswordHash) != 0 {
-			return model.User{}, fmt.Errorf("id/already-existed")
+			return model.User{}, fmt.Errorf("e:duplicated_id")
 		}
 	}
 
 	if rr.ToggleMod != nil && *rr.ToggleMod {
 		if u.IsAdmin() {
-			return model.User{}, fmt.Errorf("promote/admin-really")
+			return model.User{}, fmt.Errorf("e:already_admin")
 		}
 		if u.Role == "mod" {
 			u.Role = ""
@@ -140,7 +140,7 @@ func DoUpdateUser(rr *UpdateUserRequest) (model.User, error) {
 	}
 	if rr.ToggleBan != nil && *rr.ToggleBan {
 		if u.IsAdmin() {
-			return model.User{}, fmt.Errorf("ban/mod-really")
+			return model.User{}, fmt.Errorf("e:already_admin")
 		}
 		u.Banned = !u.Banned
 	}
@@ -187,7 +187,7 @@ func DoUpdateArticle(rr *UpdateArticleRequest) (model.Article, error) {
 	now := func() string { return time.Now().Format(time.Stamp) }
 	if rr.DeleteBy != nil {
 		if rr.DeleteBy.ID != a.Author && !rr.DeleteBy.IsMod() {
-			return model.Article{}, fmt.Errorf("user/not-allowed")
+			return model.Article{}, fmt.Errorf("e:user_not_permitted")
 		}
 		a.Content = model.DeletionMarker
 		a.Media = ""
@@ -204,14 +204,14 @@ func DoUpdateArticle(rr *UpdateArticleRequest) (model.Article, error) {
 	}
 	if rr.ToggleNSFWBy != nil {
 		if rr.ToggleNSFWBy.ID != a.Author && !rr.ToggleNSFWBy.IsMod() {
-			return model.Article{}, fmt.Errorf("user/not-allowed")
+			return model.Article{}, fmt.Errorf("e:user_not_permitted")
 		}
 		a.NSFW = !a.NSFW
 		a.History += fmt.Sprintf("{nsfw_by:%s:%v}", rr.ToggleNSFWBy.ID, now())
 	}
 	if rr.UpdateReplyLockBy != nil {
 		if rr.UpdateReplyLockBy.ID != a.Author && !rr.UpdateReplyLockBy.IsMod() {
-			return model.Article{}, fmt.Errorf("user/not-allowed")
+			return model.Article{}, fmt.Errorf("e:user_not_permitted")
 		}
 		a.ReplyLockMode = *rr.UpdateReplyLock
 		a.History += fmt.Sprintf("{lock_by:%s:%v}", rr.UpdateReplyLockBy.ID, now())

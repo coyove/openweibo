@@ -44,28 +44,15 @@ func APINew(g *gin.Context) {
 	}
 
 	var (
-		ip      = hashIP(g)
 		content = common.SoftTrunc(g.PostForm("content"), int(common.Cfg.MaxContent))
 		image   = common.SanMedia(g.PostForm("media"))
 		rlm, _  = strconv.Atoi(g.PostForm("reply_lock"))
 		err     error
 	)
 
-	u := dal.GetUserByContext(g)
-	if u == nil {
-		g.String(200, "user/404")
-		return
-	}
-
-	if len(content) < 3 && image == "" {
-		g.String(200, "content/too-short")
-		return
-	}
-
-	if ret := checkIP(g); ret != "" {
-		g.String(200, ret)
-		return
-	}
+	u := throw(dal.GetUserByContext(g), "").(*model.User)
+	throw(len(content) < 3 && image == "", "content_too_short")
+	throw(checkIP(g), "")
 
 	if image != "" {
 		image = "IMG:" + image
@@ -74,7 +61,7 @@ func APINew(g *gin.Context) {
 	a := &model.Article{
 		Content:       content,
 		Media:         image,
-		IP:            ip,
+		IP:            hashIP(g),
 		NSFW:          g.PostForm("nsfw") != "",
 		Anonymous:     g.PostForm("anon") != "",
 		ReplyLockMode: byte(rlm),
@@ -95,23 +82,13 @@ func APINew(g *gin.Context) {
 	}
 
 	a2, err := dal.Post(a, u)
-	if err != nil {
-		if err.Error() == "multiple/stick-on-top" {
-			g.String(200, err.Error())
-			return
-		}
-		g.String(200, "internal/error")
-		return
-	}
-
-	g.String(200, "ok:"+url.PathEscape(middleware.RenderTemplateString("row_content.html",
-		NewTopArticleView(a2, u))))
+	throw(err, "")
+	okok(g, url.PathEscape(middleware.RenderTemplateString("row_content.html", NewTopArticleView(a2, u))))
 }
 
 func doReply(g *gin.Context) {
 	var (
 		reply   = g.PostForm("parent")
-		ip      = hashIP(g)
 		content = common.SoftTrunc(g.PostForm("content"), int(common.Cfg.MaxContent))
 		image   = common.SanMedia(g.PostForm("media"))
 		nsfw    = g.PostForm("nsfw") != ""
@@ -119,16 +96,8 @@ func doReply(g *gin.Context) {
 		err     error
 	)
 
-	u := dal.GetUserByContext(g)
-	if u == nil {
-		g.String(200, "user/404")
-		return
-	}
-
-	if ret := checkIP(g); ret != "" {
-		g.String(200, ret)
-		return
-	}
+	u := throw(dal.GetUserByContext(g), "").(*model.User)
+	throw(checkIP(g), "")
 
 	if image != "" {
 		image = "IMG:" + image
@@ -141,7 +110,7 @@ func doReply(g *gin.Context) {
 		Media:         image,
 		NSFW:          nsfw,
 		Author:        u.ID,
-		IP:            ip,
+		IP:            hashIP(g),
 		ReplyLockMode: byte(rlm),
 	}
 	a.AID, err = dal.Ctr.Get()
@@ -154,133 +123,67 @@ func doReply(g *gin.Context) {
 	}
 
 	a2, err := dal.PostReply(reply, a, u, noTimeline)
-	if err != nil {
-		log.Println(a2, err)
-		g.String(200, "error/can-not-reply")
-		return
-	}
-
-	g.String(200, "ok:"+url.PathEscape(middleware.RenderTemplateString("row_content.html",
-		NewReplyArticleView(a2, u))))
+	throw(err, "cannot_reply")
+	okok(g, url.PathEscape(middleware.RenderTemplateString("row_content.html", NewReplyArticleView(a2, u))))
 }
 
 func APIDeleteArticle(g *gin.Context) {
-	u := dal.GetUserByContext(g)
-	if u == nil {
-		g.String(200, "user/404")
-		return
-	}
-
-	if ret := checkIP(g); ret != "" {
-		g.String(200, ret)
-		return
-	}
-
-	if _, err := dal.DoUpdateArticle(&dal.UpdateArticleRequest{ID: g.PostForm("id"), DeleteBy: u}); err != nil {
-		g.String(200, err.Error())
-	} else {
-		g.String(200, "ok")
-	}
+	u := throw(dal.GetUserByContext(g), "").(*model.User)
+	throw(checkIP(g), "")
+	throw(err2(dal.DoUpdateArticle(&dal.UpdateArticleRequest{ID: g.PostForm("id"), DeleteBy: u})), "")
+	okok(g)
 }
 
 func APIToggleNSFWArticle(g *gin.Context) {
-	u := dal.GetUserByContext(g)
-	if u == nil {
-		g.String(200, "user/404")
-		return
-	}
-
-	if ret := checkIP(g); ret != "" {
-		g.String(200, ret)
-		return
-	}
-
-	if _, err := dal.DoUpdateArticle(&dal.UpdateArticleRequest{ID: g.PostForm("id"), ToggleNSFWBy: u}); err != nil {
-		g.String(200, err.Error())
-	} else {
-		g.String(200, "ok")
-	}
+	u := throw(dal.GetUserByContext(g), "").(*model.User)
+	throw(checkIP(g), "")
+	throw(err2(dal.DoUpdateArticle(&dal.UpdateArticleRequest{ID: g.PostForm("id"), ToggleNSFWBy: u})), "")
+	okok(g)
 }
 
 func APIToggleLockArticle(g *gin.Context) {
-	u := dal.GetUserByContext(g)
-	if u == nil {
-		g.String(200, "user/404")
-		return
-	}
-
-	if ret := checkIP(g); ret != "" {
-		g.String(200, ret)
-		return
-	}
+	u := throw(dal.GetUserByContext(g), "").(*model.User)
+	throw(checkIP(g), "")
 
 	v, _ := strconv.Atoi(g.PostForm("mode"))
-	if _, err := dal.DoUpdateArticle(&dal.UpdateArticleRequest{
+	throw(err2(dal.DoUpdateArticle(&dal.UpdateArticleRequest{
 		ID:                g.PostForm("id"),
 		UpdateReplyLockBy: u,
 		UpdateReplyLock:   aws.Uint8(byte(v)),
-	}); err != nil {
-		g.String(200, err.Error())
-	} else {
-		g.String(200, "ok")
-	}
+	})), "")
+	okok(g)
 }
 
 func APIDropTop(g *gin.Context) {
-	u := dal.GetUserByContext(g)
-	if u == nil {
-		g.String(200, "user/404")
-		return
-	}
-
-	if ret := checkIP(g); ret != "" {
-		g.String(200, ret)
-		return
-	}
-
-	if _, err := dal.DoUpdateArticleExtra(&dal.UpdateArticleExtraRequest{
+	u := throw(dal.GetUserByContext(g), "").(*model.User)
+	throw(checkIP(g), "")
+	throw(err2(dal.DoUpdateArticleExtra(&dal.UpdateArticleExtraRequest{
 		ID:            ik.NewID(ik.IDAuthor, u.ID).String(),
 		SetExtraKey:   "stick_on_top",
 		SetExtraValue: "",
-	}); err != nil {
-		g.String(200, err.Error())
-		return
-	}
-
-	g.String(200, "ok")
+	})), "")
+	okok(g)
 }
 
 func APIUpload(g *gin.Context) {
-	u2, _ := g.Get("user")
-	u, _ := u2.(*model.User)
-	if u == nil {
-		g.String(500, "user/404")
-		return
-	}
+	const IR = "invalid/request"
+	g.Set("error-as-500", true) // failure will be returned using 500 status code
 
-	if !ik.BAdd(u.ID) {
-		g.String(500, "cooldown")
-		return
-	}
+	u := getUser(g)
+	throw(u, "")
+	throw(!ik.BAdd(u.ID), IR)
 
 	d, params, err := mime.ParseMediaType(g.GetHeader("Content-Type"))
-	if err != nil || !(d == "multipart/form-data" || d == "multipart/mixed") {
-		g.String(500, "error-not-multipart")
-		return
-	}
+	throw(err, IR)
+	throw(!(d == "multipart/form-data" || d == "multipart/mixed"), IR)
 
 	boundary, ok := params["boundary"]
-	if !ok {
-		g.String(500, "error-no-boundary")
-		return
-	}
+	throw(!ok, IR)
 
 	mprd := multipart.NewReader(g.Request.Body, boundary)
 	part, err := mprd.NextPart()
-	if err != nil {
-		log.Println("Upload:", err)
-		g.String(500, "error-no-part")
-	}
+	throw(err, IR)
+
 	defer part.Close()
 
 	cl, _ := strconv.ParseInt(g.GetHeader("Content-Length"), 10, 64)
@@ -295,14 +198,9 @@ func APIUpload(g *gin.Context) {
 			hash = hash*31 + uint64(v)
 		}
 		v, err := writeImageReader(u, part.FileName(), hash, rd, ct, large)
-		if err != nil {
-			log.Println("image api:", err)
-			g.String(500, "server-error")
-			return
-		}
+		throw(err, IR)
 		g.String(200, v)
 	default:
-		g.String(500, "invalid-type")
+		throw(true, IR)
 	}
-
 }

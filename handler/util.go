@@ -6,7 +6,6 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -23,11 +22,29 @@ import (
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/ik"
+	"github.com/coyove/iis/middleware"
 	"github.com/coyove/iis/model"
 	"github.com/gin-gonic/gin"
 )
 
-var rxShortID = regexp.MustCompile(`\d{4}-?\d{4}-?\d{4}`)
+var (
+	rxShortID = regexp.MustCompile(`\d{4}-?\d{4}-?\d{4}`)
+	throw     = middleware.ThrowIf
+)
+
+func err2(v interface{}, e error) error {
+	return e
+}
+
+func okok(g *gin.Context, tmp ...string) {
+	g.String(200, "ok")
+	if len(tmp) > 0 {
+		g.Writer.Write([]byte(":"))
+		for _, t := range tmp {
+			g.Writer.WriteString(t)
+		}
+	}
+}
 
 func NotFound(g *gin.Context) {
 	if path := strings.TrimPrefix(g.Request.URL.Path, "/"); rxShortID.MatchString(path) {
@@ -110,7 +127,7 @@ func redirectVisitor(g *gin.Context) {
 	g.Redirect(302, "/?redirect="+url.QueryEscape(g.Request.URL.String()))
 }
 
-var captchaClient = &http.Client{Timeout: 500 * time.Millisecond}
+// var captchaClient = &http.Client{Timeout: 500 * time.Millisecond}
 
 func checkIP(g *gin.Context) string {
 	if u, _ := g.Get("user"); u != nil {
@@ -119,32 +136,8 @@ func checkIP(g *gin.Context) string {
 		}
 	}
 	if !g.GetBool("ip-ok") {
-		return fmt.Sprintf("guard/cooling-down/%.1fs", float64(common.Cfg.Cooldown)-g.GetFloat64("ip-ok-remain"))
+		return fmt.Sprintf("cooldown`%.1fs", float64(common.Cfg.Cooldown)-g.GetFloat64("ip-ok-remain"))
 	}
-	return ""
-}
-
-func checkToken(g *gin.Context) string {
-	var (
-		uuid       = common.SoftTrunc(g.PostForm("uuid"), 32)
-		_, tokenok = ik.ParseToken(g, uuid)
-	)
-
-	if ret := checkIP(g); ret != "" {
-		return ret
-	}
-
-	if u, ok := g.Get("user"); ok {
-		if u.(*model.User).Banned {
-			return "guard/id-not-existed"
-		}
-	}
-
-	// Admin still needs token verification
-	if !tokenok {
-		return "guard/token-expired"
-	}
-
 	return ""
 }
 
@@ -172,26 +165,26 @@ func checkCaptcha(g *gin.Context) string {
 	}
 
 	if response != "" {
-		p := fmt.Sprintf("response=%s&secret=%s", response, common.Cfg.HCaptchaSecKey)
-		resp, err := captchaClient.Post("https://hcaptcha.com/siteverify", "application/x-www-form-urlencoded", strings.NewReader(p))
-		if err != nil {
-			log.Println("hcaptcha server failure:", err)
-			return "guard/failed-captcha"
-		}
-		buf, _ := ioutil.ReadAll(resp.Body)
-		resp.Body.Close()
-		m := map[string]interface{}{}
-		json.Unmarshal(buf, &m)
-
-		if ok, _ := m["success"].(bool); ok {
-			return ""
-		}
-
-		return "guard/failed-captcha:" + fmt.Sprint(m["error-codes"])
+		// 		p := fmt.Sprintf("response=%s&secret=%s", response, common.Cfg.HCaptchaSecKey)
+		// 		resp, err := captchaClient.Post("https://hcaptcha.com/siteverify", "application/x-www-form-urlencoded", strings.NewReader(p))
+		// 		if err != nil {
+		// 			log.Println("hcaptcha server failure:", err)
+		// 			return "guard/failed-captcha"
+		// 		}
+		// 		buf, _ := ioutil.ReadAll(resp.Body)
+		// 		resp.Body.Close()
+		// 		m := map[string]interface{}{}
+		// 		json.Unmarshal(buf, &m)
+		//
+		// 		if ok, _ := m["success"].(bool); ok {
+		// 			return ""
+		// 		}
+		//
+		// 		return "guard/failed-captcha:" + fmt.Sprint(m["error-codes"])
 	}
 
 	if !tokenok {
-		return "guard/token-expired"
+		return "expired_session"
 	}
 
 	if len(answer) == 4 {
@@ -212,11 +205,7 @@ func checkCaptcha(g *gin.Context) string {
 
 	if !challengePassed {
 		log.Println(g.MustGet("ip"), "challenge failed")
-		return "guard/failed-captcha"
-	}
-
-	if !tokenok {
-		return "guard/token-expired"
+		return "captcha_failed"
 	}
 
 	return ""

@@ -146,16 +146,6 @@ func MentionUserAndTags(a *model.Article, ids []string, tags []string) error {
 
 func FollowUser(from, to string, following bool) (E error) {
 	followID := makeFollowID(from, to)
-	if following {
-		if IsBlocking(to, from) {
-			// "from" wants to follow "to" but "to" blocked "from"
-			return fmt.Errorf("follow/to-blocked")
-		}
-		if GetUserSettings(to).OnlyMyFollowingsCanFollow && !IsFollowing(to, from) {
-			return fmt.Errorf("follow/to-following-required")
-		}
-	}
-
 	updated := false
 	defer func() {
 		if E != nil || !updated {

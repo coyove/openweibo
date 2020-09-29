@@ -246,7 +246,7 @@ input[type=number] {
 
     <input type=hidden name=uuid value="{{.UUID}}">
     <tr>
-        <td><input value="{{.OTTUsername}}" class=t maxlength=15 placeholder="用户名" name=username oninput="checkID(this.value)"></td>
+        <td><input value="" class=t maxlength=15 placeholder="用户名" name=username oninput="checkID(this.value)"></td>
     <script>
         function checkID(id) {
             var x = [], j = 0, filtered = false;
@@ -288,7 +288,7 @@ input[type=number] {
         </td>
     </tr>
     <tr>
-        <td><input value="{{.OTTEmail}}" type=email class=t placeholder="邮箱" name=email></td>
+        <td><input value="" type=email class=t placeholder="邮箱" name=email></td>
     </tr>
     <tr>
         <td>

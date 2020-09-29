@@ -88,7 +88,7 @@ func WeakGetArticle(id string, dontOverrideNextID ...bool) (*model.Article, erro
 
 func getterArticle(getter func(string) ([]byte, error), id string, dontOverrideNextID ...bool) (*model.Article, error) {
 	if id == "" {
-		return nil, fmt.Errorf("empty ArticleID")
+		return nil, fmt.Errorf("empty id")
 	}
 	p, err := getter(id)
 	if err != nil {

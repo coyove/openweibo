@@ -20,15 +20,9 @@ func User(g *gin.Context) {
 		User        *model.User
 		SiteKey     string
 		DarkCaptcha bool
-		OTT         string
-		OTTUsername string
-		OTTEmail    string
 	}{
 		SiteKey:     common.Cfg.HCaptchaSiteKey,
 		DarkCaptcha: m == "dark",
-		OTT:         g.Query("ott"),
-		OTTUsername: g.Query("ott-username"),
-		OTTEmail:    g.Query("ott-email"),
 	}
 
 	p.UUID, p.Challenge = ik.MakeToken(g)
@@ -168,15 +162,11 @@ func APIGetUserInfoBox(g *gin.Context) {
 	// }
 
 	u, _ := dal.GetUserWithSettings(g.Param("id"))
-	if u == nil {
-		g.String(200, "internal/error")
-		return
-	}
+	throw(u, "")
 
 	if you != nil {
 		u.Buildup(you)
 	}
 
-	s := middleware.RenderTemplateString("user_public.html", u)
-	g.String(200, "ok:"+s)
+	okok(g, middleware.RenderTemplateString("user_public.html", u))
 }
