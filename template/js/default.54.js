@@ -397,7 +397,7 @@ function __i18n(t) {
     if (t === "internal_error")
         return "服务端异常";
     if (t === "user_not_found")
-        return "请登入后操作";
+        return "无权限";
     if (t === "new_password_too_short")
         return "新密码太短";
     if (t === "old_password_invalid")
@@ -502,15 +502,17 @@ function showReply(aid, closeToHome, shortid) {
 	    width: '100%',
 	    height: '100%',
 	    overflowY: 'scroll',
-	    overflowX: 'hidden',
-	    backgroundImage: 'url(/s/assets/spinner.gif)',
-	    backgroundRepeat: 'no-repeat',
-	    backgroundPosition: 'center center'
+	    overflowX: 'hidden'
 	},
 	dataParent: aid
     }), divclose = $html({
 	tag: 'div',
-	style: {margin: '0 auto'},
+	style: {
+	    margin: '0 auto',
+	    backgroundImage: 'url(/s/assets/spinner.gif)',
+	    backgroundRepeat: 'no-repeat',
+	    backgroundPosition: 'center center'
+	},
 	class: 'container rows replies',
 	children: {
 	    tag: 'div',

@@ -55,21 +55,20 @@ func Home(g *gin.Context) {
 	}
 }
 
-func S(g *gin.Context) {
-	id := "S" + g.Param("id")
-	if g.Query("raw") != "" {
+func Static(g *gin.Context, id, shortID string) {
+	if g.Query("raw") != "" || strings.Contains(g.Request.UserAgent(), "curl") {
 		a, err := dal.GetArticle(id)
-		if err != nil {
-			log.Println(err)
-			NotFound(g)
-			return
-		}
+		throw(err, "")
 		g.String(200, a.Content)
 		return
 	}
 	g.HTML(200, "S.html", struct {
 		ID, ShortID string
-	}{id, g.Query("short")})
+	}{id, shortID})
+}
+
+func S(g *gin.Context) {
+	Static(g, "S"+g.Param("id"), g.Query("short"))
 }
 
 func TagTimeline(g *gin.Context) {

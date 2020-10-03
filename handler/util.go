@@ -61,7 +61,7 @@ func NotFound(g *gin.Context) {
 			goto SKIP
 		}
 		tmp, _ := ik.StringifyShortId(aid)
-		g.Redirect(302, "/S/"+string(buf)[1:]+"?short="+tmp+"&"+g.Request.URL.Query().Encode())
+		Static(g, string(buf), tmp)
 		return
 	}
 

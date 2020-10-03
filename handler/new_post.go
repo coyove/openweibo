@@ -2,7 +2,10 @@ package handler
 
 import (
 	"bufio"
+	"fmt"
+	"io/ioutil"
 	"log"
+	"math/rand"
 	"mime"
 	"mime/multipart"
 	"net"
@@ -44,13 +47,30 @@ func APINew(g *gin.Context) {
 	}
 
 	var (
-		content = common.SoftTrunc(g.PostForm("content"), int(common.Cfg.MaxContent))
-		image   = common.SanMedia(g.PostForm("media"))
-		rlm, _  = strconv.Atoi(g.PostForm("reply_lock"))
-		err     error
+		content  = common.SoftTrunc(g.PostForm("content"), int(common.Cfg.MaxContent))
+		image    = common.SanMedia(g.PostForm("media"))
+		rlm, _   = strconv.Atoi(g.PostForm("reply_lock"))
+		err      error
+		pastebin = false
 	)
 
-	u := throw(dal.GetUserByContext(g), "").(*model.User)
+	u := dal.GetUserByContext(g)
+	if u == nil {
+		u = &model.User{ID: "pastebin" + strconv.Itoa(rand.Intn(10))}
+		image, rlm = "", 0
+		pastebin = true
+		if content == "" {
+			// curl -F 'content=@file'
+			f, err := g.FormFile("content")
+			throw(err, "multipart_error")
+			rd, err := f.Open()
+			throw(err, "multipart_error")
+			defer rd.Close()
+			tmp, _ := ioutil.ReadAll(rd)
+			content = string(tmp)
+		}
+	}
+
 	throw(len(content) < 3 && image == "", "content_too_short")
 	throw(checkIP(g), "")
 
@@ -69,8 +89,16 @@ func APINew(g *gin.Context) {
 
 	a.SetStickOnTop(g.PostForm("stick_on_top") != "")
 	a.AID, err = dal.Ctr.Get()
-	if err != nil {
-		log.Println("AID", err)
+	throw(err, "")
+
+	if pastebin {
+		// Pastebin won't go into master timeline
+		a.PostOptions |= model.PostOptionNoMasterTimeline
+		a.History = fmt.Sprintf("{pastebin_by:%q}", g.ClientIP())
+		throw(err2(dal.Post(a, u)), "")
+		shortID, _ := ik.StringifyShortId(a.AID)
+		g.String(200, shortID)
+		return
 	}
 
 	if g.PostForm("no_master") == "1" {
