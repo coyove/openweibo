@@ -8,7 +8,10 @@
         </div>
     <![endif]-->
     <div style="overflow: hidden;margin:0 auto;position:relative;text-align:center;max-width:350px">
-        <div><img src="/s/assets/logo.png" style="width:100%;max-width:250px;margin:0.5em auto;display:block"></div>
+      <div style="width:100%;height:200px;margin:1em 0;position:relative">
+	<div style="width:200px;height:200px;background-position:center;background-size:contain;background-image:url(/eriri.jpg);margin-left:-100px;margin-top:-100px;left:50%;top:50%;position:absolute;border-radius:100px;box-shadow:0 0 10px rgba(0,0,0,0.2)">
+	</div>
+      </div>
     <form method="POST" action="/user" style="flex-grow:1" onsubmit="return false">
         <table class="articles">
             <tr>
@@ -33,11 +36,22 @@
                             })">登入</button>
                 </td>
             </tr>
-            <tr><td>欢迎来到〇〇。<a style href="/user">注册新用户</a></td></tr>
+	    <tr><td></td></tr>
+            <tr><td>欢迎来到fwbocnmbpbgo系统。您可以<a style href="/user">注册新用户</a>以发布状态，或者匿名使用pastebin服务:</td></tr>
             <tr><td>
-		<div>Pastebin:</div>
-		<div><code>curl -F content=@file <script>document.write(location.host)</script>/api2/new</code></div>
-		<div><code>curl -s <script>document.write(location.host)</script>/&lt;code></code></div>
+		<style>
+		  div.pb { margin: 0.5em 0 }
+		  div.pb > b {display:inline-block;width:3em}
+		  div.pb * {word-break:break-all}
+		</style>
+		<div class=pb>
+		  <b class="tmpl-orange-text">POST</b>
+		  <span>curl -F content=@file <u><script>document.write(location.host)</script></u>/api2/new</span>
+		</div>
+		<div class=pb>
+		  <b class="tmpl-orange-text">GET</b>
+		  <span>curl -s <u><script>document.write(location.host)</script></u>/<b>&lt;code></b></span>
+		</div>
 	    </td></tr>
         </table>
     </form>

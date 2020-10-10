@@ -77,6 +77,8 @@ func main() {
 		}
 	}()
 
+	go handler.GetEriri("%E6%BE%A4%E6%9D%91%E3%83%BB%E3%82%B9%E3%83%9A%E3%83%B3%E3%82%B5%E3%83%BC%E3%83%BB%E8%8B%B1%E6%A2%A8%E3%80%85")
+
 	r := middleware.New(prodMode)
 	r.SetFuncMap(template.FuncMap{
 		"cssVersion": func() string {
@@ -149,6 +151,7 @@ func main() {
 
 	r.NoRoute(handler.NotFound)
 	r.Handle("GET", "/", handler.Home)
+	r.Handle("GET", "/eriri.jpg", handler.Eriri)
 	r.Handle("GET", "/i/*img", handler.LocalImage)
 	r.Handle("GET", "/avatar/:id", handler.Avatar)
 	r.Handle("GET", "/tag/:tag", handler.TagTimeline)
