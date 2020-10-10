@@ -123,6 +123,17 @@ func makeCheckpoints(g *gin.Context) []string {
 	return r
 }
 
+func lastMonth(v string) string {
+	t, err := time.Parse("2006-01", v)
+	if err != nil {
+		return ""
+	}
+	if t.Month() == 1 {
+		return fmt.Sprintf("%04d-12", t.Year()-1)
+	}
+	return fmt.Sprintf("%04d-%02d", t.Year(), t.Month()-1)
+}
+
 func redirectVisitor(g *gin.Context) {
 	g.Redirect(302, "/?redirect="+url.QueryEscape(g.Request.URL.String()))
 }

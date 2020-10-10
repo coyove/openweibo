@@ -246,6 +246,9 @@ input[type=number] {
 
     <input type=hidden name=uuid value="{{.UUID}}">
     <tr>
+      <td style="text-align:center"><a href="/" class="tmpl-green-text"><i class=icon-home></i>已有账号？点此登入</a></td>
+    </tr>
+    <tr>
         <td><input value="" class=t maxlength=15 placeholder="用户名" name=username oninput="checkID(this.value)"></td>
     <script>
         function checkID(id) {
@@ -313,8 +316,7 @@ input[type=number] {
         }
     </script>
             <div style="flex-grow:1;display:flex;flex-direction:column;margin-left:0.5em;text-align:right">
-                <div style="flex-grow:1"><a href="/" class="gbutton tmpl-green-text"><i class=icon-home></i>已有账号？登入</a></div>
-                <div><button  class="gbutton" type=submit>注册</button></div>
+                <div style="align-self:flex-end"><button class="gbutton" type=submit>注册</button></div>
             </div>
             </div>
         </td>

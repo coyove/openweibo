@@ -76,11 +76,13 @@
                     </ul>
                 </div>
 
+		{{if not .ReplyTo}}
 		<div class="post-options">
 		    <button class=gbutton name=anon onclick="this.value?this.value='':(this.value='1',$popup('开启匿名'))">
 			<i class=icon-user-secret></i>
 		    </button>
                 </div>
+		{{end}}
             </td>
         </tr>
 

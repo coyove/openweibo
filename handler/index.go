@@ -184,19 +184,15 @@ func Timeline(g *gin.Context) {
 			cursors = append(cursors, ik.NewID(ik.IDAuthor, master))
 		}
 	} else if pl.IsUserTimeline {
+		cursors = append(cursors, ik.NewID(ik.IDAuthor, pl.User.ID))
 		pl.CurrentCheckpoint = g.Query("cp")
-		if a, _ := dal.GetArticle("u/"+pl.User.ID+"/checkpoint/"+pl.CurrentCheckpoint, true); a != nil {
-			cursors = append(cursors, ik.ParseID(a.NextID))
-		} else {
-			// 2020-01 hack fix
-			if pl.CurrentCheckpoint == "2020-01" {
-				if a, _ := dal.GetArticle("u/"+pl.User.ID+"/checkpoint/0001-01", true); a != nil {
-					cursors = append(cursors, ik.ParseID(a.NextID))
-				}
+
+		for cp, i := pl.CurrentCheckpoint, 0; cp != "" && i < 3; cp, i = lastMonth(cp), i+1 {
+			if a, _ := dal.GetArticle("u/"+pl.User.ID+"/checkpoint/"+cp, true); a != nil {
+				cursors = []ik.ID{ik.ParseID(a.NextID)}
+				break
 			}
-			cursors = append(cursors, ik.NewID(ik.IDAuthor, pl.User.ID))
 		}
-		cursors = cursors[:1]
 	} else {
 		pl.ShowNewPost = true
 		list, next := dal.GetFollowingList(ik.NewID(ik.IDFollowing, pl.User.ID), "", 1e6, false)

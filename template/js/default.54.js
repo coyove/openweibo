@@ -406,6 +406,8 @@ function __i18n(t) {
         return "ID已存在";
     if (t === "id_too_short")
         return "无效ID";
+    if (t === "invalid_id_password")
+        return "无效ID或密码";
     if (t === "user_not_permitted")
         return "无权限";
     if (t === "cannot_follow")

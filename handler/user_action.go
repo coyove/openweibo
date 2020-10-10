@@ -64,8 +64,8 @@ func APILogin(g *gin.Context) {
 	throw(checkIP(g), "")
 
 	u, _ := dal.GetUser(sanUsername(g.PostForm("username")))
-	throw(u, "id/too-short")
-	throw(!bytes.Equal(u.PasswordHash, hashPassword(g.PostForm("password"))), "")
+	throw(u, "invalid_id_password")
+	throw(!bytes.Equal(u.PasswordHash, hashPassword(g.PostForm("password"))), "invalid_id_password")
 
 	// u.Session = genSession()
 	u.TLogin = uint32(time.Now().Unix())
