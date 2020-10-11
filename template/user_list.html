@@ -29,13 +29,7 @@
 
 <div class="articles tmpl-border" style="border-top:solid 1px transparent">
 
-{{if eq .ListType "blacklist"}}
-<div>
-    1. 被拉黑用户无法评论你的状态或@你<br>
-    2. 被拉黑用户如果之前已经关注了你，则会自动取消且无法再次关注，同时无法看到你的时间线
-</div>
-{{end}}
-    {{range .List}}
+{{range .List}}
     {{if .FullUser}}
     <div style="display: flex; line-height: 2.5em">
         <div style="flex-shrink:0;white-space:nowrap;margin-right:0.5em">{{formatTime .Time}}</div>

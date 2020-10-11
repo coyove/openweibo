@@ -155,14 +155,17 @@ func UserLikes(g *gin.Context) {
 
 func APIGetUserInfoBox(g *gin.Context) {
 	you := getUser(g)
-
-	// if you == nil {
-	// 	g.Status(400)
-	// 	return
-	// }
-
-	u, _ := dal.GetUserWithSettings(g.Param("id"))
-	throw(u, "")
+	id := g.Param("id")
+	u, _ := dal.GetUserWithSettings(id)
+	// throw(u, "user_not_found_by_id")
+	if u == nil {
+		u = &model.User{
+			ID: id,
+		}
+		u.SetShowList(255)
+		okok(g, middleware.RenderTemplateString("user_public.html", u))
+		return
+	}
 
 	if you != nil {
 		u.Buildup(you)

@@ -118,10 +118,6 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 		}
 	}
 
-	// if img := common.ExtractFirstImage(a2.Content); img != "" && a2.Media == "" {
-	// 	a.MediaType, a.Media = "IMG", img
-	// }
-
 	a.Content = a2.Content
 	a.ContentHTML = a2.ContentHTML()
 
@@ -177,6 +173,11 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 		}
 		a.from(dummy, opt, u)
 		a.Cmd = string(a2.Cmd)
+	default:
+		if u != nil &&
+			(dal.IsBlocking(u.ID, a.Author.ID) || dal.IsBlocking(a.Author.ID, u.ID)) {
+			*a = ArticleView{}
+		}
 	}
 
 	return a

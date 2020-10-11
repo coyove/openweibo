@@ -1,4 +1,8 @@
-{{if .IsAnon}}
+{{if eq .ShowList 255}}
+<span class=post-author>
+    ? <span style="opacity:0.5">{{.ID}}</span> ?
+</span>
+{{else if .IsAnon}}
 <span class=post-author>
     <strong class=tmpl-mid-text>* 匿名 *</strong>
 </span>

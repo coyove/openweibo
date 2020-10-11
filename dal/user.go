@@ -489,12 +489,12 @@ func IsFollowingWithAcceptance(from string, to *model.User) (following bool, acc
 }
 
 func IsBlocking(from, to string) bool {
-	p, _ := GetArticle(makeBlockID(from, to))
+	p, _ := WeakGetArticle(makeBlockID(from, to))
 	return p != nil && p.Extras["block"] == "true"
 }
 
 func IsLiking(from, to string) bool {
-	p, _ := GetArticle(makeLikeID(from, to))
+	p, _ := WeakGetArticle(makeLikeID(from, to))
 	return p != nil && p.Extras["like"] == "true"
 }
 

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -20,7 +20,13 @@ func Eriri(g *gin.Context) {
 		g.Status(404)
 		return
 	}
-	y := x[rand.Intn(len(x))]
+	q, _ := strconv.Atoi(g.Query("q"))
+	y := x[q%(len(x))]
+	if g.Query("goto") != "" {
+		g.Redirect(302, "https://www.pixiv.net/artworks/"+string(y[0]))
+		return
+	}
+
 	g.Writer.Header().Add("Content-Type", "image/jpeg")
 	g.Writer.Header().Add("Cache-Control", "max-age=600")
 	g.Writer.Write(y[1])

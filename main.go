@@ -81,6 +81,9 @@ func main() {
 
 	r := middleware.New(prodMode)
 	r.SetFuncMap(template.FuncMap{
+		"session": func() int64 {
+			return time.Now().Unix() / 10
+		},
 		"cssVersion": func() string {
 			return cssVersion
 		},

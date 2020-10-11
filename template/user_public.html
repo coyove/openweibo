@@ -1,3 +1,5 @@
+{{$notFound := eq .ShowList 255}}
+
 <div class="status">
     <div class="tmpl-userbox-title row-header title" style="text-align:left">
         <div style="flex:0 48px">
@@ -14,7 +16,7 @@
 
         <div style="flex-grow:0;white-space:nowrap;margin:0">
 
-        {{if not .IsYou}}
+        {{if and (not .IsYou) (not $notFound)}}
         {{template "button_follow_block.html" (blend "follow" .ID .IsFollowing)}}
         {{template "button_follow_block.html" (blend "block" .ID .IsBlocking)}}
         {{else}}
@@ -27,7 +29,7 @@
     </div>
 
     <div class="title tmpl-border" style="border-bottom: dotted 1px transparent;text-align:left;line-height:1.66em">
-        <pre style="margin:0.5em 0"><!--
+        <pre style="margin:0.5em 0">{{if $notFound}}用户不存在{{end}}<!--
         -->{{.Settings.DescHTML}}<!--
         --><div class=tmpl-mid-text style="font-size:90%;white-space:normal">
             <b>加入于</b> {{formatTime .Signup}}&nbsp;

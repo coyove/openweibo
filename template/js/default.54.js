@@ -398,6 +398,8 @@ function __i18n(t) {
         return "服务端异常";
     if (t === "user_not_found")
         return "无权限";
+    if (t === "user_not_found_by_id")
+        return "ID不存在";
     if (t === "new_password_too_short")
         return "新密码太短";
     if (t === "old_password_invalid")
