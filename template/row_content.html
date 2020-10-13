@@ -63,6 +63,10 @@
     <div style="margin-top: 0.5em">{{.Media}}</div>
     {{end}}
 
+    {{if .Extras}}
+    {{if .Extras.poll_title}}{{template "poll.html" (blend .ID .Extras)}}{{end}}
+    {{end}}
+
     {{if and .You.IsMod .History}}
     <div class=tmpl-mid-text style="font:12px monospace">{{.History}}</div>
     {{end}}

@@ -85,6 +85,7 @@ func APINew(g *gin.Context) {
 		NSFW:          g.PostForm("nsfw") != "",
 		Anonymous:     g.PostForm("anon") != "",
 		ReplyLockMode: byte(rlm),
+		CreateTime:    time.Now(),
 	}
 
 	a.SetStickOnTop(g.PostForm("stick_on_top") != "")
@@ -99,6 +100,10 @@ func APINew(g *gin.Context) {
 		shortID, _ := ik.StringifyShortId(a.AID)
 		g.String(200, shortID)
 		return
+	}
+
+	if g.PostForm("poll") == "1" {
+		handlePollContent(a)
 	}
 
 	if g.PostForm("no_master") == "1" {
@@ -191,6 +196,78 @@ func APIDropTop(g *gin.Context) {
 		SetExtraValue: "",
 	})), "")
 	okok(g)
+}
+
+func APIPoll(g *gin.Context) {
+	u := throw(dal.GetUserByContext(g), "").(*model.User)
+	throw(checkIP(g), "")
+	a, err := dal.GetArticle(g.PostForm("id"))
+	throw(err, "")
+	throw(a.Extras["poll_title"] == "", "")
+
+	pollID := "u/" + u.ID + "/poll/" + a.ID
+	uc, err := dal.GetArticle(pollID)
+	throw(err != nil && err != model.ErrNotExisted, "")
+
+	if uc != nil && uc.Extras["choice"] != "" {
+		// Clear old poll votes
+		throw(a.Extras["poll_nochange"] != "", "poll_nochange")
+		throw(err2(dal.DoUpdateArticleExtra(&dal.UpdateArticleExtraRequest{
+			ID:            pollID,
+			SetExtraKey:   "choice",
+			SetExtraValue: "",
+		})), "")
+
+		oldChoices := strings.Split(uc.Extras["choice"], ",")
+		throw(err2(dal.DoUpdateArticleExtra(&dal.UpdateArticleExtraRequest{
+			ID:                a.ID,
+			IncDecExtraKeys:   append(oldChoices, "poll_total"),
+			IncDecExtraKeysBy: aws.Float64(-1),
+		})), "")
+
+		okok(g, common.RevRenderTemplateString("poll.html", []interface{}{a.ID, a.Extras}))
+		return
+	}
+
+	// Cast new poll votes
+	options, _ := strconv.Atoi(a.Extras["poll_options"])
+	maxChoices, _ := strconv.Atoi(a.Extras["poll_max"])
+	ttl, _ := time.ParseDuration(a.Extras["poll_live"])
+	newChoices := strings.Split(g.PostForm("choice"), ",")
+	throw(len(newChoices) <= 0, "")
+	throw(a.Extras["poll_multiple"] == "" && len(newChoices) > 1, "too_many_choices")
+	throw(maxChoices != 0 && len(newChoices) > maxChoices, "too_many_choices")
+	throw(ttl > 0 && a.CreateTime.Add(ttl).Before(time.Now()), "poll_closed")
+
+	for _, c := range newChoices {
+		if !strings.HasPrefix(c, "poll_") {
+			throw(true, "")
+		}
+		c, _ := strconv.Atoi(c[5:])
+		if c < 1 || c > options {
+			log.Println(c, options, a.Extras)
+			throw(true, "")
+		}
+	}
+
+	throw(dal.ModKV().Set(pollID, (&model.Article{
+		ID:     pollID,
+		Extras: map[string]string{"choice": strings.Join(newChoices, ",")},
+	}).Marshal()), "")
+	throw(err2(dal.DoUpdateArticleExtra(&dal.UpdateArticleExtraRequest{
+		ID:                a.ID,
+		IncDecExtraKeys:   append(newChoices, "poll_total"),
+		IncDecExtraKeysBy: aws.Float64(1),
+	})), "")
+
+	{
+		a2, _ := dal.GetArticle(a.ID)
+		if a2 == nil {
+			a2 = a // fallback
+		}
+		a2.Extras["poll_you_voted"] = strings.Join(newChoices, ",")
+		okok(g, common.RevRenderTemplateString("poll.html", []interface{}{a2.ID, a2.Extras}))
+	}
 }
 
 func APIUpload(g *gin.Context) {

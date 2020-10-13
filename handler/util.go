@@ -333,3 +333,43 @@ func writeAvatar(u *model.User, image string) (string, error) {
 	of.Close()
 	return fn, err
 }
+
+func handlePollContent(a *model.Article) {
+	lines := strings.Split(a.Content, "\n")
+	for i := len(lines) - 1; i >= 0; i-- {
+		line := strings.TrimSpace(lines[i])
+		if line == "" {
+			lines = append(lines[:i], lines[i+1:]...)
+			continue
+		}
+		lines[i] = line
+	}
+	if len(lines) < 2 {
+		return
+	}
+	if len(lines) > 5 {
+		lines = lines[:5]
+	}
+
+	a.Extras = map[string]string{}
+	a.Extras["poll_title"] = lines[0]
+	a.Extras["poll_options"] = strconv.Itoa(len(lines) - 1)
+
+	for title := lines[0]; ; {
+		idx := strings.LastIndex(title, " ")
+		if idx == -1 {
+			break
+		}
+		kv := title[idx+1:]
+		if idx := strings.Index(kv, "="); strings.HasPrefix(kv, "-") && idx > -1 {
+			a.Extras["poll_"+kv[1:idx]] = kv[idx+1:]
+		}
+		title = title[:idx]
+	}
+
+	for i := 1; i < len(lines); i++ {
+		a.Extras["poll_choice_"+strconv.Itoa(i)] = lines[i]
+	}
+
+	a.Content = lines[0]
+}

@@ -201,7 +201,7 @@ func notifyNewFollower(from, to string, following bool) (E error) {
 		ToSubject:          from,
 		InsertUnderChainID: ik.NewID(ik.IDFollower, to).String(),
 		Cmd:                model.CmdFollowed,
-		CmdValue:           following,
+		CmdValue:           strconv.FormatBool(following),
 	})
 	if err != nil {
 		return err
@@ -229,7 +229,7 @@ func BlockUser(from, to string, blocking bool) (E error) {
 		ToSubject:          to,
 		InsertUnderChainID: ik.NewID(ik.IDBlacklist, from).String(),
 		Cmd:                model.CmdBlock,
-		CmdValue:           blocking,
+		CmdValue:           strconv.FormatBool(blocking),
 	})
 	return err
 }
@@ -262,7 +262,7 @@ func LikeArticle(u *model.User, to string, liking bool) (E error) {
 		InsertUnderChainID: ik.NewID(ik.IDLike, from).String(),
 		Cmd:                model.CmdLike,
 		ToSubject:          to,
-		CmdValue:           liking,
+		CmdValue:           strconv.FormatBool(liking),
 	})
 	if err != nil {
 		return err

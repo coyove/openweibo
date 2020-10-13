@@ -69,7 +69,7 @@ input:focus, select:focus, textarea:focus, button:focus, div[contentEditable=tru
     outline: none;
 }
 
-input[type=text], input, textarea, select {
+input[type=text], input:not(.poll-choice), textarea, select {
    -webkit-appearance: none;
    border-radius: 0;
    border: solid 1px {{.Border}};
@@ -559,6 +559,16 @@ div.reply-lock-notify {
 .image-loading-div {
     position:absolute;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,0.33);opacity:0;transition:opacity 0.5s;
 }
+
+.poll-article {  margin-top: 0.5em }
+.poll-article .poll-item {padding: 0.5em; line-height:1.5em}
+.poll-article .poll-item:nth-child(even) {opacity:0.8}
+.poll-article input { margin-right: 0.5em }
+.poll-article .poll-votes {
+    float: right;font-weight:bold;background:{{.Row}};
+    padding:0 0.5em;border:solid 1px {{.Border}};border-radius:0.7em
+}
+.poll-article .poll-item[voted=true] { background: {{.Navbar}} }
 
 .tmpl-link-text { color: {{.Link}} !important }
 .tmpl-normal-text { color: {{.NormalText}} !important }

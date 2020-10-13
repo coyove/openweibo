@@ -1,0 +1,101 @@
+{{$e := index . 1}}
+{{$s := session}}
+{{$t := "radio"}}
+
+{{if $e.poll_multiple}}
+{{$t = "checkbox"}}
+{{end}}
+
+{{$voted := $e.poll_you_voted}}
+
+{{$you_vote_1 := (contains $e.poll_you_voted "poll_1")}}
+{{$you_vote_2 := (contains $e.poll_you_voted "poll_2")}}
+{{$you_vote_3 := (contains $e.poll_you_voted "poll_3")}}
+{{$you_vote_4 := (contains $e.poll_you_voted "poll_4")}}
+
+<div class="poll-article tmpl-border" id="poll-{{$s}}" style="border-top:dashed 1px black">
+  <div voted="{{$you_vote_1}}" class=poll-item>
+    {{if not $voted}}
+    <input id="poll{{$s}}-1" {{if $you_vote_1}}checked{{end}} name="poll{{$s}}" class="poll-choice" type={{$t}}>
+    {{end}}
+    <label for="poll{{$s}}-1">{{$e.poll_choice_1}}</label> {{if $voted}}<div class=poll-votes>{{or $e.poll_1 0}}</div>{{end}}
+  </div>
+
+{{if $e.poll_choice_2}}
+  <div voted="{{$you_vote_2}}" class=poll-item>
+    {{if not $voted}}
+    <input id="poll{{$s}}-2" {{if $you_vote_2}}checked{{end}} name="poll{{$s}}" class="poll-choice" type={{$t}}>
+    {{end}}
+    <label for="poll{{$s}}-2">{{$e.poll_choice_2}}</label> {{if $voted}}<div class=poll-votes>{{or $e.poll_2 0}}</div>{{end}}
+  </div>
+{{end}}
+
+{{if $e.poll_choice_3}}
+  <div voted="{{$you_vote_3}}" class=poll-item>
+    {{if not $voted}}
+    <input id="poll{{$s}}-3" {{if $you_vote_3}}checked{{end}} name="poll{{$s}}" class="poll-choice" type={{$t}}>
+    {{end}}
+    <label for="poll{{$s}}-3">{{$e.poll_choice_3}}</label> {{if $voted}}<div class=poll-votes>{{or $e.poll_3 0}}</div>{{end}}
+  </div>
+{{end}}
+
+{{if $e.poll_choice_4}}
+  <div voted="{{$you_vote_4}}" class=poll-item>
+    {{if not $voted}}
+    <input id="poll{{$s}}-4" {{if $you_vote_4}}checked{{end}} name="poll{{$s}}" class="poll-choice" type={{$t}}>
+    {{end}}
+    <label for="poll{{$s}}-4">{{$e.poll_choice_4}}</label> {{if $voted}}<div class=poll-votes>{{or $e.poll_4 0}}</div>{{end}}
+  </div>
+{{end}}
+
+  <div style="padding:0.5em 0; display: flex; align-items:center;border:dashed 1px black;border-width:1px 0" class=tmpl-border>
+    <div>
+    {{if not $voted}}
+    <button onclick='
+		     var c = [];
+		     $q("#poll-{{$s}} .poll-choice", true).forEach(function(box, i) {if (box.checked) c.push("poll_" + (i+1));})
+		     c = c.join(",");
+		     if (!c) {
+		     $popup("请选择至少一个选项");
+		     return
+		     }
+		     var stop = $wait(this);
+		     $post("/api2/poll", {id: "{{index . 0}}", choice: c}, function(res) {
+		     	stop();
+			if (res.substring(0, 3) !== "ok:") return res;
+			$q("#poll-{{$s}}").outerHTML = res.substr(3);
+		     }, stop);
+		     ' class=gbutton {{if $e.poll_closed}}disabled{{end}}>
+      {{if $e.poll_closed}}投票已结束{{else}}投票{{end}}
+    </button>
+    {{else}}
+    <button onclick='
+		     var stop = $wait(this);
+		     $post("/api2/poll", {id: "{{index . 0}}"}, function(res) {
+		     stop();
+		     if (res.substring(0, 3) !== "ok:") return res;
+		     $q("#poll-{{$s}}").outerHTML = res.substr(3);
+		     }, stop);
+		     ' class=gbutton {{if or $e.poll_nochange $e.poll_closed}}disabled{{end}}>
+      {{if $e.poll_nochange}}
+      投票不可更改
+      {{else if $e.poll_closed}}
+      投票已结束
+      {{else}}
+      取消投票
+      {{end}}
+    </button> 
+    {{end}}
+    </div>
+    <div style="margin-left:1em;font-size: 90%">
+      共 {{or $e.poll_total 0}} 人参与投票
+      {{if $e.poll_deadline}}
+      {{if $e.poll_closed}}
+      (已截止于 {{$e.poll_deadline}})
+      {{else}}
+      (截止日期 {{$e.poll_deadline}})
+      {{end}}
+      {{end}}
+    </div>
+  </div>
+</div>

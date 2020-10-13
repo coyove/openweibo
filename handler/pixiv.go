@@ -94,5 +94,5 @@ func GetEriri(word string) {
 		log.Println("eriri worker", time.Since(start), msize/1024)
 	}
 
-	time.AfterFunc(time.Minute*30, func() { GetEriri(word) })
+	time.AfterFunc(time.Minute*60, func() { GetEriri(word) })
 }

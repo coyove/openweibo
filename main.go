@@ -81,12 +81,12 @@ func main() {
 
 	r := middleware.New(prodMode)
 	r.SetFuncMap(template.FuncMap{
-		"session": func() int64 {
-			return time.Now().Unix() / 10
+		"session": func() int64 { return time.Now().Unix()<<32 | int64(rand.Uint32()) },
+		"contains": func(a interface{}, b string) bool {
+			aa, _ := a.(string)
+			return strings.Contains(aa, b)
 		},
-		"cssVersion": func() string {
-			return cssVersion
-		},
+		"cssVersion": func() string { return cssVersion },
 		"emptyUser": func() string {
 			u := model.Dummy
 			return middleware.RenderTemplateString("user_public.html", u)
@@ -194,6 +194,7 @@ func main() {
 	r.Handle("POST", "/api2/toggle_nsfw", handler.APIToggleNSFWArticle)
 	r.Handle("POST", "/api2/toggle_lock", handler.APIToggleLockArticle)
 	r.Handle("POST", "/api2/drop_top", handler.APIDropTop)
+	r.Handle("POST", "/api2/poll", handler.APIPoll)
 
 	r.Handle("GET", "/loaderio-4d068f605f9b693f6ca28a8ca23435c6", func(g *gin.Context) { g.String(200, ("loaderio-4d068f605f9b693f6ca28a8ca23435c6")) })
 

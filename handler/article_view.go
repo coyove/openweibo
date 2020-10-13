@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"strconv"
 	"strings"
 	"time"
 
@@ -36,6 +37,7 @@ type ArticleView struct {
 	MediaType     string
 	History       string
 	CreateTime    time.Time
+	Extras        map[string]string
 }
 
 const (
@@ -74,6 +76,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 	a.Cmd = string(a2.Cmd)
 	a.CreateTime = a2.CreateTime
 	a.History = a2.History
+	a.Extras = a2.Extras
 
 	a.Author, _ = dal.WeakGetUser(a2.Author)
 	if a.Author == nil {
@@ -90,6 +93,25 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 		a.You = &model.User{}
 	} else {
 		a.Liked = dal.IsLiking(u.ID, a2.ID)
+
+		if a.Extras["poll_title"] != "" {
+			pa, err := dal.GetArticle("u/" + u.ID + "/poll/" + a.ID)
+			if err == nil {
+				a.Extras["poll_you_voted"] = pa.Extras["choice"]
+				for i := 1; i < 8; i++ {
+					if k := "poll_" + strconv.Itoa(i); a.Extras[k] == "" {
+						a.Extras[k] = "0"
+					}
+				}
+			}
+			ttl, _ := time.ParseDuration(a.Extras["poll_live"])
+			if ttl > 0 {
+				if a.CreateTime.Add(ttl).Before(time.Now()) {
+					a.Extras["poll_closed"] = "1"
+				}
+				a.Extras["poll_deadline"] = a.CreateTime.Add(ttl).Format(time.ANSIC)
+			}
+		}
 	}
 
 	if p := strings.SplitN(a2.Media, ":", 2); len(p) == 2 {
