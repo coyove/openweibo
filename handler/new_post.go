@@ -41,6 +41,7 @@ func hashIP(g *gin.Context) string {
 }
 
 func APINew(g *gin.Context) {
+	g.Set("allow-api", true)
 	if g.PostForm("parent") != "" {
 		doReply(g)
 		return
@@ -56,6 +57,7 @@ func APINew(g *gin.Context) {
 
 	u := dal.GetUserByContext(g)
 	if u == nil {
+		throw(g.PostForm("api2_uid") != "", "user_not_found")
 		u = &model.User{ID: "pastebin" + strconv.Itoa(rand.Intn(10))}
 		image, rlm = "", 0
 		pastebin = true
@@ -271,11 +273,15 @@ func APIPoll(g *gin.Context) {
 }
 
 func APIUpload(g *gin.Context) {
-	const IR = "invalid/request"
+	const IR = "ERROR"
 	g.Set("error-as-500", true) // failure will be returned using 500 status code
 
 	u := getUser(g)
-	throw(u, "")
+	if u == nil {
+		u, _ = dal.GetUserByToken(g.Query("api2_uid"), true)
+	}
+
+	throw(u, "INVALID_USER")
 	throw(!ik.BAdd(u.ID), IR)
 
 	d, params, err := mime.ParseMediaType(g.GetHeader("Content-Type"))

@@ -209,6 +209,36 @@ input[type=number] {
         </div>
     </div>
 
+    <div class="status-box">
+        <div class="status">
+            <div class="title tmpl-userbox-title row-header" style="text-align:center"><b style="flex-grow: 1">API</b></div>
+
+            <div class=title>
+                <table class="articles" style="margin-top: 0.5em;text-align:left">
+                    <tr>
+                        <td class=nowrap>API Token:</td>
+                        <td><input readonly name=api-token class=t value="{{.User.Settings.APIToken}}"></td>
+                        <td class=nowrap>
+                            <button
+                                class="gbutton"
+                                onclick="
+    var stop = $wait(this);
+    $post('/api/user_settings', {'set-apisession':1}, function(res) {
+        stop();
+	if (res.substring(0, 3) !== 'ok:') return res;
+	$q('[name=api-token]').value = res.substr(3);
+    }, stop);
+">刷新</button>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+	    <div class=title style="padding: 0.5em">
+		1. TODO <br>
+	    </div>
+        </div>
+    </div>
+
 <table class="articles" style="margin: 0.5em 0">
     {{if .User.IsAdmin}}
     <tr>

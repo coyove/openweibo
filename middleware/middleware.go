@@ -40,7 +40,7 @@ func mwRenderPerf(g *gin.Context) {
 	var u *model.User
 	if !strings.HasPrefix(g.Request.URL.Path, "/i/") {
 		tok, _ := g.Cookie("id")
-		if u, _ = dal.GetUserByToken(tok); u != nil {
+		if u, _ = dal.GetUserByToken(tok, false); u != nil {
 			g.Set("user", u)
 			dal.MarkUserActive(u.ID)
 			model.IndexUser(u, false)

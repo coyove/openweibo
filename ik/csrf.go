@@ -8,6 +8,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -153,6 +154,8 @@ func ValidateOTT(id, tok string) bool {
 	return string(p) == id
 }
 
+var userTokenBase64 = base64.URLEncoding.WithPadding(base64.NoPadding)
+
 func MakeUserToken(u *model.User) string {
 	if u == nil {
 		return ""
@@ -167,11 +170,11 @@ func MakeUserToken(u *model.User) string {
 	var nonce [12]byte
 	rand.Read(nonce[:])
 	gcm, _ := cipher.NewGCM(common.Cfg.Blk)
-	return base64.URLEncoding.EncodeToString(append(gcm.Seal(buf[:0], nonce[:], buf, nil), nonce[:]...))
+	return userTokenBase64.EncodeToString(append(gcm.Seal(buf[:0], nonce[:], buf, nil), nonce[:]...))
 }
 
 func ParseUserToken(tok string) (id, session string, err error) {
-	u, err := base64.URLEncoding.DecodeString(tok)
+	u, err := userTokenBase64.DecodeString(strings.TrimRight(tok, "="))
 	if err != nil {
 		return "", "", err
 	}

@@ -32,6 +32,7 @@ type (
 		TSignup            *uint32
 		TLogin             *uint32
 		Kimochi            *byte
+		SettingAPIToken    *string
 		SettingAutoNSFW    *bool
 		SettingFoldImages  *bool
 		SettingDescription *string
@@ -86,6 +87,7 @@ func DoUpdateUser(rr *UpdateUserRequest) (model.User, error) {
 	if rr.SettingAutoNSFW != nil ||
 		rr.SettingFoldImages != nil ||
 		rr.SettingDescription != nil ||
+		rr.SettingAPIToken != nil ||
 		rr.SettingMFFM != nil ||
 		rr.SettingMFCM != nil ||
 		rr.SettingFwAccept != nil ||
@@ -99,6 +101,7 @@ func DoUpdateUser(rr *UpdateUserRequest) (model.User, error) {
 		setIfValid(&u.AutoNSFW, rr.SettingAutoNSFW)
 		setIfValid(&u.FoldImages, rr.SettingFoldImages)
 		setIfValid(&u.Description, rr.SettingDescription)
+		setIfValid(&u.APIToken, rr.SettingAPIToken)
 		setIfValid(&u.OnlyMyFollowingsCanFollow, rr.SettingMFFM)
 		setIfValid(&u.OnlyMyFollowingsCanMention, rr.SettingMFCM)
 		setIfValid(&u.HideLikesInTimeline, rr.SettingSLIT)

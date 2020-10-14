@@ -267,6 +267,7 @@ type UserSettings struct {
 	HideLikesInTimeline        bool      `json:"slit,omitempty"`
 	HideLocation               bool      `json:"hl,omitempty"`
 	Description                string    `json:"desc,omitempty"`
+	APIToken                   string    `json:"apisess,omitempty"`
 	FollowerNeedsAcceptance    time.Time `json:"pdfollow,omitempty"`
 }
 

@@ -65,14 +65,14 @@ func GetUserSettings(id string) model.UserSettings {
 }
 
 func GetUserByContext(g *gin.Context) *model.User {
-	u, _ := GetUserByToken(g.PostForm("api2_uid"))
+	u, _ := GetUserByToken(g.PostForm("api2_uid"), g.GetBool("allow-api"))
 	if u != nil && u.Banned {
 		return nil
 	}
 	return u
 }
 
-func GetUserByToken(tok string) (*model.User, error) {
+func GetUserByToken(tok string, allowAPI bool) (*model.User, error) {
 	id, session, err := ik.ParseUserToken(tok)
 	if err != nil {
 		return nil, err
@@ -81,6 +81,10 @@ func GetUserByToken(tok string) (*model.User, error) {
 	u, err := GetUserWithSettings(string(id))
 	if err != nil {
 		return nil, err
+	}
+
+	if allowAPI && tok == u.Settings().APIToken {
+		return u, nil
 	}
 
 	if u.Session != string(session) {

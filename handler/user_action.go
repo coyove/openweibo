@@ -223,6 +223,16 @@ func APIUpdateUserSettings(g *gin.Context) {
 			ID:                 u.ID,
 			SettingDescription: aws.String(common.SoftTrunc(g.PostForm("description"), 512)),
 		})), "")
+	case g.PostForm("set-apisession") != "":
+		apiSession := "api+" + genSession()
+		u.Session = apiSession
+		apiToken := ik.MakeUserToken(u)
+		throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
+			ID:              u.ID,
+			SettingAPIToken: aws.String(apiToken),
+		})), "")
+		okok(g, apiToken)
+		return
 	case g.PostForm("set-fw-accept") != "":
 		throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
 			ID:              u.ID,
