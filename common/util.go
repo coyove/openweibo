@@ -7,7 +7,9 @@ import (
 	"net/smtp"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 )
 
 var (
@@ -280,4 +282,13 @@ func Hash32(n string) (h uint32) {
 
 func Hash16(n string) (h uint16) {
 	return uint16(Hash32(n))
+}
+
+func ParseDuration(v string) time.Duration {
+	if strings.HasSuffix(v, "d") {
+		d, _ := strconv.Atoi(v[:len(v)-1])
+		return time.Duration(d) * time.Hour * 24
+	}
+	d, _ := time.ParseDuration(v)
+	return d
 }

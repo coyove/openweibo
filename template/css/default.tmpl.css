@@ -561,8 +561,11 @@ div.reply-lock-notify {
 }
 
 .poll-article {  margin-top: 0.5em }
-.poll-article .poll-item {padding: 0.5em; line-height:1.5em}
-.poll-article .poll-item:nth-child(even) {opacity:0.8}
+.poll-article .poll-item { position:relative; padding: 0.5em; line-height:1.5em}
+.poll-article .poll-item[voted=true]:nth-child(odd):after {
+    content: ' '; display: block; background: rgb(0,0,0,0.033); position: absolute;
+    left: 0; top: 0; width: 100%; height: 100%; pointer-events: none;
+}
 .poll-article input { margin-right: 0.5em }
 .poll-article .poll-votes {
     float: right;font-weight:bold;background:{{.Row}};

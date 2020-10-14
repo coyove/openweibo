@@ -81,12 +81,19 @@ func main() {
 
 	r := middleware.New(prodMode)
 	r.SetFuncMap(template.FuncMap{
-		"session": func() int64 { return time.Now().Unix()<<32 | int64(rand.Uint32()) },
+		"session":    func() int64 { return time.Now().Unix()<<32 | int64(rand.Uint32()) },
+		"cssVersion": func() string { return cssVersion },
 		"contains": func(a interface{}, b string) bool {
 			aa, _ := a.(string)
 			return strings.Contains(aa, b)
 		},
-		"cssVersion": func() string { return cssVersion },
+		"pollMap": func(a ...string) map[string]string {
+			m := map[string]string{}
+			for i := 0; i < len(a); i += 2 {
+				m[a[i]] = a[i+1]
+			}
+			return m
+		},
 		"emptyUser": func() string {
 			u := model.Dummy
 			return middleware.RenderTemplateString("user_public.html", u)

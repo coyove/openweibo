@@ -68,7 +68,7 @@
 			<li>
                             <input onchange='if(this.checked)(function(){
 					     if ($q("#rv-{{.UUID}} textarea").value) return;
- insertTag(this, "{{.UUID}}","","投票标题\n选项1\n选项2\n...","")
+ insertTag(this, "{{.UUID}}","","投票标题\n选项1\n选项2\n...\n选项6(最多)","")
 })()' type=checkbox name=poll id="poll{{.UUID}}" class=icon-input-checkbox>
                             <i class=icon-ok-circled2></i>
                             <label for="poll{{.UUID}}">将发文用作投票</label>

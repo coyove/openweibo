@@ -130,6 +130,9 @@
 .reply-table .icon-comment {
     padding-top: 1px; 
 }
+.icon-input-checkbox.poll-choice + [class^=icon-]:before {
+    margin-right: 0.5em;
+}
 .icon-input-checkbox + [class^=icon-]:before {
     content: '\f204';
     color: {{.LightText}}

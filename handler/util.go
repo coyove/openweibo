@@ -347,8 +347,8 @@ func handlePollContent(a *model.Article) {
 	if len(lines) < 2 {
 		return
 	}
-	if len(lines) > 5 {
-		lines = lines[:5]
+	if len(lines) > 6+1 {
+		lines = lines[:6+1]
 	}
 
 	a.Extras = map[string]string{}

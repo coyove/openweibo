@@ -104,12 +104,12 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 					}
 				}
 			}
-			ttl, _ := time.ParseDuration(a.Extras["poll_live"])
+			ttl := common.ParseDuration(a.Extras["poll_live"])
 			if ttl > 0 {
 				if a.CreateTime.Add(ttl).Before(time.Now()) {
 					a.Extras["poll_closed"] = "1"
 				}
-				a.Extras["poll_deadline"] = a.CreateTime.Add(ttl).Format(time.ANSIC)
+				a.Extras["poll_deadline"] = a.CreateTime.Add(ttl).Format("2006-01-02 15:04")
 			}
 		}
 	}

@@ -232,7 +232,7 @@ func APIPoll(g *gin.Context) {
 	// Cast new poll votes
 	options, _ := strconv.Atoi(a.Extras["poll_options"])
 	maxChoices, _ := strconv.Atoi(a.Extras["poll_max"])
-	ttl, _ := time.ParseDuration(a.Extras["poll_live"])
+	ttl := common.ParseDuration(a.Extras["poll_live"])
 	newChoices := strings.Split(g.PostForm("choice"), ",")
 	throw(len(newChoices) <= 0, "")
 	throw(a.Extras["poll_multiple"] == "" && len(newChoices) > 1, "too_many_choices")
