@@ -72,7 +72,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 	a.Likes = int(a2.Likes)
 	a.ReplyLockMode = a2.ReplyLockMode
 	a.NSFW = a2.NSFW
-	a.StickOnTop = a2.StickOnTop()
+	a.StickOnTop = a2.T_StickOnTop
 	a.Cmd = string(a2.Cmd)
 	a.CreateTime = a2.CreateTime
 	a.History = a2.History
@@ -86,6 +86,9 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 		a.Author.SetIsAnon(true)
 		a.Author.ID = fmt.Sprintf("?%d", time.Now().UnixNano()/1e3)
 		a.Author.Avatar = 0
+	}
+	if a2.Extras["is_bot"] != "" {
+		a.Author.SetIsAPI(true)
 	}
 
 	a.You = u

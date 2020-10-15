@@ -41,26 +41,24 @@ func hashIP(g *gin.Context) string {
 }
 
 func APINew(g *gin.Context) {
+	throw(checkIP(g), "")
 	g.Set("allow-api", true)
-	if g.PostForm("parent") != "" {
-		doReply(g)
-		return
-	}
 
 	var (
-		content  = common.SoftTrunc(g.PostForm("content"), int(common.Cfg.MaxContent))
-		image    = common.SanMedia(g.PostForm("media"))
-		rlm, _   = strconv.Atoi(g.PostForm("reply_lock"))
-		err      error
-		pastebin = false
+		replyTo      = g.PostForm("parent")
+		content      = common.SoftTrunc(g.PostForm("content"), int(common.Cfg.MaxContent))
+		image        = common.DetectMedia(g.PostForm("media"))
+		replyLock, _ = strconv.Atoi(g.PostForm("reply_lock"))
+		err          error
+		pastebin     = false
 	)
 
 	u := dal.GetUserByContext(g)
 	if u == nil {
 		throw(g.PostForm("api2_uid") != "", "user_not_found")
 		u = &model.User{ID: "pastebin" + strconv.Itoa(rand.Intn(10))}
-		image, rlm = "", 0
-		pastebin = true
+		image, replyLock, replyTo, pastebin = "", 0, "", true
+
 		if content == "" {
 			// curl -F 'content=@file'
 			f, err := g.FormFile("content")
@@ -72,94 +70,66 @@ func APINew(g *gin.Context) {
 			content = string(tmp)
 		}
 	}
-
 	throw(len(content) < 3 && image == "", "content_too_short")
-	throw(checkIP(g), "")
-
-	if image != "" {
-		image = "IMG:" + image
-	}
 
 	a := &model.Article{
+		Author:        u.ID,
 		Content:       content,
 		Media:         image,
 		IP:            hashIP(g),
 		NSFW:          g.PostForm("nsfw") != "",
-		Anonymous:     g.PostForm("anon") != "",
-		ReplyLockMode: byte(rlm),
+		Anonymous:     replyTo == "" && g.PostForm("anon") != "", // anonymous replies are meaningless
+		ReplyLockMode: byte(replyLock),
 		CreateTime:    time.Now(),
+		Extras:        map[string]string{},
+		T_StickOnTop:  g.PostForm("stick_on_top") != "",
+	}
+	if u.IsAPI() {
+		a.Extras["is_bot"], a.Extras["bot"] = "1", g.PostForm("bot")
 	}
 
-	a.SetStickOnTop(g.PostForm("stick_on_top") != "")
 	a.AID, err = dal.Ctr.Get()
 	throw(err, "")
+	shortID, _ := ik.StringifyShortId(a.AID)
+	g.Writer.Header().Add("X-Article-Code", shortID)
 
 	if pastebin {
 		// Pastebin won't go into master timeline
 		a.PostOptions |= model.PostOptionNoMasterTimeline
 		a.History = fmt.Sprintf("{pastebin_by:%q}", g.ClientIP())
 		throw(err2(dal.Post(a, u)), "")
-		shortID, _ := ik.StringifyShortId(a.AID)
 		g.String(200, shortID)
 		return
 	}
 
-	if g.PostForm("poll") == "1" {
-		handlePollContent(a)
-	}
-
-	if g.PostForm("no_master") == "1" {
-		a.PostOptions |= model.PostOptionNoMasterTimeline
-	}
-
 	if u.Settings().DoFollowerNeedsAcceptance() {
+		// If I want to control & filter my followers, then I would definitly not want my feeds found by non-followers
 		a.PostOptions |= model.PostOptionNoSearch
 	}
 
-	a2, err := dal.Post(a, u)
-	throw(err, "")
-	okok(g, url.PathEscape(middleware.RenderTemplateString("row_content.html", NewTopArticleView(a2, u))))
-}
+	if replyTo == "" {
+		if g.PostForm("poll") == "1" {
+			handlePollContent(a)
+		}
 
-func doReply(g *gin.Context) {
-	var (
-		reply   = g.PostForm("parent")
-		content = common.SoftTrunc(g.PostForm("content"), int(common.Cfg.MaxContent))
-		image   = common.SanMedia(g.PostForm("media"))
-		nsfw    = g.PostForm("nsfw") != ""
-		rlm, _  = strconv.Atoi(g.PostForm("reply_lock"))
-		err     error
-	)
+		if g.PostForm("no_master") == "1" {
+			a.PostOptions |= model.PostOptionNoMasterTimeline
+		}
 
-	u := throw(dal.GetUserByContext(g), "").(*model.User)
-	throw(checkIP(g), "")
+		a2, err := dal.Post(a, u)
+		throw(err, "")
+		okok(g, url.PathEscape(middleware.RenderTemplateString("row_content.html", NewTopArticleView(a2, u))))
+	} else {
+		noTimeline := g.PostForm("no_timeline") == "1" || strings.Contains(content, "#ReportThis")
 
-	if image != "" {
-		image = "IMG:" + image
+		if noTimeline {
+			a.PostOptions |= model.PostOptionNoSearch
+		}
+
+		a2, err := dal.PostReply(replyTo, a, u, noTimeline)
+		throw(err, "cannot_reply")
+		okok(g, url.PathEscape(middleware.RenderTemplateString("row_content.html", NewReplyArticleView(a2, u))))
 	}
-
-	noTimeline := g.PostForm("no_timeline") == "1" || strings.Contains(content, "#ReportThis")
-
-	a := &model.Article{
-		Content:       content,
-		Media:         image,
-		NSFW:          nsfw,
-		Author:        u.ID,
-		IP:            hashIP(g),
-		ReplyLockMode: byte(rlm),
-	}
-	a.AID, err = dal.Ctr.Get()
-	if err != nil {
-		log.Println("AID", err)
-	}
-
-	if noTimeline || u.Settings().DoFollowerNeedsAcceptance() {
-		a.PostOptions |= model.PostOptionNoSearch
-	}
-
-	a2, err := dal.PostReply(reply, a, u, noTimeline)
-	throw(err, "cannot_reply")
-	okok(g, url.PathEscape(middleware.RenderTemplateString("row_content.html", NewReplyArticleView(a2, u))))
 }
 
 func APIDeleteArticle(g *gin.Context) {

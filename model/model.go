@@ -72,15 +72,7 @@ type Article struct {
 	ReferID       string            `json:"ref,omitempty"`
 	History       string            `json:"his,omitempty"`
 
-	_StickOnTop bool
-}
-
-func (a *Article) SetStickOnTop(v bool) {
-	a._StickOnTop = v
-}
-
-func (a *Article) StickOnTop() bool {
-	return a._StickOnTop
+	T_StickOnTop bool `json:"-"`
 }
 
 func (a *Article) ContentHTML() template.HTML {
@@ -137,6 +129,7 @@ type User struct {
 	_IsYou                  bool
 	_IsInvalid              bool
 	_IsAnon                 bool
+	_IsAPI                  bool
 	_ShowList               byte
 	_Settings               UserSettings
 }
@@ -202,9 +195,13 @@ func (u User) IsInvalid() bool { return u._IsInvalid }
 
 func (u User) IsAnon() bool { return u._IsAnon }
 
+func (u User) IsAPI() bool { return u._IsAPI }
+
 func (u *User) SetInvalid() *User { u._IsInvalid = true; return u }
 
 func (u *User) SetIsAnon(v bool) *User { u._IsAnon = v; return u }
+
+func (u *User) SetIsAPI(v bool) *User { u._IsAPI = v; return u }
 
 func (u User) ShowList() byte { return u._ShowList }
 

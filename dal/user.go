@@ -84,6 +84,7 @@ func GetUserByToken(tok string, allowAPI bool) (*model.User, error) {
 	}
 
 	if allowAPI && tok == u.Settings().APIToken {
+		u.SetIsAPI(true)
 		return u, nil
 	}
 

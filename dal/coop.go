@@ -301,7 +301,7 @@ func DoInsertArticle(r *InsertArticleRequest) (A, R model.Article, E error) {
 		// Inserting into user's timeline, which has some special cases
 
 		// 1. This article will be the stick-on-top one
-		if a.StickOnTop() {
+		if a.T_StickOnTop {
 			root.Extras["stick_on_top"] = a.ID
 		}
 

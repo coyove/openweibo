@@ -664,20 +664,24 @@ function showInfoBox(el, uid) {
     window.REGIONS = window.REGIONS || [];
     window.REGIONS.push(reg);
 
+    var adjustDiv = function() {
+	var newBox = div.getBoundingClientRect();
+	if (newBox.right > bodyBox.right) {
+	    div.style.left = '0';
+	    div.style.right = "0";
+	}
+    }
     $post("/api/u/" + uid, {}, function(h) {
         if (h.indexOf("ok:") > -1) {
             setTimeout(function() {
                 div.innerHTML = h.substring(3)
-                var newBox = div.getBoundingClientRect();
-                if (newBox.right > bodyBox.right) {
-                    div.style.left = null;
-                    div.style.right = "0";
-                }
+		adjustDiv();
             }, new Date().getTime() - startAt > 100 ? 0 : 100)
             return
         }
         return h
     }, function() {
+	adjustDiv();
         el.BLOCK = false;
     })
 }

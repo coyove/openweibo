@@ -59,12 +59,15 @@ func SoftTruncDisplayWidth(a string, w int) string {
 	return string(r)
 }
 
-func SanMedia(media string) string {
+func DetectMedia(media string) string {
 	media = SoftTrunc(media, 1024)
-	if strings.Count(media, ";") < 16 {
-		return media
+	if media == "" {
+		return ""
 	}
-	return strings.Join(strings.Split(media, ";")[:16], ";")
+	if strings.Count(media, ";") < 16 {
+		return "IMG:" + media
+	}
+	return "IMG:" + strings.Join(strings.Split(media, ";")[:16], ";")
 }
 
 func SanText(in string) string {

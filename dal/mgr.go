@@ -126,7 +126,7 @@ func WalkMulti(media bool, n int, cursors ...ik.ID) (a []*model.Article, next []
 	idmp := map[string]bool{} // dedup map for parent articles
 	appendStickOnTop := func(id string) {
 		if top, _ := GetArticle(id); top != nil {
-			top.SetStickOnTop(true)
+			top.T_StickOnTop = true
 			a = append(a, top)
 			idm[top.ID] = true
 		}

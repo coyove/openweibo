@@ -18,3 +18,4 @@ unifont
 bleve.search
 *.swp
 dump.rdb
+post.sh
