@@ -30,6 +30,14 @@ func WeakGetUser(id string) (*model.User, error) {
 	return getterUser(m.db.WeakGet, id)
 }
 
+func WeakGetUserWithSettings(id string) (*model.User, error) {
+	u, err := getterUser(m.db.WeakGet, id)
+	if u != nil {
+		u.SetSettings(WeakGetUserSettings(id))
+	}
+	return u, err
+}
+
 func getterUser(getter func(string) ([]byte, error), id string) (*model.User, error) {
 	if id == "" {
 		return nil, fmt.Errorf("empty user id")
@@ -61,6 +69,11 @@ func GetUserWithSettings(id string) (*model.User, error) {
 
 func GetUserSettings(id string) model.UserSettings {
 	p, _ := m.db.Get("u/" + id + "/settings")
+	return model.UnmarshalUserSettings(p)
+}
+
+func WeakGetUserSettings(id string) model.UserSettings {
+	p, _ := m.db.WeakGet("u/" + id + "/settings")
 	return model.UnmarshalUserSettings(p)
 }
 
@@ -161,6 +174,26 @@ func FollowUser(from, to string, following bool) (E error) {
 			DoUpdateUser(&UpdateUserRequest{ID: from, IncDecFollowings: aws.Bool(following)})
 			if !strings.HasPrefix(to, "#") {
 				notifyNewFollower(from, to, following)
+
+				if toUser, _ := WeakGetUserWithSettings(to); toUser != nil &&
+					toUser.FollowApply != 0 &&
+					following {
+					_, err := WeakGetArticle(makeFollowerAcceptanceID(to, from))
+					if err != model.ErrNotExisted {
+						return
+					}
+
+					AcceptUser(to, from, false)
+					DoInsertArticle(&InsertArticleRequest{
+						ID: ik.NewID(ik.IDInbox, to).String(),
+						Article: model.Article{
+							ID:     ik.NewGeneralID().String(),
+							Cmd:    model.CmdInboxFwApply,
+							Extras: map[string]string{"from": from},
+						},
+					})
+					DoUpdateUser(&UpdateUserRequest{ID: to, IncDecUnread: aws.Bool(true)})
+				}
 			}
 		}()
 	}()
@@ -468,9 +501,9 @@ func IsFollowingWithAcceptance(from string, to *model.User) (following bool, acc
 	if from == to.ID {
 		return true, true
 	}
-	at := to.Settings().FollowerNeedsAcceptance
-	if at == (time.Time{}) || at.IsZero() {
-		return IsFollowing(from, to.ID), true // 'to' didn't have the switch on, so no acceptance needed for 'from'
+	if to.FollowApply == 0 {
+		// 'to' didn't have the switch on, so no acceptance needed for 'from'
+		return IsFollowing(from, to.ID), true
 	}
 	p, _ := GetArticle(makeFollowID(from, to.ID))
 	if p == nil {
@@ -483,7 +516,7 @@ func IsFollowingWithAcceptance(from string, to *model.User) (following bool, acc
 	if err != nil {
 		return false, false
 	}
-	if time.Unix(ts, 0).Before(at) {
+	if time.Unix(ts, 0).Before(to.FollowApplyPivotTime()) {
 		return true, true // 'from' followed 'to' before 'to' turned on the switch, so 'from' gains acceptance automatically
 	}
 	accept, _ := GetArticle(makeFollowerAcceptanceID(to.ID, from))

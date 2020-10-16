@@ -235,8 +235,8 @@ func APIUpdateUserSettings(g *gin.Context) {
 		return
 	case g.PostForm("set-fw-accept") != "":
 		throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
-			ID:              u.ID,
-			SettingFwAccept: aws.Bool(g.PostForm("fw-accept") != ""),
+			ID:          u.ID,
+			FollowApply: aws.Bool(g.PostForm("fw-accept") != ""),
 		})), "")
 	case g.PostForm("set-custom-name") != "":
 		name := g.PostForm("custom-name")

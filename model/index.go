@@ -19,12 +19,14 @@ import (
 var (
 	client         *redis.Pool
 	bleveFastCache *lru.Cache
+	searchCache    *lru.Cache
 	bleveWorker    chan *Article
 )
 
 func Init(config *kv.RedisConfig) {
 	client = kv.NewGlobalCache(config).Pool
 	bleveFastCache = lru.NewCache(10240)
+	searchCache = lru.NewCache(100)
 	bleveWorker = make(chan *Article, 1024)
 	go indexArticleWorker()
 }
@@ -116,6 +118,20 @@ func Search(ns, query string, start, n int) ([]string, int, error) {
 	}
 	query = common.SoftTrunc(query, 32)
 
+	ret := func(ids []string) []string {
+		defer func() { recover() }()
+		max := start + n
+		if max > len(ids) {
+			max = len(ids)
+		}
+		return ids[start:max]
+	}
+
+	if cached, ok := searchCache.Get(ns + query); ok {
+		x := cached.([]string)
+		return ret(x), len(x), nil
+	}
+
 	redisKeys := []string{}
 	for k := range tf(query) {
 		redisKeys = append(redisKeys, ns+"-"+k)
@@ -160,8 +176,9 @@ func Search(ns, query string, start, n int) ([]string, int, error) {
 	}
 
 	pipe.Do("ZUNIONSTORE", append(append(args, "WEIGHTS"), idfs...)...)
-	ids, err := redis.Strings(pipe.Do("ZREVRANGE", tempKey, start, start+n-1))
-	total, _ := redis.Int(pipe.Do("ZCARD", tempKey))
+	ids, err := redis.Strings(pipe.Do("ZREVRANGE", tempKey, 0, -1))
+	// total, _ := redis.Int(pipe.Do("ZCARD", tempKey))
 	pipe.Do("DEL", tempKey)
-	return ids, total, err
+	searchCache.Add(ns+query, ids)
+	return ret(ids), len(ids), err
 }

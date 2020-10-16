@@ -328,7 +328,7 @@ func Post(a *model.Article, author *model.User) (*model.Article, error) {
 	return a, nil
 }
 
-func PostReply(parent string, a *model.Article, author *model.User, noTimeline bool) (*model.Article, error) {
+func PostReply(parent string, a *model.Article, author *model.User) (*model.Article, error) {
 	p, err := GetArticle(parent)
 	if err != nil {
 		return nil, err
@@ -384,8 +384,8 @@ func PostReply(parent string, a *model.Article, author *model.User, noTimeline b
 	}
 	a = &a2
 
-	if !noTimeline {
-		// Add reply to its timeline
+	if a.PostOptions&model.PostOptionNoTimeline == 0 {
+		// Add reply to its author's timeline
 		if _, _, err := DoInsertArticle(&InsertArticleRequest{
 			ID:      ik.NewID(ik.IDAuthor, a.Author).String(),
 			Article: *a,

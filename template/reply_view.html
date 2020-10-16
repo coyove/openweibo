@@ -56,7 +56,7 @@
                         </li>
                         {{else}}
                         <li>
-                            <input type=checkbox name=nomaster id="nomaster{{.UUID}}" class=icon-input-checkbox>
+                            <input type=checkbox name=nomaster id="nomaster{{.UUID}}" class=icon-input-checkbox {{if .DefaultNoMaster}}checked{{end}}>
                             <i class=icon-ok-circled2></i>
                             <label for="nomaster{{.UUID}}">不同步至广场</label>
                         </li>

@@ -105,7 +105,7 @@ func TagTimeline(g *gin.Context) {
 
 func Timeline(g *gin.Context) {
 	pl := ArticlesTimelineView{
-		ReplyView: makeReplyView(g, ""),
+		ReplyView: makeReplyView(g, "", getUser(g)),
 		You:       getUser(g),
 		MediaOnly: g.Query("media") != "",
 	}
@@ -147,14 +147,16 @@ func Timeline(g *gin.Context) {
 			return
 		}
 
-		if pl.User.Settings().FollowerNeedsAcceptance != (time.Time{}) {
+		if pl.User.FollowApply != 0 {
 			if pl.You == nil {
 				NotFound(g)
 				return
 			}
 			if following, accepted := dal.IsFollowingWithAcceptance(pl.You.ID, pl.User); !following || !accepted {
-				g.Set("need-accept", true)
-				NotFound(g)
+				g.HTML(404, "error.html", map[string]interface{}{
+					"ApplyFwID":   pl.User,
+					"IsFollowing": following,
+				})
 				return
 			}
 		}
@@ -331,7 +333,7 @@ func APIReplies(g *gin.Context) {
 	// }
 
 	pl.ParentArticle.from(parent, _GreyOutReply, you)
-	pl.ReplyView = makeReplyView(g, pid)
+	pl.ReplyView = makeReplyView(g, pid, you)
 
 	if you != nil {
 		if dal.IsBlocking(pl.ParentArticle.Author.ID, you.ID) {
@@ -342,9 +344,7 @@ func APIReplies(g *gin.Context) {
 		pl.ShowReplyLockInfo = !(you.IsMod() || you.ID == pl.ParentArticle.Author.ID)
 	}
 
-	us := dal.GetUserSettings(pl.ParentArticle.Author.ID)
-	if at := us.FollowerNeedsAcceptance; at != (time.Time{}) && !at.IsZero() {
-		pl.ParentArticle.Author.SetSettings(us)
+	if pl.ParentArticle.Author.FollowApply != 0 {
 		if you == nil {
 			g.Status(404)
 			return
@@ -413,7 +413,7 @@ func searchArticles(u *model.User, query string, start int, totalCount *int) ([]
 	as := []*model.Article{}
 	for _, id := range res {
 		if a, _ := dal.GetArticle(id); a != nil {
-			if ik.ParseID(a.ID).Header() == ik.IDGeneral {
+			if ik.ParseID(a.ID).Header() == ik.IDGeneral && !a.IsDeleted() {
 				as = append(as, a)
 			}
 		}

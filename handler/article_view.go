@@ -178,6 +178,20 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 		}
 		a.from(dummy, opt, u)
 		a.Cmd = model.CmdInboxFwAccepted
+	case model.CmdInboxFwApply:
+		following, accepted := dal.IsFollowingWithAcceptance(a2.Extras["from"], u)
+		if following && accepted {
+			*a = ArticleView{}
+			return a
+		}
+
+		dummy := &model.Article{
+			ID:         ik.NewGeneralID().String(),
+			CreateTime: a2.CreateTime,
+			Author:     a2.Extras["from"],
+		}
+		a.from(dummy, opt, u)
+		a.Cmd = model.CmdInboxFwApply
 	case model.CmdInboxLike, model.CmdTimelineLike:
 		p, _ := dal.WeakGetArticle(a2.Extras["article_id"])
 		if p == nil {

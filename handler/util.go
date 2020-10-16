@@ -66,14 +66,9 @@ func NotFound(g *gin.Context) {
 	}
 
 SKIP:
-	p := struct {
-		Accept bool
-		Msg    string
-	}{
-		g.GetBool("need-accept"),
-		g.GetString("error"),
-	}
-	g.HTML(404, "error.html", p)
+	g.HTML(404, "error.html", map[string]string{
+		"Msg": g.GetString("error"),
+	})
 }
 
 func getUser(g *gin.Context) *model.User {
@@ -83,14 +78,18 @@ func getUser(g *gin.Context) *model.User {
 }
 
 type ReplyView struct {
-	UUID    string
-	ReplyTo string
+	UUID            string
+	ReplyTo         string
+	DefaultNoMaster bool
 }
 
-func makeReplyView(g *gin.Context, reply string) ReplyView {
+func makeReplyView(g *gin.Context, reply string, u *model.User) ReplyView {
 	r := ReplyView{}
 	r.UUID = strconv.FormatInt(time.Now().UnixNano(), 16)
 	r.ReplyTo = reply
+	if u != nil {
+		r.DefaultNoMaster = u.FollowApply != 0
+	}
 	return r
 }
 

@@ -1,16 +1,26 @@
 {{template "header.html" .}}
 <title>错误</title>
 <div style="padding:1em;text-align:center" class=row>
-    {{if .Msg}}
-        {{if eq .Msg "search-timeout"}}
-            搜索超时/过于复杂
-        {{else}}
-            {{.Msg}}
-        {{end}}
+    {{if .ApplyFwID}}
+    <div>
+      {{if .IsFollowing}}
+      等待{{template "display_name.html" .ApplyFwID}}批准你的关注
+      {{else}}
+      {{template "display_name.html" .ApplyFwID}}隐藏了动态，你需要
+      {{template "button_follow_block.html" (blend "follow" .ApplyFwID.ID false)}}
+      并等待其批准
+      {{end}}
+    </div>
     {{else}}
-        404 未找到内容
+    {{if .Msg}}
+    {{if eq .Msg "search-timeout"}}
+    搜索超时/过于复杂
+    {{else}}
+    {{.Msg}}
     {{end}}
-{{if .Accept}}
-<div>你尚未关注此人或你的关注请求未被批准</div>
-{{end}}
+    {{else}}
+    404 未找到内容
+    {{end}}
+    {{end}}
+
 </div>

@@ -166,7 +166,7 @@ input[type=number] {
                     </tr>
                     <tr>
                         <td>
-                            <input type=checkbox {{if .User.Settings.DoFollowerNeedsAcceptance}}checked{{end}} id=fw-accept
+                            <input type=checkbox {{if .User.FollowApply}}checked{{end}} id=fw-accept
                                    class=icon-input-checkbox
                                    onchange="updateSetting(this,'fw-accept',this.checked?'1':'')">
                             <i class='icon-ok-circled2'></i>

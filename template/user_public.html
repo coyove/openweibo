@@ -49,7 +49,7 @@
             {{if .IsFollowingNotAccepted}}
                 <b>等待其确认关注</b>
             {{else}}
-                {{if and (not .IsFollowing) .Settings.DoFollowerNeedsAcceptance}}
+                {{if and (not .IsFollowing) .FollowApply}}
                 <b>关注需要其确认</b>
                 {{end}}
             {{end}}

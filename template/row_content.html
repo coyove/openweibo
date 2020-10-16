@@ -1,4 +1,4 @@
-{{$isInboxLike := or (eq .Cmd "inbox-like") (eq .Cmd "timeline-like") (eq .Cmd "inbox-fw-accepted")}}
+{{$isInboxLike := or (eq .Cmd "inbox-like") (eq .Cmd "timeline-like") (eq .Cmd "inbox-fw-accepted") (eq .Cmd "inbox-fw-apply")}}
 
 <div data-id="{{.ID}}" style="padding:0.5em 0.5em 0 0.5em" class="row">
     <div class="row-header" style="line-height:{{if .NoAvatar}}24px{{else}}36px{{end}};display:flex">
@@ -23,6 +23,8 @@
         <span class=post-date>于 {{formatTime .CreateTime}} @了你</span>
     {{else if eq .Cmd "inbox-fw-accepted"}}
         <span class=post-date>于 {{formatTime .CreateTime}} 承认了你的关注</span>
+    {{else if eq .Cmd "inbox-fw-apply"}}
+        <span class=post-date>于 {{formatTime .CreateTime}} 请求关注</span>
     {{else if eq .Cmd "timeline-like"}}
         <span class=post-date>
             {{if or .Others .AlsoReply}}<i class='cls-reply icon-down-big'></i>
@@ -57,6 +59,18 @@
 
     {{if .ContentHTML}}
     <pre style="font-size:110%;padding:0.5em 0 0">{{.ContentHTML}}</pre>
+    {{end}}
+
+    {{if eq .Cmd "inbox-fw-apply"}}
+    <div style="padding: 0.5em 0">
+      <button
+	user-id="{{.Author.ID}}"
+	class="gbutton follow-block"
+	value='false'
+	onclick="followBlock(this,'accept','{{.Author.ID}}')">
+	承认关注
+      </button>
+    </div>
     {{end}}
 
     {{if eq .MediaType "IMG"}}

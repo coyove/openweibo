@@ -54,7 +54,7 @@ func UserList(g *gin.Context) {
 		return
 	}
 
-	p.User, _ = dal.GetUser(g.Param("uid"))
+	p.User, _ = dal.GetUserWithSettings(g.Param("uid"))
 	if p.User == nil {
 		p.User = p.You
 	}
@@ -123,7 +123,6 @@ func UserLikes(g *gin.Context) {
 	p := ArticlesTimelineView{
 		IsUserLikeTimeline: true,
 		MediaOnly:          g.Query("media") != "",
-		ReplyView:          makeReplyView(g, ""),
 		You:                getUser(g),
 	}
 

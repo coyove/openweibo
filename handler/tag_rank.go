@@ -47,7 +47,7 @@ func TagHeat(g *gin.Context) []HotTag {
 
 	for _, k := range res {
 		x := &tags[i]
-		a, _ := dal.GetArticle(ik.NewID(ik.IDTag, k).String())
+		a, _ := dal.WeakGetArticle(ik.NewID(ik.IDTag, k).String())
 		if a != nil {
 			var av ArticleView
 			av.from(a, 0, u)

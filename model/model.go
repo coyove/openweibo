@@ -26,6 +26,7 @@ const (
 	CmdNone            Cmd = ""
 	CmdInboxReply          = "inbox-reply"
 	CmdInboxMention        = "inbox-mention"
+	CmdInboxFwApply        = "inbox-fw-apply"
 	CmdInboxFwAccepted     = "inbox-fw-accepted"
 	CmdFollow              = "follow"
 	CmdFollowed            = "followed"
@@ -43,8 +44,9 @@ const (
 	ReplyLockFollowingsMentionsCan
 	ReplyLockFollowingsFollowersCan
 
-	PostOptionNoMasterTimeline byte = 1 << iota
-	PostOptionNoSearch
+	PostOptionNoMasterTimeline byte = 1
+	PostOptionNoTimeline            = 2
+	PostOptionNoSearch              = 4
 )
 
 type Article struct {
@@ -75,8 +77,12 @@ type Article struct {
 	T_StickOnTop bool `json:"-"`
 }
 
+func (a *Article) IsDeleted() bool {
+	return a.Content == DeletionMarker
+}
+
 func (a *Article) ContentHTML() template.HTML {
-	if a.Content == DeletionMarker {
+	if a.IsDeleted() {
 		a.Extras = nil
 		return "<span class=deleted></span>"
 	}
@@ -121,6 +127,7 @@ type User struct {
 	TLogin       uint32 `json:"lt"`
 	Banned       bool   `json:"ban,omitempty"`
 	Kimochi      byte   `json:"kmc,omitempty"`
+	FollowApply  int32  `json:"fap,omitempty"`
 
 	_IsFollowing            bool
 	_IsFollowingNotAccepted bool
@@ -245,6 +252,10 @@ func (u User) IDHash() (hash uint64) {
 	return
 }
 
+func (u User) FollowApplyPivotTime() time.Time {
+	return time.Unix(int64(u.FollowApply), 0)
+}
+
 func UnmarshalUser(b []byte) (*User, error) {
 	a := &User{}
 	err := json.Unmarshal(b, a)
@@ -257,19 +268,14 @@ func UnmarshalUser(b []byte) (*User, error) {
 }
 
 type UserSettings struct {
-	AutoNSFW                   bool      `json:"autonsfw,omitempty"`
-	FoldImages                 bool      `json:"foldi,omitempty"`
-	OnlyMyFollowingsCanFollow  bool      `json:"mffm,omitempty"`
-	OnlyMyFollowingsCanMention bool      `json:"mfcm,omitempty"`
-	HideLikesInTimeline        bool      `json:"slit,omitempty"`
-	HideLocation               bool      `json:"hl,omitempty"`
-	Description                string    `json:"desc,omitempty"`
-	APIToken                   string    `json:"apisess,omitempty"`
-	FollowerNeedsAcceptance    time.Time `json:"pdfollow,omitempty"`
-}
-
-func (u UserSettings) DoFollowerNeedsAcceptance() bool {
-	return u.FollowerNeedsAcceptance != (time.Time{}) && !u.FollowerNeedsAcceptance.IsZero()
+	AutoNSFW                   bool   `json:"autonsfw,omitempty"`
+	FoldImages                 bool   `json:"foldi,omitempty"`
+	OnlyMyFollowingsCanFollow  bool   `json:"mffm,omitempty"`
+	OnlyMyFollowingsCanMention bool   `json:"mfcm,omitempty"`
+	HideLikesInTimeline        bool   `json:"slit,omitempty"`
+	HideLocation               bool   `json:"hl,omitempty"`
+	Description                string `json:"desc,omitempty"`
+	APIToken                   string `json:"apisess,omitempty"`
 }
 
 func (u UserSettings) Marshal() []byte {

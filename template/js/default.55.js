@@ -372,7 +372,8 @@ function followBlock(el, m, id) {
             el.innerHTML = $html({tag:'i',class: on ? "icon-heart-broken" : "icon-user-plus"}).outerHTML;
             return "ok:" + (on ? "已关注" : "已取消关注") + id;
         } else if (m == "accept") {
-            el.style.display = "none";
+            el.innerHTML = $html({tag:'i',class: "icon-ok tmpl-green-text" }).outerHTML;
+	    return "ok" 
         } else {
             el = el.querySelector('i');
             el.className = el.className.replace(/block-\S+/, '') + " block-" + on;

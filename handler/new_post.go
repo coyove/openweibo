@@ -102,7 +102,7 @@ func APINew(g *gin.Context) {
 		return
 	}
 
-	if u.Settings().DoFollowerNeedsAcceptance() {
+	if u.FollowApply != 0 {
 		// If I want to control & filter my followers, then I would definitly not want my feeds found by non-followers
 		a.PostOptions |= model.PostOptionNoSearch
 	}
@@ -120,13 +120,12 @@ func APINew(g *gin.Context) {
 		throw(err, "")
 		okok(g, url.PathEscape(middleware.RenderTemplateString("row_content.html", NewTopArticleView(a2, u))))
 	} else {
-		noTimeline := g.PostForm("no_timeline") == "1" || strings.Contains(content, "#ReportThis")
-
-		if noTimeline {
+		if g.PostForm("no_timeline") == "1" || strings.Contains(content, "#ReportThis") {
 			a.PostOptions |= model.PostOptionNoSearch
+			a.PostOptions |= model.PostOptionNoTimeline
 		}
 
-		a2, err := dal.PostReply(replyTo, a, u, noTimeline)
+		a2, err := dal.PostReply(replyTo, a, u)
 		throw(err, "cannot_reply")
 		okok(g, url.PathEscape(middleware.RenderTemplateString("row_content.html", NewReplyArticleView(a2, u))))
 	}

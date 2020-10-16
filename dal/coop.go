@@ -32,6 +32,7 @@ type (
 		TSignup            *uint32
 		TLogin             *uint32
 		Kimochi            *byte
+		FollowApply        *bool
 		SettingAPIToken    *string
 		SettingAutoNSFW    *bool
 		SettingFoldImages  *bool
@@ -40,7 +41,6 @@ type (
 		SettingHL          *bool
 		SettingMFCM        *bool
 		SettingSLIT        *bool
-		SettingFwAccept    *bool
 	}
 
 	UpdateArticleRequest struct {
@@ -90,7 +90,6 @@ func DoUpdateUser(rr *UpdateUserRequest) (model.User, error) {
 		rr.SettingAPIToken != nil ||
 		rr.SettingMFFM != nil ||
 		rr.SettingMFCM != nil ||
-		rr.SettingFwAccept != nil ||
 		rr.SettingHL != nil ||
 		rr.SettingSLIT != nil {
 
@@ -106,14 +105,6 @@ func DoUpdateUser(rr *UpdateUserRequest) (model.User, error) {
 		setIfValid(&u.OnlyMyFollowingsCanMention, rr.SettingMFCM)
 		setIfValid(&u.HideLikesInTimeline, rr.SettingSLIT)
 		setIfValid(&u.HideLocation, rr.SettingHL)
-
-		if rr.SettingFwAccept != nil {
-			if *rr.SettingFwAccept {
-				u.FollowerNeedsAcceptance = time.Now()
-			} else {
-				u.FollowerNeedsAcceptance = time.Time{}
-			}
-		}
 
 		return model.User{}, m.db.Set(sid, u.Marshal())
 	}
@@ -168,6 +159,13 @@ func DoUpdateUser(rr *UpdateUserRequest) (model.User, error) {
 	}
 	if rr.IncDecUnread != nil {
 		incdec(&u.Unread, nil, *rr.IncDecUnread)
+	}
+	if rr.FollowApply != nil {
+		if *rr.FollowApply {
+			u.FollowApply = int32(time.Now().Unix())
+		} else {
+			u.FollowApply = 0
+		}
 	}
 	return *u, m.db.Set("u/"+u.ID, u.Marshal())
 }
