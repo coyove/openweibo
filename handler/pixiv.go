@@ -5,7 +5,9 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -23,7 +25,7 @@ func Eriri(g *gin.Context) {
 	q, _ := strconv.Atoi(g.Query("q"))
 	y := x[q%(len(x))]
 	if g.Query("goto") != "" {
-		g.Redirect(302, "https://www.pixiv.net/artworks/"+string(y[0]))
+		g.Redirect(302, string(y[0]))
 		return
 	}
 
@@ -95,4 +97,60 @@ func GetEriri(word string) {
 	}
 
 	time.AfterFunc(time.Minute*60, func() { GetEriri(word) })
+}
+
+func GetYandre() {
+	defer func() {
+		time.AfterFunc(time.Minute*60, GetYandre)
+	}()
+
+	start := time.Now()
+
+	c := &http.Client{Timeout: time.Second * 5}
+	resp, err := c.Get("https://yande.re/post/popular_recent")
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	defer resp.Body.Close()
+	buf, _ := ioutil.ReadAll(resp.Body)
+
+	rx0 := regexp.MustCompile(`<a class="thumb" href="([^"]+)"\s*>([\s\S]+?)</a>`)
+	rx := regexp.MustCompile(`<img[^>]+src=['"]([^"']+?)['"][^>]*>`)
+	download := func(url string) ([]byte, error) {
+		req, _ := http.NewRequest("GET", url, nil)
+		resp, err := c.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+		return ioutil.ReadAll(resp.Body)
+	}
+
+	wg := sync.WaitGroup{}
+	m, mu, msize := [][2][]byte{}, sync.Mutex{}, 0
+	for _, u := range rx0.FindAllStringSubmatch(string(buf), -1) {
+		if len(u) > 2 {
+			post := "https://yande.re" + u[1]
+			u := rx.FindStringSubmatch(u[2])
+			if len(u) > 1 && strings.Contains(u[1], "preview") {
+				wg.Add(1)
+				go func(url string) {
+					buf, err := download(url)
+					if err == nil {
+						mu.Lock()
+						m = append(m, [2][]byte{[]byte(post), buf})
+						msize += len(buf)
+						mu.Unlock()
+					}
+					wg.Done()
+				}(u[1])
+			}
+		}
+	}
+	wg.Wait()
+	eririImages = m
+
+	log.Println("yandre worker", time.Since(start), msize/1024)
 }

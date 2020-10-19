@@ -77,7 +77,8 @@ func main() {
 		}
 	}()
 
-	go handler.GetEriri("%E6%BE%A4%E6%9D%91%E3%83%BB%E3%82%B9%E3%83%9A%E3%83%B3%E3%82%B5%E3%83%BC%E3%83%BB%E8%8B%B1%E6%A2%A8%E3%80%85")
+	// go handler.GetEriri("%E6%BE%A4%E6%9D%91%E3%83%BB%E3%82%B9%E3%83%9A%E3%83%B3%E3%82%B5%E3%83%BC%E3%83%BB%E8%8B%B1%E6%A2%A8%E3%80%85")
+	go handler.GetYandre()
 
 	r := middleware.New(prodMode)
 	r.SetFuncMap(template.FuncMap{
