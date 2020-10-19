@@ -270,9 +270,9 @@ func UnmarshalUser(b []byte) (*User, error) {
 type UserSettings struct {
 	AutoNSFW                   bool   `json:"autonsfw,omitempty"`
 	FoldImages                 bool   `json:"foldi,omitempty"`
-	OnlyMyFollowingsCanFollow  bool   `json:"mffm,omitempty"`
 	OnlyMyFollowingsCanMention bool   `json:"mfcm,omitempty"`
 	HideLikesInTimeline        bool   `json:"slit,omitempty"`
+	HideLikes                  bool   `json:"hlikes,omitempty"`
 	HideLocation               bool   `json:"hl,omitempty"`
 	Description                string `json:"desc,omitempty"`
 	APIToken                   string `json:"apisess,omitempty"`

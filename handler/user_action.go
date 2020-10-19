@@ -161,19 +161,28 @@ func APIFollowBlock(g *gin.Context) {
 	throw(u, "")
 	throw(to == "" || u.ID == to, "")
 	throw(checkIP(g), "")
+	isTag := strings.HasPrefix(to, "#")
 
 	switch g.PostForm("method") {
 	case "follow":
 		following := g.PostForm("follow") != ""
-		if following {
+		if following && !isTag {
 			throw(dal.IsBlocking(to, u.ID), "cannot_follow")
-			throw(dal.GetUserSettings(to).OnlyMyFollowingsCanFollow && !dal.IsFollowing(to, u.ID), "cannot_follow")
 		}
 		throw(dal.FollowUser(u.ID, to, following), "")
+		if !isTag {
+			toUser, _ := dal.WeakGetUser(to)
+			if toUser != nil && toUser.FollowApply != 0 {
+				g.Writer.Header().Add("X-Follow-Apply", "1")
+			}
+		}
 	case "accept":
-		throw(dal.AcceptUser(u.ID, to, g.PostForm("accept") != ""), "")
+		throw(isTag, "cannot_accept_tag")
+		throw(dal.AcceptUser(u.ID, to, true), "")
+		// Given the situation that there may be A LOT applications received by one user
+		g.Set("clear-ip-throt", true)
 	default:
-		throw(strings.HasPrefix(to, "#"), "cannot_block_tag")
+		throw(isTag, "cannot_block_tag")
 		throw(dal.BlockUser(u.ID, to, g.PostForm("block") != ""), "")
 	}
 	okok(g)
@@ -190,46 +199,46 @@ func APIUpdateUserSettings(g *gin.Context) {
 		})), "")
 	case g.PostForm("set-autonsfw") != "":
 		throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
-			ID:              u.ID,
-			SettingAutoNSFW: aws.Bool(g.PostForm("autonsfw") != ""),
+			ID:               u.ID,
+			S_AutoExpandNSFW: aws.Bool(g.PostForm("autonsfw") != ""),
 		})), "")
 	case g.PostForm("set-foldimg") != "":
 		throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
-			ID:                u.ID,
-			SettingFoldImages: aws.Bool(g.PostForm("foldimg") != ""),
-		})), "")
-	case g.PostForm("set-mffm") != "":
-		throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
-			ID:          u.ID,
-			SettingMFFM: aws.Bool(g.PostForm("mffm") != ""),
+			ID:           u.ID,
+			S_FoldImages: aws.Bool(g.PostForm("foldimg") != ""),
 		})), "")
 	case g.PostForm("set-hl") != "":
 		throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
-			ID:        u.ID,
-			SettingHL: aws.Bool(g.PostForm("hl") != ""),
+			ID:                u.ID,
+			S_HideGeolocation: aws.Bool(g.PostForm("hl") != ""),
 		})), "")
-	case g.PostForm("set-slit") != "":
+	case g.PostForm("set-hide-likes-timeline") != "":
+		throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
+			ID:                  u.ID,
+			S_HideLikesTimeline: aws.Bool(g.PostForm("hide-likes-timeline") != ""),
+		})), "")
+	case g.PostForm("set-hide-likes") != "":
 		throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
 			ID:          u.ID,
-			SettingSLIT: aws.Bool(g.PostForm("slit") != ""),
+			S_HideLikes: aws.Bool(g.PostForm("hide-likes") != ""),
 		})), "")
 	case g.PostForm("set-mfcm") != "":
 		throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
-			ID:          u.ID,
-			SettingMFCM: aws.Bool(g.PostForm("mfcm") != ""),
+			ID:              u.ID,
+			S_KnownMentions: aws.Bool(g.PostForm("mfcm") != ""),
 		})), "")
 	case g.PostForm("set-description") != "":
 		throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
-			ID:                 u.ID,
-			SettingDescription: aws.String(common.SoftTrunc(g.PostForm("description"), 512)),
+			ID:            u.ID,
+			S_Description: aws.String(common.SoftTrunc(g.PostForm("description"), 512)),
 		})), "")
 	case g.PostForm("set-apisession") != "":
 		apiSession := "api+" + genSession()
 		u.Session = apiSession
 		apiToken := ik.MakeUserToken(u)
 		throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
-			ID:              u.ID,
-			SettingAPIToken: aws.String(apiToken),
+			ID:         u.ID,
+			S_APIToken: aws.String(apiToken),
 		})), "")
 		okok(g, apiToken)
 		return

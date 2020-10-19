@@ -372,3 +372,24 @@ func handlePollContent(a *model.Article) {
 
 	a.Content = lines[0]
 }
+
+func checkFollowApply(g *gin.Context, u, you *model.User) bool {
+	if u.FollowApply != 0 {
+		var following, accepted, loggedin bool
+		if you == nil {
+			loggedin = false
+		} else {
+			loggedin = true
+			following, accepted = dal.IsFollowingWithAcceptance(you.ID, u)
+		}
+		if !loggedin || !following || !accepted {
+			g.HTML(404, "error.html", map[string]interface{}{
+				"ApplyFw":     u,
+				"IsLoggedIn":  loggedin,
+				"IsFollowing": following,
+			})
+			return false
+		}
+	}
+	return true
+}

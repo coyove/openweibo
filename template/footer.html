@@ -15,8 +15,16 @@ $q("#unread-notify i").className += " tmpl-inbox-message-text";
     {{end}}
 
     <div style="font-size:85%">
-        <a href="https://github.com/coyove/iis" target=_blank>IIS</a>
-        <script>document.write(new Date().getFullYear())</script> in {{.Render}}ms
+        <a href="https://github.com/coyove/iis" target=_blank>IIS</a> in {{.Render}}ms
+	<script>
+	  document.write($html({
+	      tag: 'a',
+	      style: { cursor: "pointer" },
+	      class: isDarkMode() ? 'icon-sun' : 'icon-sun-filled',
+	      onclick: "document.cookie='mode="+(isDarkMode()?'':'dark')+";expires=Sun, 07 Apr 2030 01:27:11 GMT';location.reload()",
+	      children: "" + new Date().getFullYear()
+	  }).outerHTML);
+	</script>
     </div>
 </div>
 

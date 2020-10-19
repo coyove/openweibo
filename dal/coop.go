@@ -15,32 +15,32 @@ import (
 
 type (
 	UpdateUserRequest struct {
-		ID                 string
-		Signup             bool
-		ToggleMod          *bool
-		ToggleBan          *bool
-		IncDecUnread       *bool
-		IncDecFollowers    *bool
-		IncDecFollowings   *bool
-		Session            *string
-		PasswordHash       *[]byte
-		Email              *string
-		CustomName         *string
-		Avatar             *uint32
-		Unread             *int32
-		DataIP             *string
-		TSignup            *uint32
-		TLogin             *uint32
-		Kimochi            *byte
-		FollowApply        *bool
-		SettingAPIToken    *string
-		SettingAutoNSFW    *bool
-		SettingFoldImages  *bool
-		SettingDescription *string
-		SettingMFFM        *bool
-		SettingHL          *bool
-		SettingMFCM        *bool
-		SettingSLIT        *bool
+		ID                  string
+		Signup              bool
+		ToggleMod           *bool
+		ToggleBan           *bool
+		IncDecUnread        *bool
+		IncDecFollowers     *bool
+		IncDecFollowings    *bool
+		Session             *string
+		PasswordHash        *[]byte
+		Email               *string
+		CustomName          *string
+		Avatar              *uint32
+		Unread              *int32
+		DataIP              *string
+		TSignup             *uint32
+		TLogin              *uint32
+		Kimochi             *byte
+		FollowApply         *bool
+		S_APIToken          *string
+		S_AutoExpandNSFW    *bool
+		S_FoldImages        *bool
+		S_Description       *string
+		S_HideGeolocation   *bool
+		S_KnownMentions     *bool
+		S_HideLikesTimeline *bool
+		S_HideLikes         *bool
 	}
 
 	UpdateArticleRequest struct {
@@ -84,27 +84,27 @@ func DoUpdateUser(rr *UpdateUserRequest) (model.User, error) {
 	common.LockKey(id)
 	defer common.UnlockKey(id)
 
-	if rr.SettingAutoNSFW != nil ||
-		rr.SettingFoldImages != nil ||
-		rr.SettingDescription != nil ||
-		rr.SettingAPIToken != nil ||
-		rr.SettingMFFM != nil ||
-		rr.SettingMFCM != nil ||
-		rr.SettingHL != nil ||
-		rr.SettingSLIT != nil {
+	if rr.S_AutoExpandNSFW != nil ||
+		rr.S_Description != nil ||
+		rr.S_APIToken != nil ||
+		rr.S_FoldImages != nil ||
+		rr.S_KnownMentions != nil ||
+		rr.S_HideGeolocation != nil ||
+		rr.S_HideLikesTimeline != nil ||
+		rr.S_HideLikes != nil {
 
 		sid := "u/" + id + "/settings"
 		p, _ := m.db.Get(sid)
 		u := model.UnmarshalUserSettings(p)
 
-		setIfValid(&u.AutoNSFW, rr.SettingAutoNSFW)
-		setIfValid(&u.FoldImages, rr.SettingFoldImages)
-		setIfValid(&u.Description, rr.SettingDescription)
-		setIfValid(&u.APIToken, rr.SettingAPIToken)
-		setIfValid(&u.OnlyMyFollowingsCanFollow, rr.SettingMFFM)
-		setIfValid(&u.OnlyMyFollowingsCanMention, rr.SettingMFCM)
-		setIfValid(&u.HideLikesInTimeline, rr.SettingSLIT)
-		setIfValid(&u.HideLocation, rr.SettingHL)
+		setIfValid(&u.AutoNSFW, rr.S_AutoExpandNSFW)
+		setIfValid(&u.FoldImages, rr.S_FoldImages)
+		setIfValid(&u.Description, rr.S_Description)
+		setIfValid(&u.APIToken, rr.S_APIToken)
+		setIfValid(&u.OnlyMyFollowingsCanMention, rr.S_KnownMentions)
+		setIfValid(&u.HideLikesInTimeline, rr.S_HideLikesTimeline)
+		setIfValid(&u.HideLikes, rr.S_HideLikes)
+		setIfValid(&u.HideLocation, rr.S_HideGeolocation)
 
 		return model.User{}, m.db.Set(sid, u.Marshal())
 	}

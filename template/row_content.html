@@ -104,7 +104,7 @@
             {{if .Replies}}{{.Replies}}{{end}}
         </a>
         <a class="reply-box" href="javascript:void(0)" onclick="likeArticle(this, '{{.ID}}')" liked={{.Liked}}>
-            <i class="icon-heart-{{if .Liked}}filled{{else}}1{{end}}"></i> <span class=num>{{if .Likes}}{{.Likes}}{{end}}</span>
+            <i class="icon-heart-{{if .Liked}}filled{{else}}2{{end}}"></i> <span class=num>{{if .Likes}}{{.Likes}}{{end}}</span>
         </a>
         {{if or (eq .You.ID .Author.ID) .You.IsMod}}
         <a class="reply-box" href="javascript:void(0)" onclick="lockArticle(this,'{{.ID}}')" value="{{.ReplyLockMode}}">

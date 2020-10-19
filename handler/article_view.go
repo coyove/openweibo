@@ -139,6 +139,9 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 			} else {
 				pl.InitShow = 4
 			}
+			if a.You.Settings().FoldImages {
+				pl.InitShow = 0
+			}
 			a.Media = template.HTML(common.RevRenderTemplateString("image.html", pl))
 		}
 	}

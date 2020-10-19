@@ -46,6 +46,7 @@
                 <b>你</b>
             {{end}}
 
+            {{if not .IsYou}}
             {{if .IsFollowingNotAccepted}}
                 <b>等待其确认关注</b>
             {{else}}
@@ -54,7 +55,6 @@
                 {{end}}
             {{end}}
 
-            {{if not .IsYou}}
             <a href="/user/twohops/{{.ID}}" class="tmpl-link-text icon-connectdevelop">关系</a>
             {{end}}
 

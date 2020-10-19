@@ -85,23 +85,25 @@ func mwIPThrot(g *gin.Context) {
 	if !ok {
 		ik.Dedup.Add(ip, time.Now())
 		g.Set("ip-ok", true)
-		g.Next()
-		return
+		goto NEXT
+	} else {
+		t, _ := lastaccess.(time.Time)
+		diff := time.Since(t).Seconds()
+
+		if diff > float64(common.Cfg.Cooldown) {
+			ik.Dedup.Add(ip, time.Now())
+			g.Set("ip-ok", true)
+			goto NEXT
+		}
+
+		g.Set("ip-ok", false)
+		g.Set("ip-ok-remain", diff)
 	}
-
-	t, _ := lastaccess.(time.Time)
-	diff := time.Since(t).Seconds()
-
-	if diff > float64(common.Cfg.Cooldown) {
-		ik.Dedup.Add(ip, time.Now())
-		g.Set("ip-ok", true)
-		g.Next()
-		return
-	}
-
-	g.Set("ip-ok", false)
-	g.Set("ip-ok-remain", diff)
+NEXT:
 	g.Next()
+	if g.GetBool("clear-ip-throt") {
+		ik.Dedup.Remove(ip)
+	}
 }
 
 func New(prod bool) *gin.Engine {

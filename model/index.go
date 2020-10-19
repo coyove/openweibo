@@ -58,7 +58,7 @@ func indexArticleWorker() {
 	}
 }
 
-func SearchArticle(q string, timeout time.Duration, start, limit int) ([]string, int, error) {
+func SearchArticle(q string, start, limit int) ([]string, int, error) {
 	return Search("art", q, start, limit)
 }
 

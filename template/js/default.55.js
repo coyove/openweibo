@@ -241,7 +241,7 @@ function likeArticle(el, id) {
             num.innerText = (parseInt(num.innerText) || 0) + 1;
         } else {
             el.setAttribute("liked", "false")
-            icon.className = 'icon-heart-1';
+            icon.className = 'icon-heart-2';
             num.innerText = parseInt(num.innerText) ? (parseInt(num.innerText) - 1) : 0;
         }
     }, stop);
@@ -362,7 +362,7 @@ function followBlock(el, m, id) {
     id = id || el.getAttribute("user-id");
     obj[m] = $value(el) === "true" ? "" : "1";
     obj['to'] = id;
-    $post("/api2/follow_block", obj, function(res) {
+    $post("/api2/follow_block", obj, function(res, x) {
         stop();
         if (res != "ok") return res;
 
@@ -370,6 +370,8 @@ function followBlock(el, m, id) {
 	el.setAttribute("value", on ? "true" : "false");
         if (m == "follow") {
             el.innerHTML = $html({tag:'i',class: on ? "icon-heart-broken" : "icon-user-plus"}).outerHTML;
+	    if (x.getResponseHeader("X-Follow-Apply") && on)
+		return "ok:已关注, 等待批准";
             return "ok:" + (on ? "已关注" : "已取消关注") + id;
         } else if (m == "accept") {
             el.innerHTML = $html({tag:'i',class: "icon-ok tmpl-green-text" }).outerHTML;
@@ -672,7 +674,7 @@ function showInfoBox(el, uid) {
 	    div.style.right = "0";
 	}
     }
-    $post("/api/u/" + uid, {}, function(h) {
+    $post("/api/u/" + encodeURIComponent(uid), {}, function(h) {
         if (h.indexOf("ok:") > -1) {
             setTimeout(function() {
                 div.innerHTML = h.substring(3)

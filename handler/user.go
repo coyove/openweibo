@@ -57,6 +57,10 @@ func UserList(g *gin.Context) {
 	p.User, _ = dal.GetUserWithSettings(g.Param("uid"))
 	if p.User == nil {
 		p.User = p.You
+	} else {
+		if !checkFollowApply(g, p.User, p.You) {
+			return
+		}
 	}
 
 	p.User.Buildup(p.You)
@@ -132,9 +136,18 @@ func UserLikes(g *gin.Context) {
 	}
 
 	if uid := g.Param("uid"); uid != "master" {
-		p.User, _ = dal.GetUser(uid)
+		p.User, _ = dal.GetUserWithSettings(uid)
 		if p.User == nil {
 			p.User = p.You
+		} else {
+			if p.User.Settings().HideLikes {
+				NotFound(g)
+				return
+			}
+
+			if !checkFollowApply(g, p.User, p.You) {
+				return
+			}
 		}
 	} else {
 		p.User = p.You

@@ -1,13 +1,11 @@
 package handler
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/coyove/iis/common"
@@ -147,18 +145,8 @@ func Timeline(g *gin.Context) {
 			return
 		}
 
-		if pl.User.FollowApply != 0 {
-			if pl.You == nil {
-				NotFound(g)
-				return
-			}
-			if following, accepted := dal.IsFollowingWithAcceptance(pl.You.ID, pl.User); !following || !accepted {
-				g.HTML(404, "error.html", map[string]interface{}{
-					"ApplyFwID":   pl.User,
-					"IsFollowing": following,
-				})
-				return
-			}
+		if !checkFollowApply(g, pl.User, pl.You) {
+			return
 		}
 
 		if pl.You != nil {
@@ -270,11 +258,23 @@ func APITimeline(g *gin.Context) {
 		}
 
 		start, _ := strconv.Atoi(g.PostForm("cursors"))
-		a, next, _ := searchArticles(you, g.PostForm("searchtag"), start, nil)
+		a, next := searchArticles(you, g.PostForm("searchtag"), start, nil)
 		fromMultiple(&articles, a, 0, getUser(g))
 		p.Next = next
 	} else if g.PostForm("likes") == "true" {
-		a, next := dal.WalkLikes(g.PostForm("media") == "true", int(common.Cfg.PostsPerPage), g.PostForm("cursors"))
+		c := g.PostForm("cursors")
+		you := getUser(g)
+		if you == nil {
+			g.Status(403)
+			return
+		}
+		if x := ik.ParseID(c); x.Header() == ik.IDAuthor && you.ID != x.Tag() {
+			if dal.WeakGetUserSettings(x.Tag()).HideLikes {
+				g.Status(403)
+				return
+			}
+		}
+		a, next := dal.WalkLikes(g.PostForm("media") == "true", int(common.Cfg.PostsPerPage), c)
 		fromMultiple(&articles, a, 0, getUser(g))
 		p.Next = next
 	} else if g.PostForm("reply") == "true" {
@@ -381,30 +381,22 @@ func Search(g *gin.Context) {
 		return
 	}
 
-	as, next, err := searchArticles(pl.You, pl.Tag, 0, &pl.PostsUnderTag)
-	if err != nil {
-		g.Set("error", err.Error())
-		NotFound(g)
-		return
-	}
-
+	as, next := searchArticles(pl.You, pl.Tag, 0, &pl.PostsUnderTag)
 	pl.Next = next
 	fromMultiple(&pl.Articles, as, 0, pl.You)
 	g.HTML(200, "timeline.html", pl)
 }
 
-func searchArticles(u *model.User, query string, start int, totalCount *int) ([]*model.Article, string, error) {
-	timeout := time.Millisecond * 500
-	if u.IsMod() {
-		timeout = time.Second * 5
-	}
+func searchArticles(u *model.User, query string, start int, totalCount *int) ([]*model.Article, string) {
+	// timeout := time.Millisecond * 500
+	// if u.IsMod() {
+	// 	timeout = time.Second * 5
+	// }
 
-	res, count, err := model.SearchArticle(query, timeout, start, common.Cfg.PostsPerPage+1)
+	res, count, err := model.SearchArticle(query, start, common.Cfg.PostsPerPage+1)
 	if err != nil {
-		if err.Error() == context.DeadlineExceeded.Error() {
-			return nil, "", fmt.Errorf("search_timeout")
-		}
-		return nil, "", fmt.Errorf("internal_error")
+		log.Println("searchArticles:", err)
+		return nil, ""
 	}
 	if totalCount != nil {
 		*totalCount = (count)
@@ -427,7 +419,7 @@ func searchArticles(u *model.User, query string, start int, totalCount *int) ([]
 		next = strconv.Itoa(start + common.Cfg.PostsPerPage)
 	}
 
-	return as, next, nil
+	return as, next
 }
 
 func LocalImage(g *gin.Context) {
