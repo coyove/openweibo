@@ -91,7 +91,7 @@
             {{if .List}}
                 <a href="?n={{.Next}}" class=gbutton>更多 &raquo;</a>
             {{else}}
-                <a href="?n={{.Next}}" class=gbutton>获取数据中...</a>
+                <a href="?n={{.Next}}" disabled class="gbutton tmpl-light-text">获取数据中...</a>
                 <script>setTimeout(function() { location.reload() }, 2000)</script>
             {{end}}
         {{else}}

@@ -29,7 +29,10 @@
     </div>
 
     <div class="title tmpl-border" style="border-bottom: dotted 1px transparent;text-align:left;line-height:1.66em">
-        <pre style="margin:0.5em 0">{{if $notFound}}用户不存在{{end}}<!--
+      {{if $notFound}}
+        <pre style="margin:0.5em 0">用户不存在</pre>
+      {{else}}
+        <pre style="margin:0.5em 0"><!--
         -->{{.Settings.DescHTML}}<!--
         --><div class=tmpl-mid-text style="font-size:90%;white-space:normal">
             <b>加入于</b> {{formatTime .Signup}}&nbsp;
@@ -64,8 +67,10 @@
             {{end}}
             </div><!--
         --></pre>
+      {{end}}
     </div>
 
+    {{if not $notFound}}
     <div class="title">
         <span>
             <b>
@@ -97,4 +102,5 @@
             </b>
         </span>
     </div>
+    {{end}}
 </div>

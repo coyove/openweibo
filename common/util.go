@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	rxSan        = regexp.MustCompile(`(?m)(\n|\[imgs\][\s\S]+[/imgs\][\s\n]*|\[code\][\s\S]+?\[/code\]|<|https?://[^\s<>"'#\[\]]+|@\S+|#[^# ]+)|\[mj\]\d+\[/mj\]`)
+	rxSan        = regexp.MustCompile(`(?m)(\n|\[hide\][\s\S]+?\[/hide\][\s\n]*|\[code\][\s\S]+?\[/code\]|<|https?://[^\s<>"'#\[\]]+|@\S+|#[^# ]+)|\[mj\]\d+\[/mj\]`)
 	rxFirstImage = regexp.MustCompile(`(?i)(https?://\S+\.(png|jpg|gif|webp|jpeg)|\[img\]https?://\S+\[/img\])`)
 	rxMentions   = regexp.MustCompile(`((@|#)[^@# ]+)`)
 	rxAcCode     = regexp.MustCompile(`v\/ac(\d+)`)
@@ -86,11 +86,11 @@ func SanText(in string) string {
 		if strings.HasPrefix(in, "[code]") && strings.HasSuffix(in, "[/code]") {
 			return "<code>" + strings.TrimSpace(in[6:len(in)-7]) + "</code>"
 		}
-		// if strings.HasPrefix(in, "[imgs]") {
-		// 	in = strings.TrimPrefix(strings.TrimSpace(in), "[imgs]")
-		// 	in = RevRenderTemplateString("image.html", strings.Split(strings.TrimSuffix(in, "[/imgs]"), "\n"))
-		// 	return strings.TrimSpace(in)
-		// }
+		if strings.HasPrefix(in, "[hide]") {
+			in = strings.TrimPrefix(strings.TrimSpace(in), "[hide]")
+			in = strings.TrimSuffix(in, "[/hide]")
+			return "<span class=hidden-text>" + strings.TrimSpace(in) + "</span>"
+		}
 		if strings.HasPrefix(in, "[mj]") {
 			return "<img class=majiang src='https://static.saraba1st.com/image/smiley/face2017/" + in[4:len(in)-5] + ".png'>"
 		}

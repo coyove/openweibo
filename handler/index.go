@@ -27,6 +27,7 @@ type ArticlesTimelineView struct {
 	IsTagTimelineFollowed bool
 	IsTagTimeline         bool
 	IsSearchTimeline      bool
+	IsUserWaitAccept      bool
 	ShowNewPost           bool
 	MediaOnly             bool
 	User                  *model.User
@@ -70,9 +71,13 @@ func S(g *gin.Context) {
 }
 
 func TagTimeline(g *gin.Context) {
-	tag := g.Param("tag")
+	tags := strings.Split(g.Param("tag"), " ")
+	if max := 3; len(tags) > max {
+		tags = tags[:max]
+	}
+
 	pl := ArticlesTimelineView{
-		Tag:           "#" + tag,
+		Tag:           "#" + strings.Join(tags, " #"),
 		You:           getUser(g),
 		User:          &model.User{},
 		IsTagTimeline: true,
@@ -84,17 +89,21 @@ func TagTimeline(g *gin.Context) {
 	// 	return
 	// }
 
-	if pl.You != nil {
+	if pl.You != nil && len(tags) == 1 {
 		pl.IsTagTimelineFollowed = dal.IsFollowing(pl.You.ID, pl.Tag)
 	}
 
-	a, _ := dal.GetArticle(ik.NewID(ik.IDTag, tag).String())
-	if a != nil {
-		pl.PostsUnderTag = a.Replies
-		model.IndexTag(tag)
+	var cursors []ik.ID
+	for _, tag := range tags {
+		a, _ := dal.GetArticle(ik.NewID(ik.IDTag, tag).String())
+		if a != nil {
+			pl.PostsUnderTag += a.Replies
+			model.IndexTag(tag)
+		}
+		cursors = append(cursors, ik.NewID(ik.IDTag, tag))
 	}
 
-	a2, next := dal.WalkMulti(pl.MediaOnly, int(common.Cfg.PostsPerPage), ik.NewID(ik.IDTag, tag))
+	a2, next := dal.WalkMulti(pl.MediaOnly, int(common.Cfg.PostsPerPage), cursors...)
 	fromMultiple(&pl.Articles, a2, 0, getUser(g))
 
 	pl.Next = ik.CombineIDs(nil, next...)
@@ -134,13 +143,6 @@ func Timeline(g *gin.Context) {
 		pl.Checkpoints = makeCheckpoints(g)
 		pl.User, _ = dal.GetUserWithSettings(uid)
 		if pl.User == nil {
-			// 	if res := common.SearchUsers(uid, 1); len(res) == 1 {
-			// 		pl.User, _ = dal.GetUser(res[0])
-			// 		if pl.User != nil {
-			// 			g.Redirect(302, "/t/"+url.PathEscape(pl.User.ID))
-			// 			return
-			// 		}
-			// 	}
 			NotFound(g)
 			return
 		}
@@ -151,6 +153,10 @@ func Timeline(g *gin.Context) {
 
 		if pl.You != nil {
 			pl.User.Buildup(pl.You)
+			if pl.You.ID != pl.User.ID {
+				following, accpeted := dal.IsFollowingWithAcceptance(pl.User.ID, pl.You)
+				pl.IsUserWaitAccept = following && !accpeted
+			}
 		}
 	default:
 		// View my timeline

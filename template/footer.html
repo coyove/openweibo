@@ -1,27 +1,73 @@
 </div>
 <div id=footer style="flex-shrink:0;margin:0;word-break:break-all;line-height:2em;padding:0.5em;text-align:center" class="row">
     {{if .User}}
-    <a href='/user'>@{{.User.ID}}</a>
-    {{if .User.Unread}}
+    <a href='javascript:switchID()'>@</a><a href='/user'>{{.User.ID}}</a>
     <script>
-        document.title =  "({{.User.Unread}}) " + document.title;
-$q("#unread-notify b").innerText = "{{.User.Unread}}";
-$q("#unread-notify i").className += " tmpl-inbox-message-text";
+      function switchID(noreload) {
+	  var cookie = (document.cookie.match(/(^| )id=([^;]+)/) || [])[2];
+	  var oc = JSON.parse(localStorage.getItem('oc') || '[]');
+	  oc.unshift({id: "{{.User.ID}}", cookie: cookie});
+	  if (oc.length > 10) oc = oc.slice(0, 10);
+	  localStorage.setItem('oc', JSON.stringify(oc));
+	  document.cookie = 'id=';
+	  if (noreload) return;
+	  location.reload();
+      }
+
+      (function() {
+	  var oc = JSON.parse(localStorage.getItem("oc") || '[]');
+	  var set = function(k, v) {
+	      return 'switchID(true);' +
+		  'document.cookie="'+k+'='+v+';path=/;expires=Sun, 07 Apr 2030 01:27:11 GMT";' +
+		  'location.reload()' 
+	  }
+	  var dedup = {};
+	  if (oc && oc.length) {
+	      document.write("<div style='font-size:80%'>");
+	      for (var i in oc) {
+		  var id = oc[i].id;
+		  if (dedup[id] || id === '{{.User.ID}}') continue;
+		  dedup[id] = true;
+		  document.write($html({
+		      tag: 'a',
+		      class: 'tmpl-light-text',
+		      href: 'javascript:void(0)',
+		      children: '@' + id,
+		      onclick: set('id', oc[i].cookie)
+		  }).outerHTML);
+		  document.write("&nbsp;");
+	      }
+	      document.write($html({
+		  tag: 'a',
+		  class: 'tmpl-light-text',
+		  href: 'javascript:void(0)',
+		  children: {tag: 'span', class: 'icon-block', children: '清空小号'},
+		  onclick: 'localStorage.setItem("oc","");location.reload()'
+	      }).outerHTML);
+	      document.write("</div>");
+	  }
+
+	  {{if .User.Unread}}
+	  document.title =  "({{.User.Unread}}) " + document.title;
+	  $q("#unread-notify b").innerText = "{{.User.Unread}}";
+	  $q("#unread-notify i").className += " tmpl-inbox-message-text";
+	  {{end}}
+      })()
     </script>
-    {{end}}
+
     {{else}}
     <a href="/">登入</a> /
     <a href="/user">注册</a>
     {{end}}
 
-    <div style="font-size:85%">
+    <div style="font-size:90%">
         <a href="https://github.com/coyove/iis" target=_blank>IIS</a> in {{.Render}}ms
 	<script>
 	  document.write($html({
 	      tag: 'a',
 	      style: { cursor: "pointer" },
 	      class: isDarkMode() ? 'icon-sun' : 'icon-sun-filled',
-	      onclick: "document.cookie='mode="+(isDarkMode()?'':'dark')+";expires=Sun, 07 Apr 2030 01:27:11 GMT';location.reload()",
+	      onclick: "document.cookie='mode="+(isDarkMode()?'':'dark')+";path=/;expires=Sun, 07 Apr 2030 01:27:11 GMT';location.reload()",
 	      children: "" + new Date().getFullYear()
 	  }).outerHTML);
 	</script>

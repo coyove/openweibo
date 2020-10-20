@@ -100,9 +100,7 @@ func GetEriri(word string) {
 }
 
 func GetYandre() {
-	defer func() {
-		time.AfterFunc(time.Minute*60, GetYandre)
-	}()
+	defer func() { time.AfterFunc(time.Hour*6, GetYandre) }()
 
 	start := time.Now()
 

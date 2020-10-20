@@ -101,6 +101,14 @@
                     maxlength=1024
                     placeholder="写下你的想法..."
                     rows=6
+		  onpaste="(function(data) {
+var items = data.files, input = $q('.dz-hidden-input');
+if (items && items.length) {
+input = input.length ? input[input.length - 1] : input;
+input.files = items;
+input.dispatchEvent(new CustomEvent('change'));
+}
+})(event.clipboardData || window.clipboardData)"
                     style="background-color:transparent;padding:0.66em;border:none;display:block;overflow:hidden;resize:none"></textarea>
 
                 <div class="post-button icon-comment" onclick="onPost('{{.UUID}}', this, '{{.ReplyTo}}')"></div>

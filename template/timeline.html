@@ -56,13 +56,21 @@
     {{if or .IsTagTimeline .IsUserLikeTimeline}}
     <div class="tl-checkpoints post-options" style="padding:0.5em 0;margin:0 0.5em;font-weight:bold;white-space:nowrap">
         {{if .IsTagTimeline}}
+	    {{if not (contains .Tag " ")}}
             <span style="margin-left: -0.5em">
                 {{template "button_follow_block.html" (blend "follow" .Tag .IsTagTimelineFollowed)}}
             </span>
+	    {{end}}
             {{.Tag}} ({{.PostsUnderTag}})
         {{else if .IsUserLikeTimeline}}
             {{if eq .You.ID .User.ID}}我{{else}}{{.User.DisplayName}}{{end}}的收藏
         {{end}}
+    </div>
+    {{end}}
+
+    {{if and .IsUserTimeline .IsUserWaitAccept}}
+    <div class="tl-checkpoints post-options" style="padding:0.5em 0;margin: 0 0.5em">
+      {{template "button_follow_block.html" (blend "accept" .User.ID false)}}
     </div>
     {{end}}
 

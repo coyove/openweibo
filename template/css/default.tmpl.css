@@ -302,7 +302,7 @@ span.abbr:after {
     transition: background 0.5s;
 }
 
-.status .title > span:hover { background: {{.Row}}; }
+.status .title > span:hover { background: rgba(0,0,0,0.15); }
 
 .status .sub-status { font-weight: normal; }
 
@@ -559,6 +559,9 @@ div.reply-lock-notify {
 .image-loading-div {
     position:absolute;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,0.33);opacity:0;transition:opacity 0.5s;
 }
+
+.hidden-text {background: black;color:black}
+.hidden-text:hover, .hidden-text:active {color:white}
 
 .poll-article {  margin-top: 0.5em }
 .poll-article .poll-item { position:relative; padding: 0.5em; line-height:1.5em}

@@ -396,7 +396,7 @@ func PostReply(parent string, a *model.Article, author *model.User) (*model.Arti
 
 	go func() {
 		if p.Content != model.DeletionMarker && a.Author != p.Author {
-			if GetUserSettings(p.Author).OnlyMyFollowingsCanMention && !IsFollowing(p.Author, a.Author) {
+			if WeakGetUserSettings(p.Author).OnlyMyFollowingsCanMention && !IsFollowing(p.Author, a.Author) {
 				return
 			}
 
