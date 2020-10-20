@@ -161,6 +161,8 @@ func main() {
 	r.Static("/s/", "template")
 
 	r.NoRoute(handler.NotFound)
+	r.Handle("GET", "/help", func(g *gin.Context) { g.HTML(200, "help.html", nil) })
+
 	r.Handle("GET", "/", handler.Home)
 	r.Handle("GET", "/eriri.jpg", handler.Eriri)
 	r.Handle("GET", "/i/*img", handler.LocalImage)
