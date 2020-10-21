@@ -1,17 +1,25 @@
 </div>
 <div id=footer style="flex-shrink:0;margin:0;word-break:break-all;line-height:2em;padding:0.5em;text-align:center" class="row">
+  {{$id := ""}}
     {{if .User}}
-    <a href='javascript:switchID()' style="margin-right:2px"><b>@</b></a><a href='/user'>{{.User.ID}}</a>
+  {{$id = .User.ID}}
+    <a href='javascript:switchID()' style="margin-right:2px"><b>@</b></a><a href='/user'>{{$id}}</a>
+    {{else}}
+    <a href="/">登入</a> / <a href="/user">注册</a>
+    {{end}}
+
     <script>
       function switchID(noreload) {
+	  {{if $id}}
 	  var cookie = (document.cookie.match(/(^| )id=([^;]+)/) || [])[2];
 	  var oc = JSON.parse(localStorage.getItem('oc') || '[]');
-	  oc.unshift({id: "{{.User.ID}}", cookie: cookie});
+	  oc.unshift({id: "{{$id}}", cookie: cookie});
 	  if (oc.length > 10) oc = oc.slice(0, 10);
 	  localStorage.setItem('oc', JSON.stringify(oc));
 	  document.cookie = 'id=';
 	  if (noreload) return;
 	  location.reload();
+	  {{end}}
       }
 
       (function() {
@@ -26,7 +34,7 @@
 	      document.write("<div style='font-size:80%'>");
 	      for (var i in oc) {
 		  var id = oc[i].id;
-		  if (dedup[id] || id === '{{.User.ID}}') continue;
+		  if (dedup[id] || id === '{{$id}}') continue;
 		  dedup[id] = true;
 		  document.write($html({
 		      tag: 'a',
@@ -47,18 +55,13 @@
 	      document.write("</div>");
 	  }
 
-	  {{if .User.Unread}}
+	  {{if .User}}{{if .User.Unread}}
 	  document.title =  "({{.User.Unread}}) " + document.title;
 	  $q("#unread-notify b").innerText = "{{.User.Unread}}";
 	  $q("#unread-notify i").className += " tmpl-inbox-message-text";
-	  {{end}}
+	  {{end}}{{end}}
       })()
     </script>
-
-    {{else}}
-    <a href="/">登入</a> /
-    <a href="/user">注册</a>
-    {{end}}
 
     <div style="font-size:90%">
         <a href="https://github.com/coyove/iis" target=_blank>IIS</a> in {{.Render}}ms

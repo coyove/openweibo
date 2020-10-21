@@ -241,6 +241,7 @@ div.row .foobar > a:hover {
 }
 
 img.majiang { width: 28px; height: 28px; }
+img.majiang.ac-emoji { width: 48px; height: 48px; background: white }
 
 span.time.sec:after { content: '秒前' }
 span.time.min:after { content: '分钟前' }
@@ -471,10 +472,8 @@ div.tri {
 .post-options ul li:hover {
     background: {{.DropdownItemHover}};
 }
-.post-options-emoji img {
-    width: 24px;
-    height: 24px;
-}
+.post-options-emoji img {width: 24px; height: 24px;}
+.post-options-emoji img.ac-emoji {width: 36px; height: 36px; background: white }
 .post-options-emoji:hover ul {
     display: flex;
     flex-wrap: wrap;

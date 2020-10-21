@@ -147,10 +147,13 @@ function emojiMajiang(uuid) {
 
     var omits = [4, 9, 56, 61, 62, 87, 115, 120, 137, 168, 169, 211, 215, 175, 210, 213, 209, 214, 217, 206],
         history = JSON.parse(localStorage.getItem("EMOJIS") || '{}'),
-        add = function(i, front) {
-            var li = $q("<li>"), img = $q("<img>"), idx = ("000"+i).slice(-3);
-            img.src = 'https://static.saraba1st.com/image/smiley/face2017/' + idx + '.png';
+        add = function(i, front, ac) {
+            var li = $q("<li>"), img = $q("<img>"), idx = ac ? i : ("000"+i).slice(-3);
+            img.src = ac ?
+		       "https://img4.nga.178.com/ngabbs/post/smile/" + idx + '.png' :
+		       'https://static.saraba1st.com/image/smiley/face2017/' + idx + '.png';
             img.setAttribute("loading", "lazy");
+            img.setAttribute("class", ac ? "ac-emoji" : "");
             img.onclick = function() {
                 var e = JSON.parse(localStorage.getItem("EMOJIS") || '{}');
                 e[idx] = {w:new Date().getTime(),k:idx};
@@ -165,14 +168,20 @@ function emojiMajiang(uuid) {
         .sort(function(a,b) { return a.w > b.w })
         .map(function(k) { return history[(k || {}).k] })
         .forEach(function(e) {
-            var i = parseInt((e || {}).k, 10);
-            if (!i) return;
+            var i = (e || {}).k || "";
+            if (!i.match(/(\d{3}|ac\d+|a2_\d+)/)) return;
             omits.push(i);
-            add(i, true);
+            add(i, true, i.substr(0, 1) == 'a');
         });
 
     for (var i = 1; i <= 226; i++) {
         if (omits.includes(i)) continue;
         add(i);
+    }
+
+    var ac = ["ac0", "ac1", "ac2", "ac3", "ac4", "ac5", "ac6", "ac8", "ac9", "ac10", "ac11", "ac12", "ac13", "ac14", "ac15", "ac17", "ac23", "ac21", "ac33", "ac34", "ac35", "ac36", "ac37", "ac22", "ac24", "ac25", "ac26", "ac27", "ac28", "ac29", "ac16", "ac18", "ac19", "ac20", "ac30", "ac32", "ac40", "ac44", "ac38", "ac43", "ac31", "ac39", "ac41", "ac7", "ac42", "a2_02", "a2_05", "a2_03", "a2_04", "a2_07", "a2_08", "a2_09", "a2_10", "a2_14", "a2_16", "a2_15", "a2_17", "a2_21", "a2_23", "a2_24", "a2_25", "a2_27", "a2_28", "a2_30", "a2_31", "a2_32", "a2_33", "a2_36", "a2_51", "a2_53", "a2_54", "a2_55", "a2_47", "a2_48", "a2_45", "a2_49", "a2_18", "a2_19", "a2_52", "a2_26", "a2_11", "a2_12", "a2_13", "a2_20", "a2_22", "a2_42", "a2_37", "a2_38", "a2_39", "a2_41", "a2_40"];
+    for (var i = 0; i < ac.length; i++) {
+        if (omits.includes(i)) continue;
+	add(ac[i], false, true);
     }
 }

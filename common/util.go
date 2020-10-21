@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	rxSan        = regexp.MustCompile(`(?m)(\n|\[hide\][\s\S]+?\[/hide\][\s\n]*|\[code\][\s\S]+?\[/code\]|<|https?://[^\s<>"'#\[\]]+|@\S+|#[^# ]+)|\[mj\]\d+\[/mj\]`)
+	rxSan        = regexp.MustCompile(`(?m)(\n|\[hide\][\s\S]+?\[/hide\][\s\n]*|\[code\][\s\S]+?\[/code\]|<|https?://[^\s<>"'#\[\]]+|@\S+|#[^# ]+)|\[mj\](\d+|ac\d+|a2_\d+)\[/mj\]`)
 	rxFirstImage = regexp.MustCompile(`(?i)(https?://\S+\.(png|jpg|gif|webp|jpeg)|\[img\]https?://\S+\[/img\])`)
 	rxMentions   = regexp.MustCompile(`((@|#)[^@# ]+)`)
 	rxAcCode     = regexp.MustCompile(`v\/ac(\d+)`)
@@ -92,7 +92,14 @@ func SanText(in string) string {
 			return "<span class=hidden-text>" + strings.TrimSpace(in) + "</span>"
 		}
 		if strings.HasPrefix(in, "[mj]") {
-			return "<img class=majiang src='https://static.saraba1st.com/image/smiley/face2017/" + in[4:len(in)-5] + ".png'>"
+			var idx = in[4 : len(in)-5]
+			var host string
+			if strings.HasPrefix(idx, "a") {
+				host = "<img class='majiang ac-emoji' src='https://img4.nga.178.com/ngabbs/post/smile/"
+			} else {
+				host = "<img class='majiang' src='https://static.saraba1st.com/image/smiley/face2017/"
+			}
+			return host + idx + ".png'>"
 		}
 		if len(in) > 0 {
 			s := SafeStringForCompressString(template.HTMLEscapeString(in[1:]))
