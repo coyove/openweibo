@@ -150,7 +150,7 @@ function emojiMajiang(uuid) {
         add = function(i, front, ac) {
             var li = $q("<li>"), img = $q("<img>"), idx = ac ? i : ("000"+i).slice(-3);
             img.src = ac ?
-		       "https://img4.nga.178.com/ngabbs/post/smile/" + idx + '.png' :
+		       "/s/emoji/" + idx + '.png' :
 		       'https://static.saraba1st.com/image/smiley/face2017/' + idx + '.png';
             img.setAttribute("loading", "lazy");
             img.setAttribute("class", ac ? "ac-emoji" : "");

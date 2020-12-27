@@ -780,21 +780,11 @@ function attachImageUploader(el) {
         maxFilesize: 16,
         maxFilesize: 5,
         addRemoveLinks: true,
-        dictRemoveFile: "删除",
+        dictRemoveFile: "<span class='tmpl-mid-text'>OK</span> <u>删除</u>",
         dictFileTooBig: "文件过大 {{filesize}}M, Max: {{maxFilesize}}M",
-        dictCancelUpload: "取消",
+        dictCancelUpload: "<span class='tmpl-mid-text'>上传中</span> <u>取消</u>",
+        dictCancelUploadConfirmation: "取消上传该图片？"
     }).on("success", function(f, id) {
-        var m = id.match(/^CHECK\((.+)\)-(.+)/);
-        if (m && m.length == 3) {
-            var stop = $wait(f._removeLink.parentNode.querySelector('.dz-success-mark'));
-            var h = setInterval(function() {
-                console.log("large check:", m[1])
-                var img = new Image();
-                img.onload = function() { clearInterval(h); stop(); }
-                img.src = m[1];
-            }, 1500)
-            id = m[2]
-        }
         f._removeLink.setAttribute('data-uri', id);
     });
 

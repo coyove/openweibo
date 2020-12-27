@@ -32,7 +32,7 @@ func APISignup(g *gin.Context) {
 		throw(true, "duplicated_id")
 	case strings.HasPrefix(username, strings.ToLower(common.Cfg.AdminName)):
 		admin, err := dal.GetUser(common.Cfg.AdminName)
-		throw(err, "")
+		throw(err != model.ErrNotExisted, "")
 		throw(admin != nil, "duplicated_id")
 	}
 

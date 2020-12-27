@@ -8,7 +8,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -246,27 +245,6 @@ func writeImageReader(u *model.User, imageName string, hash uint64, dec io.Reade
 
 	if dal.S3 != nil {
 		fn += mimeToExt(ct)
-
-		if large {
-			of, err := ioutil.TempFile("", "")
-			if err != nil {
-				return "", err
-			}
-			size, err := io.Copy(of, dec)
-			if err != nil {
-				of.Close()
-				return "", err
-			}
-			go func() {
-				of.Seek(0, 0)
-				err := dal.S3.Put(fn, ct, of)
-				of.Close()
-				log.Println("Large upload:", fn, size, "S3 err:", err, "purge:", os.Remove(of.Name()))
-			}()
-			x := "LOCAL:" + fn
-			return "CHECK(" + common.Cfg.MediaDomain + "/" + fn + ")-" + x, nil
-		}
-
 		return "LOCAL:" + fn, dal.S3.Put(fn, ct, dec)
 	}
 

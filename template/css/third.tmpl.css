@@ -142,7 +142,7 @@
     color: {{.NormalText}}
 }
 [type=radio].icon-input-checkbox + [class^=icon-]:before {
-    content: '\e812';
+    content: '\e80f';
     color: {{.LightText}};
 }
 [type=radio].icon-input-checkbox:checked + [class^=icon-]:before {
@@ -226,6 +226,9 @@ a[value=false] .icon-eye-off:before {
 }
 .dz-success-mark {
     color: {{.Link}};
+}
+.dz-remove:hover {
+    text-decoration: none !important;
 }
 .dz-default:after {
     color: {{.MidGrayText}};

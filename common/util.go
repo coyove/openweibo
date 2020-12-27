@@ -95,7 +95,7 @@ func SanText(in string) string {
 			var idx = in[4 : len(in)-5]
 			var host string
 			if strings.HasPrefix(idx, "a") {
-				host = "<img class='majiang ac-emoji' src='https://img4.nga.178.com/ngabbs/post/smile/"
+				host = "<img class='majiang ac-emoji' src='/s/emoji/"
 			} else {
 				host = "<img class='majiang' src='https://static.saraba1st.com/image/smiley/face2017/"
 			}
