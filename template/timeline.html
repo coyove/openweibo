@@ -115,6 +115,9 @@
 
 <div class=paging>
     {{if .Next}}
+    {{if .IsCrawler}}
+    <a href="/api/timeline?media={{.MediaOnly}}&cursors={{.Next}}">更多...</a>
+    {{else}}
     <button
         value="{{.Next}}"
         class="gbutton load-more"
@@ -123,11 +126,14 @@
             searchtag:{{.Tag}},
             likes:{{.IsUserLikeTimeline}},
             media:{{.MediaOnly}},
-        })">更多...</button>
+        })">
+        更多...
+    </button>
 
     <script>
         preLoadMore("timeline{{.ReplyView.UUID}}", $q("#timeline{{.ReplyView.UUID}} + .paging > .load-more"));
     </script>
+    {{end}}
 
     {{else}}
     <a class="gbutton tmpl-light-text" href="#">

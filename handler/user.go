@@ -157,7 +157,7 @@ func UserLikes(g *gin.Context) {
 	}
 
 	a, next := dal.WalkLikes(p.MediaOnly, int(common.Cfg.PostsPerPage), cursor)
-	fromMultiple(&p.Articles, a, 0, getUser(g))
+	fromMultiple(g, &p.Articles, a, 0, getUser(g))
 	p.Next = next
 
 	g.HTML(200, "timeline.html", p)

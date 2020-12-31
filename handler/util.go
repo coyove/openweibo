@@ -7,17 +7,17 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"github.com/coyove/iis/common/compress"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/coyove/iis/common/compress"
 
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal"
@@ -27,10 +27,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var (
-	rxShortID = regexp.MustCompile(`\d{4}-?\d{4}-?\d{4}`)
-	throw     = middleware.ThrowIf
-)
+var throw = middleware.ThrowIf
 
 func okok(g *gin.Context, tmp ...string) {
 	g.String(200, "ok")
@@ -43,9 +40,7 @@ func okok(g *gin.Context, tmp ...string) {
 }
 
 func NotFound(g *gin.Context) {
-	g.HTML(404, "error.html", map[string]string{
-		"Msg": g.GetString("error"),
-	})
+	g.HTML(404, "error.html", map[string]string{"Msg": g.GetString("error")})
 }
 
 func getUser(g *gin.Context) *model.User {
@@ -226,23 +221,12 @@ func writeImageReader(u *model.User, imageName string, hash uint64, dec io.Reade
 		return "LOCAL:" + fn, dal.S3.Put(fn, ct, dec)
 	}
 
-	if ct == "image/gif" {
-		fn += "_mime~gif"
-	}
-
 	of, err := os.OpenFile(path+fn, os.O_CREATE|os.O_WRONLY, 0777)
 	if err != nil {
 		return "", err
 	}
 	_, err = io.Copy(of, dec)
 	of.Close()
-
-	// if n > 100*1024 { // thumbnail
-	// 	if err := writeThumbnail(path+fn+"@thumb", path+fn, 200); err != nil {
-	// 		log.Println("WriteImage:", err)
-	// 	}
-	// }
-
 	return "LOCAL:" + fn, err
 }
 

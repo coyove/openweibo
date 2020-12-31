@@ -15,6 +15,7 @@ import (
 type S3 struct {
 	db     *s3manager.Uploader
 	bucket string
+	mock   bool
 }
 
 func NewS3(endpoint, region, bucket, accessKey, secretKey string) *S3 {

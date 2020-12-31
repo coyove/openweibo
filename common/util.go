@@ -1,13 +1,16 @@
 package common
 
 import (
-	"github.com/coyove/iis/common/compress"
 	"html/template"
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unsafe"
+
+	"github.com/coyove/iis/common/compress"
+	"github.com/gin-gonic/gin"
 )
 
 var (
@@ -17,6 +20,8 @@ var (
 	rxBiliAVCode = regexp.MustCompile(`(av(\d+)|BV(\w+))`)
 	rxWYYYCode   = regexp.MustCompile(`([^r]id=|song/)(\d+)`)
 	rxYTCode     = regexp.MustCompile(`(youtu\.be\/(\w+)|v=(\w+))`)
+	rxCrawler    = regexp.MustCompile(`(?i)(bot|googlebot|crawler|spider|robot|crawling)`)
+	keyLocks     [65536]sync.Mutex
 
 	RevRenderTemplateString func(name string, v interface{}) string
 )
@@ -233,4 +238,16 @@ func DefaultMap(m map[string]string) map[string]string {
 		m = map[string]string{}
 	}
 	return m
+}
+
+func LockKey(key string) { keyLocks[Hash16(key)].Lock() }
+
+func UnlockKey(key string) { keyLocks[Hash16(key)].Unlock() }
+
+func IsCrawler(g *gin.Context) bool {
+	if rxCrawler.MatchString(g.Request.UserAgent()) {
+		return true
+	}
+	v, _ := g.Cookie("crawler")
+	return v == "1"
 }

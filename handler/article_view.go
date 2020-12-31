@@ -12,10 +12,12 @@ import (
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
+	"github.com/gin-gonic/gin"
 )
 
 type ArticleView struct {
 	ID            string
+	CrawlerLink   string
 	Others        []*ArticleView
 	Parent        *ArticleView
 	Author        *model.User
@@ -222,7 +224,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 	return a
 }
 
-func fromMultiple(a *[]ArticleView, a2 []*model.Article, opt uint64, u *model.User) {
+func fromMultiple(g *gin.Context, a *[]ArticleView, a2 []*model.Article, opt uint64, u *model.User) {
 	*a = make([]ArticleView, len(a2))
 
 	lookup := map[string]*ArticleView{}
@@ -278,12 +280,16 @@ func fromMultiple(a *[]ArticleView, a2 []*model.Article, opt uint64, u *model.Us
 	}
 
 	newa := make([]ArticleView, 0, len(*a))
+	isCrawler := common.IsCrawler(g)
 	for _, v := range *a {
 		if dedup[v.ID] {
 			continue
 		}
 		if v.ID == "" {
 			continue
+		}
+		if isCrawler {
+			v.CrawlerLink = "/S/" + v.ID[1:]
 		}
 		newa = append(newa, v)
 	}

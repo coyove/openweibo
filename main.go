@@ -3,7 +3,6 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/coyove/iis/common/geoip"
 	"html/template"
 	"io/ioutil"
 	"math/rand"
@@ -14,6 +13,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/coyove/iis/common/geoip"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/coyove/iis/common"
@@ -187,6 +188,7 @@ func main() {
 	r.Handle("GET", "/inbox", handler.Inbox)
 	r.Handle("GET", "/mod/user", handler.ModUser)
 	r.Handle("GET", "/mod/kv", handler.ModKV)
+	r.Handle("GET", "/api/timeline", handler.APITimeline) // crawler special case
 
 	r.Handle("POST", "/api/upload_image", handler.APIUpload)
 	r.Handle("POST", "/api/p/:parent", handler.APIReplies)

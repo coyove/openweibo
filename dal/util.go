@@ -2,33 +2,21 @@ package dal
 
 import (
 	"crypto/sha1"
-	"github.com/coyove/iis/dal/storage"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/coyove/iis/dal/storage"
 )
 
-var (
-	rxCrawler = regexp.MustCompile(`(?i)(bot|googlebot|crawler|spider|robot|crawling)`)
-)
+var ()
 
 type KeyValueOp interface {
 	Get(string) ([]byte, error)
 	WeakGet(string) ([]byte, error)
 	Set(string, []byte) error
 	SetGlobalCache(*storage.GlobalCache)
-}
-
-func IsCrawler(g *gin.Context) bool {
-	if rxCrawler.MatchString(g.Request.UserAgent()) {
-		return true
-	}
-	v, _ := g.Cookie("crawler")
-	return v == "1"
 }
 
 func incdec(a *int32, b *int, inc bool) {

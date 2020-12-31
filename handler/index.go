@@ -2,7 +2,6 @@ package handler
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -29,6 +28,7 @@ type ArticlesTimelineView struct {
 	IsUserWaitAccept      bool
 	ShowNewPost           bool
 	MediaOnly             bool
+	IsCrawler             bool
 	User                  *model.User
 	You                   *model.User
 	Checkpoints           []string
@@ -60,9 +60,16 @@ func Static(g *gin.Context, id, shortID string) {
 		g.String(200, a.Content)
 		return
 	}
-	g.HTML(200, "S.html", struct {
-		ID, ShortID string
-	}{id, shortID})
+	if common.IsCrawler(g) {
+		pl, ok := makeReplies(g, id)
+		if !ok {
+			g.Status(404)
+			return
+		}
+		g.HTML(200, "post.html", pl)
+	} else {
+		g.HTML(200, "S.html", struct{ ID string }{id})
+	}
 }
 
 func S(g *gin.Context) {
@@ -80,6 +87,7 @@ func TagTimeline(g *gin.Context) {
 		You:           getUser(g),
 		User:          &model.User{},
 		IsTagTimeline: true,
+		IsCrawler:     common.IsCrawler(g),
 		MediaOnly:     g.Query("media") != "",
 	}
 
@@ -103,7 +111,7 @@ func TagTimeline(g *gin.Context) {
 	}
 
 	a2, next := dal.WalkMulti(pl.MediaOnly, int(common.Cfg.PostsPerPage), cursors...)
-	fromMultiple(&pl.Articles, a2, 0, getUser(g))
+	fromMultiple(g, &pl.Articles, a2, 0, getUser(g))
 
 	pl.Next = ik.CombineIDs(nil, next...)
 	g.HTML(200, "timeline.html", pl)
@@ -114,6 +122,7 @@ func Timeline(g *gin.Context) {
 		ReplyView: makeReplyView(g, "", getUser(g)),
 		You:       getUser(g),
 		MediaOnly: g.Query("media") != "",
+		IsCrawler: common.IsCrawler(g),
 	}
 
 	if pid := g.Query("pid"); pid != "" {
@@ -217,7 +226,7 @@ func Timeline(g *gin.Context) {
 			}
 		}
 	}
-	fromMultiple(&pl.Articles, a, 0, pl.You)
+	fromMultiple(g, &pl.Articles, a, 0, pl.You)
 
 	pl.Next = ik.CombineIDs([]byte(pendingFCursor), next...)
 	g.HTML(200, "timeline.html", pl)
@@ -236,7 +245,7 @@ func Inbox(g *gin.Context) {
 	}
 
 	a, next := dal.WalkMulti(pl.MediaOnly, int(common.Cfg.PostsPerPage), ik.NewID(ik.IDInbox, pl.User.ID))
-	fromMultiple(&pl.Articles, a, 0, pl.You)
+	fromMultiple(g, &pl.Articles, a, 0, pl.You)
 
 	go dal.DoUpdateUser(pl.User.ID, "Unread", int32(0))
 
@@ -261,7 +270,7 @@ func APITimeline(g *gin.Context) {
 
 		start, _ := strconv.Atoi(g.PostForm("cursors"))
 		a, next := searchArticles(you, g.PostForm("searchtag"), start, nil)
-		fromMultiple(&articles, a, 0, getUser(g))
+		fromMultiple(g, &articles, a, 0, getUser(g))
 		p.Next = next
 	} else if g.PostForm("likes") == "true" {
 		c := g.PostForm("cursors")
@@ -277,14 +286,21 @@ func APITimeline(g *gin.Context) {
 			}
 		}
 		a, next := dal.WalkLikes(g.PostForm("media") == "true", int(common.Cfg.PostsPerPage), c)
-		fromMultiple(&articles, a, 0, getUser(g))
+		fromMultiple(g, &articles, a, 0, getUser(g))
 		p.Next = next
 	} else if g.PostForm("reply") == "true" {
 		a, next := dal.WalkReply(int(common.Cfg.PostsPerPage), g.PostForm("cursors"))
-		fromMultiple(&articles, a, _NoMoreParent|_ShowAuthorAvatar, getUser(g))
+		fromMultiple(g, &articles, a, _NoMoreParent|_ShowAuthorAvatar, getUser(g))
 		p.Next = next
 	} else {
-		cursors, payload := ik.SplitIDs(g.PostForm("cursors"))
+		getter := func(key string) string {
+			v := g.PostForm(key)
+			if v == "" {
+				v = g.Query(key)
+			}
+			return v
+		}
+		cursors, payload := ik.SplitIDs(getter("cursors"))
 
 		var pendingFCursor string
 		if len(payload) > 0 {
@@ -303,43 +319,53 @@ func APITimeline(g *gin.Context) {
 			pendingFCursor = next
 		}
 
-		a, next := dal.WalkMulti(g.PostForm("media") == "true", int(common.Cfg.PostsPerPage), cursors...)
-		fromMultiple(&articles, a, 0, getUser(g))
+		a, next := dal.WalkMulti(getter("media") == "true", int(common.Cfg.PostsPerPage), cursors...)
+		fromMultiple(g, &articles, a, 0, getUser(g))
 		p.Next = ik.CombineIDs([]byte(pendingFCursor), next...)
 	}
 
 	p.EOT = p.Next == ""
 
-	for _, a := range articles {
-		p.Articles = append(p.Articles, [2]string{a.ID, middleware.RenderTemplateString("row_content.html", a)})
+	if g.Request.Method == "POST" {
+		for _, a := range articles {
+			p.Articles = append(p.Articles, [2]string{a.ID, middleware.RenderTemplateString("row_content.html", a)})
+		}
+		g.JSON(200, p)
+	} else {
+		pl := ArticlesTimelineView{
+			You:       getUser(g),
+			User:      &model.Dummy,
+			IsCrawler: common.IsCrawler(g),
+			Next:      p.Next,
+			Articles:  articles,
+			MediaOnly: g.PostForm("media") == "true",
+		}
+		g.HTML(200, "timeline.html", pl)
 	}
-	g.JSON(200, p)
 }
 
 func APIReplies(g *gin.Context) {
-	var pl ArticleRepliesView
-	var pid = g.Param("parent")
+	pl, ok := makeReplies(g, g.Param("parent"))
+	if !ok {
+		g.Status(404)
+		return
+	}
+	g.Writer.Header().Add("X-Reply", "true")
+	g.HTML(200, "post.html", pl)
+}
 
+func makeReplies(g *gin.Context, pid string) (pl ArticleRepliesView, ok bool) {
 	parent, err := dal.GetArticle(pid)
 	if err != nil || parent.ID == "" {
-		g.Status(404)
-		log.Println(pid, err)
 		return
 	}
 
 	you := getUser(g)
-	// if you == nil {
-	// 	g.Writer.Header().Add("X-Reason", "user/404")
-	// 	g.Status(403)
-	// 	return
-	// }
-
 	pl.ParentArticle.from(parent, _GreyOutReply, you)
 	pl.ReplyView = makeReplyView(g, pid, you)
 
 	if you != nil {
 		if dal.IsBlocking(pl.ParentArticle.Author.ID, you.ID) {
-			g.Status(404)
 			return
 		}
 
@@ -348,21 +374,17 @@ func APIReplies(g *gin.Context) {
 
 	if pl.ParentArticle.Author.FollowApply != 0 {
 		if you == nil {
-			g.Status(404)
 			return
 		}
 		if _, accepted := dal.IsFollowingWithAcceptance(you.ID, pl.ParentArticle.Author); !accepted {
-			g.Status(404)
 			return
 		}
 	}
 
 	a, next := dal.WalkReply(int(common.Cfg.PostsPerPage), parent.ReplyChain)
-	fromMultiple(&pl.Articles, a, _NoMoreParent|_NoCluster|_ShowAuthorAvatar, getUser(g))
+	fromMultiple(g, &pl.Articles, a, _NoMoreParent|_NoCluster|_ShowAuthorAvatar, getUser(g))
 	pl.Next = next
-
-	g.Writer.Header().Add("X-Reply", "true")
-	g.HTML(200, "post.html", pl)
+	return pl, true
 }
 
 func Search(g *gin.Context) {
@@ -385,7 +407,7 @@ func Search(g *gin.Context) {
 
 	as, next := searchArticles(pl.You, pl.Tag, 0, &pl.PostsUnderTag)
 	pl.Next = next
-	fromMultiple(&pl.Articles, as, 0, pl.You)
+	fromMultiple(g, &pl.Articles, as, 0, pl.You)
 	g.HTML(200, "timeline.html", pl)
 }
 

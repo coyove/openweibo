@@ -99,10 +99,17 @@
         {{end}}
         {{end}}
 
+        {{if .CrawlerLink}}
+        <a class="reply-box {{if .GreyOutReply}}tmpl-light-text{{end}}" href="{{.CrawlerLink}}">
+            回复 {{if .Replies}}{{.Replies}}{{end}}
+        </a>
+        {{else}}
         <a class="reply-box {{if .GreyOutReply}}tmpl-light-text{{end}}" href="javascript:showReply('{{.ID}}', false)">
             <i class="icon-reply-outline"></i>
             {{if .Replies}}{{.Replies}}{{end}}
         </a>
+        {{end}}
+
         <a class="reply-box" href="javascript:void(0)" onclick="likeArticle(this, '{{.ID}}')" liked={{.Liked}}>
             <i class="icon-heart-{{if .Liked}}filled{{else}}2{{end}}"></i> <span class=num>{{if .Likes}}{{.Likes}}{{end}}</span>
         </a>

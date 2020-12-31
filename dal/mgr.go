@@ -16,13 +16,14 @@ import (
 	"github.com/coyove/iis/model"
 )
 
-var Masters = 10
-var S3 *storage.S3
-
-var m struct {
-	db          KeyValueOp
-	activeUsers *storage.GlobalCache
-}
+var (
+	Masters = 10
+	S3      *storage.S3
+	m       struct {
+		db          KeyValueOp
+		activeUsers *storage.GlobalCache
+	}
+)
 
 func Init(redisConfig *storage.RedisConfig, region string, ak, sk string) {
 	var db KeyValueOp
