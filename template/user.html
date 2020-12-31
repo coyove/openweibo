@@ -99,7 +99,7 @@ input[type=number] {
                 <table class="articles" style="margin: 0.5em 0;text-align:left">
                     <tr>
                         <td>
-                            <input type=checkbox {{if .User.Settings.AutoNSFW}}checked{{end}} id=autonsfw
+                            <input type=checkbox {{if .User.ExpandNSFWImages}}checked{{end}} id=autonsfw
                                    class=icon-input-checkbox
                                    onchange="updateSetting(this,'autonsfw',this.checked?'1':'')">
                             <i class='icon-ok-circled2'></i>
@@ -108,7 +108,7 @@ input[type=number] {
                     </tr>
                     <tr>
                         <td>
-                            <input type=checkbox {{if .User.Settings.FoldImages}}checked{{end}} id=foldimg
+                            <input type=checkbox {{if .User.FoldAllImages}}checked{{end}} id=foldimg
                                    class=icon-input-checkbox
                                    onchange="updateSetting(this,'foldimg',this.checked?'1':'')">
                             <i class='icon-ok-circled2'></i>
@@ -117,7 +117,7 @@ input[type=number] {
                     </tr>
                     <tr>
                         <td>
-                            <input type=checkbox {{if .User.Settings.OnlyMyFollowingsCanMention}}checked{{end}} id=mfcm
+                            <input type=checkbox {{if .User.NotifyFollowerActOnly}}checked{{end}} id=mfcm
                                    class=icon-input-checkbox
                                    onchange="updateSetting(this,'mfcm',this.checked?'1':'')">
                             <i class='icon-ok-circled2'></i>
@@ -128,7 +128,7 @@ input[type=number] {
                     </tr>
                     <tr>
                         <td>
-                            <input type=checkbox {{if .User.Settings.HideLocation}}checked{{end}} id=hl
+                            <input type=checkbox {{if .User.HideLocation}}checked{{end}} id=hl
                                    class=icon-input-checkbox
                                    onchange="updateSetting(this,'hl',this.checked?'1':'')">
                             <i class='icon-ok-circled2'></i>
@@ -137,20 +137,11 @@ input[type=number] {
                     </tr>
                     <tr>
                         <td>
-                            <input type=checkbox {{if .User.Settings.HideLikesInTimeline}}checked{{end}} id=hide-likes-timeline
-                                   class=icon-input-checkbox
-                                   onchange="updateSetting(this,'hide-likes-timeline',this.checked?'1':'')">
-                            <i class='icon-ok-circled2'></i>
-                            <label for=hide-likes-timeline>不在时间轴里显示你“喜欢了”状态</label>
-                        </td>
-                    </tr>
-		    <tr>
-                        <td>
-                            <input type=checkbox {{if .User.Settings.HideLikes}}checked{{end}} id=hide-likes
+                            <input type=checkbox {{if .User.HideLikes}}checked{{end}} id=hide-likes
                                    class=icon-input-checkbox
                                    onchange="updateSetting(this,'hide-likes',this.checked?'1':'')">
                             <i class='icon-ok-circled2'></i>
-                            <label for=hide-likes>隐藏你“喜欢”的内容(收藏夹)</label>
+                            <label for=hide-likes>隐藏你“喜欢”的内容</label>
                         </td>
                     </tr>
                     <tr>
@@ -206,7 +197,7 @@ input[type=number] {
                 <table class="articles" style="margin-top: 0.5em;text-align:left">
                     <tr>
                         <td class=nowrap>API Token:</td>
-                        <td><input readonly name=api-token class=t value="{{.User.Settings.APIToken}}"></td>
+                        <td><input readonly name=api-token class=t value="{{.User.APIToken}}"></td>
                         <td class=nowrap>
                             <button
                                 class="gbutton"

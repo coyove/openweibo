@@ -72,7 +72,11 @@ func errorHandling(g *gin.Context) {
 					code = x[2:]
 				}
 			} else {
-				log.Println(r, string(debug.Stack()))
+				if rs := fmt.Sprint(r); strings.Contains(rs, "broken pipe") {
+					log.Println(rs)
+				} else {
+					log.Println(rs, string(debug.Stack()))
+				}
 			}
 			if code == "" {
 				code = "internal_error"

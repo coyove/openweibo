@@ -33,7 +33,7 @@
         <pre style="margin:0.5em 0">用户不存在</pre>
       {{else}}
         <pre style="margin:0.5em 0"><!--
-        -->{{.Settings.DescHTML}}<!--
+        -->{{.DescHTML}}<!--
         --><div class=tmpl-mid-text style="font-size:90%;white-space:normal">
             <b>加入于</b> {{formatTime .Signup}}&nbsp;
             <b>活跃于</b> {{formatTime (getLastActiveTime .ID)}}&nbsp;

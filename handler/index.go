@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/ik"
@@ -141,7 +140,7 @@ func Timeline(g *gin.Context) {
 		// View someone's timeline
 		pl.IsUserTimeline = true
 		pl.Checkpoints = makeCheckpoints(g)
-		pl.User, _ = dal.GetUserWithSettings(uid)
+		pl.User, _ = dal.GetUser(uid)
 		if pl.User == nil {
 			NotFound(g)
 			return
@@ -239,10 +238,7 @@ func Inbox(g *gin.Context) {
 	a, next := dal.WalkMulti(pl.MediaOnly, int(common.Cfg.PostsPerPage), ik.NewID(ik.IDInbox, pl.User.ID))
 	fromMultiple(&pl.Articles, a, 0, pl.You)
 
-	go dal.DoUpdateUser(&dal.UpdateUserRequest{
-		ID:     pl.User.ID,
-		Unread: aws.Int32(int32(0)),
-	})
+	go dal.DoUpdateUser(pl.User.ID, "Unread", int32(0))
 
 	pl.Next = ik.CombineIDs(nil, next...)
 	g.HTML(200, "timeline.html", pl)
@@ -275,7 +271,7 @@ func APITimeline(g *gin.Context) {
 			return
 		}
 		if x := ik.ParseID(c); x.Header() == ik.IDAuthor && you.ID != x.Tag() {
-			if dal.WeakGetUserSettings(x.Tag()).HideLikes {
+			if u, _ := dal.GetUser(x.Tag()); u != nil && u.HideLikes == 1 {
 				g.Status(403)
 				return
 			}
@@ -399,18 +395,14 @@ func searchArticles(u *model.User, query string, start int, totalCount *int) ([]
 	// 	timeout = time.Second * 5
 	// }
 
-	res, count, err := model.SearchArticle(query, start, common.Cfg.PostsPerPage+1)
-	if err != nil {
-		log.Println("searchArticles:", err)
-		return nil, ""
-	}
+	res, count := model.Search("art", query, start, common.Cfg.PostsPerPage+1)
 	if totalCount != nil {
 		*totalCount = (count)
 	}
 
 	as := []*model.Article{}
 	for _, id := range res {
-		if a, _ := dal.GetArticle(id); a != nil {
+		if a, _ := dal.GetArticle(id.String()); a != nil {
 			if ik.ParseID(a.ID).Header() == ik.IDGeneral && !a.IsDeleted() {
 				as = append(as, a)
 			}

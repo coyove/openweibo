@@ -559,8 +559,8 @@ div.reply-lock-notify {
     position:absolute;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,0.33);opacity:0;transition:opacity 0.5s;
 }
 
-.hidden-text {background: black;color:black}
-.hidden-text:hover, .hidden-text:active {color:white}
+.hidden-text {background: {{.NormalText}}; color: {{.NormalText}}; cursor: pointer }
+.hidden-text:hover, .hidden-text:active { color: {{.BodyBG}} }
 
 .poll-article {  margin-top: 0.5em }
 .poll-article .poll-item { position:relative; padding: 0.5em; line-height:1.5em}

@@ -224,9 +224,6 @@ a[value=false] .icon-eye-off:before {
     border: solid 1px {{.Border}};
     overflow: hidden;
 }
-.dz-success-mark {
-    color: {{.Link}};
-}
 .dz-remove:hover {
     text-decoration: none !important;
 }

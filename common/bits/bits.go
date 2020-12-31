@@ -1,4 +1,4 @@
-package common
+package bits
 
 import (
 	"encoding/base64"

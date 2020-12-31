@@ -1,6 +1,7 @@
 package dal
 
 import (
+	"github.com/coyove/iis/common/bits"
 	"log"
 	"math/rand"
 	"sort"
@@ -8,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
 )
@@ -51,7 +51,7 @@ func GetCommonFollowingList(from, to string, cursor string, n int) ([]FollowingS
 	} else {
 		// Parse the cursor and 0 - 255 flags
 		idx, _ = strconv.Atoi(parts[0])
-		flags = common.Unpack256(parts[1])
+		flags = bits.Unpack256(parts[1])
 		if idx > 255 || idx < 0 || flags == nil {
 			return nil, ""
 		}
@@ -130,7 +130,7 @@ func GetCommonFollowingList(from, to string, cursor string, n int) ([]FollowingS
 	if idx > 255 {
 		cursor = ""
 	} else {
-		cursor = strconv.Itoa(idx) + "~" + common.Pack256(flags)
+		cursor = strconv.Itoa(idx) + "~" + bits.Pack256(flags)
 	}
 
 	if timedout && cursor != "" {

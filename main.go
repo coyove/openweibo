@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/coyove/iis/common/geoip"
 	"html/template"
 	"io/ioutil"
 	"math/rand"
@@ -14,9 +15,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal"
-	"github.com/coyove/iis/dal/kv"
+	"github.com/coyove/iis/dal/storage"
 	"github.com/coyove/iis/dal/tagrank"
 	"github.com/coyove/iis/handler"
 	"github.com/coyove/iis/ik"
@@ -31,20 +33,25 @@ func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	common.MustLoadConfig("config.json")
-	common.LoadIPLocation()
+	geoip.LoadIPLocation()
 
-	redisConfig := &kv.RedisConfig{
-		Addr: common.Cfg.RedisAddr,
+	redisConfig := &storage.RedisConfig{Addr: common.Cfg.RedisAddr}
+	if redisConfig.Addr == "" {
+		svr, err := miniredis.Run()
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("Use miniredis mock:", svr.Addr())
+		redisConfig.Addr = svr.Addr()
 	}
 
 	dal.Init(redisConfig, common.Cfg.DyRegion, common.Cfg.DyAccessKey, common.Cfg.DySecretKey)
 
 	if common.Cfg.S3Region != "" {
-		dal.S3 = kv.NewS3Storage(common.Cfg.S3Endpoint, common.Cfg.S3Region, common.Cfg.S3Bucket,
+		dal.S3 = storage.NewS3(common.Cfg.S3Endpoint, common.Cfg.S3Region, common.Cfg.S3Bucket,
 			common.Cfg.S3AccessKey, common.Cfg.S3SecretKey)
 	}
 
-	model.Init(redisConfig)
 	tagrank.Init(redisConfig)
 
 	prodMode := common.Cfg.Key != "0123456789abcdef"
@@ -124,7 +131,7 @@ func main() {
 				}
 				var date time.Time
 				data := strings.Split(part, "/")
-				loc, _ := common.LookupIP(data[0])
+				loc, _ := geoip.LookupIP(data[0])
 				if len(data) > 1 {
 					ts, _ := strconv.ParseInt(data[1], 36, 64)
 					date = time.Unix(ts, 0)

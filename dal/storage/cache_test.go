@@ -1,4 +1,4 @@
-package kv
+package storage
 
 import (
 	"io/ioutil"

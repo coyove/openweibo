@@ -36,32 +36,6 @@
         <div class="image-index open-blank image-enlarge-badge" onclick='window.open("{{$v}}");event.stopPropagation()'>原图 <i class=icon-export-alt></i></div>
         <span class="image-index long-image">长图</span>
         <span class="image-index image-enlarge-badge" style="{{if $one}}display:none{{end}}">{{printf "%X" (sub $i -1)}}</span>
-	<!--
-        {{if ne $i (sub (len $.Urls) 1)}}
-        <span
-            class="image-index image-next icon-up-big"
-            onclick='(function(_this) {
-                try { _this.parentNode.parentNode.querySelector("button").click() } catch (e) {}
-                var el = _this.parentNode.parentNode.querySelector("[image-index=\"{{sub $i -1}}\"]");
-                el.click();
-                el.scrollIntoView();
-                event.stopPropagation();
-            })(this)'></span>
-        {{else if not $one}}
-        <span
-            class="image-index image-next icon-ok"
-            onclick='(function(_this) {
-                _this = _this.parentNode.parentNode;
-                var els = _this.querySelectorAll(".media.cell");
-                for (var i = 0 ; i < els.length; i++) {
-                    if (els[i].hasAttribute("enlarge")) els[i].click();
-                }
-                _this.querySelector("[image-index=\"0\"]").scrollIntoView();
-                event.stopPropagation();
-            })(this)'>
-        </span>
-        {{end}}
--->
     </div>
     {{end}}
 {{end}}

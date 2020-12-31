@@ -15,7 +15,6 @@ import (
 	"github.com/coyove/common/lru"
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/ik/captcha"
-	"github.com/coyove/iis/model"
 	"github.com/gin-gonic/gin"
 )
 
@@ -68,12 +67,7 @@ func MakeUUID(g *gin.Context, x *[4]byte) string {
 	exp := time.Now().Add(time.Minute * time.Duration(common.Cfg.TokenTTL)).Unix()
 	binary.BigEndian.PutUint32(p[:], uint32(exp))
 
-	u, _ := g.Get("user")
-	if u == nil {
-		copy(p[4:10], g.Request.UserAgent())
-	} else {
-		copy(p[4:10], u.(*model.User).ID)
-	}
+	copy(p[4:10], g.Request.UserAgent())
 	rand.Read(p[10:])
 
 	if x != nil {
@@ -97,13 +91,7 @@ func ParseToken(g *gin.Context, tok string) (r []byte, ok bool) {
 	}
 
 	tmp := [6]byte{}
-
-	u, _ := g.Get("user")
-	if u != nil {
-		copy(tmp[:], u.(*model.User).ID)
-	} else {
-		copy(tmp[:], g.Request.UserAgent())
-	}
+	copy(tmp[:], g.Request.UserAgent())
 
 	ok = bytes.HasPrefix(buf[4:10], tmp[:])
 	if ok {
@@ -156,15 +144,11 @@ func ValidateOTT(id, tok string) bool {
 
 var userTokenBase64 = base64.URLEncoding.WithPadding(base64.NoPadding)
 
-func MakeUserToken(u *model.User) string {
-	if u == nil {
-		return ""
-	}
-
+func MakeUserToken(uid, session string) string {
 	var p bytes.Buffer
-	p.WriteString(u.ID)
+	p.WriteString(uid)
 	p.WriteByte(0)
-	p.WriteString(u.Session)
+	p.WriteString(session)
 	buf := p.Bytes()
 
 	var nonce [12]byte

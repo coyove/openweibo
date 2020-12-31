@@ -61,7 +61,6 @@ var Cfg = struct {
 	MaxRequestSize:  6,
 	HCaptchaSiteKey: "10000000-ffff-ffff-ffff-000000000001",
 	HCaptchaSecKey:  "0x0000000000000000000000000000000000000000",
-	RedisAddr:       "127.0.0.1:6379",
 }
 
 func MustLoadConfig(path string) {

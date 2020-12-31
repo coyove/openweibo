@@ -2,13 +2,13 @@ package dal
 
 import (
 	"fmt"
+	"github.com/coyove/iis/common/bits"
 	"log"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal/tagrank"
 	"github.com/coyove/iis/ik"
@@ -28,14 +28,6 @@ func GetUser(id string) (*model.User, error) {
 
 func WeakGetUser(id string) (*model.User, error) {
 	return getterUser(m.db.WeakGet, id)
-}
-
-func WeakGetUserWithSettings(id string) (*model.User, error) {
-	u, err := getterUser(m.db.WeakGet, id)
-	if u != nil {
-		u.SetSettings(WeakGetUserSettings(id))
-	}
-	return u, err
 }
 
 func getterUser(getter func(string) ([]byte, error), id string) (*model.User, error) {
@@ -58,25 +50,6 @@ func getterUser(getter func(string) ([]byte, error), id string) (*model.User, er
 	return u, err
 }
 
-func GetUserWithSettings(id string) (*model.User, error) {
-	u, err := GetUser(id)
-	if err != nil {
-		return u, err
-	}
-	u.SetSettings(GetUserSettings(id))
-	return u, nil
-}
-
-func GetUserSettings(id string) model.UserSettings {
-	p, _ := m.db.Get("u/" + id + "/settings")
-	return model.UnmarshalUserSettings(p)
-}
-
-func WeakGetUserSettings(id string) model.UserSettings {
-	p, _ := m.db.WeakGet("u/" + id + "/settings")
-	return model.UnmarshalUserSettings(p)
-}
-
 func GetUserByContext(g *gin.Context) *model.User {
 	u, _ := GetUserByToken(g.PostForm("api2_uid"), g.GetBool("allow-api"))
 	if u != nil && u.Banned {
@@ -91,12 +64,12 @@ func GetUserByToken(tok string, allowAPI bool) (*model.User, error) {
 		return nil, err
 	}
 
-	u, err := GetUserWithSettings(string(id))
+	u, err := GetUser(string(id))
 	if err != nil {
 		return nil, err
 	}
 
-	if allowAPI && tok == u.Settings().APIToken {
+	if allowAPI && tok == u.APIToken {
 		u.SetIsAPI(true)
 		return u, nil
 	}
@@ -108,9 +81,8 @@ func GetUserByToken(tok string, allowAPI bool) (*model.User, error) {
 }
 
 func ClearInbox(uid string) error {
-	_, err := DoUpdateArticle(&UpdateArticleRequest{
-		ID:          ik.NewID(ik.IDInbox, uid).String(),
-		ClearNextID: aws.Bool(true),
+	_, err := DoUpdateArticle(ik.NewID(ik.IDInbox, uid).String(), func(a *model.Article) {
+		a.NextID, a.NextMediaID = "", ""
 	})
 	return err
 }
@@ -121,37 +93,25 @@ func MentionUserAndTags(a *model.Article, ids []string, tags []string) error {
 			return fmt.Errorf("author blocked")
 		}
 
-		if GetUserSettings(id).OnlyMyFollowingsCanMention && !IsFollowing(id, a.Author) {
+		if to, _ := GetUser(id); to != nil && to.NotifyFollowerActOnly == 1 && !IsFollowing(id, a.Author) {
 			continue
 		}
 
-		if _, _, err := DoInsertArticle(&InsertArticleRequest{
-			ID: ik.NewID(ik.IDInbox, id).String(),
-			Article: model.Article{
-				ID:  ik.NewGeneralID().String(),
-				Cmd: model.CmdInboxMention,
-				Extras: map[string]string{
-					"from":       a.Author,
-					"article_id": a.ID,
-				},
-			},
+		if _, _, err := DoInsertArticle(ik.NewID(ik.IDInbox, id).String(), false, model.Article{
+			Cmd:    model.CmdInboxMention,
+			Extras: map[string]string{"from": a.Author, "article_id": a.ID},
 		}); err != nil {
 			return err
 		}
 
-		if _, err := DoUpdateUser(&UpdateUserRequest{ID: id, IncDecUnread: aws.Bool(true)}); err != nil {
+		if err := IncUnread(id); err != nil {
 			return err
 		}
 	}
 
 	for _, tag := range tags {
-		_, root, err := DoInsertArticle(&InsertArticleRequest{
-			ID: ik.NewID(ik.IDTag, tag).String(),
-			Article: model.Article{
-				ID:      ik.NewGeneralID().String(),
-				ReferID: a.ID,
-				Media:   a.Media,
-			},
+		_, root, err := DoInsertArticle(ik.NewID(ik.IDTag, tag).String(), false, model.Article{
+			ReferID: a.ID, Media: a.Media,
 		})
 		if err != nil {
 			return err
@@ -171,60 +131,44 @@ func FollowUser(from, to string, following bool) (E error) {
 		}
 
 		go func() {
-			DoUpdateUser(&UpdateUserRequest{ID: from, IncDecFollowings: aws.Bool(following)})
+			DoUpdateUser(from, func(u *model.User) { u.Followings += int32(common.BoolInt2(following)) })
 			if !strings.HasPrefix(to, "#") {
 				notifyNewFollower(from, to, following)
 
-				if toUser, _ := WeakGetUserWithSettings(to); toUser != nil &&
-					toUser.FollowApply != 0 &&
-					following {
-					_, err := WeakGetArticle(makeFollowerAcceptanceID(to, from))
-					if err != model.ErrNotExisted {
+				if toUser, _ := WeakGetUser(to); toUser != nil && toUser.FollowApply != 0 && following {
+					if _, err := WeakGetArticle(makeFollowerAcceptanceID(to, from)); err != model.ErrNotExisted {
 						return
 					}
 
 					AcceptUser(to, from, false)
-					DoInsertArticle(&InsertArticleRequest{
-						ID: ik.NewID(ik.IDInbox, to).String(),
-						Article: model.Article{
-							ID:     ik.NewGeneralID().String(),
-							Cmd:    model.CmdInboxFwApply,
-							Extras: map[string]string{"from": from},
-						},
+					DoInsertArticle(ik.NewID(ik.IDInbox, to).String(), false, model.Article{
+						Cmd: model.CmdInboxFwApply, Extras: map[string]string{"from": from},
 					})
-					DoUpdateUser(&UpdateUserRequest{ID: to, IncDecUnread: aws.Bool(true)})
+					IncUnread(to)
 				}
 			}
 		}()
 	}()
 
 	state := strconv.FormatBool(following) + "," + strconv.FormatInt(time.Now().Unix(), 10)
-	oldValue, err := DoUpdateArticleExtra(&UpdateArticleExtraRequest{
-		ID:            followID,
-		SetExtraKey:   to,
-		SetExtraValue: state,
-	})
-	if err != nil {
+	var oldValue string
+	if _, err := DoUpdateArticle(followID, func(a *model.Article) { oldValue, a.Extras[to] = a.Extras[to], state }); err != nil {
 		if err != model.ErrNotExisted {
 			return err
 		}
 		updated = true
-		_, _, err := DoInsertArticle(&InsertArticleRequest{
-			ID: ik.NewID(ik.IDFollowing, from).String(),
-			Article: model.Article{
-				ID:     followID,
-				Cmd:    model.CmdFollow,
-				Extras: map[string]string{to: state},
-			},
-			AsFollowingSlot: true,
-		})
-		return err
+		return DoSetFollowingSlot(ik.NewID(ik.IDFollowing, from).String(), followID, to, state)
+		// _, _, err := DoInsertArticle(ik.NewID(ik.IDFollowing, from).String(), "following_slot", model.Article{
+		// 	ID:         followID,
+		// 	Cmd:        model.CmdFollow,
+		// 	Extras:     map[string]string{to: state},
+		// 	CreateTime: time.Now(),
+		// })
+		// return err
 	}
 
-	DoUpdateArticleExtra(&UpdateArticleExtraRequest{
-		ID:            ik.NewID(ik.IDFollowing, from).String(),
-		SetExtraKey:   lastElemInCompID(followID),
-		SetExtraValue: "1",
+	DoUpdateArticle(ik.NewID(ik.IDFollowing, from).String(), func(a *model.Article) {
+		a.Extras[lastElemInCompID(followID)] = "1"
 	})
 
 	if !strings.HasPrefix(oldValue, strconv.FormatBool(following)) {
@@ -234,22 +178,19 @@ func FollowUser(from, to string, following bool) (E error) {
 }
 
 func notifyNewFollower(from, to string, following bool) (E error) {
-	updated, _, err := DoUpdateOrInsertCmdArticle(&UpdateOrInsertCmdArticleRequest{
-		ArticleID:          makeFollowedID(to, from),
-		ToSubject:          from,
-		InsertUnderChainID: ik.NewID(ik.IDFollower, to).String(),
-		Cmd:                model.CmdFollowed,
-		CmdValue:           strconv.FormatBool(following),
-	})
+	updated, _, err := DoUpdateOrInsertCmdArticle(
+		ik.NewID(ik.IDFollower, to).String(),
+		makeFollowedID(to, from),
+		model.CmdFollowed,
+		strconv.FormatBool(following),
+		from)
 	if err != nil {
 		return err
 	}
 	if updated {
-		if _, err := DoUpdateUser(&UpdateUserRequest{ID: to, IncDecFollowers: aws.Bool(following)}); err != nil {
-			return err
-		}
+		_, err = DoUpdateUser(to, func(u *model.User) { u.Followers += int32(common.BoolInt2(following)) })
 	}
-	return nil
+	return err
 }
 
 func BlockUser(from, to string, blocking bool) (E error) {
@@ -261,14 +202,12 @@ func BlockUser(from, to string, blocking bool) (E error) {
 			log.Println("Unaccept user:", to, "unfollow error:", err)
 		}
 	}
-
-	_, _, err := DoUpdateOrInsertCmdArticle(&UpdateOrInsertCmdArticleRequest{
-		ArticleID:          makeBlockID(from, to),
-		ToSubject:          to,
-		InsertUnderChainID: ik.NewID(ik.IDBlacklist, from).String(),
-		Cmd:                model.CmdBlock,
-		CmdValue:           strconv.FormatBool(blocking),
-	})
+	_, _, err := DoUpdateOrInsertCmdArticle(
+		ik.NewID(ik.IDBlacklist, from).String(),
+		makeBlockID(from, to),
+		model.CmdBlock,
+		strconv.FormatBool(blocking),
+		to)
 	return err
 }
 
@@ -276,15 +215,11 @@ func AcceptUser(from, to string, accept bool) (E error) {
 	id := makeFollowerAcceptanceID(from, to)
 	if accept {
 		go func() {
-			DoInsertArticle(&InsertArticleRequest{
-				ID: ik.NewID(ik.IDInbox, to).String(),
-				Article: model.Article{
-					ID:     ik.NewGeneralID().String(),
-					Cmd:    model.CmdInboxFwAccepted,
-					Extras: map[string]string{"from": from},
-				},
+			DoInsertArticle(ik.NewID(ik.IDInbox, to).String(), false, model.Article{
+				Cmd:    model.CmdInboxFwAccepted,
+				Extras: map[string]string{"from": from},
 			})
-			DoUpdateUser(&UpdateUserRequest{ID: to, IncDecUnread: aws.Bool(true)})
+			IncUnread(to)
 		}()
 	}
 	return m.db.Set(id, (&model.Article{
@@ -295,54 +230,39 @@ func AcceptUser(from, to string, accept bool) (E error) {
 
 func LikeArticle(u *model.User, to string, liking bool) (E error) {
 	from := u.ID
-	updated, inserted, err := DoUpdateOrInsertCmdArticle(&UpdateOrInsertCmdArticleRequest{
-		ArticleID:          makeLikeID(from, to),
-		InsertUnderChainID: ik.NewID(ik.IDLike, from).String(),
-		Cmd:                model.CmdLike,
-		ToSubject:          to,
-		CmdValue:           strconv.FormatBool(liking),
-	})
+	updated, inserted, err := DoUpdateOrInsertCmdArticle(
+		ik.NewID(ik.IDLike, from).String(),
+		makeLikeID(from, to),
+		model.CmdLike,
+		strconv.FormatBool(liking),
+		to)
 	if err != nil {
 		return err
 	}
 	if updated {
 		go func() {
-			a, err := DoUpdateArticle(&UpdateArticleRequest{ID: to, IncDecLikes: aws.Bool(liking)})
+			a, err := DoUpdateArticle(to, func(a *model.Article) { a.Likes += int32(common.BoolInt2(liking)) })
 			if err != nil {
 				log.Println("LikeArticle error:", err)
 				return
 			}
 
 			if inserted && liking {
-				// insert an article into 'from''s timeline
-				if !u.Settings().HideLikesInTimeline {
-					DoInsertArticle(&InsertArticleRequest{
-						ID: ik.NewID(ik.IDAuthor, from).String(),
-						Article: model.Article{
-							ID:  ik.NewGeneralID().String(),
-							Cmd: model.CmdTimelineLike,
-							Extras: map[string]string{
-								"from":       from,
-								"article_id": to,
-							},
-						},
+				if u.HideLikes == 0 {
+					// Insert an article into from's timeline
+					DoInsertArticle(ik.NewID(ik.IDAuthor, from).String(), false, model.Article{
+						Cmd:    model.CmdTimelineLike,
+						Extras: map[string]string{"from": from, "article_id": to},
 					})
 				}
 
-				// if the author followed 'from', notify the author that his articles has been liked by 'from'
 				if IsFollowing(a.Author, from) {
-					DoInsertArticle(&InsertArticleRequest{
-						ID: ik.NewID(ik.IDInbox, a.Author).String(),
-						Article: model.Article{
-							ID:  ik.NewGeneralID().String(),
-							Cmd: model.CmdInboxLike,
-							Extras: map[string]string{
-								"from":       from,
-								"article_id": to,
-							},
-						},
+					// If author followed 'from', notify the author that his articles has been liked by 'from'
+					DoInsertArticle(ik.NewID(ik.IDInbox, a.Author).String(), false, model.Article{
+						Cmd:    model.CmdInboxLike,
+						Extras: map[string]string{"from": from, "article_id": to},
 					})
-					DoUpdateUser(&UpdateUserRequest{ID: a.Author, IncDecUnread: aws.Bool(true)})
+					IncUnread(a.Author)
 				}
 			}
 		}()
@@ -431,7 +351,7 @@ func GetFollowingList(chain ik.ID, cursor string, n int, fulluser bool) ([]Follo
 	} else {
 		// Parse the cursor and 0 - 255 flags
 		idx, _ = strconv.Atoi(parts[0])
-		flags = common.Unpack256(parts[1])
+		flags = bits.Unpack256(parts[1])
 		if idx > 255 || idx < 0 || flags == nil {
 			return nil, ""
 		}
@@ -486,7 +406,7 @@ func GetFollowingList(chain ik.ID, cursor string, n int, fulluser bool) ([]Follo
 	if idx > 255 {
 		cursor = ""
 	} else {
-		cursor = strconv.Itoa(idx) + "~" + common.Pack256(flags)
+		cursor = strconv.Itoa(idx) + "~" + bits.Pack256(flags)
 	}
 
 	return res, cursor
@@ -556,4 +476,9 @@ func CacheGet(key string) (string, bool) {
 
 func CacheSet(key string, value string) {
 	m.activeUsers.Add(key, []byte(value))
+}
+
+func IncUnread(id string) error {
+	_, err := DoUpdateUser(id, func(u *model.User) { u.Unread++ })
+	return err
 }

@@ -35,7 +35,6 @@ func User(g *gin.Context) {
 
 func UserList(g *gin.Context) {
 	p := struct {
-		UUID     string
 		List     []dal.FollowingState
 		EError   string
 		Next     string
@@ -43,7 +42,6 @@ func UserList(g *gin.Context) {
 		You      *model.User
 		User     *model.User
 	}{
-		UUID:     ik.MakeUUID(g, nil),
 		EError:   g.Query("error"),
 		ListType: g.Param("type"),
 	}
@@ -54,7 +52,7 @@ func UserList(g *gin.Context) {
 		return
 	}
 
-	p.User, _ = dal.GetUserWithSettings(g.Param("uid"))
+	p.User, _ = dal.GetUser(g.Param("uid"))
 	if p.User == nil {
 		p.User = p.You
 	} else {
@@ -136,11 +134,11 @@ func UserLikes(g *gin.Context) {
 	}
 
 	if uid := g.Param("uid"); uid != "master" {
-		p.User, _ = dal.GetUserWithSettings(uid)
+		p.User, _ = dal.GetUser(uid)
 		if p.User == nil {
 			p.User = p.You
 		} else {
-			if p.User.Settings().HideLikes {
+			if p.User.HideLikes == 1 {
 				NotFound(g)
 				return
 			}
@@ -168,7 +166,7 @@ func UserLikes(g *gin.Context) {
 func APIGetUserInfoBox(g *gin.Context) {
 	you := getUser(g)
 	id := g.Param("id")
-	u, _ := dal.GetUserWithSettings(id)
+	u, _ := dal.GetUser(id)
 	// throw(u, "user_not_found_by_id")
 	if u == nil {
 		u = &model.User{

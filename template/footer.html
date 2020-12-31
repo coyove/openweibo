@@ -1,110 +1,34 @@
 </div>
 <div id=footer style="flex-shrink:0;margin:0;word-break:break-all;line-height:2em;padding:0.5em;text-align:center" class="row">
-  {{$id := ""}}
+    {{$id := ""}}
     {{if .User}}
-  {{$id = .User.ID}}
-    <a href='javascript:switchID()' style="margin-right:2px"><b>@</b></a><a href='/user'>{{$id}}</a>
+    {{$id = .User.ID}}
+    <a href='/user'><b>@</b>{{$id}}</a>
     {{else}}
     <a href="/">登入</a> / <a href="/user">注册</a>
     {{end}}
 
-    <script>
-      function switchID(noreload) {
-	  {{if $id}}
-	  var cookie = (document.cookie.match(/(^| )id=([^;]+)/) || [])[2];
-	  var oc = JSON.parse(localStorage.getItem('oc') || '[]');
-	  oc.unshift({id: "{{$id}}", cookie: cookie});
-	  if (oc.length > 10) oc = oc.slice(0, 10);
-	  localStorage.setItem('oc', JSON.stringify(oc));
-	  document.cookie = 'id=';
-	  if (noreload) return;
-	  location.reload();
-	  {{end}}
-      }
-
-      (function() {
-	  var oc = JSON.parse(localStorage.getItem("oc") || '[]');
-	  var set = function(k, v) {
-	      return 'switchID(true);' +
-		  'document.cookie="'+k+'='+v+';path=/;expires=Sun, 07 Apr 2030 01:27:11 GMT";' +
-		  'location.reload()' 
-	  }
-	  var dedup = {};
-	  if (oc && oc.length) {
-	      document.write("<div style='font-size:80%'>");
-	      for (var i in oc) {
-		  var id = oc[i].id;
-		  if (dedup[id] || id === '{{$id}}') continue;
-		  dedup[id] = true;
-		  document.write($html({
-		      tag: 'a',
-		      class: 'tmpl-light-text',
-		      href: 'javascript:void(0)',
-		      children: '@' + id,
-		      onclick: set('id', oc[i].cookie)
-		  }).outerHTML);
-		  document.write("&nbsp;");
-	      }
-	      document.write($html({
-		  tag: 'a',
-		  class: 'tmpl-light-text',
-		  href: 'javascript:void(0)',
-		  children: {tag: 'span', class: 'icon-block', children: '清空小号'},
-		  onclick: 'localStorage.setItem("oc","");location.reload()'
-	      }).outerHTML);
-	      document.write("</div>");
-	  }
-
-	  {{if .User}}{{if .User.Unread}}
-	  document.title =  "({{.User.Unread}}) " + document.title;
-	  $q("#unread-notify b").innerText = "{{.User.Unread}}";
-	  $q("#unread-notify i").className += " tmpl-inbox-message-text";
-	  {{end}}{{end}}
-      })()
-    </script>
-
     <div style="font-size:90%">
         <a href="https://github.com/coyove/iis" target=_blank>IIS</a> in {{.Render}}ms
-	<script>
-	  document.write($html({
-	      tag: 'a',
-	      style: { cursor: "pointer" },
-	      class: isDarkMode() ? 'icon-sun' : 'icon-sun-filled',
-	      onclick: "document.cookie='mode="+(isDarkMode()?'':'dark')+";path=/;expires=Sun, 07 Apr 2030 01:27:11 GMT';location.reload()",
-	      children: "" + new Date().getFullYear()
-	  }).outerHTML);
-	</script>
+        <script>
+            (function() {
+                {{if .User}}{{if .User.Unread}}
+                document.title =  "({{.User.Unread}}) " + document.title;
+                $q("#unread-notify b").innerText = "{{.User.Unread}}";
+                $q("#unread-notify i").className += " tmpl-inbox-message-text";
+                {{end}}{{end}}
+
+                document.write($html({
+                    tag: 'a',
+                    style: { cursor: "pointer" },
+                    class: isDarkMode() ? 'icon-sun' : 'icon-sun-filled',
+                    onclick: "document.cookie='mode="+(isDarkMode()?'':'dark')+";path=/;expires=Sun, 07 Apr 2030 01:27:11 GMT';location.reload()",
+                    children: "" + new Date().getFullYear()
+                }).outerHTML);
+            })()
+        </script>
     </div>
 </div>
-
-    <script>
-        function expandNSFW() {
-            {{if .User}}
-            {{if .User.Settings.AutoNSFW}}
-            $q(".gbutton.nsfw-clicker", true).forEach(function(el) { el.click() });
-            {{end}}
-            {{end}}
-
-            var cb = $q("#auto-expand-nsfw");
-            if (cb && cb.checked) $q(".gbutton.nsfw-clicker", true).forEach(function(el) { el.click() });
-
-            var cb = $q("#auto-hide-nsfw");
-            if (cb && cb.checked) $q(".gbutton.nsfw-clicker", true).forEach(function(el) {
-                el.parentNode.style.display = 'none';
-            });
-        }
-
-        (function() {
-            expandNSFW();
-            $q("input,textarea", true).forEach(function(el) {
-                el.addEventListener("tribute-replaced", function(e) {
-                    if (e.detail.event.target.tagName === 'I') {
-                        console.log("Matched item:", e.detail.item.original);
-                    }
-                });
-            })
-        })()
-    </script>
 
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-138406585-1"></script>

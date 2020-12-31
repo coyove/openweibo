@@ -43,7 +43,7 @@ func mwRenderPerf(g *gin.Context) {
 		if u, _ = dal.GetUserByToken(tok, false); u != nil {
 			g.Set("user", u)
 			dal.MarkUserActive(u.ID)
-			model.IndexUser(u, false)
+			model.IndexUser(u)
 		}
 	}
 

@@ -1,13 +1,13 @@
 package tagrank
 
 import (
-	"github.com/coyove/iis/dal/kv"
+	"github.com/coyove/iis/dal/storage"
 	"testing"
 	"time"
 )
 
 func TestRank(t *testing.T) {
-	Init(&kv.RedisConfig{
+	Init(&storage.RedisConfig{
 		Addr: "localhost:6379",
 	})
 

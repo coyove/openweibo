@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/coyove/iis/common/geoip"
 	"html/template"
 	"strings"
 	"time"
@@ -31,9 +32,9 @@ const (
 	CmdFollow              = "follow"
 	CmdFollowed            = "followed"
 	CmdBlock               = "block"
-	CmdLike                = "like"          // indicate the raw cmd article
-	CmdInboxLike           = "inbox-like"    // indicate the notification shown in inbox
-	CmdTimelineLike        = "timeline-like" // indicate the notification shown in timeline
+	CmdLike                = "like"          // raw cmd article
+	CmdInboxLike           = "inbox-like"    // notification shown in inbox
+	CmdTimelineLike        = "timeline-like" // notification shown in timeline
 
 	DeletionMarker = "[[b19b8759-391b-460a-beb0-16f5f334c34f]]"
 )
@@ -51,7 +52,6 @@ const (
 
 type Article struct {
 	ID            string            `json:"id"`
-	AID           int64             `json:"Ai,omitempty"`
 	Replies       int               `json:"rs,omitempty"`
 	Likes         int32             `json:"like,omitempty"`
 	ReplyLockMode byte              `json:"lm,omitempty"`
@@ -112,22 +112,29 @@ func UnmarshalArticle(b []byte) (*Article, error) {
 }
 
 type User struct {
-	ID           string
-	Session      string
-	Role         string
-	PasswordHash []byte
-	Email        string `json:"e"`
-	Avatar       uint32 `json:"av"`
-	CustomName   string `json:"cn"`
-	Followers    int32  `json:"F"`
-	Followings   int32  `json:"f"`
-	Unread       int32  `json:"ur"`
-	DataIP       string `json:"sip"`
-	TSignup      uint32 `json:"st"`
-	TLogin       uint32 `json:"lt"`
-	Banned       bool   `json:"ban,omitempty"`
-	Kimochi      byte   `json:"kmc,omitempty"`
-	FollowApply  int32  `json:"fap,omitempty"`
+	ID                    string
+	Session               string
+	Role                  string
+	PasswordHash          []byte
+	Email                 string `json:"e"`
+	Avatar                uint32 `json:"av"`
+	CustomName            string `json:"cn"`
+	Followers             int32  `json:"F"`
+	Followings            int32  `json:"f"`
+	Unread                int32  `json:"ur"`
+	DataIP                string `json:"sip"`
+	TSignup               uint32 `json:"st"`
+	TLogin                uint32 `json:"lt"`
+	Banned                bool   `json:"ban,omitempty"`
+	Kimochi               byte   `json:"kmc,omitempty"`
+	FollowApply           uint32 `json:"fap,omitempty"`
+	ExpandNSFWImages      int    `json:"an,omitempty"`
+	FoldAllImages         int    `json:"foldi,omitempty"`
+	NotifyFollowerActOnly int    `json:"nfao,omitempty"`
+	HideLikes             int    `json:"hfav,omitempty"`
+	HideLocation          int    `json:"hl,omitempty"`
+	Description           string `json:"desc,omitempty"`
+	APIToken              string `json:"api,omitempty"`
 
 	_IsFollowing            bool
 	_IsFollowingNotAccepted bool
@@ -138,7 +145,6 @@ type User struct {
 	_IsAnon                 bool
 	_IsAPI                  bool
 	_ShowList               byte
-	_Settings               UserSettings
 }
 
 func (u User) Marshal() []byte {
@@ -173,7 +179,7 @@ func (u User) DisplayName() string {
 }
 
 func (u User) RecentIPLocation() string {
-	if u.Settings().HideLocation {
+	if u.HideLocation == 1 {
 		return ""
 	}
 	for _, part := range strings.Split(u.DataIP, ",") {
@@ -182,7 +188,7 @@ func (u User) RecentIPLocation() string {
 			continue
 		}
 		var data = strings.Split(part, "/")
-		_, loc := common.LookupIP(data[0])
+		_, loc := geoip.LookupIP(data[0])
 		return loc
 	}
 	return ""
@@ -212,8 +218,6 @@ func (u *User) SetIsAPI(v bool) *User { u._IsAPI = v; return u }
 
 func (u User) ShowList() byte { return u._ShowList }
 
-func (u User) Settings() UserSettings { return u._Settings }
-
 func (u *User) Buildup(you *User) {
 	following, accepted := DalIsFollowingWithAcceptance(you.ID, u)
 	u._IsYou = you.ID == u.ID
@@ -227,8 +231,6 @@ func (u *User) Buildup(you *User) {
 }
 
 func (u *User) SetShowList(t byte) { u._ShowList = t }
-
-func (u *User) SetSettings(s UserSettings) { u._Settings = s }
 
 func (u User) JSON() string {
 	b, _ := json.MarshalIndent(u, "", "")
@@ -256,40 +258,16 @@ func (u User) FollowApplyPivotTime() time.Time {
 	return time.Unix(int64(u.FollowApply), 0)
 }
 
+func (u *User) DescHTML() template.HTML {
+	return template.HTML(common.SanText(u.Description))
+}
+
 func UnmarshalUser(b []byte) (*User, error) {
 	a := &User{}
 	err := json.Unmarshal(b, a)
 	if a.ID == "" {
 		return nil, fmt.Errorf("failed to unmarshal: %q", b)
 	}
-
-	// common.AddUserToSearch(a.ID)
+	IndexUser(a)
 	return a, err
-}
-
-type UserSettings struct {
-	AutoNSFW                   bool   `json:"autonsfw,omitempty"`
-	FoldImages                 bool   `json:"foldi,omitempty"`
-	OnlyMyFollowingsCanMention bool   `json:"mfcm,omitempty"`
-	HideLikesInTimeline        bool   `json:"slit,omitempty"`
-	HideLikes                  bool   `json:"hlikes,omitempty"`
-	HideLocation               bool   `json:"hl,omitempty"`
-	Description                string `json:"desc,omitempty"`
-	APIToken                   string `json:"apisess,omitempty"`
-}
-
-func (u UserSettings) Marshal() []byte {
-	p, _ := json.Marshal(u)
-	return p
-}
-
-func (u UserSettings) DescHTML() template.HTML {
-	return template.HTML(common.SanText(u.Description))
-}
-
-// Always return a valid struct, though sometimes being empty
-func UnmarshalUserSettings(b []byte) UserSettings {
-	a := UserSettings{}
-	json.Unmarshal(b, &a)
-	return a
 }

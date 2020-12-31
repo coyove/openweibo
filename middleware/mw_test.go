@@ -1,11 +1,12 @@
 package middleware
 
-import "testing"
+import (
+	"log"
+	"regexp"
+	"testing"
+)
 
 func TestPanic(t *testing.T) {
-	foo()
-}
-
-func foo() {
-	ThrowIf(true, "", "")
+	rx := regexp.MustCompile(`((@|#)[^@# \n]+)`)
+	log.Println(rx.FindAllStringSubmatch("#sfsdf\nwewed", -1))
 }

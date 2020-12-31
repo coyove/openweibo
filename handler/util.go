@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
+	"github.com/coyove/iis/common/compress"
 	"io"
 	"log"
 	"net/http"
@@ -31,10 +32,6 @@ var (
 	throw     = middleware.ThrowIf
 )
 
-func err2(v interface{}, e error) error {
-	return e
-}
-
 func okok(g *gin.Context, tmp ...string) {
 	g.String(200, "ok")
 	if len(tmp) > 0 {
@@ -46,25 +43,6 @@ func okok(g *gin.Context, tmp ...string) {
 }
 
 func NotFound(g *gin.Context) {
-	if path := strings.TrimPrefix(g.Request.URL.Path, "/"); rxShortID.MatchString(path) {
-		id := strings.Replace(path, "-", "", -1)
-		shortID, _ := strconv.ParseInt(id, 10, 64)
-		aid, err := ik.ParseShortId(shortID)
-		if err != nil {
-			log.Println(err)
-			goto SKIP
-		}
-		buf, err := dal.ModKV().WeakGet("fw/" + fmt.Sprint(aid))
-		if err != nil || len(buf) == 0 {
-			log.Println(err)
-			goto SKIP
-		}
-		tmp, _ := ik.StringifyShortId(aid)
-		Static(g, string(buf), tmp)
-		return
-	}
-
-SKIP:
 	g.HTML(404, "error.html", map[string]string{
 		"Msg": g.GetString("error"),
 	})
@@ -151,7 +129,7 @@ func checkIP(g *gin.Context) string {
 }
 
 func sanUsername(id string) string {
-	return common.SafeStringForCompressString(id)
+	return compress.SafeStringForCompressString(id)
 }
 
 func hashPassword(password string) []byte {
@@ -238,7 +216,7 @@ func writeImageReader(u *model.User, imageName string, hash uint64, dec io.Reade
 	if imageName != "" {
 		imageName = filepath.Base(imageName)
 		imageName = strings.TrimSuffix(imageName, filepath.Ext(imageName))
-		fn += "_" + common.SafeStringForCompressString(imageName) + "_" + u.ID
+		fn += "_" + compress.SafeStringForCompressString(imageName) + "_" + u.ID
 	} else {
 		fn += "_" + u.ID
 	}

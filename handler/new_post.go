@@ -15,7 +15,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/ik"
@@ -49,7 +48,6 @@ func APINew(g *gin.Context) {
 		content      = common.SoftTrunc(g.PostForm("content"), int(common.Cfg.MaxContent))
 		image        = common.DetectMedia(g.PostForm("media"))
 		replyLock, _ = strconv.Atoi(g.PostForm("reply_lock"))
-		err          error
 		pastebin     = false
 	)
 
@@ -88,17 +86,12 @@ func APINew(g *gin.Context) {
 		a.Extras["is_bot"], a.Extras["bot"] = "1", g.PostForm("bot")
 	}
 
-	a.AID, err = dal.Ctr.Get()
-	throw(err, "")
-	shortID, _ := ik.StringifyShortId(a.AID)
-	g.Writer.Header().Add("X-Article-Code", shortID)
-
 	if pastebin {
 		// Pastebin won't go into master timeline
 		a.PostOptions |= model.PostOptionNoMasterTimeline
 		a.History = fmt.Sprintf("{pastebin_by:%q}", g.ClientIP())
-		throw(err2(dal.Post(a, u)), "")
-		g.String(200, shortID)
+		throw(common.Err2(dal.Post(a, u)), "")
+		g.String(200, a.ID)
 		return
 	}
 
@@ -134,14 +127,32 @@ func APINew(g *gin.Context) {
 func APIDeleteArticle(g *gin.Context) {
 	u := throw(dal.GetUserByContext(g), "").(*model.User)
 	throw(checkIP(g), "")
-	throw(err2(dal.DoUpdateArticle(&dal.UpdateArticleRequest{ID: g.PostForm("id"), DeleteBy: u})), "")
+	throw(common.Err2(dal.DoUpdateArticle(g.PostForm("id"), func(a *model.Article) error {
+		if u.ID != a.Author && !u.IsMod() {
+			return fmt.Errorf("e:user_not_permitted")
+		}
+		a.Content = model.DeletionMarker
+		a.Media = ""
+		a.History += fmt.Sprintf("{delete_by:%s:%v}", u.ID, time.Now().Unix())
+		if a.Parent != "" {
+			go dal.DoUpdateArticle(a.Parent, func(a *model.Article) { a.Replies-- })
+		}
+		return nil
+	})), "")
 	okok(g)
 }
 
 func APIToggleNSFWArticle(g *gin.Context) {
 	u := throw(dal.GetUserByContext(g), "").(*model.User)
 	throw(checkIP(g), "")
-	throw(err2(dal.DoUpdateArticle(&dal.UpdateArticleRequest{ID: g.PostForm("id"), ToggleNSFWBy: u})), "")
+	throw(common.Err2(dal.DoUpdateArticle(g.PostForm("id"), func(a *model.Article) error {
+		if u.ID != a.Author && !u.IsMod() {
+			return fmt.Errorf("e:user_not_permitted")
+		}
+		a.NSFW = !a.NSFW
+		a.History += fmt.Sprintf("{nsfw_by:%s:%v}", u.ID, time.Now().Unix())
+		return nil
+	})), "")
 	okok(g)
 }
 
@@ -150,10 +161,13 @@ func APIToggleLockArticle(g *gin.Context) {
 	throw(checkIP(g), "")
 
 	v, _ := strconv.Atoi(g.PostForm("mode"))
-	throw(err2(dal.DoUpdateArticle(&dal.UpdateArticleRequest{
-		ID:                g.PostForm("id"),
-		UpdateReplyLockBy: u,
-		UpdateReplyLock:   aws.Uint8(byte(v)),
+	throw(common.Err2(dal.DoUpdateArticle(g.PostForm("id"), func(a *model.Article) error {
+		if u.ID != a.Author && !u.IsMod() {
+			return fmt.Errorf("e:user_not_permitted")
+		}
+		a.ReplyLockMode = byte(v)
+		a.History += fmt.Sprintf("{lock_by:%s:%v}", u.ID, time.Now().Unix())
+		return nil
 	})), "")
 	okok(g)
 }
@@ -161,10 +175,8 @@ func APIToggleLockArticle(g *gin.Context) {
 func APIDropTop(g *gin.Context) {
 	u := throw(dal.GetUserByContext(g), "").(*model.User)
 	throw(checkIP(g), "")
-	throw(err2(dal.DoUpdateArticleExtra(&dal.UpdateArticleExtraRequest{
-		ID:            ik.NewID(ik.IDAuthor, u.ID).String(),
-		SetExtraKey:   "stick_on_top",
-		SetExtraValue: "",
+	throw(common.Err2(dal.DoUpdateArticle(ik.NewID(ik.IDAuthor, u.ID).String(), func(a *model.Article) {
+		a.Extras["stick_on_top"] = ""
 	})), "")
 	okok(g)
 }
@@ -183,17 +195,19 @@ func APIPoll(g *gin.Context) {
 	if uc != nil && uc.Extras["choice"] != "" {
 		// Clear old poll votes
 		throw(a.Extras["poll_nochange"] != "", "poll_nochange")
-		throw(err2(dal.DoUpdateArticleExtra(&dal.UpdateArticleExtraRequest{
-			ID:            pollID,
-			SetExtraKey:   "choice",
-			SetExtraValue: "",
+		throw(common.Err2(dal.DoUpdateArticle(pollID, func(a *model.Article) {
+			a.Extras["choice"] = ""
 		})), "")
 
 		oldChoices := strings.Split(uc.Extras["choice"], ",")
-		throw(err2(dal.DoUpdateArticleExtra(&dal.UpdateArticleExtraRequest{
-			ID:                a.ID,
-			IncDecExtraKeys:   append(oldChoices, "poll_total"),
-			IncDecExtraKeysBy: aws.Float64(-1),
+		throw(common.Err2(dal.DoUpdateArticle(a.ID, func(a *model.Article) {
+			for _, key := range append(oldChoices, "poll_total") {
+				v, _ := strconv.ParseInt(a.Extras[key], 10, 64)
+				if v--; v < 0 {
+					v = 0
+				}
+				a.Extras[key] = strconv.FormatInt(v, 10)
+			}
 		})), "")
 
 		okok(g, common.RevRenderTemplateString("poll.html", []interface{}{a.ID, a.Extras}))
@@ -225,10 +239,11 @@ func APIPoll(g *gin.Context) {
 		ID:     pollID,
 		Extras: map[string]string{"choice": strings.Join(newChoices, ",")},
 	}).Marshal()), "")
-	throw(err2(dal.DoUpdateArticleExtra(&dal.UpdateArticleExtraRequest{
-		ID:                a.ID,
-		IncDecExtraKeys:   append(newChoices, "poll_total"),
-		IncDecExtraKeysBy: aws.Float64(1),
+	throw(common.Err2(dal.DoUpdateArticle(a.ID, func(a *model.Article) {
+		for _, key := range append(newChoices, "poll_total") {
+			v, _ := strconv.ParseInt(a.Extras[key], 10, 64)
+			a.Extras[key] = strconv.FormatInt(v+1, 10)
+		}
 	})), "")
 
 	{

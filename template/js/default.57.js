@@ -448,7 +448,6 @@ function loadMore(tlid, el, data) {
                 $q('#' + tlid).appendChild(div.querySelector("div"));
             })
         }
-        expandNSFW();
         if (!data.reply)
             history.pushState("", "", location.pathname + location.search)
     }, stop);
@@ -499,51 +498,51 @@ function showReply(aid, closeToHome, shortid) {
     $q("[data-parent='" + aid + "']", true).forEach(function(e) { e.CLOSER.click(); });
 
     var div = $html({
-	tag: 'div',
-	id: 'Z' + Math.random().toString(36).substr(2, 5),
-	class: 'div-inner-reply tmpl-body-bg',
-	style: {
-	    position: 'fixed',
-	    left: '0',
-	    top: '0',
-	    width: '100%',
-	    height: '100%',
-	    overflowY: 'scroll',
-	    overflowX: 'hidden'
-	},
-	dataParent: aid
+        tag: 'div',
+        id: 'Z' + Math.random().toString(36).substr(2, 5),
+        class: 'div-inner-reply tmpl-body-bg',
+        style: {
+            position: 'fixed',
+            left: '0',
+            top: '0',
+            width: '100%',
+            height: '100%',
+            overflowY: 'scroll',
+            overflowX: 'hidden'
+        },
+        dataParent: aid
     }), divclose = $html({
-	tag: 'div',
-	style: {
-	    margin: '0 auto',
-	    backgroundImage: 'url(/s/assets/spinner.gif)',
-	    backgroundRepeat: 'no-repeat',
-	    backgroundPosition: 'center center'
-	},
-	class: 'container rows replies',
-	children: {
-	    tag: 'div',
-	    class: 'row',
-	    style: {padding: '0.5em', lineHeight: '30px', display: 'flex'},
-	    children: [
-		{tag: 'i', class: 'control icon-left-small'},
-		{
-		    tag: 'input',
-		    style: {
-			margin:'0 0.5em',
-			width:'100%',
-			textAlign: 'center',
-			border:'none',
-			background:'transparent',
-			cursor:'pointer'
-		    },
-		    value: location.protocol + "//" + location.host + "/" + (shortid ? shortid : "S/" + aid.substring(1)),
-		    readonly: true,
-		    onclick: 'this.select();document.execCommand("copy");$popup("已复制")'
-		},
-		{tag: 'i', class: 'control icon-link', onclick: "this.previousElementSibling.click()"},
-	    ]
-	}
+        tag: 'div',
+        style: {
+            margin: '0 auto',
+            backgroundImage: 'url(/s/assets/spinner.gif)',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'center center'
+        },
+        class: 'container rows replies',
+        children: {
+            tag: 'div',
+            class: 'row',
+            style: {padding: '0.5em', lineHeight: '30px', display: 'flex'},
+            children: [
+                {tag: 'i', class: 'control icon-left-small'},
+                {
+                    tag: 'input',
+                    style: {
+                        margin:'0 0.5em',
+                        width:'100%',
+                        textAlign: 'center',
+                        border:'none',
+                        background:'transparent',
+                        cursor:'pointer'
+                    },
+                    value: location.protocol + "//" + location.host + "/S/" + aid.substring(1),
+                    readonly: true,
+                    onclick: 'this.select();document.execCommand("copy");$popup("已复制")'
+                },
+                {tag: 'i', class: 'control icon-link', onclick: "this.previousElementSibling.click()"},
+            ]
+        }
     })
 
     div.CLOSER = divclose.querySelector('.icon-left-small')
@@ -780,9 +779,9 @@ function attachImageUploader(el) {
         maxFilesize: 16,
         maxFilesize: 5,
         addRemoveLinks: true,
-        dictRemoveFile: "<span class='tmpl-mid-text'>OK</span> <u>删除</u>",
+        dictRemoveFile: "<u style='cursor:pointer'>删除</u>",
         dictFileTooBig: "文件过大 {{filesize}}M, Max: {{maxFilesize}}M",
-        dictCancelUpload: "<span class='tmpl-mid-text'>上传中</span> <u>取消</u>",
+        dictCancelUpload: "<span class='tmpl-mid-text'>上传中</span> <u style='cursor:pointer'>取消</u>",
         dictCancelUploadConfirmation: "取消上传该图片？"
     }).on("success", function(f, id) {
         f._removeLink.setAttribute('data-uri', id);

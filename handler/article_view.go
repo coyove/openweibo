@@ -16,7 +16,6 @@ import (
 
 type ArticleView struct {
 	ID            string
-	ShortID       string
 	Others        []*ArticleView
 	Parent        *ArticleView
 	Author        *model.User
@@ -64,10 +63,6 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 	}
 
 	a.ID = a2.ID
-	if a2.AID != 0 {
-		a.ShortID, _ = ik.StringifyShortId(a2.AID)
-	}
-
 	a.Replies = int(a2.Replies)
 	a.Likes = int(a2.Likes)
 	a.ReplyLockMode = a2.ReplyLockMode
@@ -139,8 +134,10 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 			} else {
 				pl.InitShow = 4
 			}
-			if a.You.Settings().FoldImages {
+			if a.You.FoldAllImages == 1 {
 				pl.InitShow = 0
+			} else if a.You.ExpandNSFWImages == 1 {
+				pl.InitShow = 4
 			}
 			a.Media = template.HTML(common.RevRenderTemplateString("image.html", pl))
 		}

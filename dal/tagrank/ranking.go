@@ -6,7 +6,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/coyove/iis/dal/kv"
+	"github.com/coyove/iis/dal/storage"
 
 	"github.com/gomodule/redigo/redis"
 )
@@ -14,8 +14,8 @@ import (
 var p *redis.Pool
 var TooOld = time.Hour * 24 * 7
 
-func Init(redisConfig *kv.RedisConfig) {
-	p = kv.NewGlobalCache(redisConfig).Pool
+func Init(redisConfig *storage.RedisConfig) {
+	p = storage.NewGlobalCache(redisConfig).Pool
 }
 
 func Update(tag string, createTime time.Time, totalCount int) {

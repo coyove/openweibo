@@ -3,12 +3,12 @@ package ik
 import (
 	"encoding/base64"
 	"encoding/binary"
+	"github.com/coyove/iis/common/compress"
 	"io"
 	"math/rand"
 	"sync/atomic"
 	"time"
-
-	"github.com/coyove/iis/common"
+	"unsafe"
 )
 
 const (
@@ -38,7 +38,7 @@ var (
 
 func NewID(hdr IDHeader, tag string) ID {
 	id := ID{hdr: hdr}
-	buf := common.CompressString(tag)
+	buf := compress.CompressString(tag)
 	copy(id.tag[:], buf)
 	id.taglen = byte(len(buf))
 	return id
@@ -95,7 +95,7 @@ func (id ID) IsRoot() bool {
 }
 
 func (id ID) Tag() string {
-	return common.DecompressString(id.tag[:id.taglen])
+	return compress.DecompressString(id.tag[:id.taglen])
 }
 
 func (id ID) TagBytes() []byte {
@@ -166,4 +166,12 @@ func ParseID(s string) ID {
 
 func (id ID) String() string {
 	return idEncoding.EncodeToString(id.Marshal(nil))
+}
+
+func (id ID) Less(id2 ID) bool {
+	a := *(*[3]uint64)(unsafe.Pointer(&id))
+	b := *(*[3]uint64)(unsafe.Pointer(&id2))
+	return a[0] < b[0] ||
+		(a[0] == b[0] && a[1] < b[1]) ||
+		(a[0] == b[0] && a[1] == b[1] && a[2] < b[2])
 }

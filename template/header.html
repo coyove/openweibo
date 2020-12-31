@@ -1,85 +1,89 @@
 <!doctype html>
 <html>
     <head>
-    <link href="/s/fonts/fontello-embedded.css?ver=34" rel="stylesheet" type="text/css" media="all">
-    <link rel="stylesheet" href="/s/assets/dropzone.min.css?ver=3" />
-    <script src="/s/js/default.56.js"></script>
-    <script src="/s/js/post.22.js"></script>
-    <script src="/s/js/tribute.min.js"></script>
-    <script src="/s/assets/dropzone.min.js"></script>
-    <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="shortcut icon" href="/s/assets/favicon.png">
+        <link href="/s/fonts/fontello-embedded.css?ver=35" rel="stylesheet" type="text/css" media="all">
+        <link rel="stylesheet" href="/s/assets/dropzone.min.css?ver=5" />
+        <script src="/s/js/default.57.js"></script>
+        <script src="/s/js/post.22.js"></script>
+        <script src="/s/js/tribute.min.js"></script>
+        <script src="/s/assets/dropzone.min.js"></script>
+        <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="shortcut icon" href="/s/assets/favicon.png">
 
-    <script>
-        (function() {
-            var mode = isDarkMode() ? '.dark' : '';
-            document.write('<link href="/s/css/default.tmpl.css'+mode+'{{cssVersion}}" rel="stylesheet" type="text/css" media=all>')
-            document.write('<link href="/s/css/third.tmpl.css'+mode+'{{cssVersion}}" rel="stylesheet" type="text/css" media=all>')
-            if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
-                document.write('<style>body, button, input, textarea {font-size: 16px }</style>')
-            }
-            Dropzone.autoDiscover = false;
-        })()
+        <script>
+            (function() {
+                var mode = isDarkMode() ? '.dark' : '';
+                document.write('<link href="/s/css/default.tmpl.css'+mode+'{{cssVersion}}" rel="stylesheet" type="text/css" media=all>')
+                document.write('<link href="/s/css/third.tmpl.css'+mode+'{{cssVersion}}" rel="stylesheet" type="text/css" media=all>')
+                if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
+                    document.write('<style>body, button, input, textarea { font-size: 16px }</style>')
+                }
+            })()
+        </script>
 
-        window.TRIBUTE_COL = {
-            trigger: '@',
-            selectClass: 'highlight',
-            containerClass: 'tribute-container',
-            selectTemplate: function (item) { return '@' + item.original.id; },
-            menuContainer: document.body,
-            lookup: 'key',
-            values: function remoteSearch(text, cb) {
-                $post("/api/search", { id: text }, function(results) {
-                    if (results && results.length) {
-                        results.forEach(function(t, i) {
-                            results[i] = { key: t.Display, id: t.ID, is_tag: t.IsTag } 
-                        });
-                    }
-                    JSON.parse(window.localStorage.getItem('presets') || '[]')
-                        .filter(function(t){ return t; })
-                        .forEach(function(t) {
-                            results.push({ key: t, id: t.substring(1), is_tag: t.substring(0, 1) == '#' }) 
-                        });
-                    var seen = {};
-                    results = results.filter(function(item) {
-                        return seen.hasOwnProperty(item.key) ? false : (seen[item.key] = true);
-                    });
-                    cb(results);
-                })
-            },
-            replaceTextSuffix: '\n',
-            positionMenu: true,
-        }
+        <script>
+            (function() {
+                Dropzone.autoDiscover = false;
+                window.TRIBUTE_COL = {
+                    trigger: '@',
+                    selectClass: 'highlight',
+                    containerClass: 'tribute-container',
+                    selectTemplate: function (item) { return '@' + item.original.id; },
+                    menuContainer: document.body,
+                    lookup: 'key',
+                    values: function remoteSearch(text, cb) {
+                        $post("/api/search", { id: text }, function(results) {
+                            if (results && results.length) {
+                                results.forEach(function(t, i) {
+                                    results[i] = { key: t.Display, id: t.ID, is_tag: t.IsTag } 
+                                });
+                            }
+                            JSON.parse(window.localStorage.getItem('presets') || '[]')
+                                .filter(function(t){ return t; })
+                                .forEach(function(t) {
+                                    results.push({ key: t, id: t.substring(1), is_tag: t.substring(0, 1) == '#' }) 
+                                });
+                            var seen = {};
+                            results = results.filter(function(item) {
+                                return seen.hasOwnProperty(item.key) ? false : (seen[item.key] = true);
+                            });
+                            cb(results);
+                        })
+                    },
+                    replaceTextSuffix: '\n',
+                    positionMenu: true,
+                }
 
-        window.TRIBUTE_COL_TAGS = {
-            trigger: '#',
-            selectClass: 'highlight',
-            containerClass: 'tribute-container',
-            selectTemplate: function (item) { return '#' + item.original.id; },
-            menuContainer: document.body,
-            lookup: 'key',
-            values: window.TRIBUTE_COL.values,
-            replaceTextSuffix: '\n',
-            positionMenu: true,
-        }
+                window.TRIBUTE_COL_TAGS = {
+                    trigger: '#',
+                    selectClass: 'highlight',
+                    containerClass: 'tribute-container',
+                    selectTemplate: function (item) { return '#' + item.original.id; },
+                    menuContainer: document.body,
+                    lookup: 'key',
+                    values: window.TRIBUTE_COL.values,
+                    replaceTextSuffix: '\n',
+                    positionMenu: true,
+                }
 
-        window.TRIBUTER = new Tribute({
-            collection: [window.TRIBUTE_COL, window.TRIBUTE_COL_TAGS],
-	});
+                window.TRIBUTER = new Tribute({
+                    collection: [window.TRIBUTE_COL, window.TRIBUTE_COL_TAGS],
+                });
 
-      window.DUMMY_USER_HTML = "{{emptyUser}}";
-    </script>
+                window.DUMMY_USER_HTML = "{{emptyUser}}";
+            })()
+        </script>
     </head>
 
-<body style="height: 100%">
-    <div id="container" style="display:flex;flex-direction:column" class=container>
-        <nav>
-            <a href="/t/master"><i class="icon-flow-merge"></i> 广场</a>
-            <a href="/t"><i class="icon-home"></i></a>
-            <a href="/likes/master"><i class="icon-heart-filled"></i></a>
-            <a href="/inbox" id=unread-notify><i class="icon-mail-alt"></i><b></b></a>
-            <a href="/search"><i class="icon-search"></i></a>
-        </nav>
-        <div id="main-content" style="flex: 1 0 auto">
+    <body style="height: 100%">
+        <div id="container" style="display:flex;flex-direction:column" class=container>
+            <nav>
+                <a href="/t/master"><i class="icon-flow-merge"></i> 广场</a>
+                <a href="/t"><i class="icon-home"></i></a>
+                <a href="/likes/master"><i class="icon-heart-filled"></i></a>
+                <a href="/inbox" id=unread-notify><i class="icon-mail-alt"></i><b></b></a>
+                <a href="/search"><i class="icon-search"></i></a>
+            </nav>
+            <div id="main-content" style="flex: 1 0 auto">
 

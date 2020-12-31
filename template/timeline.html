@@ -53,17 +53,19 @@
         搜索限制: 前100条记录
     {{end}}
 {{else}}
-    {{if or .IsTagTimeline .IsUserLikeTimeline}}
+    {{if or .IsTagTimeline .IsUserLikeTimeline .IsUserTimeline}}
     <div class="tl-checkpoints post-options" style="padding:0.5em 0;margin:0 0.5em;font-weight:bold;white-space:nowrap">
         {{if .IsTagTimeline}}
-	    {{if not (contains .Tag " ")}}
-            <span style="margin-left: -0.5em">
-                {{template "button_follow_block.html" (blend "follow" .Tag .IsTagTimelineFollowed)}}
-            </span>
-	    {{end}}
+            {{if not (contains .Tag " ")}}
+                <span style="margin-left: -0.5em">
+                    {{template "button_follow_block.html" (blend "follow" .Tag .IsTagTimelineFollowed)}}
+                </span>
+            {{end}}
             {{.Tag}} ({{.PostsUnderTag}})
         {{else if .IsUserLikeTimeline}}
             {{if eq .You.ID .User.ID}}我{{else}}{{.User.DisplayName}}{{end}}的收藏
+        {{else if .IsUserTimeline}}
+            {{.User.DisplayName}}
         {{end}}
     </div>
     {{end}}
@@ -100,15 +102,6 @@
             {{end}}
             {{end}}
         </ul>
-    </div>
-
-    <div class="tl-checkpoints post-options" style="padding:0.5em 0;">
-        <div style=>
-            <input type=checkbox id=auto-expand-nsfw class=icon-input-checkbox
-                   {{if .You}}{{if .You.Settings.AutoNSFW}}checked{{end}}{{end}}>
-            <i class=icon-calendar></i>
-            <label for=auto-expand-nsfw>展开NSFW</label>
-        </div>
     </div>
 {{end}}
 </div>

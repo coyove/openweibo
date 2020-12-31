@@ -2,7 +2,7 @@ package dal
 
 import (
 	"crypto/sha1"
-	"github.com/coyove/iis/dal/kv"
+	"github.com/coyove/iis/dal/storage"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -20,7 +20,7 @@ type KeyValueOp interface {
 	Get(string) ([]byte, error)
 	WeakGet(string) ([]byte, error)
 	Set(string, []byte) error
-	SetGlobalCache(*kv.GlobalCache)
+	SetGlobalCache(*storage.GlobalCache)
 }
 
 func IsCrawler(g *gin.Context) bool {

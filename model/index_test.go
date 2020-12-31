@@ -1,17 +1,26 @@
 package model
 
 import (
-	"github.com/coyove/iis/dal/kv"
+	"log"
+	"math/rand"
+	"strconv"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/coyove/iis/ik"
 )
 
 func TestSearch(t *testing.T) {
-	Init(&kv.RedisConfig{
-		Addr: "devbox0:6379",
-	})
-	Index("test", "1", "cyoyovte")
-	Index("test", "3", "coyvote")
-	Index("test", "2", "google-2")
-	Index("test", "4", "中国")
-	t.Log(Search("test", "中国", 0, 10))
+	rand.Seed(time.Now().Unix())
+	var text string
+	for i := 0; i < 5e5; i++ {
+		id := ik.NewGeneralID()
+		text = strings.Repeat(strconv.FormatInt(rand.Int63(), 36), 10)
+		Index("test", id, text)
+		if i%1e4 == 0 {
+			log.Println(i)
+		}
+	}
+	t.Log(Search("test", text[10:rand.Intn(len(text)/2)+10], 0, 10))
 }

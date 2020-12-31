@@ -1,21 +1,18 @@
 package common
 
 import (
-	"crypto/tls"
-	"fmt"
+	"github.com/coyove/iis/common/compress"
 	"html/template"
-	"net/smtp"
-	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+	"unsafe"
 )
 
 var (
-	rxSan        = regexp.MustCompile(`(?m)(\n|\[hide\][\s\S]+?\[/hide\][\s\n]*|\[code\][\s\S]+?\[/code\]|<|https?://[^\s<>"'#\[\]]+|@\S+|#[^# ]+)|\[mj\](\d+|ac\d+|a2_\d+)\[/mj\]`)
-	rxFirstImage = regexp.MustCompile(`(?i)(https?://\S+\.(png|jpg|gif|webp|jpeg)|\[img\]https?://\S+\[/img\])`)
-	rxMentions   = regexp.MustCompile(`((@|#)[^@# ]+)`)
+	rxSan        = regexp.MustCompile(`(?m)(\n|\[hide\][\s\S]+?\[/hide\][\s\n]*|\[code\][\s\S]+?\[/code\]|<|https?://[^\s<>"'#\[\]]+|@\S+|#[^# \s\n\t]+)|\[mj\](\d+|ac\d+|a2_\d+)\[/mj\]`)
+	rxMentions   = regexp.MustCompile(`((@|#)[^@# \n\s\t]+)`)
 	rxAcCode     = regexp.MustCompile(`v\/ac(\d+)`)
 	rxBiliAVCode = regexp.MustCompile(`(av(\d+)|BV(\w+))`)
 	rxWYYYCode   = regexp.MustCompile(`([^r]id=|song/)(\d+)`)
@@ -102,7 +99,7 @@ func SanText(in string) string {
 			return host + idx + ".png'>"
 		}
 		if len(in) > 0 {
-			s := SafeStringForCompressString(template.HTMLEscapeString(in[1:]))
+			s := compress.SafeStringForCompressString(template.HTMLEscapeString(in[1:]))
 			if in[0] == '#' {
 				// AddTagToSearch(in[1:])
 				return "<a href='/tag/" + s + "'>" + in + "</a>"
@@ -177,7 +174,7 @@ func ExtractMentionsAndTags(in string) ([]string, []string) {
 	res := rxMentions.FindAllString(in, Cfg.MaxMentions)
 	mentions, tags := []string{}, []string{}
 	for i := range res {
-		res[i] = res[i][:1] + SafeStringForCompressString(res[i][1:])
+		res[i] = res[i][:1] + compress.SafeStringForCompressString(res[i][1:])
 	}
 
 AGAIN: // TODO
@@ -197,90 +194,6 @@ AGAIN: // TODO
 	return mentions, tags
 }
 
-func ExtractFirstImage(in string) string {
-	m := rxFirstImage.FindAllString(in, 1)
-	if len(m) > 0 {
-		if strings.HasPrefix(m[0], "[img]") && strings.HasSuffix(m[0], "[/img]") {
-			return m[0][5 : len(m[0])-6]
-		}
-		return m[0]
-	}
-	return ""
-}
-
-func EncodeQuery(a ...string) string {
-	query := url.Values{}
-	for i := 0; i < len(a); i += 2 {
-		if a[i] != "" {
-			query.Add(a[i], a[i+1])
-		}
-	}
-	return "?" + query.Encode()
-}
-
-type loginAuth struct {
-	username, password string
-}
-
-func LoginAuth(username, password string) smtp.Auth {
-	return &loginAuth{username, password}
-}
-
-func (a *loginAuth) Start(server *smtp.ServerInfo) (string, []byte, error) {
-	return "LOGIN", []byte{}, nil
-}
-
-func (a *loginAuth) Next(fromServer []byte, more bool) ([]byte, error) {
-	if more {
-		switch string(fromServer) {
-		case "Username:":
-			return []byte(a.username), nil
-		case "Password:":
-			return []byte(a.password), nil
-		default:
-			return nil, fmt.Errorf("unknown command: %q", fromServer)
-		}
-	}
-	return nil, nil
-}
-
-func SendMail(to, subject, body string) error {
-	server, me, password := Cfg.SMTPServer, Cfg.SMTPEmail, Cfg.SMTPPassword
-	c, err := smtp.Dial(server)
-	if err != nil {
-		return err
-	}
-
-	if err := c.StartTLS(&tls.Config{InsecureSkipVerify: true}); err != nil {
-		return err
-	}
-
-	if err := c.Auth(&loginAuth{me, password}); err != nil {
-		return err
-	}
-
-	if err := c.Mail(me); err != nil {
-		return err
-	}
-	if err := c.Rcpt(to); err != nil {
-		return err
-	}
-
-	wc, err := c.Data()
-	if err != nil {
-		return err
-	}
-
-	if _, err := fmt.Fprintf(wc, ("To: " + to + "\r\n" + "Subject: " + subject + "\r\n\r\n" + body + "\r\n")); err != nil {
-		return err
-	}
-
-	if err := wc.Close(); err != nil {
-		return err
-	}
-	return c.Quit()
-}
-
 func Hash32(n string) (h uint32) {
 	h = 2166136261
 	for i := 0; i < len(n); i++ {
@@ -290,9 +203,7 @@ func Hash32(n string) (h uint32) {
 	return
 }
 
-func Hash16(n string) (h uint16) {
-	return uint16(Hash32(n))
-}
+func Hash16(n string) (h uint16) { return uint16(Hash32(n)) }
 
 func ParseDuration(v string) time.Duration {
 	if strings.HasSuffix(v, "d") {
@@ -301,4 +212,25 @@ func ParseDuration(v string) time.Duration {
 	}
 	d, _ := time.ParseDuration(v)
 	return d
+}
+
+func PushIP(dataIP, ip string) string {
+	if ips := append(strings.Split(dataIP, ","), ip); len(ips) > 3 {
+		return strings.Join(ips[len(ips)-3:], ",")
+	} else {
+		return strings.Join(ips, ",")
+	}
+}
+
+func Err2(v interface{}, e error) error { return e }
+
+func BoolInt(v bool) int { return int(*(*byte)(unsafe.Pointer(&v))) }
+
+func BoolInt2(v bool) int { return int((float64(*(*byte)(unsafe.Pointer(&v))) - 0.5) * 2) }
+
+func DefaultMap(m map[string]string) map[string]string {
+	if m == nil {
+		m = map[string]string{}
+	}
+	return m
 }

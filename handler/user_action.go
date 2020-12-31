@@ -2,23 +2,19 @@ package handler
 
 import (
 	"bytes"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/ik"
-	"github.com/coyove/iis/middleware"
 	"github.com/coyove/iis/model"
 	"github.com/gin-gonic/gin"
 )
 
 func APISignup(g *gin.Context) {
 	var (
-		ip       = hashIP(g)
 		username = sanUsername(g.PostForm("username"))
 		email    = common.SoftTrunc(g.PostForm("email"), 64)
 		password = common.SoftTrunc(g.PostForm("password"), 32)
@@ -31,31 +27,14 @@ func APISignup(g *gin.Context) {
 	case strings.HasPrefix(username, "master"), strings.HasPrefix(username, "admin"):
 		throw(true, "duplicated_id")
 	case strings.HasPrefix(username, strings.ToLower(common.Cfg.AdminName)):
-		admin, err := dal.GetUser(common.Cfg.AdminName)
-		throw(err != model.ErrNotExisted, "")
+		admin, _ := dal.GetUser(common.Cfg.AdminName)
 		throw(admin != nil, "duplicated_id")
 	}
 
-	u := &model.User{}
-	u.ID = username
-	u.Session = genSession()
-	u.Email = email
-	u.PasswordHash = hashPassword(password)
-	u.DataIP = ip
-	u.TSignup = uint32(time.Now().Unix())
-	u.TLogin = u.TSignup
+	session := genSession()
+	throw(dal.DoSignUp(username, hashPassword(password), email, session, hashIP(g)), "")
 
-	tok := ik.MakeUserToken(u)
-	throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
-		Signup:       true,
-		ID:           u.ID,
-		Session:      aws.String(u.Session),
-		Email:        aws.String(u.Email),
-		PasswordHash: &u.PasswordHash,
-		DataIP:       aws.String(u.DataIP),
-		TSignup:      aws.Uint32(u.TSignup),
-		TLogin:       aws.Uint32(u.TLogin),
-	})), "")
+	tok := ik.MakeUserToken(username, session)
 	g.SetCookie("id", tok, 365*86400, "", "", false, false)
 	okok(g)
 }
@@ -66,41 +45,26 @@ func APILogin(g *gin.Context) {
 	u, _ := dal.GetUser(sanUsername(g.PostForm("username")))
 	throw(u, "invalid_id_password")
 	throw(!bytes.Equal(u.PasswordHash, hashPassword(g.PostForm("password"))), "invalid_id_password")
-
-	// u.Session = genSession()
-	u.TLogin = uint32(time.Now().Unix())
-
-	if ips := append(strings.Split(u.DataIP, ","), hashIP(g)); len(ips) > 3 {
-		u.DataIP = strings.Join(ips[len(ips)-3:], ",")
-	} else {
-		u.DataIP = strings.Join(ips, ",")
-	}
-
-	tok := ik.MakeUserToken(u)
-	throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
-		ID:      u.ID,
-		Session: aws.String(u.Session),
-		DataIP:  aws.String(u.DataIP),
-		TLogin:  aws.Uint32(u.TLogin),
+	throw(common.Err2(dal.DoUpdateUser(u.ID, func(u2 *model.User) {
+		u2.DataIP = common.PushIP(u.DataIP, hashIP(g))
+		u2.TLogin = uint32(time.Now().Unix())
 	})), "")
 
 	ttl := 0
 	if g.PostForm("remember") != "" {
 		ttl = 365 * 86400
 	}
-	g.SetCookie("id", tok, ttl, "", "", false, false)
+	g.SetCookie("id", ik.MakeUserToken(u.ID, u.Session), ttl, "", "", false, false)
 	okok(g)
 }
 
 func APIUserKimochi(g *gin.Context) {
 	u := throw(dal.GetUserByContext(g), "").(*model.User)
-
 	k, _ := strconv.Atoi(g.PostForm("k"))
 	if k < 0 || k > 44 {
 		k = 25
 	}
-
-	throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{ID: u.ID, Kimochi: aws.Uint8(byte(k))})), "")
+	throw(common.Err2(dal.DoUpdateUser(u.ID, "Kimochi", byte(k))), "")
 	okok(g)
 }
 
@@ -111,15 +75,15 @@ func APISearch(g *gin.Context) {
 		IsTag   bool
 	}
 	results := []p{}
-	uids, _, _ := model.Search("su", g.PostForm("id"), 0, 10)
+	uids, _ := model.Search("su", g.PostForm("id"), 0, 10)
 	for i := range uids {
-		if u, _ := dal.GetUser(uids[i]); u != nil {
-			results = append(results, p{Display: u.DisplayName(), ID: uids[i]})
+		if u, _ := dal.GetUser(uids[i].Tag()); u != nil {
+			results = append(results, p{Display: u.DisplayName(), ID: uids[i].Tag()})
 		}
 	}
-	tags, _, _ := model.Search("st", g.PostForm("id"), 0, 10)
+	tags, _ := model.Search("st", g.PostForm("id"), 0, 10)
 	for _, t := range tags {
-		results = append(results, p{Display: "#" + t, ID: t, IsTag: true})
+		results = append(results, p{Display: "#" + t.Tag(), ID: t.Tag(), IsTag: true})
 	}
 	g.JSON(200, results)
 }
@@ -146,12 +110,8 @@ func APILike(g *gin.Context) {
 func APILogout(g *gin.Context) {
 	u := dal.GetUserByContext(g)
 	if u != nil {
-		dal.DoUpdateUser(&dal.UpdateUserRequest{
-			ID:      u.ID,
-			Session: aws.String(genSession()),
-		})
-		u = &model.User{}
-		g.SetCookie("id", ik.MakeUserToken(u), 365*86400, "", "", false, false)
+		dal.DoUpdateUser(u.ID, "Session", "")
+		g.SetCookie("id", ik.MakeUserToken("", ""), 365*86400, "", "", false, false)
 	}
 	okok(g)
 }
@@ -193,59 +153,31 @@ func APIUpdateUserSettings(g *gin.Context) {
 
 	switch {
 	case g.PostForm("set-email") != "":
-		throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
-			ID:    u.ID,
-			Email: aws.String(common.SoftTrunc(g.PostForm("email"), 256)),
-		})), "")
+		throw(common.Err2(dal.DoUpdateUser(u.ID, "Email", common.SoftTrunc(g.PostForm("email"), 256))), "")
 	case g.PostForm("set-autonsfw") != "":
-		throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
-			ID:               u.ID,
-			S_AutoExpandNSFW: aws.Bool(g.PostForm("autonsfw") != ""),
-		})), "")
+		throw(common.Err2(dal.DoUpdateUser(u.ID, "ExpandNSFWImages", common.BoolInt(g.PostForm("autonsfw") != ""))), "")
 	case g.PostForm("set-foldimg") != "":
-		throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
-			ID:           u.ID,
-			S_FoldImages: aws.Bool(g.PostForm("foldimg") != ""),
-		})), "")
+		throw(common.Err2(dal.DoUpdateUser(u.ID, "FoldAllImages", common.BoolInt(g.PostForm("foldimg") != ""))), "")
 	case g.PostForm("set-hl") != "":
-		throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
-			ID:                u.ID,
-			S_HideGeolocation: aws.Bool(g.PostForm("hl") != ""),
-		})), "")
-	case g.PostForm("set-hide-likes-timeline") != "":
-		throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
-			ID:                  u.ID,
-			S_HideLikesTimeline: aws.Bool(g.PostForm("hide-likes-timeline") != ""),
-		})), "")
+		throw(common.Err2(dal.DoUpdateUser(u.ID, "HideLocation", common.BoolInt(g.PostForm("hl") != ""))), "")
 	case g.PostForm("set-hide-likes") != "":
-		throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
-			ID:          u.ID,
-			S_HideLikes: aws.Bool(g.PostForm("hide-likes") != ""),
-		})), "")
+		throw(common.Err2(dal.DoUpdateUser(u.ID, "HideLikes", common.BoolInt(g.PostForm("hide-likes") != ""))), "")
 	case g.PostForm("set-mfcm") != "":
-		throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
-			ID:              u.ID,
-			S_KnownMentions: aws.Bool(g.PostForm("mfcm") != ""),
-		})), "")
+		throw(common.Err2(dal.DoUpdateUser(u.ID, "NotifyFollowerActOnly", common.BoolInt(g.PostForm("mfcm") != ""))), "")
 	case g.PostForm("set-description") != "":
-		throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
-			ID:            u.ID,
-			S_Description: aws.String(common.SoftTrunc(g.PostForm("description"), 512)),
-		})), "")
+		throw(common.Err2(dal.DoUpdateUser(u.ID, "Description", common.SoftTrunc(g.PostForm("description"), 512))), "")
 	case g.PostForm("set-apisession") != "":
-		apiSession := "api+" + genSession()
-		u.Session = apiSession
-		apiToken := ik.MakeUserToken(u)
-		throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
-			ID:         u.ID,
-			S_APIToken: aws.String(apiToken),
-		})), "")
+		apiToken := ik.MakeUserToken(u.ID, "api+"+genSession())
+		throw(common.Err2(dal.DoUpdateUser(u.ID, "APIToken", apiToken)), "")
 		okok(g, apiToken)
 		return
 	case g.PostForm("set-fw-accept") != "":
-		throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
-			ID:          u.ID,
-			FollowApply: aws.Bool(g.PostForm("fw-accept") != ""),
+		throw(common.Err2(dal.DoUpdateUser(u.ID, func(u *model.User) {
+			if g.PostForm("fw-accept") != "" {
+				u.FollowApply = uint32(time.Now().Unix())
+			} else {
+				u.FollowApply = 0
+			}
 		})), "")
 	case g.PostForm("set-custom-name") != "":
 		name := g.PostForm("custom-name")
@@ -253,31 +185,15 @@ func APIUpdateUserSettings(g *gin.Context) {
 			name = strings.Replace(name, "admin", "nimda", -1)
 		}
 		name = common.SoftTruncDisplayWidth(name, 16)
-		u2, err := dal.DoUpdateUser(&dal.UpdateUserRequest{ID: u.ID, CustomName: &name})
+		u2, err := dal.DoUpdateUser(u.ID, "CustomName", name)
 		throw(err, "")
-		g.Writer.Header().Add("X-Result",
-			url.PathEscape(middleware.RenderTemplateString("display_name.html", u2)))
-		g.Writer.Header().Add("X-Custom-Name", url.PathEscape(name))
-		model.IndexUser(&u2, true)
+		model.IndexUser(u2)
 	case g.PostForm("set-avatar") != "":
-		throw(err2(writeAvatar(u, g.PostForm("avatar"))), "")
-		throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{
-			ID:     u.ID,
-			Avatar: aws.Uint32(uint32(time.Now().Unix())),
-		})), "")
-
+		throw(common.Err2(writeAvatar(u, g.PostForm("avatar"))), "")
+		throw(common.Err2(dal.DoUpdateUser(u.ID, "Avatar", uint32(time.Now().Unix()))), "")
 	}
-	go func() {
-		if ips := append(strings.Split(u.DataIP, ","), hashIP(g)); len(ips) > 3 {
-			u.DataIP = strings.Join(ips[len(ips)-3:], ",")
-		} else {
-			u.DataIP = strings.Join(ips, ",")
-		}
-		dal.DoUpdateUser(&dal.UpdateUserRequest{
-			ID:     u.ID,
-			DataIP: aws.String(u.DataIP),
-		})
-	}()
+
+	go dal.DoUpdateUser(u.ID, "DataIP", common.PushIP(u.DataIP, hashIP(g)))
 	okok(g)
 }
 
@@ -290,30 +206,11 @@ func APIUpdateUserPassword(g *gin.Context) {
 
 	throw(len(newPassword) < 3, "new_password_too_short")
 	throw(!bytes.Equal(u.PasswordHash, hashPassword(oldPassword)), "old_password_invalid")
-
-	ph := hashPassword(newPassword)
-	throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{ID: u.ID, PasswordHash: &ph})), "")
+	throw(common.Err2(dal.DoUpdateUser(u.ID, "PasswordHash", hashPassword(newPassword))), "")
 	okok(g)
 }
 
 func APIResetUserPassword(g *gin.Context) {
-	// throw(checkIP(g), "")
-
-	// username := sanUsername(g.PostForm("username"))
-	// email := common.SoftTrunc(g.PostForm("email"), 64)
-
-	// u, err := dal.GetUser(username)
-	// throw(err, "")
-	// throw(u.Email != email, "")
-
-	// newPassword, _ := ioutil.ReadAll(io.LimitReader(rand.Reader, 8))
-	// hp := hashPassword(hex.EncodeToString(newPassword))
-	// _, err = dal.DoUpdateUser(&dal.UpdateUserRequest{ID: u.ID, PasswordHash: &hp})
-	// throw(err, "")
-	// throw(common.SendMail(email,
-	// 	"Password Reset",
-	// 	fmt.Sprintf("Username: %q, New Password: %v", u.ID, hex.EncodeToString(newPassword))), "")
-	// okok(g)
 }
 
 func APIClearInbox(g *gin.Context) {

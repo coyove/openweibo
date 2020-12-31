@@ -1,4 +1,4 @@
-package kv
+package storage
 
 import (
 	"io"
@@ -12,12 +12,12 @@ import (
 	//sync "github.com/sasha-s/go-deadlock"
 )
 
-type S3Storage struct {
+type S3 struct {
 	db     *s3manager.Uploader
 	bucket string
 }
 
-func NewS3Storage(endpoint, region, bucket, accessKey, secretKey string) *S3Storage {
+func NewS3(endpoint, region, bucket, accessKey, secretKey string) *S3 {
 	sess, err := session.NewSession(&aws.Config{
 		Endpoint:    aws.String(endpoint),
 		Region:      aws.String(region),
@@ -33,14 +33,14 @@ func NewS3Storage(endpoint, region, bucket, accessKey, secretKey string) *S3Stor
 		panic(err)
 	}
 	db := s3manager.NewUploader(sess)
-	r := &S3Storage{
+	r := &S3{
 		db:     db,
 		bucket: bucket,
 	}
 	return r
 }
 
-func (m *S3Storage) Put(key string, contentType string, file io.Reader) error {
+func (m *S3) Put(key string, contentType string, file io.Reader) error {
 	_, err := m.db.Upload(&s3manager.UploadInput{
 		Bucket:      aws.String(m.bucket),
 		ContentType: aws.String(contentType),

@@ -10,49 +10,31 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/coyove/iis/common"
-	"github.com/coyove/iis/dal/ctr"
-	"github.com/coyove/iis/dal/kv"
+	"github.com/coyove/iis/dal/storage"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
 )
 
 var Masters = 10
-var S3 *kv.S3Storage
-var Ctr *ctr.Counter
+var S3 *storage.S3
 
 var m struct {
 	db          KeyValueOp
-	activeUsers *kv.GlobalCache
+	activeUsers *storage.GlobalCache
 }
 
-func Init(redisConfig *kv.RedisConfig, region string, ak, sk string) {
+func Init(redisConfig *storage.RedisConfig, region string, ak, sk string) {
 	var db KeyValueOp
 
 	if region == "" {
-		db = kv.NewDiskKV()
+		db = storage.NewDiskKV()
 		os.MkdirAll("tmp/ctr", 0777)
-		Ctr = ctr.New(100, &ctr.FSBack{Dir: "tmp/ctr"})
 	} else {
-		db = kv.NewDynamoKV(region, ak, sk)
-		sess, err := session.NewSession(&aws.Config{
-			Region:      aws.String(region),
-			Credentials: credentials.NewStaticCredentials(ak, sk, ""),
-		})
-		if err != nil {
-			panic(err)
-		}
-		dy, err := ctr.NewDynamoBack("counter", sess)
-		if err != nil {
-			panic(err)
-		}
-		Ctr = ctr.New(100, dy)
+		db = storage.NewDynamoKV(region, ak, sk)
 	}
 
-	c := kv.NewGlobalCache(redisConfig)
+	c := storage.NewGlobalCache(redisConfig)
 	db.SetGlobalCache(c)
 
 	m.db = db
@@ -299,10 +281,7 @@ func Post(a *model.Article, author *model.User) (*model.Article, error) {
 	a.ID = ik.NewGeneralID().String()
 	a.Author = author.ID
 
-	if _, _, err := DoInsertArticle(&InsertArticleRequest{
-		ID:      ik.NewID(ik.IDAuthor, a.Author).String(),
-		Article: *a,
-	}); err != nil {
+	if _, _, err := DoInsertArticle(ik.NewID(ik.IDAuthor, a.Author).String(), false, *a); err != nil {
 		return nil, err
 	}
 
@@ -312,13 +291,8 @@ func Post(a *model.Article, author *model.User) (*model.Article, error) {
 			if r := rand.Intn(Masters); r > 0 {
 				master += strconv.Itoa(r)
 			}
-			DoInsertArticle(&InsertArticleRequest{
-				ID: ik.NewID(ik.IDAuthor, master).String(),
-				Article: model.Article{
-					ID:      ik.NewGeneralID().String(),
-					ReferID: a.ID,
-					Media:   a.Media,
-				},
+			DoInsertArticle(ik.NewID(ik.IDAuthor, master).String(), false, model.Article{
+				ReferID: a.ID, Media: a.Media,
 			})
 		}
 		ids, tags := common.ExtractMentionsAndTags(a.Content)
@@ -357,7 +331,7 @@ func PostReply(parent string, a *model.Article, author *model.User) (*model.Arti
 		case model.ReplyLockFollowingsFollowersCan:
 			can = IsFollowing(p.Author, author.ID)
 			if !can {
-				pauthor, _ := GetUserWithSettings(p.Author)
+				pauthor, _ := GetUser(p.Author)
 				if pauthor != nil {
 					following, accepted := IsFollowingWithAcceptance(author.ID, pauthor)
 					can = following && accepted
@@ -378,7 +352,7 @@ func PostReply(parent string, a *model.Article, author *model.User) (*model.Arti
 	a.ID = ik.NewGeneralID().String()
 	a.Parent = p.ID
 
-	a2, _, err := DoInsertArticle(&InsertArticleRequest{ID: p.ID, Article: *a, AsReply: true})
+	a2, _, err := DoInsertArticle(p.ID, true, *a)
 	if err != nil {
 		return nil, err
 	}
@@ -386,35 +360,25 @@ func PostReply(parent string, a *model.Article, author *model.User) (*model.Arti
 
 	if a.PostOptions&model.PostOptionNoTimeline == 0 {
 		// Add reply to its author's timeline
-		if _, _, err := DoInsertArticle(&InsertArticleRequest{
-			ID:      ik.NewID(ik.IDAuthor, a.Author).String(),
-			Article: *a,
-		}); err != nil {
+		if _, _, err := DoInsertArticle(ik.NewID(ik.IDAuthor, a.Author).String(), false, *a); err != nil {
 			return nil, err
 		}
 	}
 
 	go func() {
 		if p.Content != model.DeletionMarker && a.Author != p.Author {
-			if WeakGetUserSettings(p.Author).OnlyMyFollowingsCanMention && !IsFollowing(p.Author, a.Author) {
+			if pauthor, _ := GetUser(p.Author); pauthor != nil && pauthor.NotifyFollowerActOnly == 1 && !IsFollowing(p.Author, a.Author) {
 				return
 			}
 
-			if _, _, err := DoInsertArticle(&InsertArticleRequest{
-				ID: ik.NewID(ik.IDInbox, p.Author).String(),
-				Article: model.Article{
-					ID:  ik.NewGeneralID().String(),
-					Cmd: model.CmdInboxReply,
-					Extras: map[string]string{
-						"from":       a.Author,
-						"article_id": a.ID,
-					},
-				},
+			if _, _, err := DoInsertArticle(ik.NewID(ik.IDInbox, p.Author).String(), false, model.Article{
+				Cmd:    model.CmdInboxReply,
+				Extras: map[string]string{"from": a.Author, "article_id": a.ID},
 			}); err != nil {
 				log.Println("PostReply", err)
 			}
 
-			DoUpdateUser(&UpdateUserRequest{ID: p.Author, IncDecUnread: aws.Bool(true)})
+			DoUpdateUser(p.Author, func(u *model.User) { u.Unread++ })
 		}
 		ids, tags := common.ExtractMentionsAndTags(a.Content)
 		MentionUserAndTags(a, ids, tags)

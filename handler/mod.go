@@ -3,7 +3,7 @@ package handler
 import (
 	"fmt"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/model"
@@ -24,14 +24,14 @@ func ModUser(g *gin.Context) {
 		return
 	}
 
-	p.User, _ = dal.GetUserWithSettings(g.Query("uid"))
+	p.User, _ = dal.GetUser(g.Query("uid"))
 	if p.User == nil {
 		NotFound(g)
 		return
 	}
 
 	if g.Query("swap") == "1" && p.You.IsAdmin() {
-		g.SetCookie("id", ik.MakeUserToken(p.User), 86400, "", "", false, false)
+		g.SetCookie("id", ik.MakeUserToken(p.User.ID, p.User.Session), 86400, "", "", false, false)
 	}
 
 	getter := func(h ik.IDHeader) string {
@@ -77,7 +77,7 @@ func APIBan(g *gin.Context) {
 	u := dal.GetUserByContext(g)
 	throw(u, "")
 	throw(!u.IsAdmin(), "")
-	throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{ID: g.PostForm("to"), ToggleBan: aws.Bool(true)})), "")
+	throw(common.Err2(dal.DoUpdateUser(g.PostForm("to"), "Banned", true)), "")
 	okok(g)
 }
 
@@ -85,7 +85,17 @@ func APIPromoteMod(g *gin.Context) {
 	u := dal.GetUserByContext(g)
 	throw(u, "")
 	throw(!u.IsAdmin(), "")
-	throw(err2(dal.DoUpdateUser(&dal.UpdateUserRequest{ID: g.PostForm("to"), ToggleMod: aws.Bool(true)})), "")
+	throw(common.Err2(dal.DoUpdateUser(g.PostForm("to"), func(u *model.User) error {
+		if u.IsAdmin() {
+			return fmt.Errorf("e:already_admin")
+		}
+		if u.Role == "mod" {
+			u.Role = ""
+		} else {
+			u.Role = "mod"
+		}
+		return nil
+	})), "")
 	okok(g)
 }
 

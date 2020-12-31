@@ -1,4 +1,4 @@
-package common
+package compress
 
 import "unicode/utf8"
 
