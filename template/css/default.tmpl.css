@@ -186,8 +186,11 @@ div.subreply .row-header {
 }
 
 div.clusterreply .row-header {
-    border-top: dashed 1px {{.Border}};
-    background: transparent;
+{{if eq .Mode "dark"}}
+    border-top: dashed 1px {{.DarkBorder}};
+{{else}}
+    border-top: solid 1px {{.Border}};
+{{end}}
 }
 
 div.clusterreply {
