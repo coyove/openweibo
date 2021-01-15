@@ -18,13 +18,10 @@
                 $q("#unread-notify i").className += " tmpl-inbox-message-text";
                 {{end}}{{end}}
 
-                document.write($html({
-                    tag: 'a',
-                    style: { cursor: "pointer" },
-                    class: isDarkMode() ? 'icon-sun' : 'icon-sun-filled',
-                    onclick: "document.cookie='mode="+(isDarkMode()?'':'dark')+";path=/;expires=Sun, 07 Apr 2030 01:27:11 GMT';location.reload()",
-                    children: "" + new Date().getFullYear()
-                }).outerHTML);
+                document.write("<a class=CLS onclick='document.cookie=\"mode=MODE;path=/;expires=Sun, 07 Apr 2030 01:27:11 GMT\";location.reload()' style='cursor:pointer'>YEAR</a>".
+                    replace("YEAR", new Date().getFullYear()).
+                    replace("CLS", isDarkMode() ? 'icon-sun' : 'icon-sun-filled').
+                    replace("MODE", isDarkMode() ? "" : "dark"))
             })()
         </script>
     </div>

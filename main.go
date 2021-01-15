@@ -92,6 +92,9 @@ func main() {
 	r.SetFuncMap(template.FuncMap{
 		"session":    func() int64 { return time.Now().Unix()<<32 | int64(rand.Uint32()) },
 		"cssVersion": func() string { return cssVersion },
+		"abbrTitle": func(in string) string {
+			return common.SoftTruncDisplayWidth(in, 6)
+		},
 		"contains": func(a interface{}, b string) bool {
 			aa, _ := a.(string)
 			return strings.Contains(aa, b)
@@ -188,6 +191,7 @@ func main() {
 	r.Handle("GET", "/inbox", handler.Inbox)
 	r.Handle("GET", "/mod/user", handler.ModUser)
 	r.Handle("GET", "/mod/kv", handler.ModKV)
+	r.Handle("GET", "/post_box", handler.PostBox)
 	r.Handle("GET", "/api/timeline", handler.APITimeline) // crawler special case
 
 	r.Handle("POST", "/api/upload_image", handler.APIUpload)

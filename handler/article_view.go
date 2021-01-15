@@ -17,7 +17,7 @@ import (
 
 type ArticleView struct {
 	ID            string
-	CrawlerLink   string
+	Link          string
 	Others        []*ArticleView
 	Parent        *ArticleView
 	Author        *model.User
@@ -33,6 +33,7 @@ type ArticleView struct {
 	AlsoReply     bool
 	StickOnTop    bool
 	Content       string
+	ShortContent  string
 	ContentHTML   template.HTML
 	Media         template.HTML
 	MediaType     string
@@ -65,6 +66,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 	}
 
 	a.ID = a2.ID
+	a.Link = "/S/" + a.ID[1:]
 	a.Replies = int(a2.Replies)
 	a.Likes = int(a2.Likes)
 	a.ReplyLockMode = a2.ReplyLockMode
@@ -280,16 +282,12 @@ func fromMultiple(g *gin.Context, a *[]ArticleView, a2 []*model.Article, opt uin
 	}
 
 	newa := make([]ArticleView, 0, len(*a))
-	isCrawler := common.IsCrawler(g)
 	for _, v := range *a {
 		if dedup[v.ID] {
 			continue
 		}
 		if v.ID == "" {
 			continue
-		}
-		if isCrawler {
-			v.CrawlerLink = "/S/" + v.ID[1:]
 		}
 		newa = append(newa, v)
 	}

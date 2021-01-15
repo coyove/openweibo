@@ -1,38 +1,33 @@
 {{$notFound := eq .ShowList 255}}
 
-<div class="status">
-    <div class="tmpl-userbox-title row-header title" style="text-align:left">
-        <div style="flex:0 48px">
-            <div class=avatar-container>
-                <img class="avatar" {{template "avatar.html" .}} onclick="location.href='/t/{{.ID}}'">
+<div class="article-row status" style="">
+    <div class="article-row-header" style="text-align:left">
+        <div class="avatar-container">
+            <img class="avatar" {{template "avatar.html" .}} onclick="location.href='/t/{{.ID}}'">
             {{if .Kimochi}}
             <img class="avatar-kimochi" src="{{.KimochiURL}}">
             {{end}}
-            </div>
         </div>
-        <div style="flex:1 100%;text-align:center;overflow: hidden;text-overflow: ellipsis">
+
+        <div class="author-container">
             {{template "display_name.html" .}}
         </div>
 
-        <div style="flex-grow:0;white-space:nowrap;margin:0">
-
-        {{if and (not .IsYou) (not $notFound)}}
-        {{template "button_follow_block.html" (blend "follow" .ID .IsFollowing)}}
-        {{template "button_follow_block.html" (blend "block" .ID .IsBlocking)}}
-        {{else}}
-        <button class="gbutton" disabled><i class="tmpl-light-text icon-heart-broken"></i></button>
-        <button class="gbutton" disabled><i class="tmpl-light-text icon-block"></i></button>
-        {{end}}
+        <div class="what-container">
+            {{if .ID}}
+            <a href="/user/followings/{{.ID}}"><b class='tmpl-normal-text' >关注</b> {{.Followings}}</a>&emsp;
+            <a href="/user/followers/{{.ID}}"><b class='tmpl-normal-text' >粉丝</b> {{.Followers}}</a>&emsp;
+            {{else}}
+            ----
+            {{end}}
         </div>
-
-        <div class=tri></div>
     </div>
 
-    <div class="title tmpl-border" style="border-bottom: dotted 1px transparent;text-align:left;line-height:1.66em">
-      {{if $notFound}}
-        <pre style="margin:0.5em 0">用户不存在</pre>
-      {{else}}
-        <pre style="margin:0.5em 0"><!--
+    <div style="text-align:left">
+        {{if $notFound}}
+        <pre style="margin:0">用户不存在</pre>
+        {{else}}
+        <pre style="margin:0;line-height:1.5em"><!--
         -->{{.DescHTML}}<!--
         --><div class=tmpl-mid-text style="font-size:90%;white-space:normal">
             <b>加入于</b> {{formatTime .Signup}}&nbsp;
@@ -58,7 +53,6 @@
                 {{end}}
             {{end}}
 
-            <a href="/user/twohops/{{.ID}}" class="tmpl-link-text icon-connectdevelop">关系</a>
             {{end}}
 
             {{$iploc := .RecentIPLocation}}
@@ -67,40 +61,17 @@
             {{end}}
             </div><!--
         --></pre>
-      {{end}}
-    </div>
+        {{end}}
 
-    {{if not $notFound}}
-    <div class="title">
-        <span>
-            <b>
-            {{if .ID}}
-                <a href="/user/followings/{{.ID}}">
-                    {{.Followings}} <span class=sub-status>关注</span>
-                </a>
-            {{else}}
-                -
-            {{end}}
-            </b>
-        </span>
-        <span>
-            <b>
-            {{if .ID}}
-                <a href="/user/followers/{{.ID}}">
-                    {{.Followers}} <span class=sub-status>粉丝</span>
-                </a>
-            {{else}}
-                -
-            {{end}}
-            </b>
-        </span>
-        <span>
-            <b>
-            <a href="/likes/{{.ID}}">
-                <span class="sub-status icon-heart-filled">收藏</span>
+        {{if and (not .IsYou) (not $notFound)}}
+            {{template "button_follow_block.html" (blend "follow" .ID .IsFollowing)}}
+            {{template "button_follow_block.html" (blend "block-span" .ID .IsBlocking)}}
+            <a href="/user/twohops/{{.ID}}" class=gbutton>
+                <i class="tmpl-normal-text icon-connectdevelop"></i> <span>关系</span>
             </a>
-            </b>
-        </span>
+            <a href="/likes/{{.ID}}" class=gbutton>
+                <i class="tmpl-normal-text icon-heart-filled"></i> <span>收藏夹</span>
+            </a>
+        {{end}}
     </div>
-    {{end}}
 </div>

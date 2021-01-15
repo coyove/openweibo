@@ -53,27 +53,24 @@ func Home(g *gin.Context) {
 	}
 }
 
-func Static(g *gin.Context, id, shortID string) {
+func Static(g *gin.Context, id string) {
 	if g.Query("raw") != "" || strings.Contains(g.Request.UserAgent(), "curl") {
 		a, err := dal.GetArticle(id)
 		throw(err, "")
 		g.String(200, a.Content)
 		return
 	}
-	if common.IsCrawler(g) {
-		pl, ok := makeReplies(g, id)
-		if !ok {
-			g.Status(404)
-			return
-		}
-		g.HTML(200, "post.html", pl)
-	} else {
-		g.HTML(200, "S.html", struct{ ID string }{id})
+
+	pl, ok := makeReplies(g, id)
+	if !ok {
+		g.Status(404)
+		return
 	}
+	g.HTML(200, "post.html", pl)
 }
 
 func S(g *gin.Context) {
-	Static(g, "S"+g.Param("id"), g.Query("short"))
+	Static(g, "S"+g.Param("id"))
 }
 
 func TagTimeline(g *gin.Context) {
@@ -290,7 +287,7 @@ func APITimeline(g *gin.Context) {
 		p.Next = next
 	} else if g.PostForm("reply") == "true" {
 		a, next := dal.WalkReply(int(common.Cfg.PostsPerPage), g.PostForm("cursors"))
-		fromMultiple(g, &articles, a, _NoMoreParent|_ShowAuthorAvatar, getUser(g))
+		fromMultiple(g, &articles, a, _NoMoreParent|_NoCluster|_ShowAuthorAvatar, getUser(g))
 		p.Next = next
 	} else {
 		getter := func(key string) string {
@@ -361,7 +358,7 @@ func makeReplies(g *gin.Context, pid string) (pl ArticleRepliesView, ok bool) {
 	}
 
 	you := getUser(g)
-	pl.ParentArticle.from(parent, _GreyOutReply, you)
+	pl.ParentArticle.from(parent, _GreyOutReply|_NoMoreParent, you)
 	pl.ReplyView = makeReplyView(g, pid, you)
 
 	if you != nil {

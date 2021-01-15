@@ -1,75 +1,73 @@
 {{$isInboxLike := or (eq .Cmd "inbox-like") (eq .Cmd "timeline-like") (eq .Cmd "inbox-fw-accepted") (eq .Cmd "inbox-fw-apply")}}
 
-<div data-id="{{.ID}}" style="padding:0.5em 0.5em 0 0.5em" class="row">
-    <div class="row-header" style="line-height:{{if .NoAvatar}}24px{{else}}36px{{end}};display:flex">
-        {{if not .NoAvatar}}
+<div data-id="{{.ID}}" style class="article-row">
+    <div class="article-row-header">
         <div class=avatar-container>
-            <img class="avatar" alt="{{.Author.ID}}" {{template "avatar.html" .Author}} onmouseenter="showInfoBox(this,'{{.Author.ID}}')">
+            <img class="avatar" alt="{{.Author.ID}}" {{template "avatar.html" .Author}} onclick="showInfoBox(this,'{{.Author.ID}}')">
             {{if .Author.Kimochi}}
             <img class="avatar-kimochi" src="{{.Author.KimochiURL}}">
             {{end}}
         </div>
-            {{template "display_name.html" .Author}}
-        {{else}}
-        <span class="post-author mentioned-user" onclick="this.querySelector('a').href='javascript:void(0)';showInfoBox(this,'{{.Author.ID}}')">
-            {{template "display_name.html" .Author}}
-        </span>
-        {{end}}
 
+        <div class=author-container>
+        {{template "display_name.html" .Author}}
+        </div>
 
-    {{if eq .Cmd "inbox-reply"}}
+        <div class=what-container>
+        {{if eq .Cmd "inbox-reply"}}
         <span class=post-date>于 {{formatTime .CreateTime}} 回复了你</span>
-    {{else if eq .Cmd "inbox-mention"}}
+        {{else if eq .Cmd "inbox-mention"}}
         <span class=post-date>于 {{formatTime .CreateTime}} @了你</span>
-    {{else if eq .Cmd "inbox-fw-accepted"}}
+        {{else if eq .Cmd "inbox-fw-accepted"}}
         <span class=post-date>于 {{formatTime .CreateTime}} 承认了你的关注</span>
-    {{else if eq .Cmd "inbox-fw-apply"}}
+        {{else if eq .Cmd "inbox-fw-apply"}}
         <span class=post-date>于 {{formatTime .CreateTime}} 请求关注</span>
-    {{else if eq .Cmd "timeline-like"}}
+        {{else if eq .Cmd "timeline-like"}}
         <span class=post-date>
             {{if or .Others .AlsoReply}}<i class='cls-reply icon-down-big'></i>
             同{{end}}喜欢于 {{formatTime .CreateTime}}
         </span>
-    {{else if $isInboxLike}}
+        {{else if $isInboxLike}}
         <span class=post-date>于 {{formatTime .CreateTime}} 喜欢</span>
-    {{else}}
+        {{else}}
         {{if .You.IsMod}}
         <span>
             <a href="/mod/user?uid={{.Author.ID}}" target=_blank><i class="icon-export-alt"></i></a>
         </span>
         {{end}}
         {{if .Parent}}
-            <span class=post-date>
+        <span class=post-date>
             {{if .Others}}<i class='cls-reply icon-down-big'></i>
             同{{end}}{{if .Content}}回复{{else}}转发{{end}}于
             {{formatTime .CreateTime}}
-            </span>
+        </span>
         {{else}}
-            <span class=post-date>
-                {{if .AlsoReply}}
-                    <i class='cls-reply icon-down-big'></i>
-                    同回复于 {{formatTime .CreateTime}}
-                {{else}}
-                    发布于 {{formatTime .CreateTime}}
-                {{end}}
-            </span>
+        <span class=post-date>
+            {{if .AlsoReply}}
+            <i class='cls-reply icon-down-big'></i>
+            同回复于 {{formatTime .CreateTime}}
+            {{else}}
+            发布于 {{formatTime .CreateTime}}
+            {{end}}
+        </span>
         {{end}}
-    {{end}}
+        {{end}}
+        </div>
     </div>
 
     {{if .ContentHTML}}
-    <pre style="font-size:110%;padding:0.5em 0 0">{{.ContentHTML}}</pre>
+    <pre style="">{{.ContentHTML}}</pre>
     {{end}}
 
     {{if eq .Cmd "inbox-fw-apply"}}
     <div style="padding: 0.5em 0">
-      <button
-	user-id="{{.Author.ID}}"
-	class="gbutton follow-block"
-	value='false'
-	onclick="followBlock(this,'accept','{{.Author.ID}}')">
-	承认关注
-      </button>
+        <button
+            user-id="{{.Author.ID}}"
+            class="gbutton follow-block"
+            value='false'
+            onclick="followBlock(this,'accept','{{.Author.ID}}')">
+            承认关注
+        </button>
     </div>
     {{end}}
 
@@ -89,43 +87,40 @@
     <div class=foobar>
         {{if .StickOnTop}}
         {{if or (eq .You.ID .Author.ID) .You.IsMod}}
-            <a class="reply-box" href="javascript:void(0)" onclick="dropTopArticle(this, '{{.ID}}')">
+            <a class="gbutton" href="javascript:void(0)" onclick="dropTopArticle(this, '{{.ID}}')">
                 <i class="icon-bullhorn"></i> 置顶
             </a>
         {{else}}
-            <a class="reply-box tmpl-normal-text" style="font-weight:bold" href="javascript:void(0)">
+            <a class="gbutton tmpl-normal-text" style="font-weight:bold" href="javascript:void(0)">
                 <i class="icon-bullhorn"></i> 置顶
             </a>
         {{end}}
         {{end}}
 
-        {{if .CrawlerLink}}
-        <a class="reply-box {{if .GreyOutReply}}tmpl-light-text{{end}}" href="{{.CrawlerLink}}">
-            回复 {{if .Replies}}{{.Replies}}{{end}}
-        </a>
-        {{else}}
-        <a class="reply-box {{if .GreyOutReply}}tmpl-light-text{{end}}" href="javascript:showReply('{{.ID}}', false)">
+        {{if not .GreyOutReply}}
+        <a class="gbutton" href="javascript:window.open('{{.Link}}?win=' + window.name).S=1">
             <i class="icon-reply-outline"></i>
             {{if .Replies}}{{.Replies}}{{end}}
         </a>
         {{end}}
 
-        <a class="reply-box" href="javascript:void(0)" onclick="likeArticle(this, '{{.ID}}')" liked={{.Liked}}>
+        <a class="gbutton" href="javascript:void(0)" onclick="likeArticle(this, '{{.ID}}')" liked={{.Liked}}>
             <i class="icon-heart-{{if .Liked}}filled{{else}}2{{end}}"></i> <span class=num>{{if .Likes}}{{.Likes}}{{end}}</span>
         </a>
+
         {{if or (eq .You.ID .Author.ID) .You.IsMod}}
-        <a class="reply-box" href="javascript:void(0)" onclick="lockArticle(this,'{{.ID}}')" value="{{.ReplyLockMode}}">
+        <a class="gbutton" href="javascript:void(0)" onclick="lockArticle(this,'{{.ID}}')" value="{{.ReplyLockMode}}">
             {{if .ReplyLockMode}}
             <i class="tmpl-normal-text icon-lock"></i>
             {{else}}
             <i class="tmpl-light-text icon-lock-open"></i>
             {{end}}
         </a>
-        <a class="tmpl-red-text reply-box" href="javascript:void(0)" onclick="deleteArticle(this,'{{.ID}}')">
+        <a class="tmpl-red-text gbutton" href="javascript:void(0)" onclick="deleteArticle(this,'{{.ID}}')">
             <i class="icon-trash"></i>
         </a>
         {{if eq .MediaType "IMG"}}
-        <a class="reply-box" href="javascript:void(0)" onclick="nsfwArticle(this,'{{.ID}}')" value={{.NSFW}}>
+        <a class="gbutton" href="javascript:void(0)" onclick="nsfwArticle(this,'{{.ID}}')" value={{.NSFW}}>
             <i class="icon-eye-off"></i>
         </a>
         {{end}}
@@ -135,19 +130,13 @@
 
 
     {{range .Others}}
-    <div class=clusterreply>
+    <div class="subreply clsreply">
             {{template "row_content.html" .}}
         </div>
     {{end}}
 
     {{if .Parent}}
     {{if .Parent.ID}}
-    <div style="position:relative;margin:0 -0.5em;{{if or .Others (not $isInboxLike)}}border-top:solid 1px transparent{{end}}" class="tmpl-border quoted-sep">
-        <div style="position:absolute;left:0.5em;top:0.5em" class=tmpl-light-text>
-            <i class=icon-quote-left></i>
-        </div>
-    </div>
-
     <div class="subreply">
         {{template "row_content.html" .Parent}}
     </div>

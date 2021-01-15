@@ -1,37 +1,64 @@
-window.onmousemove = function(e) {
-    if (!window.REGTICK) {
-	window.requestAnimationFrame(function() {
-	    var x = e.clientX || e.left, y = e.clientY || e.top;
-	    window.REGIONS = (window.REGIONS || []).filter(function(rect) { return rect.valid; })
-	    window.REGIONS.forEach(function(rect) {
-		var inside = false, margin = 5;
-		rect.boxes.forEach(function(el) {
-		    var box = el.getBoundingClientRect();
-		    inside = inside || (
-			x >= box.left - margin &&
-			    x <= box.right + margin &&
-			    y >= box.top - margin &&
-			    y <= box.bottom + margin);
-		})
-		if (!inside) {
-		    try {
-			rect.callback(x, y);
-		    } catch(e) {
-			console.log(e)
-		    }
-		    rect.valid = false;
-		}
-	    })
-	    window.REGTICK = false;
-	});
-	window.REGTICK = true;
+(function() {
+    window.onmousemove = function(e) {
+        if (window.REGTICK) return;
+        window.requestAnimationFrame(function() {
+            var x = e.clientX || e.left, y = e.clientY || e.top;
+            window.REGIONS = (window.REGIONS || []).filter(function(rect) { return rect.valid; })
+            window.REGIONS.forEach(function(rect) {
+                var inside = false, margin = 5;
+                rect.boxes.forEach(function(el) {
+                    var box = el.getBoundingClientRect();
+                    inside = inside || (x >= box.left - margin && x <= box.right + margin &&
+                        y >= box.top - margin && y <= box.bottom + margin);
+                })
+                if (!inside) {
+                    try {
+                        rect.callback(x, y);
+                    } catch(e) {
+                        console.log(e)
+                    }
+                    rect.valid = false;
+                }
+            })
+            window.REGTICK = false;
+        });
+        window.REGTICK = true;
     }
-}
 
-window.ontouchend = function(e) {
-    var el = e.changedTouches[0];
-    if (el) window.onmousemove(el);
-}
+    window.ontouchend = function(e) {
+        var el = e.changedTouches[0];
+        if (el) window.onmousemove(el);
+    }
+
+    window.addEventListener('scroll', function(e) {
+        var nextBtn = $q("#load-more")
+        if (!nextBtn) return;
+        if (window.ticking) return
+        window.requestAnimationFrame(function() {
+            $q(".timeline > .article-row", true).forEach(function(c) {
+                if (isInViewport(c, 3)) {
+                    if (c.childNodes.length == 0) {
+                        c.innerHTML = c.__html;
+                        c.style.height = "";
+                    }
+                } else {
+                    if (c.childNodes.length) {
+                        c.style.height = c.offsetHeight + "px";
+                        c.__html = c.innerHTML;
+                        c.innerHTML = "";
+                    }
+                }
+            })
+            if (isInViewport(nextBtn) &&
+                !nextBtn.getAttribute("disabled") && nextBtn.getAttribute("eot") !== "true") {
+                console.log("Load next");
+                nextBtn.click();
+            }
+            window.ticking = false;
+        });
+        window.ticking = true;
+    });
+})()
 
 function $q(q, multi) {
     if (q.match(/^<\S+>$/)) return document.createElement(q.substring(1, q.length - 1));
@@ -45,56 +72,10 @@ function isString(a) {
     return (Object.prototype.toString.call(a) === '[object String]');
 }
 
-function $html() {
-    var lastInputId;
-    var camel = function(e) {
-	return e.replace(/([A-Z])/g, function(u){return "-"+u.toLowerCase()})
-    }
-    var w = function(args) {
-	var div = document.createElement("div"), h = '';
-	for (var i in args) {
-	    var a = args[i];
-	    if (isString(a)) {
-		h += a + ' '
-	    } else {
-		var el = document.createElement(a.tag);
-		if (a.tag == 'button') el.setAttribute('class', 'gbutton');
-
-		var _append = function(a) {
-		    if (isString(a)) {
-			el.appendChild(document.createTextNode(a));
-		    } else if (Object.prototype.toString.call(a) === '[object Array]') {
-			for (var i in a) _append(w([ a[i] ]));
-		    } else {
-			el.appendChild(a.tagName ? a : w([a]));
-		    }
-		}
-		for (var k in a) {
-		    if (k === 'tag') continue;
-		    if (k === 'style') {
-			var style = '';
-			for (var name in a[k])
-			    style += camel(name) + ':' + a[k][name] + ';';
-			el.setAttribute("style", style);
-		    } else if (k === "checked" || k === "selected" || k === 'readonly') {
-			a[k] ? el.setAttribute(k, k) : 0;
-		    } else if (k === "children") {
-			_append(a[k]);
-		    } else {
-			el.setAttribute(camel(k), isString(a[k]) ? a[k].replace('$last-input-id', lastInputId) : a[k]);
-		    }
-		}
-		if (el.tagName == 'INPUT' && !el.id) {
-		    lastInputId = btoa('' + Math.random()).replace('=', '');
-		    el.id = lastInputId;
-		}
-		h += el.outerHTML;
-	    }
-	}
-	div.innerHTML = h;
-	return div.firstElementChild
-    }
-    return w(arguments);
+function $html(html) {
+    var div = document.createElement("div")
+    div.innerHTML = html;
+    return div.firstElementChild
 }
 
 function $value(el) {
@@ -198,7 +179,7 @@ function loadKimochi(el) {
     if (ul.childNodes.length) return;
 
     for (var i = 0; i <= 44; i++) {
-        var li = $html({tag:'li'}), a = $html({tag:'a'}), img = $html({tag:'img'});
+        var li = $html("<li></li>"), a = $html("<a></a>"), img = $html("<img>");
         img.src = '/s/emoji/emoji' + i + '.png';
         if (i == 0) {
             img.className = 'kimochi-selector';
@@ -281,11 +262,8 @@ function dropTopArticle(el, id) {
 }
 
 function lockArticle(el, id) {
-    var div = $html({
-	tag: 'div',
-	style: {position:'absolute', boxShadow: '0 1px 5px rgba(0,0,0,.3)'},
-	class: 'tmpl-light-bg'
-    }), box = el.getBoundingClientRect(),
+    var div = $html("<div class=tmpl-light-bg style='border-radius:0.5em;position:absolute;box-shadow:0 1px 5px rgba(0,0,0,.3)'></div>"),
+        box = el.getBoundingClientRect(),
         bodyBox = document.body.getBoundingClientRect(),
         currentValue = $value(el),
         reg = {};
@@ -294,23 +272,13 @@ function lockArticle(el, id) {
     div.style.top = box.bottom - bodyBox.top + "px";
 
     var checkbox = function(i, t) {
-	return $html({
-	    tag: "div",
-	    style: {margin: "0.5em"},
-	    children: [
-		{
-		    tag: 'input',
-		    value: i,
-		    type: "radio",
-		    name: "reply-lock",
-		    class: "icon-input-checkbox",
-		    checked: i == currentValue
-		}, 
-		{tag: 'i', class: "icon-ok-circled2"},
-		{tag: 'label', for: '$last-input-id', children: t}
-	    ]
-	})
+        var tmpl = "<div style='margin:0.5em'>" + 
+            "<input id=ID CHECKED type=radio value=V name=reply-lock class=icon-input-checkbox>" +
+            "<i class=icon-ok-circled2></i> <label for=ID>TEXT</label>" +
+            "</div>"
+        return $html(tmpl.replace("V",i).replaceAll("ID","id"+Math.random()).replace("CHECKED",i==currentValue?"checked=checked":"").replace("TEXT",t))
     }
+
     div.appendChild(checkbox(0, "不限制回复"))
     div.appendChild(checkbox(1, "禁止回复"))
     div.appendChild(checkbox(2, "我关注的人可回复"))
@@ -318,19 +286,20 @@ function lockArticle(el, id) {
     div.appendChild(checkbox(4, "我关注的人和我粉丝可回复"))
     document.body.appendChild(div)
 
-    if (id) div.appendChild($html({
-	tag: 'div',
-	style: {margin: '0.5em', textAlign: 'center'},
-	children: {tag: 'button', children: '更新设置'}
-    }))
+    if (id)
+        div.appendChild($html("<div style='margin:0.5em;text-align:center'><button class=gbutton>更新设置</button></div>"))
 
-    reg = { valid: true, boxes: [el, div], callback: function(x, y) {
-        if (!id) {
-            var v = (div.querySelector("[name=reply-lock]:checked") || {}).value;
-            if (v) el.setAttribute("value", v)
-        }
-        div.parentNode.removeChild(div);
-    }, };
+    reg = {
+        valid: true,
+        boxes: [el, div],
+        callback: function(x, y) {
+            if (!id) {
+                var v = (div.querySelector("[name=reply-lock]:checked") || {}).value;
+                if (v) el.setAttribute("value", v)
+            }
+            div.parentNode.removeChild(div);
+        },
+    };
     window.REGIONS = window.REGIONS || [];
     window.REGIONS.push(reg);
 
@@ -341,9 +310,7 @@ function lockArticle(el, id) {
             stop();
             if (res != "ok") return res;
             el.setAttribute("value", v)
-            el.innerHTML = $html({
-		tag: 'i', class: v > 0 ? "tmpl-normal-text icon-lock" : "tmpl-light-text icon-lock-open"
-	    }).outerHTML;
+            el.innerHTML = "<i class='C'></i>".replace("C", v > 0 ? "tmpl-normal-text icon-lock" : "tmpl-light-text icon-lock-open")
             return "ok:回复设置更新"
         }, stop);
     }
@@ -369,13 +336,13 @@ function followBlock(el, m, id) {
 	var on = obj[m] != "";
 	el.setAttribute("value", on ? "true" : "false");
         if (m == "follow") {
-            el.innerHTML = $html({tag:'i',class: on ? "icon-heart-broken" : "icon-user-plus"}).outerHTML;
-	    if (x.getResponseHeader("X-Follow-Apply") && on)
-		return "ok:已关注, 等待批准";
+            el.innerHTML = "<i class=C></i>".replace("C", on ? "icon-heart-broken" : "icon-user-plus");
+            if (x.getResponseHeader("X-Follow-Apply") && on)
+                return "ok:已关注, 等待批准";
             return "ok:" + (on ? "已关注" : "已取消关注") + id;
         } else if (m == "accept") {
-            el.innerHTML = $html({tag:'i',class: "icon-ok tmpl-green-text" }).outerHTML;
-	    return "ok" 
+            el.innerHTML = '<i class="icon-ok tmpl-green-text"></i>';
+            return "ok" 
         } else {
             el = el.querySelector('i');
             el.className = el.className.replace(/block-\S+/, '') + " block-" + on;
@@ -422,7 +389,7 @@ function __i18n(t) {
     return t;
 }
 
-function loadMore(tlid, el, data) {
+function loadMore(el, data) {
     data.cursors = $value(el);
     var stop = $wait(el);
     $post('/api/timeline', data, function(pl) {
@@ -438,173 +405,27 @@ function loadMore(tlid, el, data) {
         if (pl.Articles) {
             el.setAttribute("value", pl.Next);
             pl.Articles.forEach(function(a) {
-                var dedup = $q('#' + tlid + " > [data-id='" + a[0] + "']");
+                var dedup = $q(".timeline > [data-id='" + a[0] + "']");
                 if (dedup && dedup.length) {
                     console.log("dedup:", a[0])
                     return;
                 }
-                var div = document.createElement("div");
-                div.innerHTML = a[1];
-                $q('#' + tlid).appendChild(div.querySelector("div"));
+                $q('.timeline').appendChild($html(a[1]));
             })
         }
-        if (!data.reply)
-            history.pushState("", "", location.pathname + location.search)
     }, stop);
-    //   console.log(document.documentElement.scrollTop);
 }
 
-function preLoadMore(tlid, nextBtn) {
-    window.addEventListener('scroll', function(e) {
-        if (!window.ticking) {
-            window.requestAnimationFrame(function() {
-                $q("#" + tlid + " > .row", true).forEach(function(c) {
-                    if (isInViewport(c, 3)) {
-                        if (c.childNodes.length == 0) {
-                            c.innerHTML = c.__html;
-                            c.style.height = "";
-                        }
-                    } else {
-                        if (c.childNodes.length) {
-                            c.style.height = c.offsetHeight + "px";
-                            c.__html = c.innerHTML;
-                            c.innerHTML = "";
-                        }
-                    }
-                })
-                if (isInViewport(nextBtn) &&
-                    !nextBtn.getAttribute("disabled") && nextBtn.getAttribute("eot") !== "true") {
-                    console.log("Load next");
-                    nextBtn.click();
-                }
-                window.ticking = false;
-            });
-            window.ticking = true;
-        }
-    });
-}
-
-// Nested replies view
-function showReply(aid, closeToHome, shortid) {
-    // We have something popped up already, wait them to be removed first
-    if (window.REGIONS && window.REGIONS.length) return;
-
-    // User selected some texts on the page, so we won't pop up
-    if (window.getSelection && window.getSelection().type == 'Range') return;
-
-    $q(".image-uploader.dropzone", true).forEach(function(el) { el.UPLOADER ? el.UPLOADER.removeAllFiles() :0})
-
-    // Close duplicated windows before opening a new one
-    $q("[data-parent='" + aid + "']", true).forEach(function(e) { e.CLOSER.click(); });
-
-    var div = $html({
-        tag: 'div',
-        id: 'Z' + Math.random().toString(36).substr(2, 5),
-        class: 'div-inner-reply tmpl-body-bg',
-        style: {
-            position: 'fixed',
-            left: '0',
-            top: '0',
-            width: '100%',
-            height: '100%',
-            overflowY: 'scroll',
-            overflowX: 'hidden'
-        },
-        dataParent: aid
-    }), divclose = $html({
-        tag: 'div',
-        style: {
-            margin: '0 auto',
-            backgroundImage: 'url(/s/assets/spinner.gif)',
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'center center'
-        },
-        class: 'container rows replies',
-        children: {
-            tag: 'div',
-            class: 'row',
-            style: {padding: '0.5em', lineHeight: '30px', display: 'flex'},
-            children: [
-                {tag: 'i', class: 'control icon-left-small'},
-                {
-                    tag: 'input',
-                    style: {
-                        margin:'0 0.5em',
-                        width:'100%',
-                        textAlign: 'center',
-                        border:'none',
-                        background:'transparent',
-                        cursor:'pointer'
-                    },
-                    value: location.protocol + "//" + location.host + "/S/" + aid.substring(1),
-                    readonly: true,
-                    onclick: 'this.select();document.execCommand("copy");$popup("已复制")'
-                },
-                {tag: 'i', class: 'control icon-link', onclick: "this.previousElementSibling.click()"},
-            ]
-        }
-    })
-
-    div.CLOSER = divclose.querySelector('.icon-left-small')
-    div.CLOSER.onclick = function() {
-        if (closeToHome) { location.href = "/t"; return }
-
-        div.parentNode.removeChild(div)
-        if ($q('[data-parent]', true).length === 0) {
-            history.pushState("", "", window.ORI_HERF);
-            document.body.style.overflow = null;
-        }
-    }
-    divclose.insertBefore($q("nav", true)[0].cloneNode(true), divclose.firstChild);
-
-    div.appendChild(divclose);
-    document.body.appendChild(div);
-    document.body.style.overflow = 'hidden';
-
-    $post('/api/p/' + aid, {}, function(h) {
-        div.innerHTML = h;
-        div.style.backgroundImage = null;
-        var rows = div.querySelector('.rows'),
-            box = div.querySelector(".reply-table textarea"),
-            uploader = div.querySelector(".reply-table .image-uploader");
-
-        if (box) window.TRIBUTER.attach(box);
-        if (uploader) attachImageUploader(uploader);
-
-        rows.insertBefore(divclose.querySelector('.row'), rows.firstChild);
-        rows.insertBefore($q("nav", true)[0].cloneNode(true), rows.firstChild);
-    });
-
-    if (!location.href.match(/\?pid=/)) window.ORI_HERF = location.href;
-    history.pushState("", "", location.pathname + "?pid=" + encodeURIComponent(aid) + location.hash + "#" + div.id)
-}
-
-window.onpopstate = function(event) {
-    var closes = $q(".div-inner-reply", true)
-    location.href.split("#").forEach(function(id) {
-        closes = closes.filter(function(c) { return c.id != id })
-    })
-    closes.forEach(function(c) { c.CLOSER.click() })
-};
-
-function updateSetting(el, field, value, cb, errcb) {
-    var data = {},
-        stop = $wait(el.tagName === 'INPUT' && el.className == "icon-input-checkbox" ?
+function updateSetting(el, field, value) {
+    var data = {};
+    var stop = $wait(el.tagName === 'INPUT' && el.className == "icon-input-checkbox" ?
             el.nextElementSibling.nextElementSibling: el);
     data["set-" + field] = "1";
-    if (field !== 'bio') {
-        data[field] = value;
-    } else {
-        ["description"].forEach(function(id) { data[id] = $q("[name='" + id + "']").value })
-    }
+    data[field] = value;
     $post("/api/user_settings", data, function(h, h2) {
         stop();
-        if (cb) cb(h, h2);
         return h
-    }, function() {
-        stop();
-        if (errcb) errcb();
-    })
+    }, stop)
 }
 
 function showInfoBox(el, uid) {
@@ -667,23 +488,24 @@ function showInfoBox(el, uid) {
     window.REGIONS.push(reg);
 
     var adjustDiv = function() {
-	var newBox = div.getBoundingClientRect();
-	if (newBox.right > bodyBox.right) {
-	    div.style.left = '0';
-	    div.style.right = "0";
-	}
+        var newBox = div.getBoundingClientRect();
+        if (newBox.right > bodyBox.right) {
+            div.style.left = '0';
+            div.style.right = "0";
+        }
+        div.querySelector('.article-row').className += ' tmpl-light-bg'
     }
     $post("/api/u/" + encodeURIComponent(uid), {}, function(h) {
         if (h.indexOf("ok:") > -1) {
             setTimeout(function() {
                 div.innerHTML = h.substring(3)
-		adjustDiv();
+                adjustDiv();
             }, new Date().getTime() - startAt > 100 ? 0 : 100)
             return
         }
         return h
     }, function() {
-	adjustDiv();
+        adjustDiv();
         el.BLOCK = false;
     })
 }
@@ -713,9 +535,6 @@ function adjustImage(img) {
     }
 
     if (div.hasAttribute("enlarge")) {
-        // Raw image and its thumbnail may have different w/h ratios, so recalc is needed
-        // div.style.height = div.getBoundingClientRect().width / ratio + "px";
-        // if (smallimg) div.style.height = img.height + "px";
         div.style.height = window.innerHeight + "px";
         div.scrollIntoView();
         div.style.backgroundSize = 'contain';
@@ -769,25 +588,6 @@ function adjustVideoIFrame(el, src) {
 
 function isDarkMode() {
     return (document.cookie.match(/(^| )mode=([^;]+)/) || [])[2] === 'dark';
-}
-
-function attachImageUploader(el) {
-    if (el.hasAttribute("uploader")) return;
-
-    el.UPLOADER = new Dropzone(el, {
-        url: "/api/upload_image",
-        maxFilesize: 16,
-        maxFilesize: 5,
-        addRemoveLinks: true,
-        dictRemoveFile: "<u style='cursor:pointer'>删除</u>",
-        dictFileTooBig: "文件过大 {{filesize}}M, Max: {{maxFilesize}}M",
-        dictCancelUpload: "<span class='tmpl-mid-text'>上传中</span> <u style='cursor:pointer'>取消</u>",
-        dictCancelUploadConfirmation: "取消上传该图片？"
-    }).on("success", function(f, id) {
-        f._removeLink.setAttribute('data-uri', id);
-    });
-
-    el.setAttribute("uploader", "true");
 }
 
 function createAvatar(id) {
@@ -900,4 +700,42 @@ function createAvatar(id) {
     var canvas = document.createElement('canvas');
     renderIcon({bgcolor: "#fafbfc", seed: id, size: 5, scale: 10}, canvas);
     return canvas;
+}
+
+(function() {
+    setInterval(function() {
+        var res = JSON.parse(localStorage.getItem("RESULT") || "{}")
+        var tl = document.getElementById("timeline" + res.uuid);
+        if (!tl) return;
+        var div = $html(res.html);
+        div.className += " newly-added-row"
+        setTimeout(function() {
+            div.className += " finished"
+            setTimeout(function() { div.className = div.className.replace('newly-added-row', '') }, 2000)
+        }, 1000)
+        tl.insertBefore(div, tl.querySelector(".row-reply-inserter").nextSibling)
+        localStorage.setItem("RESULT", "{}")
+        $popup(res.parent ? "回复成功": "发布成功")
+    }, 500)
+
+    try {
+        window.BACK = new URLSearchParams(location.search).get('win')
+    } catch (e) { }
+})()
+
+function postBox(uuid, p, win) {
+    window.open('/post_box?uuid=' + uuid + '&p=' + (p || '') + '&win=' + (win || window.name))
+}
+
+function closeWin() {
+    var back = window.BACK;
+    if (back) {
+        var w = window.open('', back)
+        if (w.location.href === 'about:blank') {
+            w.location.href = '/t?back=' + back
+        }
+        window.close()
+        return;
+    }
+    location.href = '/t'
 }

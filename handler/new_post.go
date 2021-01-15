@@ -39,6 +39,12 @@ func hashIP(g *gin.Context) string {
 	return ip.String() + "/" + strconv.FormatInt(time.Now().Unix(), 36)
 }
 
+func PostBox(g *gin.Context) {
+	rv := makeReplyView(g, g.Query("p"), getUser(g))
+	rv.UUID = g.Query("uuid")
+	g.HTML(200, "post_box.html", rv)
+}
+
 func APINew(g *gin.Context) {
 	throw(checkIP(g), "")
 	g.Set("allow-api", true)

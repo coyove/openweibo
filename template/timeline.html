@@ -5,7 +5,7 @@
         <title>广场</title>
     {{else}}
         <title>{{.User.DisplayName}}</title>
-        <div class="status-box">{{template "user_public.html" .User}}</div>
+        <div class="status-box tmpl-row-light-bg">{{template "user_public.html" .User}}</div>
     {{end}}
 {{else if .IsInbox}}
     <title>我的提醒</title>
@@ -28,7 +28,7 @@
         </form>
     </div>
 {{else}}
-    <div class="status-box">
+    <div class="status-box tmpl-row-light-bg">
         <title>我的时间线</title>
         <div>{{template "user_private.html" .User}}</div>
     </div>
@@ -38,12 +38,10 @@
     {{template "tags_heat.html" .HotTags}}
 {{end}}
 
-<div class="rows" id="timeline{{.ReplyView.UUID}}" style="">
-    {{if and .ShowNewPost (ne .User.ID "master")}}
-        {{template "reply_view.html" .ReplyView}}
-    {{end}}
 
-<div style='padding:0 0.5em;cursor:pointer;line-height:2.5em' class=tmpl-navbar-titlebar-bg>
+<div class="timeline" id="timeline{{.ReplyView.UUID}}" style="">
+    
+<div class="navbar-titlebar">
 {{if .IsInbox}}
     <button style="margin:0.5em 0" class=gbutton onclick="$postReload(this,'/api/clear_inbox',{})">清空全部提醒</button>
 {{else if .IsSearchTimeline}}
@@ -53,7 +51,7 @@
         搜索限制: 前100条记录
     {{end}}
 {{else}}
-    {{if or .IsTagTimeline .IsUserLikeTimeline .IsUserTimeline}}
+    {{if or .IsTagTimeline .IsUserLikeTimeline}}
     <div class="tl-checkpoints post-options" style="padding:0.5em 0;margin:0 0.5em;font-weight:bold;white-space:nowrap">
         {{if .IsTagTimeline}}
             {{if not (contains .Tag " ")}}
@@ -64,8 +62,6 @@
             {{.Tag}} ({{.PostsUnderTag}})
         {{else if .IsUserLikeTimeline}}
             {{if eq .You.ID .User.ID}}我{{else}}{{.User.DisplayName}}{{end}}的收藏
-        {{else if .IsUserTimeline}}
-            {{.User.DisplayName}}
         {{end}}
     </div>
     {{end}}
@@ -106,6 +102,17 @@
 {{end}}
 </div>
 
+    {{if .ShowNewPost}}
+    <div style="position:relative;text-align:center;padding: 0.5em;border-top:solid 1px white" class=tmpl-dark-border>
+        <button class="gbutton tmpl-green-text" onclick="postBox('{{.ReplyView.UUID}}')" id="post-button">
+            <i class=icon-comment></i> 发布状态
+        </button>
+        <div style="position:absolute;margin-left:-6px;left:50%;bottom:0">
+            <i class="icon-down-dir tmpl-green-text"></i>
+        </div>
+    </div>
+    {{end}}
+
     <div class="row-reply-inserter" style="display:none"></div>
 
     {{range .Articles}}
@@ -118,21 +125,13 @@
     {{if .IsCrawler}}
     <a href="/api/timeline?media={{.MediaOnly}}&cursors={{.Next}}">更多...</a>
     {{else}}
-    <button
-        value="{{.Next}}"
-        class="gbutton load-more"
-        onclick="loadMore('timeline{{.ReplyView.UUID}}',this,{
-            search:{{.IsSearchTimeline}},
-            searchtag:{{.Tag}},
-            likes:{{.IsUserLikeTimeline}},
-            media:{{.MediaOnly}},
-        })">
-        更多...
-    </button>
-
-    <script>
-        preLoadMore("timeline{{.ReplyView.UUID}}", $q("#timeline{{.ReplyView.UUID}} + .paging > .load-more"));
-    </script>
+    <button id=load-more value="{{.Next}}" class="gbutton"
+                                           onclick="loadMore(this, {
+                                           search:{{.IsSearchTimeline}},
+                                           searchtag:{{.Tag}},
+                                           likes:{{.IsUserLikeTimeline}},
+                                           media:{{.MediaOnly}}
+                                           })">更多...</button>
     {{end}}
 
     {{else}}
@@ -152,4 +151,7 @@
         {{end}}
     </a>
     {{end}}
+    <script>
+        window.name = "win{{.ReplyView.UUID}}"
+    </script>
 </div>

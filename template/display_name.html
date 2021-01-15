@@ -19,17 +19,5 @@
         <strong mod={{.IsMod}}>{{.DisplayName}}</strong>
         {{end}}
     </a>
-
-    {{if eq .ShowList 'f'}}
-    | 关注
-    {{else if eq .ShowList 'b'}}
-    | 黑名单
-    {{else if eq .ShowList 's'}}
-    | 粉丝
-    {{else if eq .ShowList 'r'}}
-    | 你们的关系
-    {{else if eq .ShowList 'S'}}
-    | 设置
-    {{end}}
 </span>
 {{end}}

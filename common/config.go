@@ -127,7 +127,7 @@ type CSSConfig struct {
 
 var CSSLightConfig = CSSConfig{
 	InputBG:           "#fff",
-	BodyBG:            "#fcfcfc",
+	BodyBG:            "#dadada",
 	ContainerBG:       "#fff",
 	Button:            "rgb(var(--pure-material-primary-rgb, 33, 150, 243))",
 	ButtonDisabled:    "rgba(var(--pure-material-onsurface-rgb, 0, 0, 0), 0.38)",
@@ -142,7 +142,7 @@ var CSSLightConfig = CSSConfig{
 	LightText:         "#aaa",
 	MidGrayText:       "#666",
 	LightBG:           "#fafbfc",
-	Row:               "#f6f6f6",
+	Row:               "#f0f0f0",
 	RowHeader:         "rgba(0,0,0,0.04)",
 	FoobarHoverBottom: "#677",
 	TextShadow:        "#677",

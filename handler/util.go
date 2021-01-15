@@ -57,7 +57,11 @@ type ReplyView struct {
 
 func makeReplyView(g *gin.Context, reply string, u *model.User) ReplyView {
 	r := ReplyView{}
-	r.UUID = strconv.FormatInt(time.Now().UnixNano(), 16)
+	uuid := time.Now().UnixNano()
+	for _, x := range reply {
+		uuid = uuid*31 + int64(x)
+	}
+	r.UUID = "id" + strconv.FormatInt(uuid, 36)
 	r.ReplyTo = reply
 	if u != nil {
 		r.DefaultNoMaster = u.FollowApply != 0

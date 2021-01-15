@@ -1,21 +1,41 @@
-<div class=container>
-    <div class="rows replies" id="timeline{{.ReplyView.UUID}}" > 
+{{template "header.html" .}}
+
+<title>{{abbrTitle .ParentArticle.Content}}... {{.ParentArticle.ID}}</title>
+
+<style>
+nav, #footer {
+    display: none;
+}
+</style>
+
+<div>
+    <div class="window-open">
+        <div class="post-options">
+            <button class=gbutton onclick="closeWin()">
+                <i class=icon-left-small></i> 返回
+            </button>
+        </div>
+    </div>
+</div>
+
+<div>
+    <div class="timeline" id="timeline{{.ReplyView.UUID}}" > 
         {{template "row_content.html" .ParentArticle}}
 
-        {{if and .ParentArticle.ReplyLockMode .ShowReplyLockInfo}}
-        <div class=row>
-            <div class=reply-lock-notify>
-                <button class=gbutton disabled>
-                    {{if eq .ParentArticle.ReplyLockMode 1}}禁止回复{{end}}
-                    {{if eq .ParentArticle.ReplyLockMode 2}}仅限作者关注的人回复{{end}}
-                    {{if eq .ParentArticle.ReplyLockMode 3}}仅限作者关注和被@的人回复{{end}}
-                    {{if eq .ParentArticle.ReplyLockMode 4}}仅限作者关注的和其粉丝回复{{end}}
-                </button>
-            </div>
+        <div class=article-row style='display:flex;align-items:center'>
+            <span style="display:inline-block;flex:1 0 auto;padding-left:0.5em">
+                共 {{.ParentArticle.Replies}} 回复
+                {{if and .ParentArticle.ReplyLockMode .ShowReplyLockInfo}}
+                {{if eq .ParentArticle.ReplyLockMode 1}}/ 禁止回复<style>#post-button{display:none}</style>{{end}}
+                    {{if eq .ParentArticle.ReplyLockMode 2}}/ 仅限作者关注的人回复{{end}}
+                    {{if eq .ParentArticle.ReplyLockMode 3}}/ 仅限作者关注和被@的人回复{{end}}
+                    {{if eq .ParentArticle.ReplyLockMode 4}}/ 仅限作者关注的和其粉丝回复{{end}}
+                {{end}}
+            </span>
+            <button style='float:right' class="gbutton tmpl-green-text" onclick="postBox('{{.ReplyView.UUID}}','{{.ReplyView.ReplyTo}}', window.name)" id=post-button>
+                <i class=icon-comment></i> 回复 
+            </button>
         </div>
-        {{end}}
-
-        {{template "reply_view.html" .ReplyView}}
 
         <div class="row-reply-inserter" style="display:none"></div>
 
@@ -26,13 +46,10 @@
 
     <div class="paging">
         {{if .Next}}
-        <button
-            value="{{.Next}}"
-            class="gbutton load-more"
-            onclick="loadMore('timeline{{.ReplyView.UUID}}',this,{reply:true})">更多回复...</button>
-
-        {{else}}
-        <a class="gbutton tmpl-light-text">没有更多回复</a>
+        <button id="load-more" value="{{.Next}}" class="gbutton" onclick="loadMore(this,{reply:true})">更多回复...</button>
         {{end}}
+        <script>
+            window.name = "win{{.ReplyView.UUID}}"
+        </script>
     </div>
 </div>

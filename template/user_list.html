@@ -1,37 +1,43 @@
 {{template "header.html" .}}
 {{$own := eq $.You.ID $.User.ID}}
 
+<style>
+.navbar-titlebar {
+    text-align: center;
+}
+</style>
+
 <div class="status-box">
     {{if eq .ListType "followings"}}
         {{if $own}}
-            <title>我的关注</title>
-            {{template "user_private.html" .User}}
+            <title>关注列表</title>
+            <div class="navbar-titlebar">关注列表</div>
         {{else}}
             <title>{{.User.DisplayName}}的关注</title>
-            {{template "user_public.html" .User}}
+            <div class="navbar-titlebar">{{template "display_name.html" .User}}的关注</div>
         {{end}}
     {{else if eq .ListType "blacklist"}}
         <title>黑名单</title>
-        {{template "user_private.html" .User}}
+        <div class="navbar-titlebar">黑名单</div>
     {{else if eq .ListType "twohops"}}
         <title>关系</title>
-        {{template "user_public.html" .User}}
+        <div class="navbar-titlebar">与{{template "display_name.html" .User}}的关系</div>
     {{else}}
         {{if $own}}
-            <title>我的粉丝</title>
-            {{template "user_private.html" .User}}
+            <title>粉丝列表</title>
+            <div class="navbar-titlebar">粉丝列表</div>
         {{else}}
             <title>{{.User.DisplayName}}的粉丝</title>
-            {{template "user_public.html" .User}}
+            <div class="navbar-titlebar">{{template "display_name.html" .User}}的粉丝</div>
         {{end}}
     {{end}}
 </div>
 
-<div class="articles tmpl-border" style="border-top:solid 1px transparent">
+<div style="padding: 0.5em">
 
 {{range .List}}
     {{if .FullUser}}
-    <div style="display: flex; line-height: 2.5em">
+    <div style="display: flex; line-height: 3em;margin: 0 0.5em">
         <div style="flex-shrink:0;white-space:nowrap;margin-right:0.5em">{{formatTime .Time}}</div>
         {{if ne $.ListType "twohops"}}
         <div style="flex: 1 100%; overflow: hidden; text-overflow: ellipsis;">
@@ -60,7 +66,7 @@
                 {{else if .TwoHopsFollowing}}
                     <button class=gbutton>粉丝</button>
                 {{else if .CommonFollowing}}
-                    <button class=gbutton>你们共同关注</button>
+                    <button class=gbutton>共同关注</button>
                 {{end}}
             {{else}}
                 {{if $own}}
@@ -86,7 +92,7 @@
     {{end}}
     {{end}}
 
-    <div class=tmpl-border style="margin: 0.5em 0;padding-top:0.5em;border-top:solid 1px transparent;text-align:center">
+    <div style="margin: 0.5em 0;padding-top:0.5em;text-align:center">
         {{if .Next}}
             {{if .List}}
                 <a href="?n={{.Next}}" class=gbutton>更多 &raquo;</a>
@@ -95,12 +101,7 @@
                 <script>setTimeout(function() { location.reload() }, 2000)</script>
             {{end}}
         {{else}}
-            <a href="?n=" class="gbutton tmpl-light-text">没有更多结果</a>
+            <a href="?n=" class="gbutton tmpl-light-text">空</a>
         {{end}}
     </div>
 </div>
-
-
-<style>
-.post-author { margin: 0 }
-</style>

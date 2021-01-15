@@ -1,0 +1,321 @@
+{{template "header.html" .}}
+<script src="/s/js/tribute.min.js"></script>
+<script src="/s/js/dropzone.min.js"></script>
+<link rel="stylesheet" href="/s/assets/dropzone.min.css?ver=5" />
+
+<title>{{if .ReplyTo}}回复 {{.ReplyTo}}{{else}}发布{{end}}</title>
+
+<style>
+nav, #footer {
+    display: none;
+}
+    #main-content {
+        display: flex;
+        flex-direction: column;
+    }
+</style>
+
+<div id="post-box" class="tmpl-input-bg" style="flex: 1 0 auto;display:flex;flex-direction:column;position:relative;text-align:left">
+    <div>
+        <div class="window-open">
+            <div class="post-options">
+                <button class=gbutton onclick="onClose(true)">
+                    <i class=icon-left-small></i> 返回
+                </button>
+            </div>
+            <div class="post-options" style="float:right">
+                <button class="gbutton tmpl-green-text" onclick="onPost(this, '{{.ReplyTo}}')">
+                    发送 <i class=icon-comment></i>
+                </button>
+            </div>
+        </div>
+
+        <div style="padding: 0.5em;border-bottom:dashed 1px white" class=tmpl-dark-border>
+            <div class="post-options">
+                <button name=reply-lock class=gbutton onclick="lockArticle(this)" value=0>
+                    <i class=icon-lock></i>
+                    <i class=icon-lock-open></i>
+                </button>
+            </div>
+
+            <div class="post-options post-options-emoji" onmousemove="emojiMajiang('')">
+                <button class=gbutton><i class="icon-emo-devil"></i><i class="icon-down-dir right"></i></button>
+                {{template "emoji.html" .}}
+            </div>
+
+            <div class="post-options">
+                <button class=gbutton>选项<i class="icon-down-dir right"></i></button>
+                <ul>
+                    <li>
+                        <span onclick="insertTag(this, '[code]','代码块','[/code]')">
+                            <i class=icon-code></i>
+                            插入 <span style="font-family:monospace">[code][/code]</span>
+                        </span>
+                    </li>
+                    {{if .ReplyTo}}
+                    <li>
+                        <span onclick="insertTag(this, '#ReportThis\n', '举报理由', '')">
+                            <i class=icon-police></i>
+                            举报该状态
+                        </span>
+                    </li>
+                    <li>
+                        <input type=checkbox name=notimeline id="notimeline" class=icon-input-checkbox>
+                        <i class=icon-ok-circled2></i>
+                        <label for="notimeline">不同步至我的时间线</label>
+                    </li>
+                    {{else}}
+                    <li>
+                        <input type=checkbox name=nomaster id="nomaster" class=icon-input-checkbox {{if .DefaultNoMaster}}checked{{end}}>
+                        <i class=icon-ok-circled2></i>
+                        <label for="nomaster">不同步至广场</label>
+                    </li>
+                    <li>
+                        <input type=checkbox name=stickontop id="stickontop" class=icon-input-checkbox>
+                        <i class=icon-ok-circled2></i>
+                        <label for="stickontop">置顶状态</label>
+                    </li>
+                    <li>
+                        <input onchange='if(this.checked)(function(){
+                               if ($q("#post-box textarea").value) return;
+                               insertTag(this, "", "投票标题\n选项1\n选项2\n...\n选项6(最多)","")
+                               })()' type=checkbox name=poll id="poll" class=icon-input-checkbox>
+                        <i class=icon-ok-circled2></i>
+                        <label for="poll">将发文用作投票</label>
+                    </li>
+                    {{end}}
+                    <li>
+                        <input type=checkbox name=isnsfw id="isnsfw" class=icon-input-checkbox>
+                        <i class=icon-ok-circled2></i>
+                        <label for="isnsfw">
+                            标记图片为<i class='icon-eye-off'></i>NSFW
+                        </label>
+                    </li>
+                </ul>
+            </div>
+
+            {{if not .ReplyTo}}
+            <div class="post-options">
+                <button class=gbutton name=anon onclick="this.value?this.value='':(this.value='1',$popup('开启匿名'))">
+                    <i class=icon-user-secret></i>
+                </button>
+            </div>
+            {{end}}
+        </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;flex:1 0 auto">
+        <div style="flex: 1 0 auto;position:relative">
+            <textarea
+                name=content
+                maxlength=1024
+                placeholder="写下你的想法..."
+                onpaste="onPaste(event.clipboardData||window.clipboardData)"
+                style="background-color:transparent;padding:0.66em;border:none;display:block;position:absolute;width:100%;height:100%;resize:none"></textarea>
+        </div>
+
+        <div class=tmpl-dark-border style="border-top:dashed 1px white;flex: 0 0 auto;max-height:200px;overflow-y:scroll;background:rgba(255,255,255,0.02)">
+            <div class="dropzone tmpl-dark-border">
+                <input type="file" multiple style="display:none" name="file">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function() {
+        function remoteSearch(text, cb) {
+            $post("/api/search", { id: text }, function(results) {
+                if (results && results.length) {
+                    results.forEach(function(t, i) {
+                        results[i] = { key: t.Display, id: t.ID, is_tag: t.IsTag } 
+                    });
+                }
+                JSON.parse(window.localStorage.getItem('presets') || '[]')
+                    .filter(function(t){ return t; })
+                    .forEach(function(t) {
+                        results.push({ key: t, id: t.substring(1), is_tag: t.substring(0, 1) == '#' }) 
+                    });
+                var seen = {};
+                results = results.filter(function(item) {
+                    return seen.hasOwnProperty(item.key) ? false : (seen[item.key] = true);
+                });
+                cb(results);
+            })
+        }
+
+        Dropzone.autoDiscover = false;
+        
+        new Tribute({
+            collection: [
+                {
+                    trigger: '@',
+                    selectClass: 'highlight',
+                    containerClass: 'tribute-container',
+                    selectTemplate: function (item) { return '@' + item.original.id; },
+                    lookup: 'key',
+                    values: remoteSearch,
+                }, {
+                    trigger: '#',
+                    selectClass: 'highlight',
+                    containerClass: 'tribute-container',
+                    selectTemplate: function (item) { return '#' + item.original.id; },
+                    lookup: 'key',
+                    values: remoteSearch,
+                }
+            ]
+        }).attach($q("#post-box textarea"));
+
+        new Dropzone($q("#post-box .dropzone"), {
+            url: "/api/upload_image",
+            maxFilesize: 16,
+            maxFilesize: 5,
+            addRemoveLinks: true,
+            dictRemoveFile: "<u style='cursor:pointer'>删除</u>",
+            dictFileTooBig: "文件过大 (上限5M)",
+            dictCancelUpload: "<span class='tmpl-mid-text'>上传中</span> <u style='cursor:pointer'>取消</u>",
+            dictCancelUploadConfirmation: "取消上传该图片？"
+        }).on("success", function(f, id) {
+            f._removeLink.setAttribute('data-uri', id);
+        });
+
+        $q("#post-box textarea").focus()
+    })()
+
+function onClose(user) {
+    if (user) {
+        if ($q("#post-box textarea").value && !confirm('退出编辑?')) return;
+    }
+    closeWin();
+}
+
+function onPaste(data) {
+    var items = data.files, input = $q('.dz-hidden-input');
+    if (items && items.length) {
+        input = input.length ? input[input.length - 1] : input;
+        input.files = items;
+        input.dispatchEvent(new CustomEvent('change'));
+    }
+}
+
+function onPost(el, p) {
+    var ta = $q("#post-box [name=content]"),
+        res = ta.value.match(/((@|#)\S+)/g),
+        one = function(key) {
+            return $q("#post-box [name=" + key + "]").checked ? "1" : "";
+        }
+
+    if (res) {
+        var e = JSON.parse(window.localStorage.getItem("presets") || "[]");
+        e = e.concat(res);
+        e = e.filter(function(el, i) { return e.indexOf(el) == i; });
+        e = (e.length <= 16) ? e : e.slice(e.length - 16);
+        window.localStorage.setItem("presets", JSON.stringify(e));
+    }
+
+    var ids = [], stop = $wait(el);
+    $q('#post-box .dz-remove', true).forEach(function(el) {
+        var u = el.getAttribute("data-uri");
+        u ? ids.push(u) : 0;
+    })
+
+    $post("/api2/new", {
+        parent: p,
+        content: ta.value,
+        media: ids.join(';'),
+        anon: $q("#post-box [name=anon]").value,
+        nsfw: one("isnsfw"),
+        no_master:  one("nomaster"),
+        no_timeline: one("notimeline"),
+        stick_on_top: one("stickontop"),
+        poll: one("poll"),
+        reply_lock: $value($q("#post-box [name=reply-lock]")),
+    }, function (res, h) {
+        stop();
+        if (res.substring(0, 3) !== "ok:") return res;
+        localStorage.setItem("RESULT", JSON.stringify({
+            html: decodeURIComponent(res.substr(3)),
+            uuid: "{{.UUID}}",
+            parent: "{{.ReplyTo}}"
+        }));
+        onClose();
+    }, stop)
+}
+
+function emojiMajiang() {
+    var ul = $q('#post-box .post-options-emoji ul');
+    if (ul.LOADED) return;
+    ul.LOADED = true;
+
+    var omits = [4, 9, 56, 61, 62, 87, 115, 120, 137, 168, 169, 211, 215, 175, 210, 213, 209, 214, 217, 206],
+        history = JSON.parse(localStorage.getItem("EMOJIS") || '{}'),
+        add = function(i, front, ac) {
+            var li = $q("<li>"), img = $q("<img>"), idx = ac ? i : ("000"+i).slice(-3);
+            img.src = ac ?
+                "/s/emoji/" + idx + '.png' :
+                'https://static.saraba1st.com/image/smiley/face2017/' + idx + '.png';
+                img.setAttribute("loading", "lazy");
+            img.setAttribute("class", ac ? "ac-emoji" : "");
+            img.onclick = function() {
+                var e = JSON.parse(localStorage.getItem("EMOJIS") || '{}');
+                e[idx] = {w:new Date().getTime(),k:idx};
+                localStorage.setItem('EMOJIS', JSON.stringify(e));
+                insertMention(img, '[mj]' + idx + '[/mj]');
+            }
+            li.appendChild(img);
+            front ? ul.insertBefore(li, ul.querySelector('li')) : ul.appendChild(li);
+        };
+
+    Object.values(history)
+        .sort(function(a,b) { return a.w > b.w })
+        .map(function(k) { return history[(k || {}).k] })
+        .forEach(function(e) {
+            var i = (e || {}).k || "";
+            if (!i.match(/(\d{3}|ac\d+|a2_\d+)/)) return;
+            omits.push(i);
+            add(i, true, i.substr(0, 1) == 'a');
+        });
+
+    for (var i = 1; i <= 226; i++) {
+        if (omits.includes(i)) continue;
+        add(i);
+    }
+
+    var ac = ["ac0", "ac1", "ac2", "ac3", "ac4", "ac5", "ac6", "ac8", "ac9", "ac10", "ac11", "ac12", "ac13", "ac14", "ac15", "ac17", "ac23", "ac21", "ac33", "ac34", "ac35", "ac36", "ac37", "ac22", "ac24", "ac25", "ac26", "ac27", "ac28", "ac29", "ac16", "ac18", "ac19", "ac20", "ac30", "ac32", "ac40", "ac44", "ac38", "ac43", "ac31", "ac39", "ac41", "ac7", "ac42", "a2_02", "a2_05", "a2_03", "a2_04", "a2_07", "a2_08", "a2_09", "a2_10", "a2_14", "a2_16", "a2_15", "a2_17", "a2_21", "a2_23", "a2_24", "a2_25", "a2_27", "a2_28", "a2_30", "a2_31", "a2_32", "a2_33", "a2_36", "a2_51", "a2_53", "a2_54", "a2_55", "a2_47", "a2_48", "a2_45", "a2_49", "a2_18", "a2_19", "a2_52", "a2_26", "a2_11", "a2_12", "a2_13", "a2_20", "a2_22", "a2_42", "a2_37", "a2_38", "a2_39", "a2_41", "a2_40"];
+    for (var i = 0; i < ac.length; i++) {
+        if (omits.includes(i)) continue;
+        add(ac[i], false, true);
+    }
+}
+
+function insertMention(btn, e) {
+    var el = $q("#post-box [name=content]")
+    if (e.startsWith("@") || e.startsWith("#"))
+        el.value = el.value.replace(/(@|#)\S+$/, "") + e + " ";
+    else
+        el.value += e;
+    el.focus();
+    el.selectionStart = el.value.length;
+    el.selectionEnd = el.selectionStart; 
+    if (btn) hackHide(btn);
+}
+
+function insertTag(btn, start, text, end) {
+    var el = $q("#post-box [name=content]");
+    if (el.value) start = "\n" + start;
+    el.value += start + text + end;
+    el.focus();
+    el.selectionStart = el.value.length - end.length - text.length;
+    el.selectionEnd = el.selectionStart + text.length;
+    hackHide(btn);
+}
+
+function hackHide(el) {
+    if (!el) return;
+    while(el && el.tagName !== 'UL') el = el.parentNode;
+    // el.parentNode.onmouseout = function(e) { el.style.display = null; }
+    el.style.display='none';
+    el.parentNode.onmouseenter = function(e) { el.style.display = null; }
+    el.parentNode.onmousemove = function(e) { el.style.display = null; }
+}
+</script>
