@@ -43,19 +43,12 @@ input[type=number] { -moz-appearance: textfield; }
                     <i class="icon-logout"></i> 退出账号
                 </a>
             </div>
-            {{range ipChainLookup .User.DataIP}}
-            <div style="display:flex;line-height:1.5em">
-                <span style="flex:0 0 auto">{{index . 0}}</span>
-                <span style="flex:1 0 auto;padding:0 0.5em">{{index . 1}}</span>
-                <span style="flex:0 0 auto">{{formatTime (index . 2)}}</span>
-            </div> 
-            {{end}}
         </div>
     </div>
 
     <div class="settings-box">
         <div class="title tmpl-row-light-bg"><b style="flex-grow: 1">设置</b></div>
-        <div class="body">
+        <div class="body" style="padding:0 0.5em">
             <div>
                 管理 <a class="tmpl-green-text" href="/user/blacklist"><i class=icon-block></i> 黑名单</a>
             </div>
@@ -93,6 +86,13 @@ input[type=number] { -moz-appearance: textfield; }
         <div class="title tmpl-navbar-titlebar-bg" style="text-align:center"><b style="flex-grow: 1">安全</b></div>
 
         <div class=body>
+            {{range ipChainLookup .User.DataIP}}
+            <div style="display:flex;line-height:1.5em">
+                <span style="flex:0 0 auto">{{index . 0}}</span>
+                <span style="flex:1 1 auto;padding:0 0.5em">{{index . 1}}</span>
+                <span style="flex:0 0 auto">{{formatTime (index . 2)}}</span>
+            </div> 
+            {{end}}
             <div>
                 <input name=old-password type=password class=t placeholder=原密码>
             </div>

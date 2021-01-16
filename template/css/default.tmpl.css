@@ -141,7 +141,7 @@ nav a:hover {
 }
 
 img.majiang { width: 28px; height: 28px; }
-img.majiang.ac-emoji { width: 48px; height: 48px; background: white }
+img.majiang.ac-emoji { width: 48px; height: 48px; }
 
 span.time.sec:after { content: '秒前' }
 span.time.min:after { content: '分钟前' }
@@ -300,11 +300,11 @@ span.deleted:after {
     background: {{.Navbar}};
 }
 .post-options-emoji img {width: 24px; height: 24px;}
-.post-options-emoji img.ac-emoji {width: 36px; height: 36px; background: white }
+.post-options-emoji img.ac-emoji {width: 36px; height: 36px }
 .post-options-emoji:hover ul {
     display: flex;
     flex-wrap: wrap;
-    overflow-y: scroll;
+    background: {{.InputBG}};
     border-bottom-left-radius: 0.5em;
     border-bottom-right-radius: 0.5em;
     box-shadow: 0 2px 2px rgba(0, 0, 0, .3);
@@ -459,8 +459,8 @@ img.kimochi-selector[kimochi="0"] {
 }
 
 .article-row-header .author-container { top: 0; bottom: 1.5em; }
-
 .article-row-header .what-container { top: 1.5em; bottom: 0; padding: 0 0.5em }
+.article-row-header .what-container a:hover {text-decoration:none;color:{{.GreenText}}}
 
 .settings-box .title { padding: 0.8em 0.5em; text-align: center }
 .settings-box .body > div { padding: 0.5em; }
