@@ -26,9 +26,25 @@
                     {{if eq .ParentArticle.ReplyLockMode 4}}/ 仅限作者关注的和其粉丝回复{{end}}
                 {{end}}
             </span>
-            <button style='float:right' class="gbutton tmpl-green-text" onclick="postBox('{{.ReplyView.UUID}}','{{.ReplyView.ReplyTo}}', window.name)" id=post-button>
-                <i class=icon-comment></i> 回复 
-            </button>
+            <div style='float:right' >
+                <button class="gbutton" onclick='(function(btn) {
+                        var stop = $wait(btn);
+                        $post("/api2/new", { parent: "{{.ParentArticle.ID}}" }, function (res, h) {
+                        stop();
+                        if (res.substring(0, 3) !== "ok:") return res;
+                        localStorage.setItem("RESULT", JSON.stringify({
+                        html: decodeURIComponent(res.substr(3)),
+                        uuid: "{{.ReplyView.UUID}}",
+                        parent: "{{.ParentArticle.ID}}"
+                        }));
+                        }, stop);
+                        })(this)'>
+                    <i class=icon-link></i> 转发 
+                </button>&nbsp;
+                <button class="gbutton tmpl-green-text" onclick="postBox('{{.ReplyView.UUID}}','{{.ReplyView.ReplyTo}}', window.name)" id=post-button>
+                    <i class=icon-comment></i> 回复
+                </button>
+            </div>
         </div>
 
         <div class="row-reply-inserter" style="display:none"></div>

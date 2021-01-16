@@ -8,9 +8,9 @@
         <div class="status-box tmpl-row-light-bg">{{template "user_public.html" .User}}</div>
     {{end}}
 {{else if .IsInbox}}
-    <title>我的提醒</title>
+    <title>提醒</title>
 {{else if .IsUserLikeTimeline}}
-    <title>{{.User.DisplayName}} 的收藏</title>
+    <title>{{.User.DisplayName}} 的收藏夹</title>
 {{else if .IsTagTimeline}}
     <title>{{.Tag}} ({{.PostsUnderTag}})</title>
 {{else if .IsSearchTimeline}}
@@ -23,7 +23,7 @@
     </form>
 {{else}}
     <div class="status-box tmpl-row-light-bg">
-        <title>我的时间线</title>
+        <title>个人时间线</title>
         <div>{{template "user_private.html" .User}}</div>
     </div>
 {{end}}
@@ -55,7 +55,7 @@
             {{end}}
             {{.Tag}} ({{.PostsUnderTag}})
         {{else if .IsUserLikeTimeline}}
-            {{if eq .You.ID .User.ID}}我{{else}}{{.User.DisplayName}}{{end}}的收藏
+            {{if eq .You.ID .User.ID}}{{else}}{{.User.DisplayName}}的{{end}}收藏夹
         {{end}}
     </div>
     {{end}}
@@ -128,21 +128,9 @@
     {{end}}
 
     {{else}}
-    <a class="gbutton tmpl-light-text" href="#">
-        {{if .IsUserTimeline}}
-            {{if eq .User.ID "master"}}
-                没有更多状态了
-            {{else}}
-                没有更多{{.User.ID}}的状态了
-            {{end}}
-        {{else if .IsInbox}}
-            没有更多提醒了
-        {{else if .IsSearchTimeline}}
-            {{if .Tag}} 没有更多结果了 {{end}}
-        {{else}}
-            没有更多状态了
+        {{if and (not .Articles) (or .IsInbox .IsUserLikeTimeline .IsSearchTimeline)}}
+        <a class="gbutton tmpl-light-text" href="#">空</a>
         {{end}}
-    </a>
     {{end}}
     <script>
         window.name = "win{{.ReplyView.UUID}}"

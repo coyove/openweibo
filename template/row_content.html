@@ -101,10 +101,12 @@
         {{end}}
 
         {{if not .GreyOutReply}}
+        {{if .Content}}
         <a class="gbutton" href="javascript:window.open('{{.Link}}?win=' + window.name).S=1">
             <i class="icon-reply-outline"></i>
             {{if .Replies}}{{.Replies}}{{end}}
         </a>
+        {{end}}
         {{end}}
 
         <a class="gbutton" href="javascript:void(0)" onclick="likeArticle(this, '{{.ID}}')" liked={{.Liked}}>

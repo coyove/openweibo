@@ -74,7 +74,10 @@ func APINew(g *gin.Context) {
 			content = string(tmp)
 		}
 	}
-	throw(len(content) < 3 && image == "", "content_too_short")
+
+	if replyTo == "" {
+		throw(len(content) < 3 && image == "", "content_too_short")
+	}
 
 	a := &model.Article{
 		Author:        u.ID,
