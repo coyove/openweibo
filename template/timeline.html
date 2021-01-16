@@ -14,19 +14,13 @@
 {{else if .IsTagTimeline}}
     <title>{{.Tag}} ({{.PostsUnderTag}})</title>
 {{else if .IsSearchTimeline}}
-<title>{{if .Tag}}{{.Tag}} 的搜索结果{{else}}搜索{{end}}</title>
-    <div class="status-box">
-        <form onsubmit="location.href='/search/'+encodeURIComponent(this.querySelector('input').value);return false">
-            <div class="status">
-                <div class=title>
-                    <div style="display:flex;width:100%;margin:0.5em 0" class="tmpl-border tmpl-input-bg">
-                        <input style="width:100%;line-height:1.5em;text-align:left" placeholder="搜索" class=t value="{{.Tag}}" autofocus>
-                        <input type=submit style="position: absolute; left: -9999px">
-                    </div>
-                </div>
-            </div>
-        </form>
-    </div>
+    <title>{{if .Tag}}{{.Tag}} 的搜索结果{{else}}搜索{{end}}</title>
+    <form onsubmit="location.href='/search/'+encodeURIComponent(this.querySelector('input').value);return false">
+        <div style="display:flex;width:100%;padding:0.5em" class="tmpl-border tmpl-input-bg">
+            <input style="width:100%;line-height:1.5em;text-align:left" placeholder="搜索" class=t value="{{.Tag}}" autofocus>
+            <input type=submit style="position: absolute; left: -9999px">
+        </div>
+    </form>
 {{else}}
     <div class="status-box tmpl-row-light-bg">
         <title>我的时间线</title>
@@ -103,13 +97,12 @@
 </div>
 
     {{if .ShowNewPost}}
-    <div style="position:relative;text-align:center;padding: 0.5em;border-top:solid 1px white" class=tmpl-dark-border>
+    <div style="position:relative;text-align:center;padding:0.5em;border-top:solid 1px white" class=tmpl-dark-border>
         <button class="gbutton tmpl-green-text" onclick="postBox('{{.ReplyView.UUID}}')" id="post-button">
             <i class=icon-comment></i> 发布状态
         </button>
-        <div style="position:absolute;margin-left:-6px;left:50%;bottom:0">
-            <i class="icon-down-dir tmpl-green-text"></i>
-        </div>
+        <div style="position:absolute;margin-left:-6px;left:50%;bottom:0"><i class="icon-down-dir tmpl-green-text"></i></div>
+        <div style="position:absolute;margin-left:-6px;left:50%;bottom:-6px"><i class="icon-down-dir tmpl-green-text"></i></div>
     </div>
     {{end}}
 

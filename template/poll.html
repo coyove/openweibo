@@ -25,9 +25,8 @@
 	<input id="poll-{{$s}}-{{$votes}}"
 	    {{if $you_vote_this_choice}}checked{{end}}
 	    name="poll{{$s}}"
-	    class="poll-choice icon-input-checkbox"
+	    class="poll-choice"
 	    type={{$t}}>
-	<i class=icon-ok-circled2></i>
 	{{end}}
 
 	{{if $you_vote_this_choice}}<strong>{{end}}

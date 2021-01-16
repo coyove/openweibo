@@ -51,6 +51,10 @@ button, input, textarea {
     background: {{.InputBG}};
 }
 
+input[type=radio], input[type=checkbox] {
+    margin-right: 0.2em;
+}
+
 ::placeholder {
     color: {{.MidGrayText}};
     opacity: 1;
@@ -69,7 +73,7 @@ input:focus, select:focus, textarea:focus, button:focus, div[contentEditable=tru
     outline: none;
 }
 
-input[type=text], input:not(.poll-choice), textarea, select {
+input[type=text], input.t, textarea, select {
    -webkit-appearance: none;
    border-radius: 0;
    border: solid 1px {{.Border}};
@@ -77,7 +81,7 @@ input[type=text], input:not(.poll-choice), textarea, select {
 
 a {
     text-decoration: none;
-    color: {{.Link}};
+    color: {{.Button}};
 }
 
 a:hover {
@@ -91,26 +95,6 @@ a:hover {
     position: relative;
     min-height: 100%;
     background: {{.ContainerBG}};
-}
-
-.articles {
-    width: 100%;
-    border-collapse: collapse;
-    text-align: left;
-}
-
-.articles > div {
-    margin: 0.5em;
-}
-
-.articles td {
-    padding: 0.5em; 
-    line-height: 1.5em;
-}
-
-.articles td.nowrap {
-    white-space: nowrap;
-    width: 1px;
 }
 
 input.t, textarea, select.t {
@@ -129,7 +113,7 @@ pre {
 nav {
     line-height: 3em;
     background: {{.Navbar}};
-    border-bottom: solid 2px {{.NavbarBottom}};
+    border-bottom: solid 2px rgba(0,0,0,0.04);
 }
 
 nav a {
@@ -138,12 +122,12 @@ nav a {
     color: {{.NormalText}} !important;
 	text-decoration: none;
     padding: 0 0.66em;
-    transition: background 0.33s;
+    transition: background 0.3s;
 }
 
 nav a:hover {
     text-decoration: none;
-    background: {{.RowHeader}};
+    background: rgba(0,0,0,0.1);
 }
 
 .paging {
@@ -170,16 +154,8 @@ span.time i { font-style: normal; opacity: 0.6 }
 
 span.deleted:after {
     content: '内容已删除，不要想了';
-    text-shadow: 0 0 5px {{.TextShadow}};
+    text-shadow: 0 0 5px {{.NormalText}};
     color: transparent;
-}
-
-span.abbr:after {
-    content: '...重复内容';
-    font-weight: bold;
-    color: {{.LightText}};
-    display: inline-block;
-    margin-left: 0.5em
 }
 
 .article-row.status {
@@ -188,10 +164,6 @@ span.abbr:after {
     width: 100%;
     z-index: 10000;
 }
-
-{{if eq .Mode "dark"}}
-.user-info-box .status { border: solid 1px {{.DarkBorder}}; }
-{{end}}
 
 .user-info-box {
     border-radius: 0.5em;
@@ -202,6 +174,10 @@ span.abbr:after {
 [mod=true] {
     color: {{.ModText}} !important;
     font-weight: bold;
+}
+
+.media-container {
+    margin: 0.5em 0 0;
 }
 
 .media {
@@ -292,7 +268,8 @@ span.abbr:after {
 }
 
 #post-button + div { opacity: 1; transition: opacity 0.3s }
-#post-button:hover + div { opacity: 0 }
+#post-button + div + div { opacity: 1; transition: opacity 0.5s }
+#post-button:hover + div, #post-button:hover + div + div { opacity: 0 }
 
 .post-options {
     display: inline-block;
@@ -320,20 +297,20 @@ span.abbr:after {
     z-index: 1000;
 }
 .post-options ul li:hover {
-    background: {{.DropdownItemHover}};
+    background: {{.Navbar}};
 }
 .post-options-emoji img {width: 24px; height: 24px;}
 .post-options-emoji img.ac-emoji {width: 36px; height: 36px; background: white }
 .post-options-emoji:hover ul {
     display: flex;
     flex-wrap: wrap;
-    width: 240px;
-    height: 250px;
     overflow-y: scroll;
+    border-bottom-left-radius: 0.5em;
+    border-bottom-right-radius: 0.5em;
+    box-shadow: 0 2px 2px rgba(0, 0, 0, .3);
 }
-.post-options-emoji a {
-    text-decoration: none !important;
-}
+.post-options-emoji a { text-decoration: none !important }
+.post-options-emoji li { border-radius: 5px }
 
 img.kimochi-selector[kimochi="0"] {
     border: dashed 1px {{.NormalText}};
@@ -346,6 +323,7 @@ img.kimochi-selector[kimochi="0"] {
     cursor: pointer;
     display: flex;
     line-height: 2em;
+    background: {{.Row}};
 }
 
 .tagrow:first-child {
@@ -376,10 +354,11 @@ img.kimochi-selector[kimochi="0"] {
 .hidden-text:hover, .hidden-text:active { color: {{.BodyBG}} }
 
 .poll-article {  margin: 0.5em 0 }
-.poll-article .poll-item { position:relative; padding: 0.5em; line-height:1.5em}
-.poll-article .poll-item[voted=true]:nth-child(odd):after {
-    content: ' '; display: block; background: rgb(0,0,0,0.033); position: absolute;
-    left: 0; top: 0; width: 100%; height: 100%; pointer-events: none;
+.poll-article .poll-item {
+    padding: 0.5em;
+    margin: 0.5em 0;
+    line-height:1.5em;
+    border-radius: 0.5em;
 }
 .poll-article input { margin-right: 0.5em }
 .poll-article .poll-votes {
@@ -387,12 +366,6 @@ img.kimochi-selector[kimochi="0"] {
     padding:0 0.5em;border:solid 1px {{.Border}};border-radius:0.7em
 }
 .poll-article .poll-item[voted=true] { background: {{.Navbar}} }
-
-.window-open {
-    padding: 0.5em;
-    border-bottom:solid 1px {{.DarkBorder}};
-    background: {{.Row}};
-}
 
 .newly-added-row:after {
     content: ' ';
@@ -405,22 +378,17 @@ img.kimochi-selector[kimochi="0"] {
 
 .newly-added-row.finished:after { opacity: 0; }
 
-.tmpl-link-text { color: {{.Link}} !important }
 .tmpl-normal-text { color: {{.NormalText}} !important }
-.tmpl-light-text { color: {{.LightText}} !important }
 .tmpl-mid-text { color: {{.MidGrayText}} !important }
 .tmpl-red-text { color: {{.RedText}} !important }
-.tmpl-orange-text { color: {{.OrangeText}} !important }
 .tmpl-nsfw-text { color: {{.NSFWText}} !important }
 .tmpl-green-text { color: {{.GreenText}} !important }
 .tmpl-border { border-color: {{.Border}} !important }
-.tmpl-dark-border { border-color: {{.DarkBorder}} !important }
 .tmpl-light-bg { background: {{.LightBG}} !important }
 .tmpl-row-light-bg { background: {{.Row}} !important }
-.tmpl-inbox-message-text { color: {{.InboxMessage}} !important }
 .tmpl-input-bg { background: {{.InputBG}} !important }
 .tmpl-body-bg { background-color: {{.BodyBG}} !important }
-.tmpl-userbox-title { background-color: {{.UserBoxTitle}} !important }
+.tmpl-navbar-titlebar-bg { background-color: {{.NavbarTitlebar}} !important }
 
 .navbar-titlebar {
     background: {{.NavbarTitlebar}} !important;
@@ -438,7 +406,12 @@ img.kimochi-selector[kimochi="0"] {
 }
 
 .article-row pre {
-    font-size:110%;padding:0.8em 0.2em 0.5em;
+    font-size:110%;
+    padding:0.8em 0.5em 0;
+}
+
+.article-row .foobar {
+    margin-top: 0.5em;
 }
 
 .subreply .article-row {
@@ -449,16 +422,6 @@ img.kimochi-selector[kimochi="0"] {
     background: linear-gradient(rgba(166, 166, 255, 0.05) 0, transparent 10em);
     {{else}}
     background: linear-gradient(rgba(0, 0,0,0.04) 0, transparent 10em);
-    {{end}}
-}
-
-.clsreply .article-row {
-    margin: 0.5em 0;
-    border-radius: 0.5em;
-    {{if eq .Mode "dark"}}
-    background: rgba(166, 166, 255, 0.05);
-    {{else}}
-    background: rgba(0, 0,0,0.04);
     {{end}}
 }
 
@@ -498,3 +461,6 @@ img.kimochi-selector[kimochi="0"] {
 .article-row-header .author-container { top: 0; bottom: 1.5em; }
 
 .article-row-header .what-container { top: 1.5em; bottom: 0; padding: 0 0.5em }
+
+.settings-box .title { padding: 0.8em 0.5em; text-align: center }
+.settings-box .body > div { padding: 0.5em; }

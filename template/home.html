@@ -11,61 +11,51 @@
   }
 </style>
 
-  <div style="width:100%;height:100%;background-position:top;background-size:cover;background-image:url(/eriri.jpg?q={{$s}});left:0;top:0;position:absolute;z-index:0;opacity:0.12"></div>
-  <!--[if lte IE 10]> 
-      <div style="color:red">
-	本站不支持IE10及以下版本
-      </div>
-      <![endif]-->
-       <div style="overflow: hidden;margin:0 auto;position:relative;text-align:center;max-width:350px">
-	 <form method="POST" action="/user" style="flex-grow:1" onsubmit="return false">
-	   <table class="articles">
-	     <tr>
-	       <td><input placeholder="ID" autofocus class=t name=username value required></td>
-	     </tr>
-	     <tr>
-	       <td><input placeholder="密码" type=password class=t name=password value required></td>
-	     </tr>
-	     <tr>
-	       <td style="text-align:right;line-height:2.5em">
-		 <div style="float:left">
-		   <input type=checkbox id=remember class=icon-input-checkbox checked>
-		   <i class='icon-ok-circled2'></i>
-		   <label for=remember>记住我</label>
-		 </div>
-		 <button class="gbutton"
-			 type=submit
-			 onclick="$postReload(this,'/api2/login',{
-				  'username': $q('[name=username]').value,
-				  'password': $q('[name=password]').value,
-				  'remember': $q('#remember').checked ? '1' :'',
-				  })">登入</button>
-	       </td>
-	     </tr>
-	     <tr><td></td></tr>
-	     <tr><td>
-		 <a href="/eriri.jpg?q={{$s}}&goto=1" target=_blank>yande.re &raquo;</a>&emsp;
-		 <a href="https://www.acfun.cn/" target=_blank>AC娘 &raquo;</a>&emsp;
-		 <a href="https://bbs.saraba1st.com/" target=_blank>S1麻将 &raquo;</a>
-	     </td></tr>
-	     <tr><td>欢迎来到fwbocnmbpbgo系统。您可以<a style href="/user">注册新用户</a>以发布状态，或者匿名使用pastebin服务:</td></tr>
-	     <tr><td>
-		 <style>
-		   div.pb { margin: 0.5em 0 }
-		   div.pb > b {display:inline-block;width:3em}
-		   div.pb * {word-break:break-all}
-		 </style>
-		 <div class=pb>
-		   <b class="tmpl-orange-text">POST</b>
-		   <span>curl -F content=@file <u><script>document.write(location.host)</script></u>/api2/new</span>
-		 </div>
-		 <div class=pb>
-		   <b class="tmpl-orange-text">GET</b>
-		   <span>curl -s <u><script>document.write(location.host)</script></u>/<b>&lt;code></b></span>
-		 </div>
-	     </td></tr>
-	   </table>
-	 </form>
-       </div>
+<div style="width:100%;height:100%;background-position:top;background-size:cover;background-image:url(/eriri.jpg?q={{$s}});left:0;top:0;position:absolute;z-index:0;opacity:0.12"></div>
+<!--[if lte IE 10]> 
+    <div style="color:red">本站不支持IE10及以下版本</div>
+<![endif]-->
 
-
+<div style="overflow: hidden;margin:0 auto;position:relative;text-align:center;max-width:350px">
+    <form method="POST" action="/user" style="flex-grow:1" onsubmit="return false">
+        <div class=settings-box>
+            <div class=body>
+                <div><input placeholder="ID" autofocus class=t name=username value required></div>
+                <div><input placeholder="密码" type=password class=t name=password value required></div>
+                <div style="text-align:right;line-height:2.5em">
+                    <div style="float:left">
+                        <input type=checkbox id=remember checked> <label for=remember>记住我</label>
+                    </div>
+                    <button class="gbutton"
+                            type=submit
+                            onclick="$postReload(this,'/api2/login',{
+                            'username': $q('[name=username]').value,
+                            'password': $q('[name=password]').value,
+                            'remember': $q('#remember').checked ? '1' :'',
+                            })">登入</button>
+                </div>
+                <div>
+                    <a href="/eriri.jpg?q={{$s}}&goto=1" target=_blank>yande.re &raquo;</a>&emsp;
+                    <a href="https://www.acfun.cn/" target=_blank>AC娘 &raquo;</a>&emsp;
+                    <a href="https://bbs.saraba1st.com/" target=_blank>S1麻将 &raquo;</a>
+                </div>
+                <div>欢迎来到fwbocnmbpbgo系统。您可以<a style href="/user">注册新用户</a>以发布状态，或者匿名使用pastebin服务:</div>
+                <div style='text-align:left'>
+                    <style>
+div.pb { margin: 0.5em 0 }
+div.pb > b {display:inline-block;width:3em}
+div.pb * {word-break:break-all}
+                    </style>
+                    <div class=pb>
+                        <b class="tmpl-orange-text">POST</b>
+                        <span>curl -F content=@file <u><script>document.write(location.host)</script></u>/api2/new</span>
+                    </div>
+                    <div class=pb>
+                        <b class="tmpl-orange-text">GET</b>
+                        <span>curl -s <u><script>document.write(location.host)</script></u>/<b>&lt;code></b></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>

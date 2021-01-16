@@ -87,118 +87,72 @@ func MustLoadConfig(path string) {
 }
 
 type CSSConfig struct {
-	BodyBG            string // main background color
-	ContainerBG       string
-	InputBG           string
-	Link              string
-	Navbar            string
-	NavbarBottom      string
-	NavbarTitlebar    string
-	UserBoxTitle      string
-	Border            string
-	DarkBorder        string
-	NormalText        string
-	LightText         string
-	MidGrayText       string
-	LightBG           string
-	Row               string
-	RowHeader         string
-	FoobarHoverBottom string
-	TextShadow        string
-	ModText           string
-	PostButton        string
-	PostButtonHover   string
-	DropdownItemHover string
-	RedText           string
-	GreenText         string
-	OrangeText        string
-	NSFWText          string
-	InboxMessage      string
-	AddFriend         string
-	RemoveFriend      string
-	Button            string
-	ButtonDisabled    string
-	ToastBG           string
-	Toast             string
-	ClsReplyIndicator string
+	BodyBG         string // main background color
+	ContainerBG    string
+	InputBG        string
+	Navbar         string
+	NavbarTitlebar string
+	Border         string
+	NormalText     string
+	MidGrayText    string
+	LightBG        string
+	Row            string
+	ModText        string
+	RedText        string
+	GreenText      string
+	NSFWText       string
+	RemoveFriend   string
+	Button         string
+	ButtonDisabled string
+	ToastBG        string
+	Toast          string
 
 	Mode string
 }
 
 var CSSLightConfig = CSSConfig{
-	InputBG:           "#fff",
-	BodyBG:            "#dadada",
-	ContainerBG:       "#fff",
-	Button:            "rgb(var(--pure-material-primary-rgb, 33, 150, 243))",
-	ButtonDisabled:    "rgba(var(--pure-material-onsurface-rgb, 0, 0, 0), 0.38)",
-	Link:              "#2a66d9",
-	Navbar:            "#feb",
-	NavbarBottom:      "rgba(0,0,0,0.04)",
-	NavbarTitlebar:    "#f6f6f6",
-	UserBoxTitle:      "rgba(0,0,0,0.04)",
-	Border:            "#ddd",
-	DarkBorder:        "#ddd",
-	NormalText:        "#233",
-	LightText:         "#aaa",
-	MidGrayText:       "#666",
-	LightBG:           "#fafbfc",
-	Row:               "#f0f0f0",
-	RowHeader:         "rgba(0,0,0,0.04)",
-	FoobarHoverBottom: "#677",
-	TextShadow:        "#677",
-	ModText:           "#673ab7",
-	PostButton:        "#64b5f6",
-	PostButtonHover:   "#2196f3",
-	DropdownItemHover: "#bdf",
-	RedText:           "#f52",
-	GreenText:         "#4a5",
-	OrangeText:        "#f90",
-	NSFWText:          "#bb7ab0",
-	InboxMessage:      "#3f51b5",
-	AddFriend:         "#098",
-	RemoveFriend:      "#e16",
-	ToastBG:           "rgba(0,0,0,0.9)",
-	Toast:             "white",
-	ClsReplyIndicator: "#00bcd4",
+	InputBG:        "#fff",
+	BodyBG:         "#dadada",
+	ContainerBG:    "#fff",
+	Button:         "#759cd8",
+	ButtonDisabled: "rgba(var(--pure-material-onsurface-rgb, 0, 0, 0), 0.38)",
+	Navbar:         "#a9c9c9",
+	NavbarTitlebar: "#e6e6e6",
+	Border:         "#ddd",
+	NormalText:     "#233",
+	MidGrayText:    "#666",
+	LightBG:        "#fafbfc",
+	Row:            "#f0f0f0",
+	ModText:        "#673ab7",
+	RedText:        "#f52",
+	GreenText:      "#b88855",
+	RemoveFriend:   "#e16",
+	NSFWText:       "#bb7ab0",
+	ToastBG:        "rgba(0,0,0,0.9)",
+	Toast:          "white",
 }
 
 var CSSDarkConfig = CSSConfig{
-	Mode:              "dark",
-	BodyBG:            "#273a50",
-	ContainerBG:       "#1b2838",
-	InputBG:           "#2a3f5a",
-	Button:            "#67c1f5",
-	ButtonDisabled:    "#666",
-	Row:               "#161c26",
-	RowHeader:         "#0d1016",
-	Navbar:            "#402040",
-	NavbarBottom:      "#1f0f1f",
-	NavbarTitlebar:    "#281a28",
-	UserBoxTitle:      "#13202f",
-	Border:            "#234456",
-	DarkBorder:        "#093248",
-	NormalText:        "#eee",
-	LightBG:           "#192a40",
-	DropdownItemHover: "rgba(255,255,255,0.15)",
-	ModText:           "#fff59d",
-	Link:              "#ff9800",
-	LightText:         "#666",
-	MidGrayText:       "#aaa",
-	RemoveFriend:      "#F06292",
-	PostButton:        "#488dc3",
-	PostButtonHover:   "#176caf",
-	ToastBG:           "rgba(255,255,255,0.9)",
-	Toast:             "black",
-	InboxMessage:      "#ffe082",
-
-	FoobarHoverBottom: "#677",
-	TextShadow:        "#677",
-	RedText:           "#f52",
-	GreenText:         "#4a5",
-	OrangeText:        "#f90",
-	NSFWText:          "#bb7ab0",
-	AddFriend:         "#098",
-	ClsReplyIndicator: "#00bcd4",
+	Mode:           "dark",
+	BodyBG:         "#273a50",
+	ContainerBG:    "#1b2838",
+	InputBG:        "#2a3f5a",
+	Button:         "#67c1f5",
+	ButtonDisabled: "#666",
+	Row:            "#161c26",
+	Navbar:         "#402040",
+	NavbarTitlebar: "#281a28",
+	Border:         "#234456",
+	NormalText:     "#eee",
+	LightBG:        "#192a40",
+	ModText:        "#fff59d",
+	MidGrayText:    "#aaa",
+	RemoveFriend:   "#F06292",
+	ToastBG:        "rgba(255,255,255,0.9)",
+	Toast:          "black",
+	RedText:        "#f52",
+	GreenText:      "#4a5",
+	NSFWText:       "#bb7ab0",
 }
 
 func (c *CSSConfig) WriteTemplate(path string, t string) {

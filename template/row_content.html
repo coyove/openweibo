@@ -3,14 +3,16 @@
 <div data-id="{{.ID}}" style class="article-row">
     <div class="article-row-header">
         <div class=avatar-container>
+            {{if not .NoAvatar}}
             <img class="avatar" alt="{{.Author.ID}}" {{template "avatar.html" .Author}} onclick="showInfoBox(this,'{{.Author.ID}}')">
             {{if .Author.Kimochi}}
             <img class="avatar-kimochi" src="{{.Author.KimochiURL}}">
             {{end}}
+            {{end}}
         </div>
 
         <div class=author-container>
-        {{template "display_name.html" .Author}}
+            {{template "display_name.html" .Author}}
         </div>
 
         <div class=what-container>
@@ -55,6 +57,7 @@
         </div>
     </div>
 
+    <div style="margin-left:3.5em">
     {{if .ContentHTML}}
     <pre style="">{{.ContentHTML}}</pre>
     {{end}}
@@ -72,7 +75,7 @@
     {{end}}
 
     {{if eq .MediaType "IMG"}}
-    <div style="margin-top: 0.5em">{{.Media}}</div>
+    <div class=media-container style="">{{.Media}}</div>
     {{end}}
 
     {{if .Extras}}
@@ -127,7 +130,7 @@
         {{end}}
     </div>
     {{end}}
-
+    </div>
 
     {{range .Others}}
     <div class="subreply clsreply">

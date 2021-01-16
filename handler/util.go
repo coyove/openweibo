@@ -40,6 +40,11 @@ func okok(g *gin.Context, tmp ...string) {
 }
 
 func NotFound(g *gin.Context) {
+	// /S602XbxYd4QQ => /S/602XbxYd4QQ
+	if x := g.Request.URL.Path; len(x) == 12+1 && x[1] == 'S' {
+		g.Redirect(302, "/S/"+x[2:])
+		return
+	}
 	g.HTML(404, "error.html", map[string]string{"Msg": g.GetString("error")})
 }
 

@@ -7,27 +7,23 @@
                 onclick='$q("#avatar-file-selector").click()'>
                 <i class=icon-camera style="color:white"></i>
             </div>
-            <div class="avatar-kimochi post-options post-options-emoji" onmouseover="loadKimochi(this)">
-                <img class=kimochi-selector style="width:100%;height:100%;display:block" kimochi={{.Kimochi}} src="{{.KimochiURL}}">
-                <ul style="top:20px"></ul>
-            </div>
         </div>
         
         <div class="author-container" style="">
             {{template "display_name.html" .}}
         </div>
         <div class="what-container">
-            <a href="/user/followings"><b class=tmpl-normal-text>关注</b> {{.Followings}}</a>&emsp;
-            <a href="/user/followers"><b class=tmpl-normal-text>粉丝</b> {{.Followers}}</a>&emsp;
-            <a class="" href="/user"><b class=tmpl-normal-text>个人设置</b></a>
-
-            <div style="display:none">
-                <img src="{{.KimochiURL}}" style="vertical-align: middle" kimochi={{.Kimochi}} class=kimochi-selector>
-            </div>
+            <a href="/user/followings"><b>关注</b> <b class=tmpl-normal-text>{{.Followings}}</b></a>&emsp;
+            <a href="/user/followers"><b>粉丝</b> <b class=tmpl-normal-text>{{.Followers}}</b></a>&emsp;
+            <a class="" href="/user"><b>个人设置</b></a>
         </div>
     </div>
 
-    <div style="display:flex;width:100%;border:dotted 1px transparent;margin:1em 0 0;border-radius:4px" class="tmpl-border tmpl-input-bg">
+    <div style="position:relative;display:flex;width:100%;box-shadow:0 0 2px #ccc;margin:1em 0 0;border-radius:4px" class="tmpl-input-bg">
+        <div style="padding:0.5em 0.3em 0.5em 0.8em;display:flex;align-items:center" class="post-options post-options-emoji" onmouseover="loadKimochi(this)">
+            <img class=kimochi-selector style="width:20px;height:20px;display:block" kimochi={{.Kimochi}} src="{{.KimochiURL}}">
+            <ul style="top:0"></ul>
+        </div>
         <input
             style="width:100%;border:none;text-align:left"
             placeholder="个人简介"
@@ -98,5 +94,35 @@ function onAvatarChanged(el) {
         }
         img.src = reader.result;
     };
+}
+
+function loadKimochi(el) {
+    var ul = el.querySelector('ul');
+    if (ul.childNodes.length) return;
+
+    for (var i = 0; i <= 44; i++) {
+        var li = $html("<li></li>"), a = $html("<a></a>"), img = $html("<img>");
+        img.src = '/s/emoji/emoji' + i + '.png';
+        if (i == 0) {
+            img.className = 'kimochi-selector';
+            img.setAttribute("kimochi", "0");
+        }
+        a.appendChild(img);
+        a.onclick = (function(i, img) {
+            return function() {
+                img.src = '/s/assets/spinner2.gif';
+                $post('/api/user_kimochi', {k: i}, function(resp) {
+                    if (resp === 'ok')  location.reload(); 
+                });
+            }
+        })(i, img)
+        li.appendChild(a);
+        ul.appendChild(li);
+    }
+
+    var rect = ul.parentNode.parentNode.getBoundingClientRect();
+    var height = rect.bottom - rect.top, width = rect.right - rect.left;
+    ul.style.top = height- 2 + 'px';
+    ul.style.width = width + 'px';
 }
 </script>

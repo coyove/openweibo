@@ -3,20 +3,14 @@
 <title>{{abbrTitle .ParentArticle.Content}}... {{.ParentArticle.ID}}</title>
 
 <style>
-nav, #footer {
+#home, #footer {
     display: none;
 }
 </style>
 
-<div>
-    <div class="window-open">
-        <div class="post-options">
-            <button class=gbutton onclick="closeWin()">
-                <i class=icon-left-small></i> 返回
-            </button>
-        </div>
-    </div>
-</div>
+<nav>
+    <a onclick="closeWin()"><i class=icon-left-small></i> 返回</a>
+</nav>
 
 <div>
     <div class="timeline" id="timeline{{.ReplyView.UUID}}" > 

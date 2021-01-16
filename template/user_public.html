@@ -15,8 +15,8 @@
 
         <div class="what-container">
             {{if .ID}}
-            <a href="/user/followings/{{.ID}}"><b class='tmpl-normal-text' >关注</b> {{.Followings}}</a>&emsp;
-            <a href="/user/followers/{{.ID}}"><b class='tmpl-normal-text' >粉丝</b> {{.Followers}}</a>&emsp;
+            <a href="/user/followings/{{.ID}}"><b>关注</b> <b class='tmpl-normal-text'>{{.Followings}}</b></a>&emsp;
+            <a href="/user/followers/{{.ID}}"><b>粉丝</b> <b class=' tmpl-normal-text'>{{.Followers}}</b></a>&emsp;
             {{else}}
             ----
             {{end}}
@@ -25,9 +25,9 @@
 
     <div style="text-align:left">
         {{if $notFound}}
-        <pre style="margin:0">用户不存在</pre>
+        <pre style="padding: 1em 0;text-align:center">用户不存在</pre>
         {{else}}
-        <pre style="margin:0;line-height:1.5em"><!--
+        <pre style="padding:0.8em 0.2em 0;margin:0;line-height:1.5em"><!--
         -->{{.DescHTML}}<!--
         --><div class=tmpl-mid-text style="font-size:90%;white-space:normal">
             <b>加入于</b> {{formatTime .Signup}}&nbsp;

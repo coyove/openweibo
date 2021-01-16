@@ -53,7 +53,8 @@ func Home(g *gin.Context) {
 	}
 }
 
-func Static(g *gin.Context, id string) {
+func S(g *gin.Context) {
+	id := "S" + g.Param("id")
 	if g.Query("raw") != "" || strings.Contains(g.Request.UserAgent(), "curl") {
 		a, err := dal.GetArticle(id)
 		throw(err, "")
@@ -63,14 +64,10 @@ func Static(g *gin.Context, id string) {
 
 	pl, ok := makeReplies(g, id)
 	if !ok {
-		g.Status(404)
+		NotFound(g)
 		return
 	}
 	g.HTML(200, "post.html", pl)
-}
-
-func S(g *gin.Context) {
-	Static(g, "S"+g.Param("id"))
 }
 
 func TagTimeline(g *gin.Context) {
@@ -358,7 +355,7 @@ func makeReplies(g *gin.Context, pid string) (pl ArticleRepliesView, ok bool) {
 	}
 
 	you := getUser(g)
-	pl.ParentArticle.from(parent, _GreyOutReply|_NoMoreParent, you)
+	pl.ParentArticle.from(parent, _GreyOutReply|_NoMoreParent|_ShowAuthorAvatar, you)
 	pl.ReplyView = makeReplyView(g, pid, you)
 
 	if you != nil {

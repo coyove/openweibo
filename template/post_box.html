@@ -1,12 +1,11 @@
 {{template "header.html" .}}
 <script src="/s/js/tribute.min.js"></script>
 <script src="/s/js/dropzone.min.js"></script>
-<link rel="stylesheet" href="/s/assets/dropzone.min.css?ver=5" />
 
 <title>{{if .ReplyTo}}回复 {{.ReplyTo}}{{else}}发布{{end}}</title>
 
 <style>
-nav, #footer {
+#home, #footer {
     display: none;
 }
     #main-content {
@@ -15,22 +14,14 @@ nav, #footer {
     }
 </style>
 
+<nav>
+    <a onclick="onClose(true)"><i class=icon-left-small></i> 返回</a>
+    <a onclick="onPost(this, '{{.ReplyTo}}')" style="float:right">发送 <i class=icon-comment></i></a>
+</nav>
+
 <div id="post-box" class="tmpl-input-bg" style="flex: 1 0 auto;display:flex;flex-direction:column;position:relative;text-align:left">
     <div>
-        <div class="window-open">
-            <div class="post-options">
-                <button class=gbutton onclick="onClose(true)">
-                    <i class=icon-left-small></i> 返回
-                </button>
-            </div>
-            <div class="post-options" style="float:right">
-                <button class="gbutton tmpl-green-text" onclick="onPost(this, '{{.ReplyTo}}')">
-                    发送 <i class=icon-comment></i>
-                </button>
-            </div>
-        </div>
-
-        <div style="padding: 0.5em;border-bottom:dashed 1px white" class=tmpl-dark-border>
+        <div style="padding: 0.5em;border-bottom:dashed 1px white" class=tmpl-border>
             <div class="post-options">
                 <button name=reply-lock class=gbutton onclick="lockArticle(this)" value=0>
                     <i class=icon-lock></i>
@@ -46,47 +37,30 @@ nav, #footer {
             <div class="post-options">
                 <button class=gbutton>选项<i class="icon-down-dir right"></i></button>
                 <ul>
-                    <li>
-                        <span onclick="insertTag(this, '[code]','代码块','[/code]')">
-                            <i class=icon-code></i>
-                            插入 <span style="font-family:monospace">[code][/code]</span>
-                        </span>
-                    </li>
                     {{if .ReplyTo}}
                     <li>
-                        <span onclick="insertTag(this, '#ReportThis\n', '举报理由', '')">
-                            <i class=icon-police></i>
-                            举报该状态
-                        </span>
-                    </li>
-                    <li>
-                        <input type=checkbox name=notimeline id="notimeline" class=icon-input-checkbox>
-                        <i class=icon-ok-circled2></i>
+                        <input type=checkbox name=notimeline id="notimeline">
                         <label for="notimeline">不同步至我的时间线</label>
                     </li>
                     {{else}}
                     <li>
-                        <input type=checkbox name=nomaster id="nomaster" class=icon-input-checkbox {{if .DefaultNoMaster}}checked{{end}}>
-                        <i class=icon-ok-circled2></i>
+                        <input type=checkbox name=nomaster id="nomaster" {{if .DefaultNoMaster}}checked{{end}}>
                         <label for="nomaster">不同步至广场</label>
                     </li>
                     <li>
-                        <input type=checkbox name=stickontop id="stickontop" class=icon-input-checkbox>
-                        <i class=icon-ok-circled2></i>
+                        <input type=checkbox name=stickontop id="stickontop">
                         <label for="stickontop">置顶状态</label>
                     </li>
                     <li>
                         <input onchange='if(this.checked)(function(){
                                if ($q("#post-box textarea").value) return;
                                insertTag(this, "", "投票标题\n选项1\n选项2\n...\n选项6(最多)","")
-                               })()' type=checkbox name=poll id="poll" class=icon-input-checkbox>
-                        <i class=icon-ok-circled2></i>
+                               })()' type=checkbox name=poll id="poll">
                         <label for="poll">将发文用作投票</label>
                     </li>
                     {{end}}
                     <li>
-                        <input type=checkbox name=isnsfw id="isnsfw" class=icon-input-checkbox>
-                        <i class=icon-ok-circled2></i>
+                        <input type=checkbox name=isnsfw id="isnsfw">
                         <label for="isnsfw">
                             标记图片为<i class='icon-eye-off'></i>NSFW
                         </label>
@@ -94,13 +68,17 @@ nav, #footer {
                 </ul>
             </div>
 
-            {{if not .ReplyTo}}
             <div class="post-options">
+            {{if not .ReplyTo}}
                 <button class=gbutton name=anon onclick="this.value?this.value='':(this.value='1',$popup('开启匿名'))">
                     <i class=icon-user-secret></i>
                 </button>
-            </div>
+            {{else}}
+                <button class=gbutton onclick="insertTag(this, '#ReportThis\n', '举报理由', '')">
+                    <i class=icon-police></i> 举报
+                </button>
             {{end}}
+            </div>
         </div>
     </div>
 
@@ -114,8 +92,8 @@ nav, #footer {
                 style="background-color:transparent;padding:0.66em;border:none;display:block;position:absolute;width:100%;height:100%;resize:none"></textarea>
         </div>
 
-        <div class=tmpl-dark-border style="border-top:dashed 1px white;flex: 0 0 auto;max-height:200px;overflow-y:scroll;background:rgba(255,255,255,0.02)">
-            <div class="dropzone tmpl-dark-border">
+        <div class=tmpl-border style="border-top:dashed 1px white;flex: 0 0 auto;max-height:200px;overflow-y:scroll;background:rgba(255,255,255,0.02)">
+            <div class="dropzone tmpl-border">
                 <input type="file" multiple style="display:none" name="file">
             </div>
         </div>

@@ -174,31 +174,6 @@ function $postReload(el, url, data) {
     }, stop)
 }
 
-function loadKimochi(el) {
-    var ul = el.querySelector('ul');
-    if (ul.childNodes.length) return;
-
-    for (var i = 0; i <= 44; i++) {
-        var li = $html("<li></li>"), a = $html("<a></a>"), img = $html("<img>");
-        img.src = '/s/emoji/emoji' + i + '.png';
-        if (i == 0) {
-            img.className = 'kimochi-selector';
-            img.setAttribute("kimochi", "0");
-        }
-        a.appendChild(img);
-        a.onclick = (function(i, img) {
-            return function() {
-                img.src = '/s/assets/spinner2.gif';
-                $post('/api/user_kimochi', {k: i}, function(resp) {
-                    if (resp === 'ok')  location.reload(); 
-                });
-            }
-        })(i, img)
-        li.appendChild(a);
-        ul.appendChild(li);
-    }
-}
-
 function isInViewport(el, scale) {
     var top = el.offsetTop, height = el.offsetHeight, h = window.innerHeight, s = scale || 0;
     while (el.offsetParent) {
@@ -234,7 +209,7 @@ function deleteArticle(el, id) {
     $post("/api2/delete", { id: id }, function (res) {
         stop();
         if (res != "ok") return res;
-        $q("[data-id='" + id + "'] > pre", true).forEach(function(e) {
+        $q("[data-id='" + id + "'] pre", true).forEach(function(e) {
             e.innerHTML = "<span class=deleted></span>";
         });
         $q("[data-id='" + id + "'] .media img", true).forEach(function(e) {
@@ -272,10 +247,7 @@ function lockArticle(el, id) {
     div.style.top = box.bottom - bodyBox.top + "px";
 
     var checkbox = function(i, t) {
-        var tmpl = "<div style='margin:0.5em'>" + 
-            "<input id=ID CHECKED type=radio value=V name=reply-lock class=icon-input-checkbox>" +
-            "<i class=icon-ok-circled2></i> <label for=ID>TEXT</label>" +
-            "</div>"
+        var tmpl = "<div style='margin:0.5em'><input id=ID CHECKED type=radio value=V name=reply-lock> <label for=ID>TEXT</label></div>"
         return $html(tmpl.replace("V",i).replaceAll("ID","id"+Math.random()).replace("CHECKED",i==currentValue?"checked=checked":"").replace("TEXT",t))
     }
 
@@ -418,8 +390,7 @@ function loadMore(el, data) {
 
 function updateSetting(el, field, value) {
     var data = {};
-    var stop = $wait(el.tagName === 'INPUT' && el.className == "icon-input-checkbox" ?
-            el.nextElementSibling.nextElementSibling: el);
+    var stop = $wait(el.tagName === 'INPUT' && el.getAttribute('type') == "checkbox" ?  el.nextElementSibling: el);
     data["set-" + field] = "1";
     data[field] = value;
     $post("/api/user_settings", data, function(h, h2) {
@@ -472,7 +443,7 @@ function showInfoBox(el, uid) {
     div.style.position = 'absolute';
     div.style.left = box.left - bodyBox.left + 'px';
     div.style.top = box.top - bodyBox.top + boxTopOffset + 'px';
-    div.style.boxShadow = "0 1px 2px rgba(0, 0, 0, .3)";
+    div.style.boxShadow = "0 1px 2px rgba(0, 0, 0, .3), 0 0 2px rgba(0,0,0,.2)";
     document.body.appendChild(div);
 
     var reg = {
@@ -515,7 +486,10 @@ function adjustImage(img) {
         div = img.parentNode.parentNode,
         note = div.querySelector('.long-image'),
         r = div.getBoundingClientRect(),
-        smallimg = false;
+        smallimg = false,
+        container = div.parentNode;
+
+    while (!container.className.match(/media-container/)) container = container.parentNode;
 
     if (ratio < 0.33 || ratio > 3) {
         div.style.backgroundSize = 'contain';
@@ -548,6 +522,7 @@ function adjustImage(img) {
             div.style.height = window.innerHeight + "px";
             div.style.borderRadius = '0';
             div.scrollIntoView();
+            container.style.marginLeft = '-3.5em';
 
             var imgload = new Image(), imgprogress = new Image(), divC = $q("<div>"), loaded = false;
 
@@ -563,14 +538,14 @@ function adjustImage(img) {
             divC.className = 'image-loading-div';
             divC.appendChild(imgprogress);
             div.appendChild(divC);
-
             setTimeout(function() { if (!loaded) divC.style.opacity = '1' }, 100)
         } else {
             div.removeAttribute("enlarge")
             div.style.borderRadius = null;
             div.style.width = null;
             div.style.height = null;
-	    div.parentNode.querySelector('[image-index="0"]').scrollIntoView();
+            div.parentNode.querySelector('[image-index="0"]').scrollIntoView();
+            container.style.marginLeft = '0';
         }
     }
 }
@@ -587,7 +562,7 @@ function adjustVideoIFrame(el, src) {
 }
 
 function isDarkMode() {
-    return (document.cookie.match(/(^| )mode=([^;]+)/) || [])[2] === 'dark';
+    // return (document.cookie.match(/(^| )mode=([^;]+)/) || [])[2] === 'dark';
 }
 
 function createAvatar(id) {
@@ -655,6 +630,7 @@ function createAvatar(id) {
         const newOpts = {};
 
         newOpts.seed = opts.seed || Math.floor((Math.random()*Math.pow(10,16))).toString(16);
+        newOpts.seed = newOpts.seed.split("").reduce(function(a,b){a=((a<<5)-a)+b.charCodeAt(0);return a&a},0).toString();
 
         seedrand(newOpts.seed);
 

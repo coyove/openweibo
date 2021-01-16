@@ -4,263 +4,176 @@
 .articles tr td:last-child {
     word-break: break-all;
 }
-.hint:after {
-    width: 150px;
-    white-space: pre-wrap !important;
-    line-height: 1.5em !important;
-}
-input::-webkit-outer-spin-button,
-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/* Firefox */
-input[type=number] {
-  -moz-appearance: textfield;
-}
+input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
 </style>
 
 {{if .User}}
 
 <title>{{.User.DisplayName}}</title>
-
-    <link rel="stylesheet" href="/s/assets/hint.min.css" />
-
     <div class="status-box tmpl-row-light-bg">
         <div>{{template "user_private.html" .User}}</div>
     </div>
 
-    <div class="status-box" >
-        <div class="status">
-            <div class="title tmpl-userbox-title row-header" style="text-align:center"><b style="flex-grow: 1">用户信息</b></div>
-
-            <div class=title>
-                <table class="articles" style="margin-top: 0.5em;text-align:left">
-                    <tr>
-                        <td>
-                            <div class="tmpl-border tmpl-input-bg" style="display:flex;align-items:center;border:solid 1px white">
-                                <input name=custom-name class=t placeholder="昵称" value="{{.User.CustomName}}" style="border:none">
-                                <span style="margin:0 0.5em;flex-shrink:0;opacity:0.8">@{{.User.ID}}</span>
-                                <button
-                                    style="flex-shrink:0;margin:0.25em"
-                                    class="gbutton tmpl-green-text"
-                                    onclick="updateSetting(this,'custom-name',$q('[name=custom-name]').value)">
-                                    <i class=icon-pencil></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <div class="tmpl-border tmpl-input-bg" style="display:flex;align-items:center;border:solid 1px white">
-                            <input name=email class=t value="{{.User.Email}}" type=email style="border:none">
-                            <button 
-                                style="flex-shrink:0;margin:0.25em"
-                                class="gbutton tmpl-green-text"
-                                onclick="updateSetting(this,'email',$q('[name=email]').value)">
-                                <i class=icon-pencil></i>
-                            </button>
-                            </div>
-                        </td>
-                    </tr>
-                </table>
+    <div class="settings-box" >
+        <div class="title tmpl-navbar-titlebar-bg"><b style="flex-grow: 1">用户信息</b></div>
+        <div class=body>
+            <div>
+                <div class="tmpl-border tmpl-input-bg" style="display:flex;align-items:center;border:solid 1px white">
+                    <input name=custom-name class=t placeholder="昵称" value="{{.User.CustomName}}" style="border:none">
+                    <span style="margin:0 0.5em;flex-shrink:0;opacity:0.8">@{{.User.ID}}</span>
+                    <button
+                        style="flex-shrink:0;margin:0.25em"
+                        class="gbutton tmpl-green-text"
+                        onclick="updateSetting(this,'custom-name',$q('[name=custom-name]').value)">
+                        <i class=icon-pencil></i>
+                    </button>
+                </div>
             </div>
-
-            <div class=title>
-                <table class="articles" style="margin:0.5em 0;text-align:left">
-                    <tr>
-                        <td class=nowrap>综合IP历史:</td>
-                        <td colspan=2 style='text-align:right'>
-                            <a class="gbutton tmpl-red-text" href="#"
-                               onclick="confirm('确认登出 {{.User.DisplayName}}')?$postReload(this, '/api2/logout',{}):0">
-                                <i class="icon-logout"></i> 退出账号
-                            </a>
-                        </td>
-                    </tr>
-            
-                    {{range ipChainLookup .User.DataIP}}
-                    <tr>
-                        <td class=nowrap>{{index . 0}}</td>
-                        <td>{{index . 1}}</td>
-                        <td class=nowrap style="text-align:right">{{formatTime (index . 2)}}</td>
-                    </tr>
-                    {{end}}
-                </table>
+            <div>
+                <div class="tmpl-border tmpl-input-bg" style="display:flex;align-items:center;border:solid 1px white">
+                    <input name=email class=t value="{{.User.Email}}" type=email style="border:none">
+                    <button style="flex-shrink:0;margin:0.25em" class="gbutton tmpl-green-text" onclick="updateSetting(this,'email',$q('[name=email]').value)">
+                        <i class=icon-pencil></i>
+                    </button>
+                </div>
+            </div>
+            <div style="text-align:right">
+                <a class="gbutton tmpl-green-text" href="#" onclick="confirm('确认登出 {{.User.DisplayName}}')?$postReload(this, '/api2/logout',{}):0">
+                    <i class="icon-logout"></i> 退出账号
+                </a>
+            </div>
+            {{range ipChainLookup .User.DataIP}}
+            <div style="display:flex;line-height:1.5em">
+                <span style="flex:0 0 auto">{{index . 0}}</span>
+                <span style="flex:1 0 auto;padding:0 0.5em">{{index . 1}}</span>
+                <span style="flex:0 0 auto">{{formatTime (index . 2)}}</span>
             </div> 
+            {{end}}
         </div>
     </div>
 
-    <div class="status-box">
-        <div class="status">
-            <div class="title tmpl-userbox-title row-header" style="text-align:center"><b style="flex-grow: 1">设置</b></div>
-
-            <div class=title>
-                <table class="articles" style="margin: 0.5em 0;text-align:left">
-                    <tr>
-                        <td>
-                            <input type=checkbox {{if .User.ExpandNSFWImages}}checked{{end}} id=autonsfw
-                                   class=icon-input-checkbox
-                                   onchange="updateSetting(this,'autonsfw',this.checked?'1':'')">
-                            <i class='icon-ok-circled2'></i>
-                            <label for=autonsfw>自动展开<i class="icon-eye-off"></i>NSFW图片</label>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <input type=checkbox {{if .User.FoldAllImages}}checked{{end}} id=foldimg
-                                   class=icon-input-checkbox
-                                   onchange="updateSetting(this,'foldimg',this.checked?'1':'')">
-                            <i class='icon-ok-circled2'></i>
-                            <label for=foldimg>折叠图片减少流量</label>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <input type=checkbox {{if .User.NotifyFollowerActOnly}}checked{{end}} id=mfcm
-                                   class=icon-input-checkbox
-                                   onchange="updateSetting(this,'mfcm',this.checked?'1':'')">
-                            <i class='icon-ok-circled2'></i>
-                            <label for=mfcm>屏蔽你没关注的人的回复和@提醒</label>&nbsp;
-                            <label class="hint hint--left" aria-label="他们依旧可以回复/@你，但你不会收到提醒">(?)</label>
-
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <input type=checkbox {{if .User.HideLocation}}checked{{end}} id=hl
-                                   class=icon-input-checkbox
-                                   onchange="updateSetting(this,'hl',this.checked?'1':'')">
-                            <i class='icon-ok-circled2'></i>
-                            <label for=hl>向他人隐藏你的地理位置</label>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <input type=checkbox {{if .User.HideLikes}}checked{{end}} id=hide-likes
-                                   class=icon-input-checkbox
-                                   onchange="updateSetting(this,'hide-likes',this.checked?'1':'')">
-                            <i class='icon-ok-circled2'></i>
-                            <label for=hide-likes>隐藏你“喜欢”的内容</label>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <input type=checkbox {{if .User.FollowApply}}checked{{end}} id=fw-accept
-                                   class=icon-input-checkbox
-                                   onchange="updateSetting(this,'fw-accept',this.checked?'1':'')">
-                            <i class='icon-ok-circled2'></i>
-                            <label for=fw-accept>新关注者关注你前需要你的确认</label>&nbsp;
-                            <label class="hint hint--left" aria-label="1. 未确认的关注者无法查看你的时间线（他人转发/广场发言除外）
+    <div class="settings-box">
+        <div class="title tmpl-row-light-bg"><b style="flex-grow: 1">设置</b></div>
+        <div class="body">
+            <div>
+                管理 <a class="tmpl-green-text" href="/user/blacklist"><i class=icon-block></i> 黑名单</a>
+            </div>
+            <div>
+                <input type=checkbox {{if .User.ExpandNSFWImages}}checked{{end}} id=autonsfw onchange="updateSetting(this,'autonsfw',this.checked?'1':'')">
+                <label for=autonsfw>自动展开<i class="icon-eye-off"></i>NSFW图片</label>
+            </div>
+            <div>
+                <input type=checkbox {{if .User.FoldAllImages}}checked{{end}} id=foldimg onchange="updateSetting(this,'foldimg',this.checked?'1':'')">
+                <label for=foldimg>折叠图片减少流量</label>
+            </div>
+            <div>
+                <input type=checkbox {{if .User.NotifyFollowerActOnly}}checked{{end}} id=mfcm onchange="updateSetting(this,'mfcm',this.checked?'1':'')">
+                <label for=mfcm>屏蔽你没关注的人的回复和@提醒</label>&nbsp;
+                <label class="hint hint--left" aria-label="他们依旧可以回复/@你，但你不会收到提醒">(?)</label>
+            </div>
+            <div>
+                <input type=checkbox {{if .User.HideLocation}}checked{{end}} id=hl onchange="updateSetting(this,'hl',this.checked?'1':'')">
+                <label for=hl>向他人隐藏你的地理位置</label>
+            </div>
+            <div>
+                <input type=checkbox {{if .User.HideLikes}}checked{{end}} id=hide-likes onchange="updateSetting(this,'hide-likes',this.checked?'1':'')">
+                <label for=hide-likes>隐藏你“喜欢”的内容</label>
+            </div>
+            <div>
+                <input type=checkbox {{if .User.FollowApply}}checked{{end}} id=fw-accept onchange="updateSetting(this,'fw-accept',this.checked?'1':'')">
+                <label for=fw-accept>新关注者关注你前需要你的确认</label>&nbsp;
+                <label class="hint hint--left" aria-label="1. 未确认的关注者无法查看你的时间线（他人转发/广场发言除外
 2. 如果限制了只有“关注者”可以回复你的状态，则这类人无法回复你">(?)</label>
-                        </td>
-                    </tr>
-                </table>
             </div>
         </div>
     </div>
 
-    <div class="status-box">
-        <div class="status">
-            <div class="title tmpl-userbox-title row-header" style="text-align:center"><b style="flex-grow: 1">安全</b></div>
+    <div class="settings-box">
+        <div class="title tmpl-navbar-titlebar-bg" style="text-align:center"><b style="flex-grow: 1">安全</b></div>
 
-            <div class=title>
-                <table class="articles" style="margin-top: 0.5em;text-align:left">
-                    <tr>
-                        <td class=nowrap>原密码:</td>
-                        <td><input name=old-password type=password class=t></td>
-                    </tr>
-                    <tr>
-                        <td class=nowrap>新密码:</td>
-                        <td><input name=new-password type=password class=t></td>
-                    </tr>
-                    <tr>
-                        <td colspan=2 style="text-align:center">
-                            <button
-                                class="gbutton"
-                                onclick="$post('/api2/user_password', {
-                                'old-password': $q('[name=old-password]').value,
-                                'new-password': $q('[name=new-password]').value,
-                                }, function(h) { return h })">更新密码</button>
-                        </td>
-                    </tr>
-                </table>
+        <div class=body>
+            <div>
+                <input name=old-password type=password class=t placeholder=原密码>
+            </div>
+            <div>
+                <input name=new-password type=password class=t placeholder=新密码>
+            </div>
+            <div style="text-align:center">
+                <button
+                    class="gbutton"
+                    onclick="$post('/api2/user_password', {
+                    'old-password': $q('[name=old-password]').value,
+                    'new-password': $q('[name=new-password]').value,
+                    }, function(h) { return h })">更新密码</button>
             </div>
         </div>
     </div>
 
-    <div class="status-box">
-        <div class="status">
-            <div class="title tmpl-userbox-title row-header" style="text-align:center"><b style="flex-grow: 1">API</b></div>
+    <div class="settings-box">
+        <div class="title tmpl-navbar-titlebar-bg" style="text-align:center"><b style="flex-grow: 1">API</b></div>
 
-            <div class=title>
-                <table class="articles" style="margin-top: 0.5em;text-align:left">
-                    <tr>
-                        <td class=nowrap>API Token:</td>
-                        <td><input readonly name=api-token class=t value="{{.User.APIToken}}"></td>
-                        <td class=nowrap>
-                            <button
-                                class="gbutton"
-                                onclick="
-    var stop = $wait(this);
-    $post('/api/user_settings', {'set-apisession':1}, function(res) {
-        stop();
-	if (res.substring(0, 3) !== 'ok:') return res;
-	$q('[name=api-token]').value = res.substr(3);
-    }, stop);
-">刷新</button>
-                        </td>
-                    </tr>
-                </table>
+        <div class=body>
+            <div>
+                <input readonly name=api-token class=t value="{{.User.APIToken}}">
             </div>
-	    <div style="padding: 0.5em;display:block;text-align:left">
-		1. Bot API, uesd for posting articles and uploading images<br>
-		2. Check <a href="https://github.com/coyove/iis/blob/master/bot/main.go" target=_blank><u>Sample code</u></a>
-	    </div>
+            <div>
+                <button
+                    class="gbutton"
+                    onclick="
+                    var stop = $wait(this);
+                    $post('/api/user_settings', {'set-apisession':1}, function(res) {
+                    stop();
+                    if (res.substring(0, 3) !== 'ok:') return res;
+                    $q('[name=api-token]').value = res.substr(3);
+                    }, stop);
+                    ">刷新</button>
+            </div>
+            <div>
+                1. Bot API, uesd for posting articles and uploading images<br>
+                2. Check <a href="https://github.com/coyove/iis/blob/master/bot/main.go" target=_blank><u>Sample code</u></a>
+            </div>
         </div>
     </div>
 
-<table class="articles" style="margin: 0.5em 0">
     {{if .User.IsAdmin}}
-    <tr>
-        <td colspan=2>
-            <a href="/debug/pprof/">pprof</a>
-        </td>
-    </tr>
+        <div><a href="/debug/pprof/">pprof</a></div>
     {{end}}
-</table>
 
 {{else}}
 
 <title>注册</title>
-    <div style="overflow: hidden;margin:1em auto;position:relative;text-align:center;max-width:350px">
-<form method="POST" action="/user" onsubmit='
-                    var v = function(k) { return $q("[name="+k+"]").value || "" };
-                    var data = {
-                        username: v("username"), password: v("password"), email: v("email"), uuid: v("uuid"), answer: v("answer"),
-                    };
-                    if (data.username.length < 3) { $popup("用户名过短 (至少3字节)"); return false; }
-                    if (data.password.length < 3) { $popup("密码过短 (至少3字节)"); return false; }
-
-                    var stop = $wait($q("[type=submit]"))
-                    $post("/api2/signup", data, function(r) {
-                        stop();
-                        if (r !== "ok") {
-                            refreshCaptcha();
-                            return r;
-                        }
-                        location.reload();
-                    }, stop)
-                    return false;'>
-
-    <table class="articles">
-
-    <input type=hidden name=uuid value="{{.UUID}}">
-    <tr>
-      <td style="text-align:center"><a href="/" class="tmpl-green-text"><i class=icon-home></i>已有账号？点此登入</a></td>
-    </tr>
-    <tr>
-        <td><input value="" class=t maxlength=15 placeholder="用户名" name=username oninput="checkID(this.value)"></td>
+<div style="overflow: hidden;margin:1em auto;position:relative;text-align:center;max-width:350px">
+    <form method="POST" action="/user" onsubmit='return onSubmit()'>
+        <div class=settings-box>
+            <div class=body>
+                <input type=hidden name=uuid value="{{.UUID}}">
+                <div style="text-align:center"><a href="/" class="tmpl-green-text"><i class=icon-home></i>已有账号？点此登入</a></div>
+                <div><input value="" class=t maxlength=15 placeholder="用户名" name=username oninput="checkID(this.value)"></div>
+                <div style="text-align:left;padding-top:0" id="id-output">3~15英文，2~7中文</div>
+                <div><input type=password class=t placeholder="密码" name=password></div>
+                <div style="text-align:left;padding-top:0">
+                    至少3英文字符&emsp;
+                    <input type=checkbox id=show-password onchange="$q('[name=password]').type=this.checked?'text':'password'">
+                    <label for=show-password>显示密码</label>
+                </div>
+                <div><input value="" type=email class=t placeholder="邮箱" name=email></div>
+                <div style="display:flex">
+                    <div style="flex-grow:0">
+                        <div style="width:120px">
+                            <a href="javascript:refreshCaptcha()">
+                                <img name=captcha src="data:image/png;base64,{{.Challenge}}" style="background:white;width:100%;border-radius:4px;display:block;margin-bottom:0.5em;box-shadow:0 1px 2px rgba(0,0,0,0.4),0 -1px 1px rgba(0,0,0,0.05)">
+                            </a>
+                            <input style="width:100%" type=number class=t placeholder="验证码(4数字)" name=answer>
+                        </div>
+                    </div>
+                    <div style="flex-grow:1;display:flex;margin-left:0.5em;text-align:right">
+                        <div style="align-self:flex-end;flex-grow:1"><button class="gbutton" type=submit>注册</button></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
     <script>
         function checkID(id) {
             var x = [], j = 0, filtered = false;
@@ -284,60 +197,37 @@ input[type=number] {
             $q("#id-output").innerHTML = "<b style='font-family:monospace'>@" + String.fromCharCode.apply(null, x) +
                 (filtered ? "&emsp;<span class=tmpl-red-text>(注意: 非法字符已过滤)</span></b>" : "</b>");
         }
-    </script>
-    </tr>
-    <tr>
-        <td style="padding-top:0" id="id-output">3~15英文，2~7中文</td>
-    </tr>
-    <tr>
-        <td><input type=password class=t placeholder="密码" name=password></td>
-    </tr>
-    <tr>
-        <td style="padding-top:0">
-            至少3英文字符
-            <input type=checkbox class='icon-input-checkbox'
-                id=show-password onchange="$q('[name=password]').type=this.checked?'text':'password'">
-            <i class='icon-ok-circled2'></i>
-            <label for=show-password>显示密码</label>
-        </td>
-    </tr>
-    <tr>
-        <td><input value="" type=email class=t placeholder="邮箱" name=email></td>
-    </tr>
-    <tr>
-        <td>
-            <div style="display:flex">
-                <div style="flex-grow:0">
-                <div style="width:120px">
-            <a href="javascript:refreshCaptcha()">
-                <img name=captcha src="data:image/png;base64,{{.Challenge}}" style="background:white;width:100%;border-radius:4px;display:block;margin-bottom:0.5em;box-shadow:0 1px 2px rgba(0,0,0,0.4),0 -1px 1px rgba(0,0,0,0.05)">
-            </a>
-            <input style="width:100%" type=number class=t placeholder="验证码(4数字)" name=answer>
-            </div>
-                </div>
-    <script>
-        function refreshCaptcha() {
-            var stop = $wait($q("button[type=submit]"))
-            $post('/api/new_captcha', {}, function(r) {
-                $q("[name=captcha]").src = "data:image/png;base64," + r.Challenge;
-                $q("[name=uuid]").value = r.UUID;
-                $q("[name=answer]").value = '';
-                stop();
-            }, stop)
+
+function refreshCaptcha() {
+    var stop = $wait($q("button[type=submit]"))
+    $post('/api/new_captcha', {}, function(r) {
+        $q("[name=captcha]").src = "data:image/png;base64," + r.Challenge;
+        $q("[name=uuid]").value = r.UUID;
+        $q("[name=answer]").value = '';
+        stop();
+    }, stop)
+}
+
+function onSubmit() {
+    var v = function(k) { return $q("[name="+k+"]").value || "" };
+    var data = {
+        username: v("username"), password: v("password"), email: v("email"), uuid: v("uuid"), answer: v("answer"),
+    };
+    if (data.username.length < 3) { $popup("用户名过短 (至少3字节)"); return false; }
+    if (data.password.length < 3) { $popup("密码过短 (至少3字节)"); return false; }
+
+    var stop = $wait($q("[type=submit]"))
+    $post("/api2/signup", data, function(r) {
+        stop();
+        if (r !== "ok") {
+            refreshCaptcha();
+            return r;
         }
+        location.reload();
+    }, stop)
+    return false;
+}
     </script>
-            <div style="flex-grow:1;display:flex;margin-left:0.5em;text-align:right">
-                <div style="align-self:flex-end;flex-grow:1"><button class="gbutton" type=submit>注册</button></div>
-            </div>
-            </div>
-        </td>
-    </tr>
-    <tr>
-        <td style="text-align:right">
-        </td>
-    </tr>
-</table>
-    </div>
-</form>
+</div>
 {{end}}
 
