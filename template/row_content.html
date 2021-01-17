@@ -40,7 +40,7 @@
         {{if .Parent}}
         <span class=post-date>
             {{if .Others}}<i class='cls-reply icon-down-big'></i>
-            同{{end}}{{if .Content}}回复{{else}}转发{{end}}于
+            同{{end}}{{if not .Forward}}回复{{else}}转发{{end}}于
             {{formatTime .CreateTime}}
         </span>
         {{else}}
@@ -59,7 +59,7 @@
 
     <div style="margin-left:3.5em">
     {{if .ContentHTML}}
-    <pre style="">{{.ContentHTML}}</pre>
+    <pre data-pre-id='{{.ID}}' style="">{{.ContentHTML}}</pre>
     {{end}}
 
     {{if eq .Cmd "inbox-fw-apply"}}
@@ -75,7 +75,7 @@
     {{end}}
 
     {{if eq .MediaType "IMG"}}
-    <div class=media-container style="">{{.Media}}</div>
+    <div data-media-id="{{.ID}}" class=media-container style="">{{.Media}}</div>
     {{end}}
 
     {{if .Extras}}
@@ -100,20 +100,21 @@
         {{end}}
         {{end}}
 
+        {{if not .Forward}}
         {{if not .GreyOutReply}}
-        {{if .Content}}
         <a class="gbutton" href="javascript:window.open('{{.Link}}?win=' + window.name).S=1">
             <i class="icon-reply-outline"></i>
             {{if .Replies}}{{.Replies}}{{end}}
         </a>
         {{end}}
-        {{end}}
 
         <a class="gbutton" href="javascript:void(0)" onclick="likeArticle(this, '{{.ID}}')" liked={{.Liked}}>
             <i class="icon-heart-{{if .Liked}}filled{{else}}2{{end}}"></i> <span class=num>{{if .Likes}}{{.Likes}}{{end}}</span>
         </a>
+        {{end}}
 
         {{if or (eq .You.ID .Author.ID) .You.IsMod}}
+        {{if not .Forward}}
         <a class="gbutton" href="javascript:void(0)" onclick="lockArticle(this,'{{.ID}}')" value="{{.ReplyLockMode}}">
             {{if .ReplyLockMode}}
             <i class="tmpl-normal-text icon-lock"></i>
@@ -121,6 +122,7 @@
             <i class="tmpl-light-text icon-lock-open"></i>
             {{end}}
         </a>
+        {{end}}
         <a class="tmpl-red-text gbutton" href="javascript:void(0)" onclick="deleteArticle(this,'{{.ID}}')">
             <i class="icon-trash"></i>
         </a>

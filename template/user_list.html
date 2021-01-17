@@ -1,5 +1,7 @@
-{{template "header.html" .}}
 {{$own := eq $.You.ID $.User.ID}}
+
+{{if not .API}}
+{{template "header.html" .}}
 
 <style>
 .navbar-titlebar {
@@ -32,12 +34,13 @@
         {{end}}
     {{end}}
 </div>
+{{end}}
 
-<div style="padding: 0.5em">
+<div class=timeline style="padding: 0.5em">
 
 {{range .List}}
     {{if .FullUser}}
-    <div style="display: flex; line-height: 3em;margin: 0 0.5em">
+    <div class=full-user style="display: flex; line-height: 3em;margin: 0 0.5em">
         <div style="flex-shrink:0;white-space:nowrap;margin-right:0.5em">{{formatTime .Time}}</div>
         {{if ne $.ListType "twohops"}}
         <div style="flex: 1 100%; overflow: hidden; text-overflow: ellipsis;">
@@ -59,14 +62,6 @@
                     {{else}}
                         <button class=gbutton>关注中</button>
                     {{end}}
-                {{end}}
-            {{else if eq $.ListType "twohops"}}
-                {{if and .TwoHopsFollowing .CommonFollowing}}
-                    <button class=gbutton>双向关注</button>
-                {{else if .TwoHopsFollowing}}
-                    <button class=gbutton>粉丝</button>
-                {{else if .CommonFollowing}}
-                    <button class=gbutton>共同关注</button>
                 {{end}}
             {{else}}
                 {{if $own}}
@@ -91,17 +86,31 @@
     </div>
     {{end}}
     {{end}}
-
-    <div style="margin: 0.5em 0;padding-top:0.5em;text-align:center">
-        {{if .Next}}
-            {{if .List}}
-                <a href="?n={{.Next}}" class=gbutton>更多 &raquo;</a>
-            {{else}}
-                <a href="?n={{.Next}}" disabled class="gbutton tmpl-light-text">获取数据中...</a>
-                <script>setTimeout(function() { location.reload() }, 2000)</script>
-            {{end}}
-        {{else}}
-            <a href="?n=" class="gbutton tmpl-light-text">空</a>
-        {{end}}
-    </div>
 </div>
+
+{{if not .API}}
+<script>
+    function load(btn) {
+        var stop = $wait(btn);
+        $post(location.href, { next: btn.getAttribute('next') }, function(r, x) {
+            stop();
+            var el = $html(r).querySelectorAll('.full-user');
+            for (var e of el) $q(".timeline").appendChild(e)
+
+            var n = x.getResponseHeader('X-Next')
+            n ? btn.setAttribute("next", n) : btn.parentNode.removeChild(btn)
+
+            if (el && el.length == 0 && n) load(btn);
+        })
+    }
+</script>
+
+{{if .Next}}
+<div style="padding-top:0.5em;text-align:center">
+    <button id=load-more class=gbutton next='{{.Next}}' onclick="load(this)">更多...</button>
+    {{if not .List}}
+    <script>setTimeout(function() { $q("#load-more").click() }, 2000)</script>
+    {{end}}
+</div>
+{{end}}
+{{end}}

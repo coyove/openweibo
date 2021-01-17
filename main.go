@@ -85,7 +85,6 @@ func main() {
 		}
 	}()
 
-	// go handler.GetEriri("%E6%BE%A4%E6%9D%91%E3%83%BB%E3%82%B9%E3%83%9A%E3%83%B3%E3%82%B5%E3%83%BC%E3%83%BB%E8%8B%B1%E6%A2%A8%E3%80%85")
 	go handler.GetYandre()
 
 	r := middleware.New(prodMode)
@@ -180,8 +179,10 @@ func main() {
 	r.Handle("GET", "/avatar/:id", handler.Avatar)
 	r.Handle("GET", "/tag/:tag", handler.TagTimeline)
 	r.Handle("GET", "/user", handler.User)
-	r.Handle("GET", "/user/:type", handler.UserList)
+	r.Handle("GET", "/user_security", handler.UserSecurity)
+	r.Handle("GET", "/user_api", handler.UserSecurity)
 	r.Handle("GET", "/user/:type/:uid", handler.UserList)
+	r.Handle("POST", "/user/:type/:uid", handler.UserList)
 	r.Handle("GET", "/likes/:uid", handler.UserLikes)
 	r.Handle("GET", "/t", handler.Timeline)
 	r.Handle("GET", "/t/:user", handler.Timeline)
@@ -194,9 +195,8 @@ func main() {
 	r.Handle("GET", "/post_box", handler.PostBox)
 	r.Handle("GET", "/api/timeline", handler.APITimeline) // crawler special case
 
-	r.Handle("POST", "/api/upload_image", handler.APIUpload)
-	r.Handle("POST", "/api/p/:parent", handler.APIReplies)
 	r.Handle("POST", "/api/u/:id", handler.APIGetUserInfoBox)
+	r.Handle("POST", "/api/upload_image", handler.APIUpload)
 	r.Handle("POST", "/api/timeline", handler.APITimeline)
 	r.Handle("POST", "/api/user_kimochi", handler.APIUserKimochi)
 	r.Handle("POST", "/api/new_captcha", handler.APINewCaptcha)

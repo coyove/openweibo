@@ -338,16 +338,6 @@ func APITimeline(g *gin.Context) {
 	}
 }
 
-func APIReplies(g *gin.Context) {
-	pl, ok := makeReplies(g, g.Param("parent"))
-	if !ok {
-		g.Status(404)
-		return
-	}
-	g.Writer.Header().Add("X-Reply", "true")
-	g.HTML(200, "post.html", pl)
-}
-
 func makeReplies(g *gin.Context, pid string) (pl ArticleRepliesView, ok bool) {
 	parent, err := dal.GetArticle(pid)
 	if err != nil || parent.ID == "" {

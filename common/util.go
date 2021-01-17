@@ -220,8 +220,8 @@ func ParseDuration(v string) time.Duration {
 }
 
 func PushIP(dataIP, ip string) string {
-	if ips := append(strings.Split(dataIP, ","), ip); len(ips) > 3 {
-		return strings.Join(ips[len(ips)-3:], ",")
+	if ips := append(strings.Split(dataIP, ","), ip); len(ips) > 5 {
+		return strings.Join(ips[len(ips)-5:], ",")
 	} else {
 		return strings.Join(ips, ",")
 	}

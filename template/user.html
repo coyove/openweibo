@@ -15,42 +15,16 @@ input[type=number] { -moz-appearance: textfield; }
         <div>{{template "user_private.html" .User}}</div>
     </div>
 
-    <div class="settings-box" >
-        <div class="title tmpl-navbar-titlebar-bg"><b style="flex-grow: 1">用户信息</b></div>
-        <div class=body>
-            <div>
-                <div class="tmpl-border tmpl-input-bg" style="display:flex;align-items:center;border:solid 1px white">
-                    <input name=custom-name class=t placeholder="昵称" value="{{.User.CustomName}}" style="border:none">
-                    <span style="margin:0 0.5em;flex-shrink:0;opacity:0.8">@{{.User.ID}}</span>
-                    <button
-                        style="flex-shrink:0;margin:0.25em"
-                        class="gbutton tmpl-green-text"
-                        onclick="updateSetting(this,'custom-name',$q('[name=custom-name]').value)">
-                        <i class=icon-pencil></i>
-                    </button>
-                </div>
-            </div>
-            <div>
-                <div class="tmpl-border tmpl-input-bg" style="display:flex;align-items:center;border:solid 1px white">
-                    <input name=email class=t value="{{.User.Email}}" type=email style="border:none">
-                    <button style="flex-shrink:0;margin:0.25em" class="gbutton tmpl-green-text" onclick="updateSetting(this,'email',$q('[name=email]').value)">
-                        <i class=icon-pencil></i>
-                    </button>
-                </div>
-            </div>
-            <div style="text-align:right">
-                <a class="gbutton tmpl-green-text" href="#" onclick="confirm('确认登出 {{.User.DisplayName}}')?$postReload(this, '/api2/logout',{}):0">
-                    <i class="icon-logout"></i> 退出账号
-                </a>
-            </div>
-        </div>
-    </div>
-
     <div class="settings-box">
-        <div class="title tmpl-row-light-bg"><b style="flex-grow: 1">设置</b></div>
-        <div class="body" style="padding:0 0.5em">
+        <div class="body" style="padding:0.5em">
             <div>
-                管理 <a class="tmpl-green-text" href="/user/blacklist"><i class=icon-block></i> 黑名单</a>
+                管理 <a class="tmpl-green-text" href="/user/blacklist/{{.User.ID}}"><i class=icon-block></i> 黑名单</a>
+            </div>
+            <div>
+                管理 <a class="tmpl-green-text" href="/user_api"><i class=icon-android></i> API</a>
+            </div>
+            <div>
+                更改 <a class="tmpl-green-text" href="/user_security"><i class=icon-lock></i> 安全选项</a>
             </div>
             <div>
                 <input type=checkbox {{if .User.ExpandNSFWImages}}checked{{end}} id=autonsfw onchange="updateSetting(this,'autonsfw',this.checked?'1':'')">
@@ -78,60 +52,6 @@ input[type=number] { -moz-appearance: textfield; }
                 <label for=fw-accept>新关注者关注你前需要你的确认</label>&nbsp;
                 <label class="hint hint--left" aria-label="1. 未确认的关注者无法查看你的时间线（他人转发/广场发言除外
 2. 如果限制了只有“关注者”可以回复你的状态，则这类人无法回复你">(?)</label>
-            </div>
-        </div>
-    </div>
-
-    <div class="settings-box">
-        <div class="title tmpl-navbar-titlebar-bg" style="text-align:center"><b style="flex-grow: 1">安全</b></div>
-
-        <div class=body>
-            {{range ipChainLookup .User.DataIP}}
-            <div style="display:flex;line-height:1.5em">
-                <span style="flex:0 0 auto">{{index . 0}}</span>
-                <span style="flex:1 1 auto;padding:0 0.5em">{{index . 1}}</span>
-                <span style="flex:0 0 auto">{{formatTime (index . 2)}}</span>
-            </div> 
-            {{end}}
-            <div>
-                <input name=old-password type=password class=t placeholder=原密码>
-            </div>
-            <div>
-                <input name=new-password type=password class=t placeholder=新密码>
-            </div>
-            <div style="text-align:center">
-                <button
-                    class="gbutton"
-                    onclick="$post('/api2/user_password', {
-                    'old-password': $q('[name=old-password]').value,
-                    'new-password': $q('[name=new-password]').value,
-                    }, function(h) { return h })">更新密码</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="settings-box">
-        <div class="title tmpl-navbar-titlebar-bg" style="text-align:center"><b style="flex-grow: 1">API</b></div>
-
-        <div class=body>
-            <div>
-                <input readonly name=api-token class=t value="{{.User.APIToken}}">
-            </div>
-            <div>
-                <button
-                    class="gbutton"
-                    onclick="
-                    var stop = $wait(this);
-                    $post('/api/user_settings', {'set-apisession':1}, function(res) {
-                    stop();
-                    if (res.substring(0, 3) !== 'ok:') return res;
-                    $q('[name=api-token]').value = res.substr(3);
-                    }, stop);
-                    ">刷新</button>
-            </div>
-            <div>
-                1. Bot API, uesd for posting articles and uploading images<br>
-                2. Check <a href="https://github.com/coyove/iis/blob/master/bot/main.go" target=_blank><u>Sample code</u></a>
             </div>
         </div>
     </div>

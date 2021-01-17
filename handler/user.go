@@ -36,17 +36,18 @@ func User(g *gin.Context) {
 func UserList(g *gin.Context) {
 	p := struct {
 		List     []dal.FollowingState
-		EError   string
 		Next     string
 		ListType string
 		You      *model.User
 		User     *model.User
+		API      bool
 	}{
-		EError:   g.Query("error"),
+		API:      g.Request.Method == "POST",
 		ListType: g.Param("type"),
+		You:      getUser(g),
+		User:     getUser(g),
 	}
 
-	p.You = getUser(g)
 	if p.You == nil {
 		redirectVisitor(g)
 		return
@@ -54,39 +55,46 @@ func UserList(g *gin.Context) {
 
 	p.User, _ = dal.GetUser(g.Param("uid"))
 	if p.User == nil {
-		p.User = p.You
-	} else {
-		if !checkFollowApply(g, p.User, p.You) {
-			return
-		}
+		NotFound(g)
+		return
+	}
+
+	if !checkFollowApply(g, p.User, p.You) {
+		NotFound(g)
+		return
 	}
 
 	p.User.Buildup(p.You)
+	next := g.PostForm("next")
+	if next == "" {
+		next = g.Query("n")
+	}
 
 	switch p.ListType {
 	case "blacklist":
-		if p.User != p.You {
-			g.Redirect(302, "/user/blacklist")
+		if p.User.ID != p.You.ID {
+			NotFound(g)
 			return
 		}
-		p.List, p.Next = dal.GetRelationList(p.User, ik.NewID(ik.IDBlacklist, p.User.ID), g.Query("n"), int(common.Cfg.PostsPerPage))
-		p.User.SetShowList('b')
+		p.List, p.Next = dal.GetRelationList(p.User, ik.NewID(ik.IDBlacklist, p.User.ID), next, int(common.Cfg.PostsPerPage))
 	case "followers":
-		p.List, p.Next = dal.GetRelationList(p.User, ik.NewID(ik.IDFollower, p.User.ID), g.Query("n"), int(common.Cfg.PostsPerPage))
-		p.User.SetShowList('s')
+		p.List, p.Next = dal.GetRelationList(p.User, ik.NewID(ik.IDFollower, p.User.ID), next, int(common.Cfg.PostsPerPage))
 	case "twohops":
 		if p.You.ID == p.User.ID {
-			g.Redirect(302, "/user/followings")
+			g.Redirect(302, "/t")
 			return
 		}
-		p.List, p.Next = dal.GetCommonFollowingList(p.You.ID, p.User.ID, g.Query("n"), int(common.Cfg.PostsPerPage))
-		p.User.SetShowList('r')
+		p.List, p.Next = dal.GetCommonFollowingList(p.You.ID, p.User.ID, next, int(common.Cfg.PostsPerPage))
 	default:
-		p.List, p.Next = dal.GetFollowingList(ik.NewID(ik.IDFollowing, p.User.ID), g.Query("n"), int(common.Cfg.PostsPerPage), true)
-		p.User.SetShowList('f')
+		p.List, p.Next = dal.GetFollowingList(ik.NewID(ik.IDFollowing, p.User.ID), next, int(common.Cfg.PostsPerPage), true)
 	}
 
-	g.HTML(200, "user_list.html", p)
+	if p.API {
+		g.Writer.Header().Add("X-Next", p.Next)
+		g.String(200, middleware.RenderTemplateString("user_list.html", p))
+	} else {
+		g.HTML(200, "user_list.html", p)
+	}
 }
 
 // var ig, _ = identicon.New("github", 5, 3)
@@ -182,4 +190,12 @@ func APIGetUserInfoBox(g *gin.Context) {
 	}
 
 	okok(g, middleware.RenderTemplateString("user_public.html", u))
+}
+
+func UserSecurity(g *gin.Context) {
+	if getUser(g) == nil {
+		NotFound(g)
+		return
+	}
+	g.HTML(200, g.Request.URL.Path[1:]+".html", getUser(g))
 }

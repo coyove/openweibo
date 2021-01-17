@@ -323,6 +323,9 @@ func handlePollContent(a *model.Article) {
 }
 
 func checkFollowApply(g *gin.Context, u, you *model.User) bool {
+	if u.ID == you.ID {
+		return true
+	}
 	if u.FollowApply != 0 {
 		var following, accepted, loggedin bool
 		if you == nil {

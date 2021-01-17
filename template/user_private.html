@@ -13,27 +13,35 @@
             {{template "display_name.html" .}}
         </div>
         <div class="what-container">
-            <a href="/user/followings"><b>关注</b> <b class=tmpl-normal-text>{{.Followings}}</b></a>&emsp;
-            <a href="/user/followers"><b>粉丝</b> <b class=tmpl-normal-text>{{.Followers}}</b></a>&emsp;
+            <a href="/user/followings/{{.ID}}"><b>关注</b> <b class=tmpl-normal-text>{{.Followings}}</b></a>&emsp;
+            <a href="/user/followers/{{.ID}}"><b>粉丝</b> <b class=tmpl-normal-text>{{.Followers}}</b></a>&emsp;
             <a class="" href="/user"><b>个人设置</b></a>
         </div>
     </div>
 
-    <div style="position:relative;display:flex;width:100%;box-shadow:0 0 2px #ccc;margin:1em 0 0;border-radius:4px" class="tmpl-input-bg">
+    <div class="settings-box-input">
         <div style="padding:0.5em 0.3em 0.5em 0.8em;display:flex;align-items:center" class="post-options post-options-emoji" onmouseover="loadKimochi(this)">
             <img class=kimochi-selector style="width:20px;height:20px;display:block" kimochi={{.Kimochi}} src="{{.KimochiURL}}">
             <ul style="top:0"></ul>
         </div>
-        <input
-            style="width:100%;border:none;text-align:left"
-            placeholder="个人简介"
-            class=t
-            value="{{.Description}}">
-        <button class="gbutton tmpl-green-text"
-                style="margin:0.25em;flex-shrink:0"
+        <input style="width:100%;border:none" placeholder="个人简介" class=t value="{{.Description}}">
+        <button class="gbutton tmpl-green-text" style="margin:0.25em;flex-shrink:0"
                 onclick="updateSetting(this, 'description', this.previousElementSibling.value)"><i class=icon-pencil></i></button>
     </div>
 
+    {{if .ShowList}}
+    <div class="settings-box-input" style="overflow:hidden">
+        <input style="width:100%;border:none" placeholder="昵称" class=t value="{{.CustomName}}">
+        <span style="margin:0 0.5em;flex-shrink:0;opacity:0.8">@{{.ID}}</span>
+        <button class="gbutton tmpl-green-text" style="flex-shrink:0;margin:0.25em"
+            onclick="updateSetting(this,'custom-name',this.previousElementSibling.previousElementSibling.value)"><i class=icon-pencil></i></button>
+    </div>
+    <div style="text-align:center;margin-top:0.8em">
+        <a class="gbutton tmpl-green-text" href="#" onclick="confirm('确认登出 {{.DisplayName}}')?$postReload(this, '/api2/logout',{}):0">
+            <i class="icon-logout"></i> 退出账号
+        </a>
+    </div>
+    {{end}}
 </div>
 
 <script>
@@ -122,7 +130,7 @@ function loadKimochi(el) {
 
     var rect = ul.parentNode.parentNode.getBoundingClientRect();
     var height = rect.bottom - rect.top, width = rect.right - rect.left;
-    ul.style.top = height- 2 + 'px';
+    ul.style.top = height- 10 + 'px';
     ul.style.width = width + 'px';
 }
 </script>

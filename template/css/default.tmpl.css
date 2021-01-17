@@ -464,3 +464,8 @@ img.kimochi-selector[kimochi="0"] {
 
 .settings-box .title { padding: 0.8em 0.5em; text-align: center }
 .settings-box .body > div { padding: 0.5em; }
+.settings-box-input {
+    position:relative;display:flex;width:100%;box-shadow:0 0 2px #ccc;margin:1em 0 0;border-radius:4px;
+    align-items:center;
+    background: {{.InputBG}}
+}

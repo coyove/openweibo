@@ -209,13 +209,13 @@ function deleteArticle(el, id) {
     $post("/api2/delete", { id: id }, function (res) {
         stop();
         if (res != "ok") return res;
-        $q("[data-id='" + id + "'] pre", true).forEach(function(e) {
+        $q("[data-pre-id='" + id + "']", true).forEach(function(e) {
             e.innerHTML = "<span class=deleted></span>";
         });
-        $q("[data-id='" + id + "'] .media img", true).forEach(function(e) {
+        $q("[data-media-id='" + id + "'] img", true).forEach(function(e) {
             e.src = '';
         });
-        $q("[data-id='" + id + "'] .media", true).forEach(function(e) {
+        $q("[data-media-id='" + id + "']", true).forEach(function(e) {
             e.style.display = 'none';
         });
     }, stop)

@@ -32,6 +32,7 @@ type ArticleView struct {
 	GreyOutReply  bool
 	AlsoReply     bool
 	StickOnTop    bool
+	Forward       bool
 	Content       string
 	ShortContent  string
 	ContentHTML   template.HTML
@@ -149,6 +150,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 
 	a.Content = a2.Content
 	a.ContentHTML = a2.ContentHTML()
+	a.Forward = a.Content == "" && a.MediaType == ""
 
 	if a2.Parent != "" {
 		a.Parent = &ArticleView{}
