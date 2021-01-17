@@ -62,6 +62,7 @@ func APINew(g *gin.Context) {
 	u := dal.GetUserByContext(g)
 	if u == nil {
 		throw(g.PostForm("api2_uid") != "", "user_not_found")
+		throw(replyTo != "", "cannot_reply")
 		u = &model.User{ID: "pastebin" + strconv.Itoa(rand.Intn(10))}
 		image, replyLock, replyTo, pastebin = "", 0, "", true
 

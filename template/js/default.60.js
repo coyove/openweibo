@@ -237,7 +237,7 @@ function dropTopArticle(el, id) {
 }
 
 function lockArticle(el, id) {
-    var div = $html("<div class=tmpl-light-bg style='border-radius:0.5em;position:absolute;box-shadow:0 1px 5px rgba(0,0,0,.3)'></div>"),
+    var div = $html("<div class=tmpl-light-bg style='border-radius:0.5em;position:absolute;z-index:1001;box-shadow:0 1px 5px rgba(0,0,0,.3)'></div>"),
         box = el.getBoundingClientRect(),
         bodyBox = document.body.getBoundingClientRect(),
         currentValue = $value(el),
@@ -749,7 +749,8 @@ function postBox(uuid, p, win) {
 
     var box = $q("#post-box");
     box.OLD = box.innerHTML;
-    box.style.display = 'flex';
+    // box.style.display = 'flex';
+    box.className += " open";
     document.body.style.overflow = 'hidden';
     history.pushState({}, "发布", "/post_box?p=" + (p||""))
     window.onpopstate = function(event) {
@@ -757,13 +758,10 @@ function postBox(uuid, p, win) {
     };
 }
 
-function closePostBox(user) {
-    if (user) {
-        if ($q("#post-box textarea").value && !confirm('退出编辑?')) return;
-    }
+function closePostBox(historyBack) {
     var el = $q("#post-box");
     el.innerHTML = el.OLD; // clear inside content
-    el.style.display = 'none';
+    el.className = '';
     document.body.style.overflow = null;
 }
 

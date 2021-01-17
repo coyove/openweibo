@@ -4,7 +4,7 @@
 
 <div id="post-box">
     <nav>
-        <a onclick="closePostBox(true)"><i class=icon-left-small></i> 返回</a>
+        <a onclick="if ($q('#post-box textarea').value && !confirm('退出编辑?')) return;history.back()"><i class=icon-left-small></i> 返回</a>
         <a onclick="onPost(this, '{{.ReplyTo}}')" style="float:right">发送 <i class=icon-comment></i></a>
     </nav>
     <div>
@@ -137,7 +137,7 @@ function onPost(el, p) {
             uuid: "{{.UUID}}",
             parent: "{{.ReplyTo}}"
         });
-        closePostBox();
+        history.back();
     }, stop)
 }
 

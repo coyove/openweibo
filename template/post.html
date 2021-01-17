@@ -22,7 +22,7 @@
             <span style="display:inline-block;flex:1 0 auto;padding-left:0.5em">
                 共 {{.ParentArticle.Replies}} 回复
                 {{if and .ParentArticle.ReplyLockMode .ShowReplyLockInfo}}
-                {{if eq .ParentArticle.ReplyLockMode 1}}/ 禁止回复<style>#post-button{display:none}</style>{{end}}
+                {{if eq .ParentArticle.ReplyLockMode 1}}/ 禁止回复{{end}}
                     {{if eq .ParentArticle.ReplyLockMode 2}}/ 仅限作者关注的人回复{{end}}
                     {{if eq .ParentArticle.ReplyLockMode 3}}/ 仅限作者关注和被@的人回复{{end}}
                     {{if eq .ParentArticle.ReplyLockMode 4}}/ 仅限作者关注的和其粉丝回复{{end}}

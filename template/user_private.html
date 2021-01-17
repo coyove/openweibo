@@ -61,10 +61,8 @@ function onAvatarChanged(el) {
                 success = function() {
                     console.log((img.src.length / 1.33 / 1024).toFixed(0) + "KB", f);
                     var data = {}, a = el.previousElementSibling;
-                    var btnstop = $wait($q("#avatar-file-button"))
                     var stop = function() {
                         a.src = a.OLD_SRC;
-                        btnstop();
                     }
 
                     a.OLD_SRC = a.src;

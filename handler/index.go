@@ -352,8 +352,9 @@ func makeReplies(g *gin.Context, pid string) (pl ArticleRepliesView, ok bool) {
 		if dal.IsBlocking(pl.ParentArticle.Author.ID, you.ID) {
 			return
 		}
-
 		pl.ShowReplyLockInfo = !(you.IsMod() || you.ID == pl.ParentArticle.Author.ID)
+	} else {
+		pl.ShowReplyLockInfo = true
 	}
 
 	if pl.ParentArticle.Author.FollowApply != 0 {

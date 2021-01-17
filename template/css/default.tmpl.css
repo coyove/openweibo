@@ -343,6 +343,7 @@ img.kimochi-selector[kimochi="0"] {
     background: {{.ToastBG}};
     transform: translate(-50%, 0);
     padding:0 1em;
+    z-index: 10000;
 }
 
 .image-loading-div {
@@ -470,8 +471,13 @@ img.kimochi-selector[kimochi="0"] {
 }
 
 #post-box {
+    display: flex;
     flex: 1 0 auto;
-    display: none;
-    flex-direction:column;position:fixed;left:0;top:0;bottom:0;right:0;text-align:left;z-index:1000;
+    flex-direction:column;position:fixed;left:100%;top:0;
+    width:100%;height:100%;text-align:left;z-index:100;
     background: {{.InputBG}};
+    transition: left 0.3s;
+    transition-timing-function: ease;
 }
+
+#post-box.open { left: 0; }
