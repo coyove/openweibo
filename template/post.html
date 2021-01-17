@@ -12,6 +12,8 @@
     <a onclick="closeWin()"><i class=icon-left-small></i> 返回</a>
 </nav>
 
+{{template "post_box.html" .ReplyView}}
+
 <div>
     <div class="timeline" id="timeline{{.ReplyView.UUID}}" > 
         {{template "row_content.html" .ParentArticle}}
@@ -32,11 +34,7 @@
                         $post("/api2/new", { parent: "{{.ParentArticle.ID}}" }, function (res, h) {
                         stop();
                         if (res.substring(0, 3) !== "ok:") return res;
-                        localStorage.setItem("RESULT", JSON.stringify({
-                        html: decodeURIComponent(res.substr(3)),
-                        uuid: "{{.ReplyView.UUID}}",
-                        parent: "{{.ParentArticle.ID}}"
-                        }));
+                        onPostFinished({ html: decodeURIComponent(res.substr(3)), uuid: "{{.ReplyView.UUID}}", parent: "{{.ParentArticle.ID}}" });
                         }, stop);
                         })(this)'>
                     <i class=icon-link></i> 转发 

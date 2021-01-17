@@ -1,25 +1,12 @@
-{{template "header.html" .}}
 <script src="/s/js/tribute.min.js"></script>
 <script src="/s/js/dropzone.min.js"></script>
+<script>(Dropzone||{}).autoDiscover = false</script>
 
-<title>{{if .ReplyTo}}回复 {{.ReplyTo}}{{else}}发布{{end}}</title>
-
-<style>
-#home, #footer {
-    display: none;
-}
-    #main-content {
-        display: flex;
-        flex-direction: column;
-    }
-</style>
-
-<nav>
-    <a onclick="onClose(true)"><i class=icon-left-small></i> 返回</a>
-    <a onclick="onPost(this, '{{.ReplyTo}}')" style="float:right">发送 <i class=icon-comment></i></a>
-</nav>
-
-<div id="post-box" class="tmpl-input-bg" style="flex: 1 0 auto;display:flex;flex-direction:column;position:relative;text-align:left">
+<div id="post-box">
+    <nav>
+        <a onclick="closePostBox(true)"><i class=icon-left-small></i> 返回</a>
+        <a onclick="onPost(this, '{{.ReplyTo}}')" style="float:right">发送 <i class=icon-comment></i></a>
+    </nav>
     <div>
         <div style="padding: 0.5em 0.5em 0">
             <div class="post-options">
@@ -101,72 +88,6 @@
 </div>
 
 <script>
-    (function() {
-        function remoteSearch(text, cb) {
-            $post("/api/search", { id: text }, function(results) {
-                if (results && results.length) {
-                    results.forEach(function(t, i) {
-                        results[i] = { key: t.Display, id: t.ID, is_tag: t.IsTag } 
-                    });
-                }
-                JSON.parse(window.localStorage.getItem('presets') || '[]')
-                    .filter(function(t){ return t; })
-                    .forEach(function(t) {
-                        results.push({ key: t, id: t.substring(1), is_tag: t.substring(0, 1) == '#' }) 
-                    });
-                var seen = {};
-                results = results.filter(function(item) {
-                    return seen.hasOwnProperty(item.key) ? false : (seen[item.key] = true);
-                });
-                cb(results);
-            })
-        }
-
-        Dropzone.autoDiscover = false;
-        
-        new Tribute({
-            collection: [
-                {
-                    trigger: '@',
-                    selectClass: 'highlight',
-                    containerClass: 'tribute-container',
-                    selectTemplate: function (item) { return '@' + item.original.id; },
-                    lookup: 'key',
-                    values: remoteSearch,
-                }, {
-                    trigger: '#',
-                    selectClass: 'highlight',
-                    containerClass: 'tribute-container',
-                    selectTemplate: function (item) { return '#' + item.original.id; },
-                    lookup: 'key',
-                    values: remoteSearch,
-                }
-            ]
-        }).attach($q("#post-box textarea"));
-
-        new Dropzone($q("#post-box .dropzone"), {
-            url: "/api/upload_image",
-            maxFilesize: 16,
-            maxFilesize: 5,
-            addRemoveLinks: true,
-            dictRemoveFile: "<u style='cursor:pointer'>删除</u>",
-            dictFileTooBig: "文件过大 (上限5M)",
-            dictCancelUpload: "<span class='tmpl-mid-text'>上传中</span> <u style='cursor:pointer'>取消</u>",
-            dictCancelUploadConfirmation: "取消上传该图片？"
-        }).on("success", function(f, id) {
-            f._removeLink.setAttribute('data-uri', id);
-        });
-
-        $q("#post-box textarea").focus()
-    })()
-
-function onClose(user) {
-    if (user) {
-        if ($q("#post-box textarea").value && !confirm('退出编辑?')) return;
-    }
-    closeWin();
-}
-
 function onPaste(data) {
     var items = data.files, input = $q('.dz-hidden-input');
     if (items && items.length) {
@@ -211,12 +132,12 @@ function onPost(el, p) {
     }, function (res, h) {
         stop();
         if (res.substring(0, 3) !== "ok:") return res;
-        localStorage.setItem("RESULT", JSON.stringify({
+        onPostFinished({
             html: decodeURIComponent(res.substr(3)),
             uuid: "{{.UUID}}",
             parent: "{{.ReplyTo}}"
-        }));
-        onClose();
+        });
+        closePostBox();
     }, stop)
 }
 

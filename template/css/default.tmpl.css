@@ -162,7 +162,6 @@ span.deleted:after {
     padding: 0.5em;
     margin: 0;
     width: 100%;
-    z-index: 10000;
 }
 
 .user-info-box {
@@ -468,4 +467,11 @@ img.kimochi-selector[kimochi="0"] {
     position:relative;display:flex;width:100%;box-shadow:0 0 2px #ccc;margin:1em 0 0;border-radius:4px;
     align-items:center;
     background: {{.InputBG}}
+}
+
+#post-box {
+    flex: 1 0 auto;
+    display: none;
+    flex-direction:column;position:fixed;left:0;top:0;bottom:0;right:0;text-align:left;z-index:1000;
+    background: {{.InputBG}};
 }

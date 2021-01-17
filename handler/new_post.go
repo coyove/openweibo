@@ -40,9 +40,11 @@ func hashIP(g *gin.Context) string {
 }
 
 func PostBox(g *gin.Context) {
-	rv := makeReplyView(g, g.Query("p"), getUser(g))
-	rv.UUID = g.Query("uuid")
-	g.HTML(200, "post_box.html", rv)
+	if p := g.Query("p"); p == "" {
+		g.Redirect(302, "/t")
+	} else {
+		g.Redirect(302, "/S/"+p[1:])
+	}
 }
 
 func APINew(g *gin.Context) {

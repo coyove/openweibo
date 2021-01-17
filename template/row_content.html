@@ -47,7 +47,7 @@
         <span class=post-date>
             {{if .AlsoReply}}
             <i class='cls-reply icon-down-big'></i>
-            同回复于 {{formatTime .CreateTime}}
+            同{{if .Forward}}转发{{else}}回复{{end}}于 {{formatTime .CreateTime}}
             {{else}}
             发布于 {{formatTime .CreateTime}}
             {{end}}

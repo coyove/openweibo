@@ -678,29 +678,93 @@ function createAvatar(id) {
     return canvas;
 }
 
-(function() {
-    setInterval(function() {
-        var res = JSON.parse(localStorage.getItem("RESULT") || "{}")
-        var tl = document.getElementById("timeline" + res.uuid);
-        if (!tl) return;
-        var div = $html(res.html);
-        div.className += " newly-added-row"
-        setTimeout(function() {
-            div.className += " finished"
-            setTimeout(function() { div.className = div.className.replace('newly-added-row', '') }, 2000)
-        }, 1000)
-        tl.insertBefore(div, tl.querySelector(".row-reply-inserter").nextSibling)
-        localStorage.setItem("RESULT", "{}")
-        $popup(res.parent ? "回复成功": "发布成功")
-    }, 500)
-
-    try {
-        window.BACK = new URLSearchParams(location.search).get('win')
-    } catch (e) { }
-})()
+function onPostFinished(res) {
+    var tl = document.getElementById("timeline" + res.uuid);
+    if (!tl) return;
+    var div = $html(res.html);
+    div.className += " newly-added-row"
+    setTimeout(function() {
+        div.className += " finished"
+        setTimeout(function() { div.className = div.className.replace('newly-added-row', '') }, 2000)
+    }, 1000)
+    tl.insertBefore(div, tl.querySelector(".row-reply-inserter").nextSibling)
+    $popup(res.parent ? "回复成功": "发布成功")
+}
 
 function postBox(uuid, p, win) {
-    window.open('/post_box?uuid=' + uuid + '&p=' + (p || '') + '&win=' + (win || window.name))
+    function remoteSearch(text, cb) {
+        $post("/api/search", { id: text }, function(results) {
+            if (results && results.length) {
+                results.forEach(function(t, i) {
+                    results[i] = { key: t.Display, id: t.ID, is_tag: t.IsTag } 
+                });
+            }
+            JSON.parse(window.localStorage.getItem('presets') || '[]')
+                .filter(function(t){ return t; })
+                .forEach(function(t) {
+                    results.push({ key: t, id: t.substring(1), is_tag: t.substring(0, 1) == '#' }) 
+                });
+            var seen = {};
+            results = results.filter(function(item) {
+                return seen.hasOwnProperty(item.key) ? false : (seen[item.key] = true);
+            });
+            cb(results);
+        })
+    }
+
+    new Tribute({
+        collection: [
+            {
+                trigger: '@',
+                selectClass: 'highlight',
+                containerClass: 'tribute-container',
+                selectTemplate: function (item) { return '@' + item.original.id; },
+                lookup: 'key',
+                values: remoteSearch,
+            }, {
+                trigger: '#',
+                selectClass: 'highlight',
+                containerClass: 'tribute-container',
+                selectTemplate: function (item) { return '#' + item.original.id; },
+                lookup: 'key',
+                values: remoteSearch,
+            }
+        ]
+    }).attach($q("#post-box textarea"));
+
+    new Dropzone($q("#post-box .dropzone"), {
+        url: "/api/upload_image",
+        maxFilesize: 16,
+        maxFilesize: 5,
+        addRemoveLinks: true,
+        dictRemoveFile: "<u style='cursor:pointer'>删除</u>",
+        dictFileTooBig: "文件过大 (上限5M)",
+        dictCancelUpload: "<span class='tmpl-mid-text'>上传中</span> <u style='cursor:pointer'>取消</u>",
+        dictCancelUploadConfirmation: "取消上传该图片？"
+    }).on("success", function(f, id) {
+        f._removeLink.setAttribute('data-uri', id);
+    });
+
+    $q("#post-box textarea").focus()
+
+    var box = $q("#post-box");
+    box.OLD = box.innerHTML;
+    box.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    history.pushState({}, "发布", "/post_box?p=" + (p||""))
+    window.onpopstate = function(event) {
+        closePostBox();
+    };
+}
+
+function closePostBox(user) {
+    if (user) {
+        if ($q("#post-box textarea").value && !confirm('退出编辑?')) return;
+    }
+    var el = $q("#post-box");
+    el.innerHTML = el.OLD; // clear inside content
+    el.style.display = 'none';
+    document.body.style.overflow = null;
 }
 
 function closeWin() {
