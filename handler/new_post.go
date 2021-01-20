@@ -3,6 +3,7 @@ package handler
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -14,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unsafe"
 
 	"github.com/coyove/iis/common"
 	"github.com/coyove/iis/dal"
@@ -43,7 +45,7 @@ func PostBox(g *gin.Context) {
 	if p := g.Query("p"); p == "" {
 		g.Redirect(302, "/t")
 	} else {
-		g.Redirect(302, "/S/"+p[1:])
+		g.Redirect(302, "/S/"+p[1:]+"?win="+g.Query("win"))
 	}
 }
 
@@ -64,7 +66,7 @@ func APINew(g *gin.Context) {
 		throw(g.PostForm("api2_uid") != "", "user_not_found")
 		throw(replyTo != "", "cannot_reply")
 		u = &model.User{ID: "pastebin" + strconv.Itoa(rand.Intn(10))}
-		image, replyLock, replyTo, pastebin = "", 0, "", true
+		image, replyLock, pastebin = "", 0, true
 
 		if content == "" {
 			// curl -F 'content=@file'
@@ -73,8 +75,8 @@ func APINew(g *gin.Context) {
 			rd, err := f.Open()
 			throw(err, "multipart_error")
 			defer rd.Close()
-			tmp, _ := ioutil.ReadAll(rd)
-			content = string(tmp)
+			tmp, _ := ioutil.ReadAll(io.LimitReader(rd, common.Cfg.MaxContent))
+			content = *(*string)(unsafe.Pointer(&tmp))
 		}
 	}
 
@@ -87,6 +89,7 @@ func APINew(g *gin.Context) {
 		Content:       content,
 		Media:         image,
 		IP:            hashIP(g),
+		Asc:           byte(common.BoolInt(g.PostForm("asc") != "")),
 		NSFW:          g.PostForm("nsfw") != "",
 		Anonymous:     replyTo == "" && g.PostForm("anon") != "", // anonymous replies are meaningless
 		ReplyLockMode: byte(replyLock),
@@ -112,6 +115,7 @@ func APINew(g *gin.Context) {
 		a.PostOptions |= model.PostOptionNoSearch
 	}
 
+	var av ArticleView
 	if replyTo == "" {
 		if g.PostForm("poll") == "1" {
 			handlePollContent(a)
@@ -123,7 +127,7 @@ func APINew(g *gin.Context) {
 
 		a2, err := dal.Post(a, u)
 		throw(err, "")
-		okok(g, url.PathEscape(middleware.RenderTemplateString("row_content.html", NewTopArticleView(a2, u))))
+		av.from(a2, aTimeline, u)
 	} else {
 		if g.PostForm("no_timeline") == "1" || strings.Contains(content, "#ReportThis") {
 			a.PostOptions |= model.PostOptionNoSearch
@@ -132,8 +136,9 @@ func APINew(g *gin.Context) {
 
 		a2, err := dal.PostReply(replyTo, a, u)
 		throw(err, "cannot_reply")
-		okok(g, url.PathEscape(middleware.RenderTemplateString("row_content.html", NewReplyArticleView(a2, u))))
+		av.from(a2, aReply, u)
 	}
+	okok(g, url.PathEscape(middleware.RenderTemplateString("row_content.html", av)))
 }
 
 func APIDeleteArticle(g *gin.Context) {
@@ -237,9 +242,7 @@ func APIPoll(g *gin.Context) {
 	throw(ttl > 0 && a.CreateTime.Add(ttl).Before(time.Now()), "poll_closed")
 
 	for _, c := range newChoices {
-		if !strings.HasPrefix(c, "poll_") {
-			throw(true, "")
-		}
+		throw(!strings.HasPrefix(c, "poll_"), "")
 		c, _ := strconv.Atoi(c[5:])
 		if c < 1 || c > options {
 			log.Println(c, options, a.Extras)

@@ -119,6 +119,7 @@ func DoInsertArticle(rootID string, isReply bool, a model.Article) (A, R model.A
 		root = &model.Article{
 			ID:         rootID,
 			EOC:        a.ID,
+			ReplyEOC:   a.ID,
 			CreateTime: time.Now(),
 			Extras:     map[string]string{},
 		}
@@ -154,7 +155,32 @@ func DoInsertArticle(rootID string, isReply bool, a model.Article) (A, R model.A
 
 	if isReply {
 		// The article is a reply to another feed, so insert it into root's reply chain
-		a.NextReplyID, root.ReplyChain = root.ReplyChain, a.ID
+		if root.Asc == 1 {
+			// Order asc
+			switch root.ReplyEOC {
+			case a.ID:
+				// Already the last (newest) article
+			case "":
+				root.ReplyEOC, root.ReplyChain = a.ID, a.ID
+			default:
+				if common.LockAnotherKey(root.ReplyEOC, root.ID) {
+					defer common.UnlockKey(root.ReplyEOC)
+				}
+				lastReply, err := GetArticle(root.ReplyEOC)
+				if err != nil {
+					E = err
+					return
+				}
+				lastReply.NextReplyID = a.ID
+				if err := m.db.Set(lastReply.ID, lastReply.Marshal()); err != nil {
+					return model.Article{}, model.Article{}, err
+				}
+				root.ReplyEOC = a.ID
+			}
+		} else {
+			// Order desc
+			a.NextReplyID, root.ReplyChain = root.ReplyChain, a.ID
+		}
 	} else {
 		// The article is a normal feed, so insert it into root's main chain/media chain
 		a.NextID, root.NextID = root.NextID, a.ID

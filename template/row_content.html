@@ -102,10 +102,16 @@
 
         {{if not .Forward}}
         {{if not .GreyOutReply}}
-        <a class="gbutton" href="javascript:window.open('{{.Link}}?win=' + window.name).S=1">
+        <a class="gbutton" href="{{.Link}}" {{if .OpenBlank}}target="_blank"{{end}}>
             <i class="icon-reply-outline"></i>
             {{if .Replies}}{{.Replies}}{{end}}
         </a>
+        {{else}}
+        {{if .Parent}}
+        <a class=gbutton href="{{.ParentLink}}?j={{.ID}}">
+            <i class=icon-down-big></i>
+        </a>
+        {{end}}
         {{end}}
 
         <a class="gbutton" href="javascript:void(0)" onclick="likeArticle(this, '{{.ID}}')" liked={{.Liked}}>
@@ -117,9 +123,9 @@
         {{if not .Forward}}
         <a class="gbutton" href="javascript:void(0)" onclick="lockArticle(this,'{{.ID}}')" value="{{.ReplyLockMode}}">
             {{if .ReplyLockMode}}
-            <i class="tmpl-normal-text icon-lock"></i>
+            <i class="tmpl-mid-text icon-lock"></i>
             {{else}}
-            <i class="tmpl-light-text icon-lock-open"></i>
+            <i class="icon-lock-open"></i>
             {{end}}
         </a>
         {{end}}

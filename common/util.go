@@ -240,7 +240,17 @@ func DefaultMap(m map[string]string) map[string]string {
 	return m
 }
 
-func LockKey(key string) { keyLocks[Hash16(key)].Lock() }
+func LockKey(key string) {
+	keyLocks[Hash16(key)].Lock()
+}
+
+func LockAnotherKey(key, basedOnKey string) bool {
+	if Hash16(basedOnKey) == Hash16(key) {
+		return false
+	}
+	keyLocks[Hash16(key)].Lock()
+	return true
+}
 
 func UnlockKey(key string) { keyLocks[Hash16(key)].Unlock() }
 

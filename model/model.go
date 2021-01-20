@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/coyove/iis/common/geoip"
 	"html/template"
 	"strings"
 	"time"
+
+	"github.com/coyove/iis/common/geoip"
 
 	"github.com/coyove/iis/common"
 )
@@ -56,6 +57,7 @@ type Article struct {
 	Likes         int32             `json:"like,omitempty"`
 	ReplyLockMode byte              `json:"lm,omitempty"`
 	PostOptions   byte              `json:"po,omitempty"`
+	Asc           byte              `json:"asc,omitempty"`
 	NSFW          bool              `json:"nsfw,omitempty"`
 	Anonymous     bool              `json:"anon,omitempty"`
 	Content       string            `json:"content,omitempty"`
@@ -69,6 +71,7 @@ type Article struct {
 	NextMediaID   string            `json:"MN,omitempty"`
 	NextID        string            `json:"N,omitempty"`
 	EOC           string            `json:"EO,omitempty"`
+	ReplyEOC      string            `json:"REO,omitempty"`
 	Cmd           Cmd               `json:"K,omitempty"`
 	Extras        map[string]string `json:"X,omitempty"`
 	ReferID       string            `json:"ref,omitempty"`

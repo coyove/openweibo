@@ -18,6 +18,7 @@ import (
 type ArticleView struct {
 	ID            string
 	Link          string
+	ParentLink    string
 	Others        []*ArticleView
 	Parent        *ArticleView
 	Author        *model.User
@@ -33,6 +34,8 @@ type ArticleView struct {
 	AlsoReply     bool
 	StickOnTop    bool
 	Forward       bool
+	AscReply      bool
+	OpenBlank     bool
 	Content       string
 	ShortContent  string
 	ContentHTML   template.HTML
@@ -44,24 +47,13 @@ type ArticleView struct {
 }
 
 const (
-	_ uint64 = 1 << iota
-	_NoMoreParent
-	_ShowAuthorAvatar
-	_GreyOutReply
-	_NoCluster
+	aTimeline      = 0
+	aTimelineReply = 1
+	aReplyParent   = 2
+	aReply         = 3
 )
 
-func NewTopArticleView(a *model.Article, you *model.User) (av ArticleView) {
-	av.from(a, 0, you)
-	return
-}
-
-func NewReplyArticleView(a *model.Article, you *model.User) (av ArticleView) {
-	av.from(a, _NoMoreParent|_ShowAuthorAvatar, you)
-	return
-}
-
-func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *ArticleView {
+func (a *ArticleView) from(a2 *model.Article, opt int, u *model.User) *ArticleView {
 	if a2 == nil {
 		return a
 	}
@@ -77,6 +69,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 	a.CreateTime = a2.CreateTime
 	a.History = a2.History
 	a.Extras = a2.Extras
+	a.AscReply = a2.Asc == 1
 
 	a.Author, _ = dal.WeakGetUser(a2.Author)
 	if a.Author == nil {
@@ -154,17 +147,16 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 
 	if a2.Parent != "" {
 		a.Parent = &ArticleView{}
-		if opt&_NoMoreParent == 0 {
+		if opt == aTimeline {
 			p, _ := dal.WeakGetArticle(a2.Parent)
-			a.Parent.from(p, opt&(^_GreyOutReply)|_NoMoreParent, u)
+			a.Parent.from(p, aTimelineReply, u)
 		}
+		a.ParentLink = "/S/" + a2.Parent[1:]
 	}
 
-	a.GreyOutReply = opt&_GreyOutReply > 0
-	a.NoAvatar = opt&_NoMoreParent > 0
-	if opt&_ShowAuthorAvatar > 0 {
-		a.NoAvatar = false
-	}
+	a.GreyOutReply = opt == aReplyParent
+	a.NoAvatar = opt == aTimelineReply
+	a.OpenBlank = opt != aReply
 
 	switch a2.Cmd {
 	case model.CmdInboxReply, model.CmdInboxMention:
@@ -228,7 +220,7 @@ func (a *ArticleView) from(a2 *model.Article, opt uint64, u *model.User) *Articl
 	return a
 }
 
-func fromMultiple(g *gin.Context, a *[]ArticleView, a2 []*model.Article, opt uint64, u *model.User) {
+func fromMultiple(g *gin.Context, a *[]ArticleView, a2 []*model.Article, opt int, u *model.User) {
 	*a = make([]ArticleView, len(a2))
 
 	lookup := map[string]*ArticleView{}
@@ -254,7 +246,7 @@ func fromMultiple(g *gin.Context, a *[]ArticleView, a2 []*model.Article, opt uin
 		}
 	}
 
-	if opt&_NoCluster == 0 {
+	if opt == aTimeline {
 		// Second pass, connect clustered replies (r1 -> p, r2 -> p ...., rn -> p) into one post
 	NEXT:
 		for _, rids := range cluster {

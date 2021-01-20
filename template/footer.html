@@ -1,11 +1,10 @@
 </div>
+
 <div id=footer style="flex-shrink:0;margin:0;word-break:break-all;line-height:2em;padding:0.5em;text-align:center" class="tmpl-row-light-bg">
     {{$id := ""}}
     {{if .User}}
     {{$id = .User.ID}}
     <a href='/user'><b>@</b>{{$id}}</a>
-    {{else}}
-    <a href="/">登入</a> / <a href="/user">注册</a>
     {{end}}
 
     <div style="font-size:90%">

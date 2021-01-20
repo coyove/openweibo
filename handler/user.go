@@ -25,6 +25,11 @@ func User(g *gin.Context) {
 		DarkCaptcha: m == "dark",
 	}
 
+	if g.Query("myip") != "" { // a handy service
+		g.String(200, g.ClientIP())
+		return
+	}
+
 	p.UUID, p.Challenge = ik.MakeToken(g)
 	p.User = getUser(g)
 	if p.User != nil {

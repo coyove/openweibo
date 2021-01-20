@@ -2,30 +2,24 @@
 
 <title>{{abbrTitle .ParentArticle.Content}}... {{.ParentArticle.ID}}</title>
 
-<style>
-#home, #footer {
-    display: none;
-}
-</style>
-
-<nav>
-    <a onclick="closeWin()"><i class=icon-left-small></i> 返回</a>
-</nav>
-
 {{template "post_box.html" .ReplyView}}
 
 <div>
     <div class="timeline" id="timeline{{.ReplyView.UUID}}" > 
         {{template "row_content.html" .ParentArticle}}
 
-        <div class=article-row style='display:flex;align-items:center'>
-            <span style="display:inline-block;flex:1 0 auto;padding-left:0.5em">
+        <div class=article-row style=''>
+            <div class=article-row-header style='margin:0;padding:0'>
+            <span style="padding-left:0.5em">
                 共 {{.ParentArticle.Replies}} 回复
                 {{if and .ParentArticle.ReplyLockMode .ShowReplyLockInfo}}
                 {{if eq .ParentArticle.ReplyLockMode 1}}/ 禁止回复{{end}}
                     {{if eq .ParentArticle.ReplyLockMode 2}}/ 仅限作者关注的人回复{{end}}
                     {{if eq .ParentArticle.ReplyLockMode 3}}/ 仅限作者关注和被@的人回复{{end}}
                     {{if eq .ParentArticle.ReplyLockMode 4}}/ 仅限作者关注的和其粉丝回复{{end}}
+                {{end}}
+                {{if .ParentArticle.AscReply}}
+                / 正序
                 {{end}}
             </span>
             <div style='float:right' >
@@ -43,6 +37,14 @@
                     <i class=icon-comment></i> 回复
                 </button>
             </div>
+            </div>
+            {{if .Cursor}}
+            <div class=subreply>
+                <div class=article-row style='text-align:center'>
+                    <button class=gbutton onclick='history.replaceState(null,"","{{.ParentArticle.Link}}");location.reload()'>部分回复省略，浏览全部</button>
+                </div>
+            </div>
+            {{end}}
         </div>
 
         <div class="row-reply-inserter" style="display:none"></div>
@@ -57,6 +59,8 @@
         <button id="load-more" value="{{.Next}}" class="gbutton" onclick="loadMore(this,{reply:true})">更多回复...</button>
         {{end}}
         <script>
+            window.IS_REPLY = true;
+            window.ASC = {{.ParentArticle.AscReply}};
             window.name = "win{{.ReplyView.UUID}}"
         </script>
     </div>

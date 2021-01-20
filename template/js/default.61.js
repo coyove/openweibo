@@ -31,11 +31,19 @@
     }
 
     window.addEventListener('scroll', function(e) {
-        var nextBtn = $q("#load-more")
-        if (!nextBtn) return;
         if (window.ticking) return
         window.requestAnimationFrame(function() {
-            $q(".timeline > .article-row", true).forEach(function(c) {
+            var nextBtn = $q("#load-more"), first = false;
+            $q(".timeline > .article-row[data-id^=S]", true).forEach(function(c, ci) {
+                if (window.IS_REPLY && isInViewport(c) && ci > 0 && !first) {
+                    var u = new URLSearchParams(location.search);
+                    u.set("j", c.getAttribute('data-id'));
+                    window.history.replaceState(null, '', '?' + u.toString());
+                    first = true;
+                }
+
+                if (!nextBtn) return;
+
                 if (isInViewport(c, 3)) {
                     if (c.childNodes.length == 0) {
                         c.innerHTML = c.__html;
@@ -49,8 +57,7 @@
                     }
                 }
             })
-            if (isInViewport(nextBtn) &&
-                !nextBtn.getAttribute("disabled") && nextBtn.getAttribute("eot") !== "true") {
+            if (isInViewport(nextBtn) && !nextBtn.getAttribute("disabled") && nextBtn.getAttribute("eot") !== "true") {
                 console.log("Load next");
                 nextBtn.click();
             }
@@ -212,12 +219,8 @@ function deleteArticle(el, id) {
         $q("[data-pre-id='" + id + "']", true).forEach(function(e) {
             e.innerHTML = "<span class=deleted></span>";
         });
-        $q("[data-media-id='" + id + "'] img", true).forEach(function(e) {
-            e.src = '';
-        });
-        $q("[data-media-id='" + id + "']", true).forEach(function(e) {
-            e.style.display = 'none';
-        });
+        $q("[data-media-id='" + id + "'] img", true).forEach(function(e) { e.src = '' });
+        $q("[data-media-id='" + id + "']", true).forEach(function(e) { e.style.display = 'none' });
     }, stop)
 }
 
@@ -328,37 +331,24 @@ function followBlock(el, m, id) {
 function __i18n(t) {
     if (t.match(/cooldown`([0-9\.]+)s/)) 
         return "请等待" + t.split("`").pop();
-    if (t === "captcha_failed")
-        return "无效验证码";
-    if (t === "expired_session")
-        return "Token过期，请重试";
-    if (t === "content_too_short")
-        return "正文过短";
-    if (t === "cannot_reply")
-        return "无法回复";
-    if (t === "internal_error")
-        return "服务端异常";
-    if (t === "user_not_found")
-        return "无权限";
-    if (t === "user_not_found_by_id")
-        return "ID不存在";
-    if (t === "new_password_too_short")
-        return "新密码太短";
-    if (t === "old_password_invalid")
-        return "旧密码不符";
-    if (t === "duplicated_id")
-        return "ID已存在";
-    if (t === "id_too_short")
-        return "无效ID";
-    if (t === "invalid_id_password")
-        return "无效ID或密码";
-    if (t === "user_not_permitted")
-        return "无权限";
-    if (t === "cannot_follow")
-        return "无法关注";
-    if (t === "cannot_block_tag")
-        return "无法拉黑标签";
-    return t;
+    return ({
+        "captcha_failed": "无效验证码",
+        "expired_session": "Token过期，请重试",
+        "content_too_short": "正文过短",
+        "cannot_reply": "无法回复",
+        "internal_error": "服务端异常",
+        "user_not_found": "无权限",
+        "user_not_found_by_id": "ID不存在",
+        "new_password_too_short": "新密码太短",
+        "old_password_invalid": "旧密码不符",
+        "duplicated_id": "ID已存在",
+        "id_too_short": "无效ID",
+        "invalid_id_password": "无效ID或密码",
+        "user_not_permitted": "无权限",
+        "cannot_follow": "无法关注",
+        "cannot_block_tag": "无法拉黑标签",
+        "poll_nochange": "不可更改投票"
+    })[t] || t;
 }
 
 function loadMore(el, data) {
@@ -367,10 +357,8 @@ function loadMore(el, data) {
     $post('/api/timeline', data, function(pl) {
         stop();
         if (pl.EOT) {
-            el.innerText = "没有更多内容了";
-            el.setAttribute("eot", "true");
-            el.className += " tmpl-light-text";
-            el.onclick = function() { location.reload() }
+            el.style.display = 'none';
+            $popup('EOC');
         } else {
             el.innerText = "更多...";
         }
@@ -384,6 +372,9 @@ function loadMore(el, data) {
                 }
                 $q('.timeline').appendChild($html(a[1]));
             })
+        }
+        if (pl.EOT && data.reply) {
+            $q('.timeline').appendChild($html("<div class=article-row style='visibility:hidden;height:10em'></div>"));
         }
     }, stop);
 }
@@ -687,7 +678,7 @@ function onPostFinished(res) {
         div.className += " finished"
         setTimeout(function() { div.className = div.className.replace('newly-added-row', '') }, 2000)
     }, 1000)
-    tl.insertBefore(div, tl.querySelector(".row-reply-inserter").nextSibling)
+    tl.insertBefore(div, tl.querySelector(".row-reply-inserter").nextSibling);
     $popup(res.parent ? "回复成功": "发布成功")
 }
 
@@ -716,15 +707,11 @@ function postBox(uuid, p, win) {
         collection: [
             {
                 trigger: '@',
-                selectClass: 'highlight',
-                containerClass: 'tribute-container',
                 selectTemplate: function (item) { return '@' + item.original.id; },
                 lookup: 'key',
                 values: remoteSearch,
             }, {
                 trigger: '#',
-                selectClass: 'highlight',
-                containerClass: 'tribute-container',
                 selectTemplate: function (item) { return '#' + item.original.id; },
                 lookup: 'key',
                 values: remoteSearch,
@@ -747,33 +734,32 @@ function postBox(uuid, p, win) {
 
     $q("#post-box textarea").focus()
 
-    var box = $q("#post-box");
-    box.OLD = box.innerHTML;
-    // box.style.display = 'flex';
+    var box = $q("#post-box"), old = box.innerHTML;
     box.className += " open";
     document.body.style.overflow = 'hidden';
-    history.pushState({}, "发布", "/post_box?p=" + (p||""))
+    history.pushState({}, "发布", "/post_box?p=" + (p||"") + "&win=" + (win||""))
     window.onpopstate = function(event) {
-        closePostBox();
-    };
+        box.innerHTML = old; // clear inside content
+        box.className = '';
+        document.body.style.overflow = null;
+    }
 }
 
-function closePostBox(historyBack) {
-    var el = $q("#post-box");
-    el.innerHTML = el.OLD; // clear inside content
-    el.className = '';
-    document.body.style.overflow = null;
+function openWin(url, btn) {
+    if (btn) var stop = $wait(btn);
+    var i = $html("<iframe class='sp-container'></iframe>");
+    i.src = url;
+    i.onload = function() { 
+        if (stop) stop();
+        i.className += ' open';
+    }
+    i.onbeforeclose = function() {
+        alert(1);
+    }
+    document.body.appendChild(i)
 }
 
 function closeWin() {
-    var back = window.BACK;
-    if (back) {
-        var w = window.open('', back)
-        if (w.location.href === 'about:blank') {
-            w.location.href = '/t?back=' + back
-        }
-        window.close()
-        return;
-    }
-    location.href = '/t'
+    history.length <= 1 ? window.close() : history.back();
 }
+

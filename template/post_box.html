@@ -48,9 +48,11 @@
                     {{end}}
                     <li>
                         <input type=checkbox name=isnsfw id="isnsfw">
-                        <label for="isnsfw">
-                            标记图片为<i class='icon-eye-off'></i>NSFW
-                        </label>
+                        <label for="isnsfw">标记图片为<i class='icon-eye-off'></i>NSFW</label>
+                    </li>
+                    <li>
+                        <input type=checkbox name=asc id="asc">
+                        <label for="asc">评论正排</label>
                     </li>
                 </ul>
             </div>
@@ -123,6 +125,7 @@ function onPost(el, p) {
         content: ta.value,
         media: ids.join(';'),
         anon: $q("#post-box [name=anon]").value,
+        asc: one("asc"),
         nsfw: one("isnsfw"),
         no_master:  one("nomaster"),
         no_timeline: one("notimeline"),

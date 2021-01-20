@@ -40,6 +40,7 @@ type ArticlesTimelineView struct {
 type ArticleRepliesView struct {
 	Articles          []ArticleView
 	ParentArticle     ArticleView
+	Cursor            string
 	Next              string
 	ShowReplyLockInfo bool
 	ReplyView         ReplyView
@@ -284,7 +285,7 @@ func APITimeline(g *gin.Context) {
 		p.Next = next
 	} else if g.PostForm("reply") == "true" {
 		a, next := dal.WalkReply(int(common.Cfg.PostsPerPage), g.PostForm("cursors"))
-		fromMultiple(g, &articles, a, _NoMoreParent|_NoCluster|_ShowAuthorAvatar, getUser(g))
+		fromMultiple(g, &articles, a, aReply, getUser(g))
 		p.Next = next
 	} else {
 		getter := func(key string) string {
@@ -345,7 +346,7 @@ func makeReplies(g *gin.Context, pid string) (pl ArticleRepliesView, ok bool) {
 	}
 
 	you := getUser(g)
-	pl.ParentArticle.from(parent, _GreyOutReply|_NoMoreParent|_ShowAuthorAvatar, you)
+	pl.ParentArticle.from(parent, aReplyParent, you)
 	pl.ReplyView = makeReplyView(g, pid, you)
 
 	if you != nil {
@@ -366,8 +367,16 @@ func makeReplies(g *gin.Context, pid string) (pl ArticleRepliesView, ok bool) {
 		}
 	}
 
-	a, next := dal.WalkReply(int(common.Cfg.PostsPerPage), parent.ReplyChain)
-	fromMultiple(g, &pl.Articles, a, _NoMoreParent|_NoCluster|_ShowAuthorAvatar, getUser(g))
+	pl.Cursor = g.Query("j")
+	cursor := pl.Cursor
+	if cursor == "" {
+		cursor = parent.ReplyChain
+	} else if cursor == parent.ReplyChain {
+		pl.Cursor = ""
+	}
+
+	a, next := dal.WalkReply(int(common.Cfg.PostsPerPage), cursor)
+	fromMultiple(g, &pl.Articles, a, aReply, getUser(g))
 	pl.Next = next
 	return pl, true
 }

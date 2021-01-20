@@ -92,7 +92,7 @@
     text-decoration: none;
 }
 .icon-down-big.cls-reply {
-    color: {{.Navbar}}
+    color: {{.MidGrayText}}
 }
 .icon-flow-merge:before {
     margin-left: 0 !important 
@@ -129,6 +129,9 @@
 }
 .icon-reply-outline.replied:before {
     transform:rotate(-135deg); 
+}
+.foobar .icon-down-big:before {
+    transform:rotate(180deg); 
 }
 .post-options [name="anon"][value="1"] .icon-user-secret {
     color: {{.GreenText}};
