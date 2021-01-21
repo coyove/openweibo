@@ -3,7 +3,7 @@
 <div class="article-row status" style="">
     <div class="article-row-header" style="text-align:left">
         <div class="avatar-container">
-            <img class="avatar" {{template "avatar.html" .}} onclick="location.href='/t/{{.ID}}'">
+            <img class="avatar" src="{{.AvatarURL}}" onclick="location.href='/t/{{.ID}}'">
             {{if .Kimochi}}
             <img class="avatar-kimochi" src="{{.KimochiURL}}">
             {{end}}

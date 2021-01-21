@@ -144,7 +144,7 @@ func (gc *GlobalCache) Add(k string, v []byte) error {
 	c := gc.Pool.Get()
 	defer c.Close()
 
-	if _, err := c.Do("SET", k, append(v, '$')); err != nil {
+	if _, err := c.Do("SETEX", k, 3600, append(v, '$')); err != nil {
 		log.Println("[GlobalCache_redis] set:", k, "value:", string(v), "error:", err)
 		return fmt.Errorf("cache error")
 	}

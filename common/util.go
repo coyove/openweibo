@@ -1,7 +1,6 @@
 package common
 
 import (
-	"html/template"
 	"regexp"
 	"strconv"
 	"strings"
@@ -13,15 +12,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const atTagRx = `((@|#)[^@# \n\s\t]+)`
+
 var (
-	rxSan        = regexp.MustCompile(`(?m)(\n|\[hide\][\s\S]+?\[/hide\][\s\n]*|\[code\][\s\S]+?\[/code\]|<|https?://[^\s<>"'#\[\]]+|@\S+|#[^# \s\n\t]+)|\[mj\](\d+|ac\d+|a2_\d+)\[/mj\]`)
-	rxMentions   = regexp.MustCompile(`((@|#)[^@# \n\s\t]+)`)
-	rxAcCode     = regexp.MustCompile(`v\/ac(\d+)`)
-	rxBiliAVCode = regexp.MustCompile(`(av(\d+)|BV(\w+))`)
-	rxWYYYCode   = regexp.MustCompile(`([^r]id=|song/)(\d+)`)
-	rxYTCode     = regexp.MustCompile(`(youtu\.be\/(\w+)|v=(\w+))`)
-	rxCrawler    = regexp.MustCompile(`(?i)(bot|googlebot|crawler|spider|robot|crawling)`)
-	keyLocks     [65536]sync.Mutex
+	rxSan      = regexp.MustCompile(`(?m)(<|\n|\[\S+?\][\s\S]+?\[/\S+?\]|https?://[^\s<>"'#\[\]]+|` + atTagRx + `)`)
+	rxMentions = regexp.MustCompile(atTagRx)
+	rxCrawler  = regexp.MustCompile(`(?i)(bot|googlebot|crawler|spider|robot|crawling)`)
+	keyLocks   [65536]sync.Mutex
 
 	RevRenderTemplateString func(name string, v interface{}) string
 )
@@ -76,90 +73,34 @@ func SanText(in string) string {
 	newLines := 0
 	in = rxSan.ReplaceAllStringFunc(in, func(in string) string {
 		if in == "\n" {
-			if newLines++; newLines < 10 {
-				// We allow 10 new lines in an article at max
-				return in
-			}
-			return " "
+			newLines++ // 10 lines at max
+			return IfStr(newLines < 10, in, " ")
 		}
 		if in == "<" {
 			return "&lt;"
 		}
-		if strings.HasPrefix(in, "[code]") && strings.HasSuffix(in, "[/code]") {
-			return "<code>" + strings.TrimSpace(in[6:len(in)-7]) + "</code>"
+		if x := truncCodeTag(in, "code"); x != "" {
+			return "<code>" + x + "</code>"
 		}
-		if strings.HasPrefix(in, "[hide]") {
-			in = strings.TrimPrefix(strings.TrimSpace(in), "[hide]")
-			in = strings.TrimSuffix(in, "[/hide]")
-			return "<span class=hidden-text>" + strings.TrimSpace(in) + "</span>"
+		if x := truncCodeTag(in, "append"); x != "" {
+			return "<span class=append-by>" + x + "</span>"
 		}
-		if strings.HasPrefix(in, "[mj]") {
-			var idx = in[4 : len(in)-5]
-			var host string
-			if strings.HasPrefix(idx, "a") {
-				host = "<img class='majiang ac-emoji' src='/s/emoji/"
-			} else {
-				host = "<img class='majiang' src='https://static.saraba1st.com/image/smiley/face2017/"
+		if x := truncCodeTag(in, "hide"); x != "" {
+			return "<span class=hidden-text>" + x + "</span>"
+		}
+		if x := truncCodeTag(in, "mj"); x != "" {
+			if strings.HasPrefix(x, "ac") {
+				return "<img class='majiang ac-emoji' src='/s/emoji/" + x + ".png'>"
 			}
-			return host + idx + ".png'>"
+			return "<img class='majiang' src='https://static.saraba1st.com/image/smiley/face2017/" + x + ".png'>"
 		}
 		if len(in) > 0 {
-			s := compress.SafeStringForCompressString(template.HTMLEscapeString(in[1:]))
+			s := compress.SafeStringForCompressString(in[1:])
 			if in[0] == '#' {
-				// AddTagToSearch(in[1:])
-				return "<a href='/tag/" + s + "'>" + in + "</a>"
+				return "<a target=_blank href='/tag/" + s + "'>" + in + "</a>"
 			}
 			if in[0] == '@' {
-				// AddUserToSearch(in[1:])
-				return "<a href='javascript:void(0)'" +
-					` class=mentioned-user` +
-					` onclick="showInfoBox(this,'` + in[1:] + `')">` +
-					in + "</a>"
-			}
-		}
-		if strings.Contains(in, "bilibili") || strings.Contains(in, "b23.tv") {
-			res := rxBiliAVCode.FindAllStringSubmatch(in, 1)
-			if len(res) == 1 && len(res[0]) > 2 {
-				if strings.HasPrefix(res[0][0], "BV") { // new BV code
-					return makeVideoButton("#00a1d6",
-						res[0][0],
-						"https://player.bilibili.com/player.html?bvid="+res[0][0],
-						"https://www.bilibili.com/"+res[0][0])
-				}
-				return makeVideoButton("#00a1d6",
-					"av"+res[0][2],
-					"https://player.bilibili.com/player.html?aid="+res[0][2],
-					"https://www.bilibili.com/av"+res[0][2])
-			}
-		}
-
-		if strings.Contains(in, "acfun") {
-			res := rxAcCode.FindAllStringSubmatch(in, 1)
-			if len(res) == 1 && len(res[0]) == 2 {
-				return makeVideoButton("#fd4c5d",
-					"ac"+res[0][1],
-					"https://www.acfun.cn/player/ac"+res[0][1],
-					"https://www.acfun.cn/v/ac"+res[0][1])
-			}
-		}
-
-		if strings.Contains(in, "music.163") {
-			res := rxWYYYCode.FindAllStringSubmatch(in, 1)
-			if len(res) == 1 && len(res[0]) == 3 {
-				return strings.Replace(makeVideoButton("#e60125",
-					"yy"+res[0][2],
-					"https://music.163.com/outchain/player?type=2&auto=0&height=66&id="+res[0][2],
-					"https://music.163.com/song?id="+res[0][2]), "<iframe ", "<iframe fixed-height=80 ", 1)
-			}
-		}
-
-		if strings.HasPrefix(in, "https://youtu") {
-			res := rxYTCode.FindAllStringSubmatch(in, 1)
-			if len(res) == 1 && len(res[0]) >= 3 {
-				return makeVideoButton("#db4437",
-					"yt"+res[0][2],
-					"https://www.youtube.com/embed/"+res[0][2],
-					in)
+				return `<a href='javascript:void(0)' class=mentioned-user onclick="showInfoBox(this,'` + s + `')">` + in + "</a>"
 			}
 		}
 
@@ -168,11 +109,14 @@ func SanText(in string) string {
 	return in
 }
 
-func makeVideoButton(color string, title, vid, url string) string {
-	return "<a style='color:" + color + "' href='" + url + "' target=_blank><i class='icon-export-alt'></i></a>" +
-		"<a style='color:" + color + "' href='javascript:void(0)' " +
-		"onclick='adjustVideoIFrame(this,\"" + vid + "\")'>" + title + "</a>" +
-		"<iframe style='width:100%;display:none' frameborder=0 allowfullscreen=true></iframe>"
+func truncCodeTag(in string, tag string) string {
+	p, s := strings.HasPrefix, strings.HasSuffix
+	if p(in, "[") && p(in[1:], tag) && p(in[1+len(tag):], "]") {
+		if s(in, "]") && s(in[:len(in)-1], tag) && s(in[:len(in)-1-len(tag)], "[/") {
+			return in[1+len(tag)+1 : len(in)-1-len(tag)-2]
+		}
+	}
+	return ""
 }
 
 func ExtractMentionsAndTags(in string) ([]string, []string) {
@@ -208,7 +152,9 @@ func Hash32(n string) (h uint32) {
 	return
 }
 
-func Hash16(n string) (h uint16) { return uint16(Hash32(n)) }
+func Hash16(n string) (h uint16) {
+	return uint16(Hash32(n))
+}
 
 func ParseDuration(v string) time.Duration {
 	if strings.HasSuffix(v, "d") {
@@ -233,6 +179,8 @@ func BoolInt(v bool) int { return int(*(*byte)(unsafe.Pointer(&v))) }
 
 func BoolInt2(v bool) int { return int((float64(*(*byte)(unsafe.Pointer(&v))) - 0.5) * 2) }
 
+func IfStr(v bool, t, f string) string { return [2]string{f, t}[BoolInt(v)] }
+
 func DefaultMap(m map[string]string) map[string]string {
 	if m == nil {
 		m = map[string]string{}
@@ -252,7 +200,9 @@ func LockAnotherKey(key, basedOnKey string) bool {
 	return true
 }
 
-func UnlockKey(key string) { keyLocks[Hash16(key)].Unlock() }
+func UnlockKey(key string) {
+	keyLocks[Hash16(key)].Unlock()
+}
 
 func IsCrawler(g *gin.Context) bool {
 	if rxCrawler.MatchString(g.Request.UserAgent()) {

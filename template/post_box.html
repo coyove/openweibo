@@ -29,6 +29,10 @@
                         <input type=checkbox name=notimeline id="notimeline">
                         <label for="notimeline">不同步至个人时间线</label>
                     </li>
+                    <li>
+                        <input type=checkbox name=append id="append" disabled=disabled>
+                        <label for="append">追加内容至原文</label>
+                    </li>
                     {{else}}
                     <li>
                         <input type=checkbox name=nomaster id="nomaster" {{if .DefaultNoMaster}}checked{{end}}>
@@ -103,7 +107,7 @@ function onPost(el, p) {
     var ta = $q("#post-box [name=content]"),
         res = ta.value.match(/((@|#)\S+)/g),
         one = function(key) {
-            return $q("#post-box [name=" + key + "]").checked ? "1" : "";
+            return ($q("#post-box [name=" + key + "]") || {}).checked ? "1" : "";
         }
 
     if (res) {
@@ -130,6 +134,7 @@ function onPost(el, p) {
         no_master:  one("nomaster"),
         no_timeline: one("notimeline"),
         stick_on_top: one("stickontop"),
+        append: one("append"),
         poll: one("poll"),
         reply_lock: $value($q("#post-box [name=reply-lock]")),
     }, function (res, h) {

@@ -23,6 +23,11 @@
                 {{end}}
             </span>
             <div style='float:right' >
+                {{if .You}}
+                {{if or (eq .You.ID .ParentArticle.Author.ID) .You.IsAdmin}}
+                <script>$q("#append").removeAttribute("disabled")</script>
+                {{end}}
+                {{end}}
                 <button class="gbutton" onclick='(function(btn) {
                         var stop = $wait(btn);
                         $post("/api2/new", { parent: "{{.ParentArticle.ID}}" }, function (res, h) {

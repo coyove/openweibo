@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/coyove/iis/common"
+	"github.com/coyove/iis/common/avatar"
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/middleware"
@@ -111,27 +112,17 @@ func Avatar(g *gin.Context) {
 		return
 	}
 
+	g.Writer.Header().Add("Cache-Control", "max-age=8640000")
+	if g.Query("q") == "0" {
+		g.Writer.Header().Add("Content-Type", "image/jpeg")
+		avatar.Create(g.Writer, id)
+		return
+	}
+
 	hash := (model.User{ID: id}).IDHash()
 	path := fmt.Sprintf("tmp/images/%016x@%s", hash, id)
 
-	// 	if g.Query("q") != "0" {
-	// if common.Cfg.S3Region != "" {
-	// 	path := fmt.Sprintf("%s/%016x@%s?q=%s", common.Cfg.MediaDomain, hash, id, g.Query("q"))
-	// 	g.Redirect(302, path)
-	// } else {
 	http.ServeFile(g.Writer, g.Request, path)
-	// }
-	// 	} else {
-	// 		ii, err := ig.Draw("iis" + id)
-	// 		if err != nil {
-	// 			log.Println(err)
-	// 			g.Status(404)
-	// 			return
-	// 		}
-	// 		g.Writer.Header().Add("Content-Type", "image/jpeg")
-	// 		g.Writer.Header().Add("Cache-Control", "public")
-	// 		ii.Jpeg(100, 80, g.Writer)
-	// 	}
 }
 
 func UserLikes(g *gin.Context) {

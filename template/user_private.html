@@ -1,9 +1,9 @@
 <div class="article-row status" style="overflow:unset">
     <div class="article-row-header" style="">
         <div class="avatar-container" style="position:relative">
-            <img class="avatar" {{template "avatar.html" .}} style="cursor:pointer;margin:0" onclick="this.nextElementSibling.click()">
+            <img class="avatar" src="{{.AvatarURL}}" style="cursor:pointer;margin:0" onclick="this.nextElementSibling.click()">
             <input type=file style="display:none" onchange="onAvatarChanged(this)" id="avatar-file-selector">
-            <div style='cursor:pointer;position:absolute;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.5);border-radius:0.25em;text-align:center'
+            <div style='cursor:pointer;position:absolute;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,0.33);border-radius:0.25em;text-align:center'
                 onclick='$q("#avatar-file-selector").click()'>
                 <i class=icon-camera style="color:white"></i>
             </div>
@@ -60,13 +60,14 @@ function onAvatarChanged(el) {
             var canvas = document.createElement("canvas"), throt = 150 * 1000, f = 1,
                 success = function() {
                     console.log((img.src.length / 1.33 / 1024).toFixed(0) + "KB", f);
-                    var data = {}, a = el.previousElementSibling;
-                    var stop = function() {
+                    var data = {}, a = el.previousElementSibling, stop = function() {
                         a.src = a.OLD_SRC;
+                        el.nextElementSibling.style.display = null;
                     }
 
                     a.OLD_SRC = a.src;
                     a.src = '/s/assets/spinner2.gif'
+                    el.nextElementSibling.style.display = 'none';
 
                     data["set-avatar"] = "1";
                     data["avatar"] = img.src;
@@ -77,26 +78,24 @@ function onAvatarChanged(el) {
                     }, stop)
                 };
 
-            if (img.src.length > throt) {
-                if (img.src.match(/image\/gif/)) {
-                    img.onerror();
+            if (img.src.match(/image\/gif/)) {
+                img.src.length > throt ?  img.onerror() : success();
+                return;
+            }
+
+            var ctx = canvas.getContext('2d'), sz = Math.min(img.height, img.width);
+            canvas.width = sz; 
+            canvas.height = sz;
+            ctx.drawImage(img,0,0);
+            for (f = 1; f > 0; f -= 0.2) {
+                var res = canvas.toDataURL("image/jpeg", f);
+                if (res.length <= throt) {
+                    img.src = res;
+                    success();
                     return;
                 }
-                var ctx = canvas.getContext('2d');
-                canvas.width = img.width; canvas.height = img.height;
-                ctx.drawImage(img,0,0);
-                for (f = 0.8; f > 0; f -= 0.2) {
-                    var res = canvas.toDataURL("image/jpeg", f);
-                    if (res.length <= throt) {
-                        img.src = res;
-                        success();
-                        return;
-                    }
-                }
-                img.onerror();
-            } else {
-                success();
             }
+            img.onerror();
         }
         img.src = reader.result;
     };

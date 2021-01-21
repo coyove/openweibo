@@ -43,6 +43,7 @@ type ArticleRepliesView struct {
 	Cursor            string
 	Next              string
 	ShowReplyLockInfo bool
+	You               *model.User
 	ReplyView         ReplyView
 }
 
@@ -346,6 +347,7 @@ func makeReplies(g *gin.Context, pid string) (pl ArticleRepliesView, ok bool) {
 	}
 
 	you := getUser(g)
+	pl.You = you
 	pl.ParentArticle.from(parent, aReplyParent, you)
 	pl.ReplyView = makeReplyView(g, pid, you)
 

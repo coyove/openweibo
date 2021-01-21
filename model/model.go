@@ -16,7 +16,7 @@ import (
 
 var (
 	ErrNotExisted                = errors.New("article not existed")
-	Dummy                        = User{_IsYou: true}
+	Dummy                        = User{_IsYou: true, ID: "dummy"}
 	DalIsFollowing               func(string, string) bool
 	DalIsBlocking                func(string, string) bool
 	DalIsFollowingWithAcceptance func(string, *User) (bool, bool)
@@ -53,29 +53,29 @@ const (
 
 type Article struct {
 	ID            string            `json:"id"`
-	Replies       int               `json:"rs,omitempty"`
-	Likes         int32             `json:"like,omitempty"`
-	ReplyLockMode byte              `json:"lm,omitempty"`
-	PostOptions   byte              `json:"po,omitempty"`
-	Asc           byte              `json:"asc,omitempty"`
-	NSFW          bool              `json:"nsfw,omitempty"`
-	Anonymous     bool              `json:"anon,omitempty"`
-	Content       string            `json:"content,omitempty"`
-	Media         string            `json:"M,omitempty"`
-	Author        string            `json:"author,omitempty"`
-	IP            string            `json:"ip,omitempty"`
-	CreateTime    time.Time         `json:"create,omitempty"`
-	Parent        string            `json:"P,omitempty"`
-	ReplyChain    string            `json:"Rc,omitempty"`
-	NextReplyID   string            `json:"R,omitempty"`
-	NextMediaID   string            `json:"MN,omitempty"`
-	NextID        string            `json:"N,omitempty"`
-	EOC           string            `json:"EO,omitempty"`
-	ReplyEOC      string            `json:"REO,omitempty"`
-	Cmd           Cmd               `json:"K,omitempty"`
-	Extras        map[string]string `json:"X,omitempty"`
-	ReferID       string            `json:"ref,omitempty"`
-	History       string            `json:"his,omitempty"`
+	Replies       int               `json:"rs,omitempty"`      // how many replies
+	Likes         int32             `json:"like,omitempty"`    // how many likes
+	ReplyLockMode byte              `json:"lm,omitempty"`      // reply lock
+	PostOptions   byte              `json:"po,omitempty"`      // post options
+	Asc           byte              `json:"asc,omitempty"`     // replies order by asc
+	NSFW          bool              `json:"nsfw,omitempty"`    // NSFW
+	Anonymous     bool              `json:"anon,omitempty"`    // anonymous
+	Content       string            `json:"content,omitempty"` // content
+	Media         string            `json:"M,omitempty"`       // media string
+	Author        string            `json:"author,omitempty"`  // author ID
+	IP            string            `json:"ip,omitempty"`      // IP
+	CreateTime    time.Time         `json:"create,omitempty"`  // create time
+	Parent        string            `json:"P,omitempty"`       // reply to ID  +----------------- EOC -------------.
+	ReplyChain    string            `json:"Rc,omitempty"`      //              +-------- NextMediaID ---------.     `v
+	NextReplyID   string            `json:"R,omitempty"`       //      +------ p -- NextID -> p2 -- NextID -> p3 ... pLast
+	NextMediaID   string            `json:"MN,omitempty"`      //      |       | <- ReplyChain
+	NextID        string            `json:"N,omitempty"`       //  ReplyEOC   r1
+	EOC           string            `json:"EO,omitempty"`      //      |       | <- NextID
+	ReplyEOC      string            `json:"REO,omitempty"`     //      +----> r2 -- ReplyChain -> r2_1 -- NextID -> r2_2 ...
+	Cmd           Cmd               `json:"K,omitempty"`       // command
+	Extras        map[string]string `json:"X,omitempty"`       // extras
+	ReferID       string            `json:"ref,omitempty"`     // refer ID (to another article)
+	History       string            `json:"his,omitempty"`     // operation history
 
 	T_StickOnTop bool `json:"-"`
 }
@@ -156,12 +156,10 @@ func (u User) Marshal() []byte {
 }
 
 func (u User) AvatarURL() string {
-	if common.Cfg.MediaDomain != "" {
-		path := fmt.Sprintf("%s/%016x@%s?q=%d", common.Cfg.MediaDomain, u.IDHash(), u.ID, u.Avatar)
-		return path //fmt.Sprintf("/avatar/%s?q=%d", u.ID, u.Avatar)
-	} else {
-		return fmt.Sprintf("/avatar/%s?q=%d", u.ID, u.Avatar)
+	if u.Avatar > 0 && common.Cfg.MediaDomain != "" {
+		return fmt.Sprintf("%s/%016x@%s?q=%d", common.Cfg.MediaDomain, u.IDHash(), u.ID, u.Avatar)
 	}
+	return fmt.Sprintf("/avatar/%s?q=%d", u.ID, u.Avatar)
 }
 
 func (u User) KimochiURL() string {

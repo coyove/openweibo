@@ -1,32 +1,31 @@
 {{template "header.html" .}}
 <title>错误</title>
 <style>
-  #main-content {
-      display: flex;
-      align-items: center;
-  }
+#main-content {
+    display: flex;
+    align-items: center;
+}
 </style>
 <div style="padding:1em;text-align:center;flex-grow:1">
     {{if .ApplyFw}}
     <div>
-      {{if not .IsLoggedIn}}
-      	{{template "display_name.html" .ApplyFw}}隐藏了动态，你首先需要<a href="/">登入</a>
-      {{else if .IsFollowing}}
-      	等待{{template "display_name.html" .ApplyFw}}批准你的关注
-      {{else}}
-      	{{template "display_name.html" .ApplyFw}}隐藏了动态，你需要
-      	{{template "button_follow_block.html" (blend "follow" .ApplyFw.ID false)}}
-      	并等待其批准
-      {{end}}
+        {{if not .IsLoggedIn}}
+        {{template "display_name.html" .ApplyFw}}隐藏了动态，你首先需要<a href="/">登入</a>
+        {{else if .IsFollowing}}
+        等待{{template "display_name.html" .ApplyFw}}批准你的关注
+        {{else}}
+        {{template "display_name.html" .ApplyFw}}隐藏了动态，你需要
+        {{template "button_follow_block.html" (blend "follow" .ApplyFw.ID false)}}
+        并等待其批准
+        {{end}}
     </div>
     {{else}}
 
     {{if .Msg}}
-    	{{.Msg}}
+    {{.Msg}}
     {{else}}
-    	404 未找到内容
+    404 未找到内容
     {{end}}
 
     {{end}}
-
 </div>

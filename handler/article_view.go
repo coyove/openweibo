@@ -77,7 +77,7 @@ func (a *ArticleView) from(a2 *model.Article, opt int, u *model.User) *ArticleVi
 	}
 	if a2.Anonymous {
 		a.Author.SetIsAnon(true)
-		a.Author.ID = fmt.Sprintf("?%d", time.Now().UnixNano()/1e3)
+		a.Author.ID = fmt.Sprintf("=%d=", time.Now().UnixNano()/1e3)
 		a.Author.Avatar = 0
 	}
 	if a2.Extras["is_bot"] != "" {

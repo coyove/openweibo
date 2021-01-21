@@ -4,7 +4,7 @@
     <div class="article-row-header">
         <div class=avatar-container>
             {{if not .NoAvatar}}
-            <img class="avatar" alt="{{.Author.ID}}" {{template "avatar.html" .Author}} onclick="showInfoBox(this,'{{.Author.ID}}')">
+            <img class="avatar" alt="{{.Author.ID}}" src="{{.Author.AvatarURL}}" onclick="showInfoBox(this,'{{.Author.ID}}')">
             {{if .Author.Kimochi}}
             <img class="avatar-kimochi" src="{{.Author.KimochiURL}}">
             {{end}}

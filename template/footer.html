@@ -12,9 +12,14 @@
         <script>
             (function() {
                 {{if .User}}{{if .User.Unread}}
-                document.title =  "({{.User.Unread}}) " + document.title;
-                $q("#unread-notify b").innerText = "{{.User.Unread}}";
-                $q("#unread-notify i").className += " tmpl-inbox-message-text";
+                if (location.pathname !== "/inbox") {
+                    document.title =  "({{.User.Unread}}) " + document.title;
+                    var i = 0, unread = $q("#unread-notify b");
+                    unread.innerText = "{{.User.Unread}}";
+                    setInterval(function() {
+                        unread.style.visibility = (i++, i % 2 == 1) ? "hidden" : null;
+                    }, 800)
+                }
                 {{end}}{{end}}
                 document.write(new Date().getFullYear())
             })()

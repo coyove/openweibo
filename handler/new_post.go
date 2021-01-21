@@ -134,6 +134,21 @@ func APINew(g *gin.Context) {
 			a.PostOptions |= model.PostOptionNoTimeline
 		}
 
+		if g.PostForm("append") == "1" {
+			throw(common.Err2(dal.DoUpdateArticle(replyTo, func(parent *model.Article) error {
+				if !(u.IsMod() || parent.Author == u.ID) {
+					return fmt.Errorf("e:cannot_reply")
+				}
+				if parent.Author == u.ID {
+					parent.Content += "\n" + a.Content
+				} else {
+					parent.Content += "\n[append]" + u.ID + "[/append]\n" + a.Content
+				}
+				parent.Content = common.SoftTrunc(parent.Content, int(common.Cfg.MaxContent))
+				return nil
+			})), "")
+		}
+
 		a2, err := dal.PostReply(replyTo, a, u)
 		throw(err, "cannot_reply")
 		av.from(a2, aReply, u)

@@ -3,7 +3,6 @@ package ik
 import (
 	"bytes"
 	"compress/flate"
-	"encoding/ascii85"
 	"io/ioutil"
 )
 
@@ -12,22 +11,14 @@ func CombineIDs(payload []byte, ids ...ID) string {
 		return ""
 	}
 
-	p := bytes.Buffer{}
-	fill := [32]byte{}
+	p := &bytes.Buffer{}
+	w, _ := flate.NewWriter(p, -1)
 
-	for i := 0; i <= len(ids)*9/2; i += len(fill) {
-		p.Write(fill[:])
-	}
-
-	i := p.Len()
-
-	w, _ := flate.NewWriter(&p, -1)
-
-	xlen := 0
+	fill, xlen := [32]byte{}, 0
 	for _, id := range ids {
 		x := id.Marshal(fill[:])
-		w.Write(x)
 		xlen += len(x)
+		w.Write(x)
 	}
 
 	if len(payload) > 0 {
@@ -41,39 +32,14 @@ func CombineIDs(payload []byte, ids ...ID) string {
 	}
 
 	w.Close()
-
-	tmp := p.Bytes()
-	tmp = tmp[:ascii85.Encode(tmp, tmp[i:])]
-
-	for i := range tmp {
-		switch tmp[i] {
-		case '"':
-			tmp[i] = 'x'
-		case '\\':
-			tmp[i] = 'y'
-		}
-	}
-
-	return string(tmp)
+	return idEncoding.EncodeToString(p.Bytes())
 }
 
 func SplitIDs(str string) (ids []ID, payload []byte) {
-	if str == "" {
+	tmp, _ := idEncoding.DecodeString(str)
+	if len(tmp) == 0 {
 		return
 	}
-
-	tmp := []byte(str)
-	for i := range tmp {
-		switch tmp[i] {
-		case 'x':
-			tmp[i] = '"'
-		case 'y':
-			tmp[i] = '\\'
-		}
-	}
-
-	n, _, _ := ascii85.Decode(tmp, tmp, true)
-	tmp = tmp[:n]
 
 	r := flate.NewReader(bytes.NewReader(tmp))
 	for {
