@@ -92,7 +92,7 @@ func main() {
 		"session":    func() int64 { return time.Now().Unix()<<32 | int64(rand.Uint32()) },
 		"cssVersion": func() string { return cssVersion },
 		"abbrTitle": func(in string) string {
-			return common.SoftTruncDisplayWidth(in, 6)
+			return common.AbbrText(in, 9)
 		},
 		"contains": func(a interface{}, b string) bool {
 			aa, _ := a.(string)

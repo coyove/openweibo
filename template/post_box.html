@@ -9,13 +9,6 @@
     </nav>
     <div>
         <div style="padding: 0.5em 0.5em 0">
-            <div class="post-options">
-                <button name=reply-lock class=gbutton onclick="lockArticle(this)" value=0>
-                    <i class=icon-lock></i>
-                    <i class=icon-lock-open></i>
-                </button>
-            </div>
-
             <div class="post-options post-options-emoji" onmousemove="emojiMajiang('')">
                 <button class=gbutton><i class="icon-emo-devil"></i><i class="icon-down-dir right"></i></button>
                 {{template "emoji.html" .}}
@@ -49,6 +42,10 @@
                                })()' type=checkbox name=poll id="poll">
                         <label for="poll">将发文用作投票</label>
                     </li>
+                    <li>
+                        <input type=checkbox name=anon id="anon">
+                        <label for="anon">匿名发文</label>
+                    </li>
                     {{end}}
                     <li>
                         <input type=checkbox name=isnsfw id="isnsfw">
@@ -62,16 +59,19 @@
             </div>
 
             <div class="post-options">
-            {{if not .ReplyTo}}
-                <button class=gbutton name=anon onclick="this.value?this.value='':(this.value='1',$popup('开启匿名'))">
-                    <i class=icon-user-secret></i>
+                <button name=reply-lock class=gbutton onclick="lockArticle(this)" value=0>
+                    <i class=icon-lock></i>
+                    <i class=icon-lock-open></i>
                 </button>
-            {{else}}
+            </div>
+
+            {{if .ReplyTo}}
+            <div class="post-options">
                 <button class=gbutton onclick="insertTag(this, '#ReportThis\n', '举报理由', '')">
                     <i class=icon-police></i> 举报
                 </button>
-            {{end}}
             </div>
+            {{end}}
         </div>
     </div>
 
@@ -128,7 +128,7 @@ function onPost(el, p) {
         parent: p,
         content: ta.value,
         media: ids.join(';'),
-        anon: $q("#post-box [name=anon]").value,
+        anon: one("anon"),
         asc: one("asc"),
         nsfw: one("isnsfw"),
         no_master:  one("nomaster"),
@@ -153,6 +153,10 @@ function emojiMajiang() {
     var ul = $q('#post-box .post-options-emoji ul');
     if (ul.LOADED) return;
     ul.LOADED = true;
+    var rect = ul.parentNode.parentNode.getBoundingClientRect();
+    var width = rect.right - rect.left;
+    ul.style.width = width + 'px';
+    ul.style.marginLeft = '-0.5em'; // hack
 
     var omits = [4, 9, 56, 61, 62, 87, 115, 120, 137, 168, 169, 211, 215, 175, 210, 213, 209, 214, 217, 206],
         history = JSON.parse(localStorage.getItem("EMOJIS") || '{}'),

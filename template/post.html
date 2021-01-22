@@ -1,6 +1,10 @@
 {{template "header.html" .}}
 
-<title>{{abbrTitle .ParentArticle.Content}}... {{.ParentArticle.ID}}</title>
+<title>{{abbrTitle .ParentArticle.Content}} -- {{.ParentArticle.ID}}</title>
+
+<style>
+#home { display: none }
+</style>
 
 {{template "post_box.html" .ReplyView}}
 
@@ -11,15 +15,17 @@
         <div class=article-row style=''>
             <div class=article-row-header style='margin:0;padding:0'>
             <span style="padding-left:0.5em">
-                共 {{.ParentArticle.Replies}} 回复
-                {{if and .ParentArticle.ReplyLockMode .ShowReplyLockInfo}}
-                {{if eq .ParentArticle.ReplyLockMode 1}}/ 禁止回复{{end}}
-                    {{if eq .ParentArticle.ReplyLockMode 2}}/ 仅限作者关注的人回复{{end}}
-                    {{if eq .ParentArticle.ReplyLockMode 3}}/ 仅限作者关注和被@的人回复{{end}}
-                    {{if eq .ParentArticle.ReplyLockMode 4}}/ 仅限作者关注的和其粉丝回复{{end}}
+                {{with .ParentArticle}}
+                共 {{.Replies}} 回复
+                {{if and .ReplyLockMode $.ShowReplyLockInfo}}
+                {{if eq .ReplyLockMode 1}}/ 禁止回复{{end}}
+                    {{if eq .ReplyLockMode 2}}/ 仅限作者关注的人回复{{end}}
+                    {{if eq .ReplyLockMode 3}}/ 仅限作者关注和被@的人回复{{end}}
+                    {{if eq .ReplyLockMode 4}}/ 仅限作者关注的和其粉丝回复{{end}}
                 {{end}}
-                {{if .ParentArticle.AscReply}}
+                {{if .AscReply}}
                 / 正序
+                {{end}}
                 {{end}}
             </span>
             <div style='float:right' >

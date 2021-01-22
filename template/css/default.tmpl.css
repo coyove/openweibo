@@ -294,6 +294,8 @@ span.deleted:after {
 .post-options:hover ul {
     display: block;
     z-index: 1000;
+    border-radius: 0.5em;
+    overflow: hidden;
 }
 .post-options ul li:hover {
     background: {{.Navbar}};
@@ -379,6 +381,7 @@ img.kimochi-selector[kimochi="0"] {
 .newly-added-row.finished:after { opacity: 0; }
 
 .tmpl-normal-text { color: {{.NormalText}} !important }
+.tmpl-button-text { color: {{.Button}} !important }
 .tmpl-mid-text { color: {{.MidGrayText}} !important }
 .tmpl-red-text { color: {{.RedText}} !important }
 .tmpl-nsfw-text { color: {{.NSFWText}} !important }

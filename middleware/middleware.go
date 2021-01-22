@@ -50,15 +50,9 @@ func mwRenderPerf(g *gin.Context) {
 	g.Set("ip", ip)
 	g.Set("req-start", start)
 	g.Next()
-	msec := time.Since(start).Nanoseconds() / 1e6
 
-	// if msec > Survey.Max {
-	// 	Survey.Max = msec
-	// }
-	// atomic.AddInt64(&Survey.Written, int64(g.Writer.Size()))
-
-	x := g.Writer.Header().Get("Content-Type")
-	if strings.HasPrefix(x, "text/html") && g.Writer.Header().Get("X-Reply") != "true" {
+	if strings.HasPrefix(g.Writer.Header().Get("Content-Type"), "text/html") {
+		msec := time.Since(start).Nanoseconds() / 1e6
 		engine.HTMLRender.Instance("footer.html", struct {
 			Render int64
 			User   *model.User
@@ -90,7 +84,7 @@ func mwIPThrot(g *gin.Context) {
 		t, _ := lastaccess.(time.Time)
 		diff := time.Since(t).Seconds()
 
-		if diff > float64(common.Cfg.Cooldown) {
+		if diff > float64(common.Cfg.Cooldown)-1 {
 			ik.Dedup.Add(ip, time.Now())
 			g.Set("ip-ok", true)
 			goto NEXT

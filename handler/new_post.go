@@ -45,7 +45,7 @@ func PostBox(g *gin.Context) {
 	if p := g.Query("p"); p == "" {
 		g.Redirect(302, "/t")
 	} else {
-		g.Redirect(302, "/S/"+p[1:]+"?win="+g.Query("win"))
+		g.Redirect(302, "/S/"+p[1:])
 	}
 }
 

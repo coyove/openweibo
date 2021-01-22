@@ -13,11 +13,11 @@
             (function() {
                 {{if .User}}{{if .User.Unread}}
                 if (location.pathname !== "/inbox") {
+                    var i = 0;
                     document.title =  "({{.User.Unread}}) " + document.title;
-                    var i = 0, unread = $q("#unread-notify b");
-                    unread.innerText = "{{.User.Unread}}";
+                    $q("#unread-notify b").innerText = "{{.User.Unread}}";
                     setInterval(function() {
-                        unread.style.visibility = (i++, i % 2 == 1) ? "hidden" : null;
+                        $q("#unread-notify").style.opacity = (i++, i % 2 == 1) ? "0.4" : "1";
                     }, 800)
                 }
                 {{end}}{{end}}

@@ -109,6 +109,11 @@ func SanText(in string) string {
 	return in
 }
 
+func AbbrText(in string, n int) string {
+	in2 := rxSan.ReplaceAllString(in, "")
+	return SoftTruncDisplayWidth(IfStr(len(in2) < 3, in, in2), n)
+}
+
 func truncCodeTag(in string, tag string) string {
 	p, s := strings.HasPrefix, strings.HasSuffix
 	if p(in, "[") && p(in[1:], tag) && p(in[1+len(tag):], "]") {

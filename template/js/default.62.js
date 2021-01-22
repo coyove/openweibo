@@ -1,4 +1,6 @@
 (function() {
+    window.REGIONS = window.REGIONS || [];
+
     window.onmousemove = function(e) {
         if (window.REGTICK) return;
         window.requestAnimationFrame(function() {
@@ -11,14 +13,10 @@
                     inside = inside || (x >= box.left - margin && x <= box.right + margin &&
                         y >= box.top - margin && y <= box.bottom + margin);
                 })
-                if (!inside) {
-                    try {
-                        rect.callback(x, y);
-                    } catch(e) {
-                        console.log(e)
-                    }
+                pcall(!inside, function() {
+                    rect.callback(x, y);
                     rect.valid = false;
-                }
+                })
             })
             window.REGTICK = false;
         });
@@ -35,10 +33,10 @@
         window.requestAnimationFrame(function() {
             var nextBtn = $q("#load-more"), first = false;
             $q(".timeline > .article-row[data-id^=S]", true).forEach(function(c, ci) {
-                if (window.IS_REPLY && isInViewport(c) && ci > 0 && !first) {
+                if (isInViewport(c) && ci > 0 && !first) {
                     var u = new URLSearchParams(location.search);
                     u.set("j", c.getAttribute('data-id'));
-                    window.history.replaceState(null, '', '?' + u.toString());
+                    pcall(true, function() { window.history.replaceState(null, '', '?' + u.toString()); })
                     first = true;
                 }
 
@@ -57,7 +55,7 @@
                     }
                 }
             })
-            if (isInViewport(nextBtn) && !nextBtn.getAttribute("disabled") && nextBtn.getAttribute("eot") !== "true") {
+            if (isInViewport(nextBtn)) { 
                 console.log("Load next");
                 nextBtn.click();
             }
@@ -90,6 +88,9 @@ function $value(el) {
 }
 
 function $wait(el) {
+    if (el.DISABLED) return 
+    el.DISABLED = true;
+
     var waiting = 0,
         stopped = false,
         oldHTML = el.innerHTML,
@@ -99,13 +100,12 @@ function $wait(el) {
             el.innerHTML = "<b style='font-family:monospace;font-size:inherit'>" + "|/-\\".charAt(waiting % 4) + "</b>";
         }, 100);
 
-    el.setAttribute("disabled", "disabled");
     el.className = el.className.replace(/icon-\S+/, '');
 
     return function() {
         if (stopped) return;
         stopped = true;
-        el.removeAttribute("disabled");
+        el.DISABLED = false;
         clearInterval(timer);
         el.innerHTML = oldHTML;
         el.className += (specialClass || []).join('');
@@ -131,13 +131,12 @@ function $post(url, data, cb, errorcb) {
         if (xml.readyState != 4) return;
         if (xml.status == 200) {
             var res = xml.responseText;
-            if ((xml.getResponseHeader('Content-Type') || "").match(/json/)) {
-                try { res = JSON.parse(res) } catch(e) {}
-            }
+            pcall((xml.getResponseHeader('Content-Type') || "").match(/json/), function() {
+                 res = JSON.parse(res)
+            })
 
             cbres = cb(res, xml)
             if (!cbres) return;
-
             // callback returns error
             cbres = __i18n(cbres);
         }
@@ -170,14 +169,8 @@ function $postReload(el, url, data) {
     $post(url, data, function(res) {
         stop();
         if (res != "ok") return res;
-        try {
-            var r = new URLSearchParams(window.location.search).get('redirect');
-            if (r) {
-                location.href = r;
-                return;
-            }
-        } catch(e) {}
-        location.reload();
+        var r = new URLSearchParams(location.search).get('redirect')
+        r ? location.href = r : location.reload();
     }, stop)
 }
 
@@ -243,8 +236,7 @@ function lockArticle(el, id) {
     var div = $html("<div class=tmpl-light-bg style='border-radius:0.5em;position:absolute;z-index:1001;box-shadow:0 1px 5px rgba(0,0,0,.3)'></div>"),
         box = el.getBoundingClientRect(),
         bodyBox = document.body.getBoundingClientRect(),
-        currentValue = $value(el),
-        reg = {};
+        currentValue = $value(el);
 
     div.style.left = box.left - bodyBox.left + "px";
     div.style.top = box.bottom - bodyBox.top + "px";
@@ -264,7 +256,7 @@ function lockArticle(el, id) {
     if (id)
         div.appendChild($html("<div style='margin:0.5em;text-align:center'><button class=gbutton>更新设置</button></div>"))
 
-    reg = {
+    window.REGIONS.push({
         valid: true,
         boxes: [el, div],
         callback: function(x, y) {
@@ -274,9 +266,7 @@ function lockArticle(el, id) {
             }
             div.parentNode.removeChild(div);
         },
-    };
-    window.REGIONS = window.REGIONS || [];
-    window.REGIONS.push(reg);
+    });
 
     if (!id) return;
     div.querySelector('button').onclick = function(e) {
@@ -285,21 +275,13 @@ function lockArticle(el, id) {
             stop();
             if (res != "ok") return res;
             el.setAttribute("value", v)
-            el.innerHTML = "<i class='C'></i>".replace("C", v > 0 ? "tmpl-normal-text icon-lock" : "tmpl-light-text icon-lock-open")
+            el.innerHTML = "<i class='C'></i>".replace("C", v > 0 ? "tmpl-normal-text icon-lock" : "icon-lock-open")
             return "ok:回复设置更新"
         }, stop);
     }
 }
 
 function followBlock(el, m, id) {
-    if (m == "block" && $value(el) === "false") {
-        if (window.localStorage.getItem('not-first-block') != 'true') {
-            if (!confirm("是否确定拉黑" + id)) {
-                return;
-            }
-            window.localStorage.setItem('not-first-block', 'true')
-        }
-    }
     var stop = $wait(el), obj = { method: m };
     id = id || el.getAttribute("user-id");
     obj[m] = $value(el) === "true" ? "" : "1";
@@ -308,8 +290,8 @@ function followBlock(el, m, id) {
         stop();
         if (res != "ok") return res;
 
-	var on = obj[m] != "";
-	el.setAttribute("value", on ? "true" : "false");
+        var on = obj[m] != "";
+        el.setAttribute("value", on ? "true" : "false");
         if (m == "follow") {
             el.innerHTML = "<i class=C></i>".replace("C", on ? "icon-heart-broken" : "icon-user-plus");
             if (x.getResponseHeader("X-Follow-Apply") && on)
@@ -356,12 +338,7 @@ function loadMore(el, data) {
     var stop = $wait(el);
     $post('/api/timeline', data, function(pl) {
         stop();
-        if (pl.EOT) {
-            el.style.display = 'none';
-            $popup('EOC');
-        } else {
-            el.innerText = "更多...";
-        }
+        pl.EOT ? (el.parentNode.removeChild(el), $popup('EOC')) : el.innerText = "更多...";
         if (pl.Articles) {
             el.setAttribute("value", pl.Next);
             pl.Articles.forEach(function(a) {
@@ -384,29 +361,29 @@ function updateSetting(el, field, value) {
     var stop = $wait(el.tagName === 'INPUT' && el.getAttribute('type') == "checkbox" ?  el.nextElementSibling: el);
     data["set-" + field] = "1";
     data[field] = value;
-    $post("/api/user_settings", data, function(h, h2) {
-        stop();
-        return h
-    }, stop)
+    $post("/api/user_settings", data, function(h) { stop(); return h }, stop)
 }
 
 function showInfoBox(el, uid) {
-    if (uid.substr(0,1) == "?") return;
+    if (uid.substr(0,1) == "=") return;
     if (el.BLOCK) return;
     el.BLOCK = true;
 
-    var div = $q("<div>"),
-        loading = $html("<div style='position:absolute;left:0;top:0;width:100%;height:100%'></div>"),
+    var div = $html("<div class=user-info-box>" + window.DUMMY_USER_HTML + "</div>"),
         bodyBox = document.body.getBoundingClientRect(),
-        box = el.getBoundingClientRect(),
-        boxTopOffset = 0,
-        addtionalBoxes = [],
-        startAt = new Date().getTime();
+        box = el.getBoundingClientRect(), addtionalBoxes = [], boxTopOffset = 0,
+        adjustDiv = function() {
+            var newBox = div.getBoundingClientRect();
+            if (newBox.right > bodyBox.right) {
+                div.style.left = '0';
+                div.style.right = "0";
+            }
+            div.querySelector('.article-row').className += ' tmpl-light-bg'
+            div.querySelector('img.avatar').onclick = null;
+            el.src ? div.querySelector('img.avatar').src = el.src : 0;
+        }
 
-    div.className = 'user-info-box';
-    div.innerHTML = window.DUMMY_USER_HTML;
-    el.src ? div.querySelector('img.avatar').src = el.src : 0;
-    div.querySelector('img.avatar').onclick = null;
+    adjustDiv();
 
     if (el.className === 'mentioned-user') {
         div.querySelector('span.post-author').innerHTML = el.innerHTML;
@@ -437,32 +414,19 @@ function showInfoBox(el, uid) {
     div.style.boxShadow = "0 1px 2px rgba(0, 0, 0, .3), 0 0 2px rgba(0,0,0,.2)";
     document.body.appendChild(div);
 
-    var reg = {
+    window.REGIONS.push({
         valid: true,
         boxes: [div].concat(addtionalBoxes),
         callback: function(x, y) {
             div.parentNode.removeChild(div);
             el.BLOCK = false;
         },
-    };
+    });
 
-    window.REGIONS = window.REGIONS || [];
-    window.REGIONS.push(reg);
-
-    var adjustDiv = function() {
-        var newBox = div.getBoundingClientRect();
-        if (newBox.right > bodyBox.right) {
-            div.style.left = '0';
-            div.style.right = "0";
-        }
-        div.querySelector('.article-row').className += ' tmpl-light-bg'
-    }
     $post("/api/u/" + encodeURIComponent(uid), {}, function(h) {
         if (h.indexOf("ok:") > -1) {
-            setTimeout(function() {
-                div.innerHTML = h.substring(3)
-                adjustDiv();
-            }, new Date().getTime() - startAt > 100 ? 0 : 100)
+            div.innerHTML = h.substring(3)
+            adjustDiv();
             return
         }
         return h
@@ -521,7 +485,7 @@ function adjustImage(img) {
             imgload.onload = function() {
                 loaded = true;
                 img.src = imgload.src; // trigger adjustImage() again
-                try { div.removeChild(divC) } catch (e) {}
+                pcall(true, function() { div.removeChild(divC) })
             }
 
             imgprogress.src =  '/s/assets/spinner.gif';
@@ -539,17 +503,6 @@ function adjustImage(img) {
             container.style.marginLeft = '0';
         }
     }
-}
-
-function adjustVideoIFrame(el, src) {
-    el.style.display = 'none';
-    el.previousElementSibling.style.display = 'none';
-    el = el.nextSibling;
-    el.style.display = null;
-    var box = el.getBoundingClientRect();
-    var w = box.right - box.left;
-    el.style.height = (el.getAttribute("fixed-height") || (w*0.75)) + 'px';
-    el.src = src;
 }
 
 function isDarkMode() {
@@ -611,9 +564,9 @@ function postBox(uuid, p, win) {
         maxFilesize: 16,
         maxFilesize: 5,
         addRemoveLinks: true,
-        dictRemoveFile: "<u style='cursor:pointer'>删除</u>",
+        dictRemoveFile: "删除",
         dictFileTooBig: "文件过大 (上限5M)",
-        dictCancelUpload: "<span class='tmpl-mid-text'>上传中</span> <u style='cursor:pointer'>取消</u>",
+        dictCancelUpload: "取消上传",
         dictCancelUploadConfirmation: "取消上传该图片？"
     }).on("success", function(f, id) {
         f._removeLink.setAttribute('data-uri', id);
@@ -629,24 +582,10 @@ function postBox(uuid, p, win) {
         box.innerHTML = old; // clear inside content
         box.className = '';
         document.body.style.overflow = null;
+        window.onpopstate = null;
     }
 }
 
-function openWin(url, btn) {
-    if (btn) var stop = $wait(btn);
-    var i = $html("<iframe class='sp-container'></iframe>");
-    i.src = url;
-    i.onload = function() { 
-        if (stop) stop();
-        i.className += ' open';
-    }
-    i.onbeforeclose = function() {
-        alert(1);
-    }
-    document.body.appendChild(i)
+function pcall(flag, f) {
+    if (flag) try { return f() } catch (e) { console.log(e) }
 }
-
-function closeWin() {
-    history.length <= 1 ? window.close() : history.back();
-}
-
