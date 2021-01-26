@@ -49,6 +49,10 @@ func mwRenderPerf(g *gin.Context) {
 
 	g.Set("ip", ip)
 	g.Set("req-start", start)
+
+	if strings.HasPrefix(g.Request.URL.Path, "/s/") {
+		g.Writer.Header().Add("Cache-Control", "max-age=31536000")
+	}
 	g.Next()
 
 	if strings.HasPrefix(g.Writer.Header().Get("Content-Type"), "text/html") {

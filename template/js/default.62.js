@@ -384,6 +384,7 @@ function showInfoBox(el, uid) {
         }
 
     adjustDiv();
+    div.querySelector('pre').innerHTML = '<div style="text-align:center"><img style="margin:0 auto" width=48 height=48 src="/s/assets/spinner2.gif"></div>'
 
     if (el.className === 'mentioned-user') {
         div.querySelector('span.post-author').innerHTML = el.innerHTML;
