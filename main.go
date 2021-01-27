@@ -219,8 +219,6 @@ func main() {
 	r.Handle("POST", "/api2/drop_top", handler.APIDropTop)
 	r.Handle("POST", "/api2/poll", handler.APIPoll)
 
-	r.Handle("GET", "/loaderio-4d068f605f9b693f6ca28a8ca23435c6", func(g *gin.Context) { g.String(200, ("loaderio-4d068f605f9b693f6ca28a8ca23435c6")) })
-
 	r.Handle("GET", "/debug/pprof/*name", func(g *gin.Context) {
 		u, _ := g.Get("user")
 		uu, _ := u.(*model.User)

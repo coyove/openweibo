@@ -7,12 +7,11 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -213,43 +212,17 @@ func genSession() string {
 	return base64.URLEncoding.EncodeToString(p[:])
 }
 
-func writeImageReader(u *model.User, imageName string, hash uint64, dec io.Reader, ct string, large bool) (string, error) {
-	path := "tmp/images/"
-	fn := fmt.Sprintf("%016x", hash)
-
-	if imageName != "" {
-		imageName = filepath.Base(imageName)
-		imageName = strings.TrimSuffix(imageName, filepath.Ext(imageName))
-		fn += "_" + compress.SafeStringForCompressString(imageName) + "_" + u.ID
-	} else {
-		fn += "_" + u.ID
-	}
-
+func writeImageReader(u *model.User, fn string, buf []byte) (string, error) {
 	if dal.S3 != nil {
-		fn += mimeToExt(ct)
-		return "LOCAL:" + fn, dal.S3.Put(fn, ct, dec)
+		return "LOCAL:" + fn, dal.S3.Put(fn, http.DetectContentType(buf), bytes.NewReader(buf))
 	}
 
-	of, err := os.OpenFile(path+fn, os.O_CREATE|os.O_WRONLY, 0777)
-	if err != nil {
+	path := "tmp/images/"
+	if err := ioutil.WriteFile(path+fn, buf, 0777); err != nil {
 		return "", err
 	}
-	_, err = io.Copy(of, dec)
-	of.Close()
-	return "LOCAL:" + fn, err
-}
 
-func mimeToExt(mime string) string {
-	switch mime {
-	case "image/jpeg":
-		return ".jpg"
-	case "image/png":
-		return ".png"
-	case "image/gif":
-		return ".gif"
-	default:
-		return ""
-	}
+	return "LOCAL:" + fn, nil
 }
 
 func writeAvatar(u *model.User, image string) (string, error) {

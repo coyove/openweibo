@@ -116,13 +116,11 @@ func (a *ArticleView) from(a2 *model.Article, opt int, u *model.User) *ArticleVi
 		case "IMG":
 			var pl struct {
 				Urls     []string
-				Thumbs   []string
 				InitShow int
 				NSFW     bool
 			}
 			for _, p := range strings.Split(p[1], ";") {
 				pl.Urls = append(pl.Urls, common.Cfg.MediaDomain+"/"+strings.TrimPrefix(p, "LOCAL:"))
-				pl.Thumbs = append(pl.Thumbs, common.Cfg.MediaDomain+"/thumb/"+strings.TrimPrefix(p, "LOCAL:"))
 				if len(pl.Urls) == 15 {
 					break
 				}

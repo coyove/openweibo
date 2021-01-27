@@ -437,7 +437,7 @@ function showInfoBox(el, uid) {
     })
 }
 
-function adjustImage(img) {
+function adjustImage(img, loaded) {
     var ratio = img.width / img.height,
         div = img.parentNode.parentNode,
         note = div.querySelector('.long-image'),
@@ -459,7 +459,7 @@ function adjustImage(img) {
         smallimg = true;
     }
 
-    if (img.src.match(/\.gif$/)) {
+    if (img.src.match(/\.gif(-thumb)?$/)) {
         note.style.display = 'block';
         note.innerText = 'GIF';
     }
@@ -482,7 +482,7 @@ function adjustImage(img) {
 
             var imgload = new Image(), imgprogress = new Image(), divC = $q("<div>"), loaded = false;
 
-            imgload.src = img.src.replace(/\/thumb\//, '/');
+            imgload.src = img.src.replace(/-thumb$/, '');
             imgload.onload = function() {
                 loaded = true;
                 img.src = imgload.src; // trigger adjustImage() again

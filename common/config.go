@@ -42,6 +42,7 @@ var Cfg = struct {
 	SMTPServer      string
 	SMTPEmail       string
 	SMTPPassword    string
+	GitWebCGI       string
 
 	// inited after Cfg being read
 	Blk               cipher.Block
@@ -61,6 +62,7 @@ var Cfg = struct {
 	MaxRequestSize:  6,
 	HCaptchaSiteKey: "10000000-ffff-ffff-ffff-000000000001",
 	HCaptchaSecKey:  "0x0000000000000000000000000000000000000000",
+	GitWebCGI:       "/Library/Developer/CommandLineTools/usr/share/gitweb/gitweb.cgi",
 }
 
 func MustLoadConfig(path string) {

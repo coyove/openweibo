@@ -32,7 +32,7 @@
     {{$hide := ge $i $.InitShow}}
     {{if $v}}
     <div image-index="{{$i}}" class="media cell {{if $one}}large{{end}}" style="{{if $hide}}display:none{{end}};background-image:url(/s/assets/spinner2.gif)">
-        <a target=_blank><img onload="adjustImage(this)" {{if $hide}}data-{{end}}src="{{index $.Thumbs $i}}"></a>
+        <a target=_blank><img onload="adjustImage(this)" onerror="adjustImage(this,false)" {{if $hide}}data-{{end}}src="{{index $.Urls $i}}-thumb"></a>
         <div class="image-index open-blank image-enlarge-badge" onclick='window.open("{{$v}}");event.stopPropagation()'>原图 <i class=icon-export-alt></i></div>
         <span class="image-index long-image">长图</span>
         <span class="image-index image-enlarge-badge" style="{{if $one}}display:none{{end}}">{{printf "%X" (sub $i -1)}}</span>

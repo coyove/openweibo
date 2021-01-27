@@ -1,8 +1,13 @@
 package handler
 
 import (
-	"bufio"
+	"bytes"
+	"crypto/sha1"
 	"fmt"
+	"image"
+	_ "image/gif"
+	"image/jpeg"
+	_ "image/png"
 	"io"
 	"io/ioutil"
 	"log"
@@ -10,19 +15,22 @@ import (
 	"mime"
 	"mime/multipart"
 	"net"
-	"net/http"
 	"net/url"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unsafe"
 
 	"github.com/coyove/iis/common"
+	"github.com/coyove/iis/common/compress"
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/middleware"
 	"github.com/coyove/iis/model"
 	"github.com/gin-gonic/gin"
+	"github.com/nfnt/resize"
 )
 
 func hashIP(g *gin.Context) string {
@@ -309,23 +317,43 @@ func APIUpload(g *gin.Context) {
 	part, err := mprd.NextPart()
 	throw(err, IR)
 
-	defer part.Close()
+	fn := part.FileName()
+	throw(fn == "", IR)
 
-	cl, _ := strconv.ParseInt(g.GetHeader("Content-Length"), 10, 64)
-	large := cl > 1*1024*1024
+	buf, _ := ioutil.ReadAll(part)
+	hash := sha1.Sum(buf)
+	part.Close()
 
-	rd := bufio.NewReader(part)
-	tmp, _ := rd.Peek(1024)
-	switch ct := http.DetectContentType(tmp); ct {
-	case "image/png", "image/jpeg", "image/gif":
-		hash := uint64(0)
-		for _, v := range tmp {
-			hash = hash*31 + uint64(v)
+	img, ct, err := image.Decode(bytes.NewReader(buf))
+	throw(err, IR)
+
+	fn = strings.TrimSuffix(fn, filepath.Ext(fn))
+	fn = fmt.Sprintf("%012x", hash[:6]) + "_" + strconv.Itoa(len(buf)/1000) + "k_" +
+		compress.SafeStringForCompressString(fn) + "_" + u.ID + "." + ct
+
+	var media string
+	var err1, err2 error
+
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	go func() { // upload thumbnail
+		defer wg.Done()
+		start := time.Now()
+		m := resize.Resize(200, 0, img, resize.Bicubic)
+		p := &bytes.Buffer{}
+		err1 = jpeg.Encode(p, m, &jpeg.Options{Quality: 80})
+		if err1 == nil {
+			_, err1 = writeImageReader(u, fn+"-thumb", p.Bytes())
 		}
-		v, err := writeImageReader(u, part.FileName(), hash, rd, ct, large)
-		throw(err, IR)
-		g.String(200, v)
-	default:
-		throw(true, IR)
-	}
+		log.Println("resize took:", len(buf), "=>", p.Len(), time.Since(start).Seconds())
+	}()
+	go func() { // upload original image
+		defer wg.Done()
+		media, err2 = writeImageReader(u, fn, buf)
+	}()
+	wg.Wait()
+
+	throw(err1, IR)
+	throw(err2, IR)
+	g.String(200, media)
 }
