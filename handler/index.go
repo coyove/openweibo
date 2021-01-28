@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/coyove/iis/common"
+	"github.com/coyove/iis/common/jiebago"
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/ik"
 	"github.com/coyove/iis/middleware"
@@ -40,6 +41,7 @@ type ArticlesTimelineView struct {
 type ArticleRepliesView struct {
 	Articles          []ArticleView
 	ParentArticle     ArticleView
+	MetaTags          string
 	Cursor            string
 	Next              string
 	ShowReplyLockInfo bool
@@ -350,6 +352,7 @@ func makeReplies(g *gin.Context, pid string) (pl ArticleRepliesView, ok bool) {
 	pl.You = you
 	pl.ParentArticle.from(parent, aReplyParent, you)
 	pl.ReplyView = makeReplyView(g, pid, you)
+	pl.MetaTags = strings.Join(jiebago.Cut(parent.Content, 10), ",")
 
 	if you != nil {
 		if dal.IsBlocking(pl.ParentArticle.Author.ID, you.ID) {

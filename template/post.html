@@ -1,6 +1,8 @@
 {{template "header.html" .}}
 
 <title>{{abbrTitle .ParentArticle.Content}} -- {{.ParentArticle.ID}}</title>
+<meta name="author" content="{{.ParentArticle.Author.DisplayName}}">
+<meta name="keywords" content="{{.MetaTags}}">
 
 <style>
 #home { display: none }

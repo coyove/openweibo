@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/coyove/iis/common/geoip"
+	"github.com/coyove/iis/common/jiebago"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/coyove/iis/common"
@@ -35,6 +36,7 @@ func main() {
 
 	common.MustLoadConfig("config.json")
 	geoip.LoadIPLocation()
+	jiebago.LoadDictionary()
 
 	redisConfig := &storage.RedisConfig{Addr: common.Cfg.RedisAddr}
 	if redisConfig.Addr == "" {
