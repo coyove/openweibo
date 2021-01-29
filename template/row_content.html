@@ -115,7 +115,7 @@
         {{end}}
 
         <a class="gbutton" href="javascript:void(0)" onclick="likeArticle(this, '{{.ID}}')" liked={{.Liked}}>
-            <i class="icon-heart-{{if .Liked}}filled{{else}}2{{end}}"></i> <span class=num>{{if .Likes}}{{.Likes}}{{end}}</span>
+            <i class="icon-heart-{{if .Liked}}filled{{else}}2{{end}}"></i> <span>{{if .Likes}}{{.Likes}}{{end}}</span>
         </a>
         {{end}}
 

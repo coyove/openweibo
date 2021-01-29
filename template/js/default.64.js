@@ -88,39 +88,31 @@ function $value(el) {
 }
 
 function $wait(el) {
-    if (el.DISABLED) return 
+    if (el.DISABLED) throw Error('wait reenter') 
     el.DISABLED = true;
 
-    var waiting = 0,
-        stopped = false,
-        oldHTML = el.innerHTML,
-        specialClass = el.className.match(/icon-\S+/g),
-        timer = setInterval(function () {
-            waiting++;
-            el.innerHTML = "<b style='font-family:monospace;font-size:inherit'>" + "|/-\\".charAt(waiting % 4) + "</b>";
-        }, 100);
+    var old = [el.style.opacity, el.style.transition],
+        h = setTimeout(function() {
+            el.style.opacity = 0.5;
+        }, 300);
 
-    el.className = el.className.replace(/icon-\S+/, '');
-
+    el.style.transition = 'opacity 0.5s';
     return function() {
-        if (stopped) return;
-        stopped = true;
+        clearTimeout(h);
         el.DISABLED = false;
-        clearInterval(timer);
-        el.innerHTML = oldHTML;
-        el.className += (specialClass || []).join('');
+        el.style.opacity = old[0];
+        el.style.transition = old[1];
     }
 }
 
 function $popup(html, bg) {
-    var div = $html("<div class=toast></div>");
-    div.innerHTML = html;
+    var div = $html("<div class=toast>" + html + "</div>");
     div.onclick = function() {
-        div.style.transition = "opacity 0.8s";
-        div.style.opacity = "0";
+        div.style.bottom = "-32px";
         setTimeout(function() {div.parentNode.removeChild(div)}, 1000);
     }
     document.body.appendChild(div);
+    setTimeout(function() { div.style.bottom = "32px" }, 100)
     setTimeout(div.onclick, 2000)
 }
 
@@ -185,21 +177,16 @@ function isInViewport(el, scale) {
 
 function likeArticle(el, id) {
     var v = el.getAttribute("liked") === "true" ? "" : "1",
-        num = el.querySelector('span.num'),
-        icon = el.querySelector('i');
-    var stop = $wait(num);
-    $post("/api2/like_article", {like:(v || ""), to:id}, function(res) {
+        num = el.querySelector('span'),
+        oldValue = parseInt(num.innerText) || 0,
+        stop = $wait(el);
+
+    $post("/api2/like_article", { like: v, to: id }, function(res) {
         stop();
         if (res !== "ok") return res;
-        if (v) {
-            el.setAttribute("liked", "true")
-            icon.className = 'icon-heart-filled';
-            num.innerText = (parseInt(num.innerText) || 0) + 1;
-        } else {
-            el.setAttribute("liked", "false")
-            icon.className = 'icon-heart-2';
-            num.innerText = parseInt(num.innerText) ? (parseInt(num.innerText) - 1) : 0;
-        }
+        el.setAttribute("liked", !!v);
+        el.querySelector('i').className = v ? 'icon-heart-filled' : 'icon-heart-2'; 
+        num.innerText = Math.max(v ? oldValue + 1 : oldValue - 1, 0);
     }, stop);
 }
 
@@ -276,36 +263,35 @@ function lockArticle(el, id) {
             if (res != "ok") return res;
             el.setAttribute("value", v)
             el.innerHTML = "<i class='C'></i>".replace("C", v > 0 ? "tmpl-normal-text icon-lock" : "icon-lock-open")
-            return "ok:回复设置更新"
+            return "ok:回复设置已更新"
         }, stop);
     }
 }
 
 function followBlock(el, m, id) {
-    var stop = $wait(el), obj = { method: m };
-    id = id || el.getAttribute("user-id");
-    obj[m] = $value(el) === "true" ? "" : "1";
-    obj['to'] = id;
-    $post("/api2/follow_block", obj, function(res, x) {
+    var stop = $wait(el), on = $value(el) === "true" ? "" : "1";
+    var id = id || el.getAttribute("user-id");
+
+    $post("/api2/follow_block", { ['method']: m, [m]: on, ['to']: id }, function(res, x) {
         stop();
         if (res != "ok") return res;
 
-        var on = obj[m] != "";
-        el.setAttribute("value", on ? "true" : "false");
-        if (m == "follow") {
-            el.innerHTML = "<i class=C></i>".replace("C", on ? "icon-heart-broken" : "icon-user-plus");
-            if (x.getResponseHeader("X-Follow-Apply") && on)
-                return "ok:已关注, 等待批准";
-            return "ok:" + (on ? "已关注" : "已取消关注") + id;
-        } else if (m == "accept") {
-            el.innerHTML = '<i class="icon-ok tmpl-green-text"></i>';
-            return "ok" 
-        } else {
-            el = el.querySelector('i');
-            el.className = el.className.replace(/block-\S+/, '') + " block-" + on;
-            el = el.nextElementSibling;
-            if (el) el.innerText = on ? "解除" : "拉黑";
-            return "ok:" + (on ? "已拉黑" + id : "已解除" + id + "拉黑状态")
+        el.setAttribute("value", !!on);
+        switch (m) {
+            case "follow":
+                el.innerHTML = "<i class=C></i>".replace("C", on ? "icon-heart-broken" : "icon-user-plus");
+                if (x.getResponseHeader("X-Follow-Apply") && on)
+                    return "ok:已关注, 等待批准";
+                return "ok:" + (on ? "已关注" : "已取消关注") + id;
+            case "accept":
+                el.innerHTML = '<i class="icon-ok tmpl-green-text"></i>';
+                return "ok" 
+            default:
+                el = el.querySelector('i');
+                el.className = el.className.replace(/block-\S+/, '') + " block-" + on;
+                el = el.nextElementSibling;
+                if (el) el.innerText = on ? "解除" : "拉黑";
+                return "ok:" + (on ? "已拉黑" + id : "已解除" + id + "拉黑状态")
         }
     }, stop)
 }
@@ -357,11 +343,8 @@ function loadMore(el, data) {
 }
 
 function updateSetting(el, field, value) {
-    var data = {};
     var stop = $wait(el.tagName === 'INPUT' && el.getAttribute('type') == "checkbox" ?  el.nextElementSibling: el);
-    data["set-" + field] = "1";
-    data[field] = value;
-    $post("/api/user_settings", data, function(h) { stop(); return h }, stop)
+    $post("/api/user_settings", { [field]: value, ["set-" + field]: "1" }, function(h) { stop(); return h }, stop)
 }
 
 function showInfoBox(el, uid) {
@@ -578,7 +561,7 @@ function postBox(uuid, p, win) {
     var box = $q("#post-box"), old = box.innerHTML;
     box.className += " open";
     document.body.style.overflow = 'hidden';
-    history.pushState({}, "发布", "/post_box?p=" + (p||"") + "&win=" + (win||""))
+    history.pushState({}, "发布", "/post_box?p=" + (p||""))
     window.onpopstate = function(event) {
         box.innerHTML = old; // clear inside content
         box.className = '';
