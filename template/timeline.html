@@ -119,7 +119,7 @@
     {{if .IsCrawler}}
     <a href="/api/timeline?media={{.MediaOnly}}&cursors={{.Next}}">更多...</a>
     {{else}}
-    <button id=load-more value="{{.Next}}" class="gbutton"
+    <button id=load-more value="{{.Next}}" class="gbutton button-wait"
                                            onclick="loadMore(this, {
                                            search:{{.IsSearchTimeline}},
                                            searchtag:{{.Tag}},

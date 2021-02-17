@@ -69,7 +69,7 @@
 
     <div class="paging">
         {{if .Next}}
-        <button id="load-more" value="{{.Next}}" class="gbutton" onclick="loadMore(this,{reply:true})">更多回复...</button>
+        <button id="load-more" value="{{.Next}}" class="gbutton button-wait" onclick="loadMore(this,{reply:true})">更多回复...</button>
         {{end}}
         <script>
             window.IS_REPLY = true;

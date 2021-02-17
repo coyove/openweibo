@@ -107,7 +107,7 @@
 
 {{if .Next}}
 <div style="padding-top:0.5em;text-align:center">
-    <button id=load-more class=gbutton next='{{.Next}}' onclick="load(this)">更多...</button>
+    <button id=load-more class='gbutton button-wait' next='{{.Next}}' onclick="load(this)">更多...</button>
     {{if not .List}}
     <script>setTimeout(function() { $q("#load-more").click() }, 2000)</script>
     {{end}}

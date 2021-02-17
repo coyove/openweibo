@@ -91,17 +91,32 @@ function $wait(el) {
     if (el.DISABLED) throw Error('wait reenter') 
     el.DISABLED = true;
 
-    var old = [el.style.opacity, el.style.transition],
-        h = setTimeout(function() {
-            el.style.opacity = 0.5;
-        }, 300);
+    var fancy = el.className.match(/button-wait/);
+    if (fancy) {
+        var old = [el.innerHTML, el.style.width, el.style.background];
+        var rect = el.getBoundingClientRect();
+        var h = setTimeout(function() { 
+            el.innerHTML = '';
+            el.style.width = rect.right - rect.left + 'px';
+            el.style.background = 'url("/s/assets/spinner2.gif") center / contain no-repeat';
+        }, 300)
+    } else {
+        var old = [el.style.opacity, el.style.transition],
+            h = setTimeout(function() { el.style.opacity = 0.5 }, 300);
+    }
 
     el.style.transition = 'opacity 0.5s';
     return function() {
-        clearTimeout(h);
         el.DISABLED = false;
-        el.style.opacity = old[0];
-        el.style.transition = old[1];
+        clearTimeout(h);
+        if (!fancy) {
+            el.style.opacity = old[0];
+            el.style.transition = old[1];
+        } else {
+            el.innerHTML = old[0];
+            el.style.width = old[1];
+            el.style.background = old[2];
+        }
     }
 }
 
@@ -324,7 +339,7 @@ function loadMore(el, data) {
     var stop = $wait(el);
     $post('/api/timeline', data, function(pl) {
         stop();
-        pl.EOT ? (el.parentNode.removeChild(el), $popup('EOC')) : el.innerText = "更多...";
+        pl.EOT ? (el.parentNode.removeChild(el), $popup('到达最后')) : el.innerText = "更多...";
         if (pl.Articles) {
             el.setAttribute("value", pl.Next);
             pl.Articles.forEach(function(a) {
