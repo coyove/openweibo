@@ -91,8 +91,9 @@ func main() {
 
 	r := middleware.New(prodMode)
 	r.SetFuncMap(template.FuncMap{
-		"session":    func() int64 { return time.Now().Unix()<<32 | int64(rand.Uint32()) },
-		"cssVersion": func() string { return cssVersion },
+		"session":     func() int64 { return time.Now().Unix()<<32 | int64(rand.Uint32()) },
+		"cssVersion":  func() string { return cssVersion },
+		"asciiEmojis": func() []string { return common.AsciiEmojis },
 		"abbrTitle": func(in string) string {
 			return common.AbbrText(in, 9)
 		},

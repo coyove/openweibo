@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 	"unsafe"
 
 	"github.com/coyove/iis/common/compress"
@@ -54,6 +55,20 @@ func SoftTruncDisplayWidth(a string, w int) string {
 			r = r[:i]
 			break
 		}
+	}
+	return string(r)
+}
+
+func SoftTruncWithPunct(a string) string {
+	r := []rune(strings.TrimSpace(a))
+	for i, c := range r {
+		if unicode.IsPunct(c) && i > 3 {
+			r = r[:i]
+			break
+		}
+	}
+	if max := 30; len(r) > max {
+		return string(r[:max]) + "..."
 	}
 	return string(r)
 }
@@ -110,8 +125,15 @@ func SanText(in string) string {
 }
 
 func AbbrText(in string, n int) string {
+	for {
+		prefix, _, ok := AsciiEmojisTree.LongestPrefix(in)
+		if !ok {
+			break
+		}
+		in = strings.TrimPrefix(in, prefix)
+	}
 	in2 := rxSan.ReplaceAllString(in, "")
-	return SoftTruncDisplayWidth(IfStr(len(in2) < 3, in, in2), n)
+	return SoftTruncWithPunct(IfStr(len(in2) < 3, in, in2))
 }
 
 func truncCodeTag(in string, tag string) string {

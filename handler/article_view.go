@@ -36,6 +36,7 @@ type ArticleView struct {
 	Forward       bool
 	AscReply      bool
 	OpenBlank     bool
+	IsCrawler     bool
 	Content       string
 	ShortContent  string
 	ContentHTML   template.HTML
@@ -224,9 +225,11 @@ func fromMultiple(g *gin.Context, a *[]ArticleView, a2 []*model.Article, opt int
 	lookup := map[string]*ArticleView{}
 	dedup := map[string]bool{}
 	cluster := map[string][]string{}
+	isCrawler := common.IsCrawler(g)
 
 	for i, v := range a2 {
 		(*a)[i].from(v, opt, u)
+		(*a)[i].IsCrawler = isCrawler
 		lookup[(*a)[i].ID] = &(*a)[i]
 	}
 

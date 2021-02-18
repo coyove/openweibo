@@ -11,7 +11,11 @@
         <div style="padding: 0.5em 0.5em 0">
             <div class="post-options post-options-emoji" onmousemove="emojiMajiang('')">
                 <button class=gbutton><i class="icon-emo-devil"></i><i class="icon-down-dir right"></i></button>
-                {{template "emoji.html" .}}
+                <ul style="height:250px;overflow-y:scroll;border-radius:0">
+                    {{range asciiEmojis}}
+                    <li><span onclick="insertMention(this,'{{.}}')">{{.}}</span></li>
+                    {{end}}
+                </ul>
             </div>
 
             <div class="post-options">

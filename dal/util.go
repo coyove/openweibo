@@ -2,15 +2,12 @@ package dal
 
 import (
 	"crypto/sha1"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/coyove/iis/dal/storage"
 )
-
-var ()
 
 type KeyValueOp interface {
 	Get(string) ([]byte, error)
@@ -72,12 +69,4 @@ func atoi64(a string) int64 {
 func atob(a string) bool {
 	v, _ := strconv.ParseBool(a)
 	return v
-}
-
-func setIfValid(k interface{}, v interface{}) {
-	rk, rv := reflect.ValueOf(k), reflect.ValueOf(v)
-	if rv.Pointer() == 0 {
-		return
-	}
-	rk.Elem().Set(rv.Elem())
 }

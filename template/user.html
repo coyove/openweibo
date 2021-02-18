@@ -36,12 +36,12 @@ input[type=number] { -moz-appearance: textfield; }
             </div>
             <div>
                 <input type=checkbox {{if .User.NotifyFollowerActOnly}}checked{{end}} id=mfcm onchange="updateSetting(this,'mfcm',this.checked?'1':'')">
-                <label for=mfcm>屏蔽你没关注的人的回复和@提醒</label>&nbsp;
+                <label for=mfcm>忽略你没关注的人的回复和@提醒</label>&nbsp;
                 <label class="hint hint--left" aria-label="他们依旧可以回复/@你，但你不会收到提醒">(?)</label>
             </div>
             <div>
                 <input type=checkbox {{if .User.HideLocation}}checked{{end}} id=hl onchange="updateSetting(this,'hl',this.checked?'1':'')">
-                <label for=hl>向他人隐藏你的地理位置</label>
+                <label for=hl>隐藏你的地理位置</label>
             </div>
             <div>
                 <input type=checkbox {{if .User.HideLikes}}checked{{end}} id=hide-likes onchange="updateSetting(this,'hide-likes',this.checked?'1':'')">

@@ -102,10 +102,14 @@
 
         {{if not .Forward}}
         {{if not .GreyOutReply}}
-        <a class="gbutton" href="{{.Link}}" {{if .OpenBlank}}target="_blank"{{end}}>
-            <i class="icon-reply-outline"></i>
-            {{if .Replies}}{{.Replies}}{{end}}
-        </a>
+            {{if .IsCrawler}}
+            <a class="gbutton" href="{{.Link}}" target="_blank"><i class="icon-reply-outline"></i></a>
+            {{else}}
+            <a class="gbutton" {{if .OpenBlank}}href="javascript:window.open('{{.Link}}').S=1"{{else}}href="{{.Link}}"{{end}}>
+                <i class="icon-reply-outline"></i>
+                {{if .Replies}}{{.Replies}}{{end}}
+            </a>
+            {{end}}
         {{else}}
         {{if .Parent}}
         <a class=gbutton href="{{.ParentLink}}?j={{.ID}}">

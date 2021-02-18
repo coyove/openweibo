@@ -227,7 +227,12 @@ func Timeline(g *gin.Context) {
 	fromMultiple(g, &pl.Articles, a, 0, pl.You)
 
 	pl.Next = ik.CombineIDs([]byte(pendingFCursor), next...)
-	g.HTML(200, "timeline.html", pl)
+
+	if pl.IsUserTimeline && g.Query("rss") == "1" {
+		writeRSS(g, pl)
+	} else {
+		g.HTML(200, "timeline.html", pl)
+	}
 }
 
 func Inbox(g *gin.Context) {

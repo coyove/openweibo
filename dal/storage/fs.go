@@ -207,3 +207,18 @@ func (m *DiskKV) Range(key, start string, n int) ([][]byte, string, error) {
 
 	return res, next, nil
 }
+
+// func (m *DiskKV) Incr(key, field string, v int64) (int64, error) {
+// 	path := calcPath(key) + "." + field
+// 	old, err := ioutil.ReadFile(path)
+// 	if os.IsNotExist(err) {
+// 		err := ioutil.WriteFile(path, []byte(strconv.FormatInt(v, 10)), 0777)
+// 		return v, err
+// 	}
+// 	if err != nil {
+// 		return 0, err
+// 	}
+// 	oldV, _ := strconv.ParseInt(string(old), 10, 64)
+// 	err = ioutil.WriteFile(path, []byte(strconv.FormatInt(v+oldV, 10)), 0777)
+// 	return oldV + v, err
+// }

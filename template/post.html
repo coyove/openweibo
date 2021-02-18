@@ -10,6 +10,12 @@
 
 {{template "post_box.html" .ReplyView}}
 
+<nav>
+    <a onclick='window.opener?window.close():location.href="/t"'>
+        <script>document.write(window.opener ? '<i class=icon-left-small></i> 返回' : '<i class=icon-home></i> 主页')</script>
+    </a>
+</nav>
+
 <div>
     <div class="timeline" id="timeline{{.ReplyView.UUID}}" > 
         {{template "row_content.html" .ParentArticle}}
