@@ -10,7 +10,6 @@ html, body {
 }
 
 #container {
-    min-height: 100%;
     max-width: 1000px;
     margin: 0 auto;
     padding: 0.5em 0.5em 0.5em 2.5em;
@@ -21,13 +20,17 @@ html, body {
     box-shadow: 1px 0 1px #ccc;
 }
 
+#footer {
+    padding:0.5em 0.5em 0.5em 2.5em;text-align:center;font-size:75%;color:#aaa;
+}
+
 @media (max-width:960px) {
     #header {
         display: flex;
         position: relative;
         height: 2em; width: 100%;
     }
-    #container {
+    #container, #footer {
         padding-left: 0.5em;
     }
 }

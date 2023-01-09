@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/bitmap"
 	"github.com/coyove/sdss/contrib/clock"
-	"github.com/coyove/sdss/types"
 	"go.etcd.io/bbolt"
 )
 

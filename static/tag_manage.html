@@ -17,7 +17,7 @@
 <div>
     <table id=list>
         {{if .T.query}}
-        <tr><td><div class=display ><span>搜索：<b>{{.T.query}}</b> ({{.T.queryResultsCount}})</span></div></td></tr>
+        <tr><td><div class=display ><span>搜索：<b>{{.T.query}}</b> ({{.T.total}})</span></div></td></tr>
         {{end}}
         {{if .T.pid}}{{if .T.ptag.Valid}}
         <tr>

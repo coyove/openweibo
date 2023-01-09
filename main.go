@@ -6,8 +6,8 @@ import (
 	"net/http/pprof"
 	"os"
 
-	"github.com/coyove/sdss/dal"
-	"github.com/coyove/sdss/types"
+	"github.com/coyove/iis/dal"
+	"github.com/coyove/iis/types"
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,6 +25,7 @@ func main() {
 
 	serve("/t/", HandleSingleTag)
 	serve("/post", HandlePostPage)
+	serve("/tag/store_status", HandleTagStoreStatus)
 	serve("/tag/search", HandleTagSearch)
 	serve("/tag/manage", HandleTagManage)
 	serve("/tag/history", HandleTagHistory)

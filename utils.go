@@ -21,12 +21,12 @@ import (
 	"unicode/utf8"
 
 	"github.com/NYTimes/gziphandler"
+	"github.com/coyove/iis/dal"
+	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/bitmap"
 	"github.com/coyove/sdss/contrib/clock"
 	"github.com/coyove/sdss/contrib/cursor"
 	"github.com/coyove/sdss/contrib/ngram"
-	"github.com/coyove/sdss/dal"
-	"github.com/coyove/sdss/types"
 	"github.com/sirupsen/logrus"
 	"go.etcd.io/bbolt"
 )

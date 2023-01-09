@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/coyove/iis/dal"
+	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/bitmap"
 	"github.com/coyove/sdss/contrib/clock"
 	"github.com/coyove/sdss/contrib/ngram"
-	"github.com/coyove/sdss/dal"
-	"github.com/coyove/sdss/types"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 	"go.etcd.io/bbolt"
@@ -204,12 +204,12 @@ func HandleTagManage(w http.ResponseWriter, r *types.Request) {
 	pid, _ := strconv.ParseUint(r.URL.Query().Get("pid"), 10, 64)
 
 	var tags []*types.Tag
-	var total, pages, queryResultsCount int
+	var total, pages int
 	if q != "" {
 		st, desc = -1, false
 		ids, _ := collectSimple(q)
 		tags, _ = dal.BatchGetTags(ids)
-		queryResultsCount = len(tags)
+		total = len(tags)
 		sort.Slice(tags, func(i, j int) bool { return len(tags[i].Name) < len(tags[j].Name) })
 		tags = tags[:imin(500, len(tags))]
 	} else {
@@ -245,7 +245,6 @@ func HandleTagManage(w http.ResponseWriter, r *types.Request) {
 	}
 
 	r.AddTemplateValue("query", q)
-	r.AddTemplateValue("queryResultsCount", queryResultsCount)
 	r.AddTemplateValue("pid", pid)
 	r.AddTemplateValue("tags", tags)
 	r.AddTemplateValue("total", total)
@@ -384,4 +383,11 @@ func HandleSingleTag(w http.ResponseWriter, r *types.Request) {
 	} else {
 		http.Redirect(w, r.Request, "/tag/manage?q="+url.QueryEscape(t), 302)
 	}
+}
+
+func HandleTagStoreStatus(w http.ResponseWriter, r *types.Request) {
+	dal.TagsStore.WalkDesc(clock.UnixMilli(), func(b *bitmap.Range) bool {
+		fmt.Fprint(w, b.String())
+		return true
+	})
 }
