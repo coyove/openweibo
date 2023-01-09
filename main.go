@@ -1,260 +1,57 @@
 package main
 
 import (
-	"crypto/tls"
-	"fmt"
-	"html/template"
-	"io/ioutil"
-	"math/rand"
+	"flag"
 	"net/http"
 	"net/http/pprof"
 	"os"
-	"runtime"
-	"strconv"
-	"strings"
-	"time"
 
-	"github.com/coyove/iis/common/geoip"
-	"github.com/coyove/iis/common/jiebago"
-
-	"github.com/alicebob/miniredis/v2"
-	"github.com/coyove/iis/common"
-	"github.com/coyove/iis/dal"
-	"github.com/coyove/iis/dal/storage"
-	"github.com/coyove/iis/dal/tagrank"
-	"github.com/coyove/iis/handler"
-	"github.com/coyove/iis/ik"
-	"github.com/coyove/iis/middleware"
-	"github.com/coyove/iis/model"
-	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/acme/autocert"
+	"github.com/coyove/sdss/dal"
+	"github.com/coyove/sdss/types"
+	"github.com/sirupsen/logrus"
 )
 
+var debugRebuild = flag.Int("debug-rebuild", 0, "")
+
 func main() {
-	rand.Seed(time.Now().Unix())
-	runtime.GOMAXPROCS(runtime.NumCPU())
+	flag.Parse()
 
-	common.MustLoadConfig("config.json")
-	geoip.LoadIPLocation()
-	jiebago.LoadDictionary()
+	types.LoadConfig("config.json")
+	dal.InitDB()
 
-	redisConfig := &storage.RedisConfig{Addr: common.Cfg.RedisAddr}
-	if redisConfig.Addr == "" {
-		svr, err := miniredis.Run()
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println("Use miniredis mock:", svr.Addr())
-		redisConfig.Addr = svr.Addr()
+	if *debugRebuild > 0 {
+		rebuildData(*debugRebuild)
 	}
 
-	dal.Init(redisConfig, common.Cfg.DyRegion, common.Cfg.DyAccessKey, common.Cfg.DySecretKey)
+	serve("/t/", HandleSingleTag)
+	serve("/post", HandlePostPage)
+	serve("/tag/search", HandleTagSearch)
+	serve("/tag/manage", HandleTagManage)
+	serve("/tag/history", HandleTagHistory)
+	serve("/tag/manage/action", HandleTagAction)
 
-	if common.Cfg.S3Region != "" {
-		dal.S3 = storage.NewS3(common.Cfg.S3Endpoint, common.Cfg.S3Region, common.Cfg.S3Bucket,
-			common.Cfg.S3AccessKey, common.Cfg.S3SecretKey)
-	}
+	root := types.UUIDStr()
+	http.HandleFunc("/"+root, func(w http.ResponseWriter, r *http.Request) { generateSession(root, "root", w, r) })
+	http.Handle("/"+root+"/debug/pprof/", http.StripPrefix("/"+root, http.HandlerFunc(pprof.Index)))
 
-	tagrank.Init(redisConfig)
+	logrus.Info("root token page:  /", root)
+	logrus.Info("debug pprof page: /", root, "/debug/pprof/")
 
-	prodMode := common.Cfg.Key != "0123456789abcdef"
+	http.Handle("/static/", http.StripPrefix("/", http.FileServer(http.FS(httpStaticAssets))))
 
-	cssVersion := ".prod." + strconv.FormatInt(time.Now().Unix(), 10) + ".css"
-	if !prodMode {
-		cssVersion = ".test.css"
-	}
+	logrus.Info("start serving, pid=", os.Getpid())
+	http.ListenAndServe(":8888", nil)
+}
 
-	go func() {
-		for {
-			cssFiles, _ := ioutil.ReadDir("template/css")
-			css := []string{}
-			for _, f := range cssFiles {
-				if path := "template/css/" + f.Name(); !strings.HasSuffix(f.Name(), ".tmpl.css") {
-					os.Remove(path)
-				} else {
-					css = append(css, path)
-				}
-			}
-			for _, path := range css {
-				buf, _ := ioutil.ReadFile(path)
-				common.CSSLightConfig.WriteTemplate(path+cssVersion, string(buf))
-				common.CSSDarkConfig.WriteTemplate(path+".dark"+cssVersion, string(buf))
-			}
-			if prodMode {
-				return
-			}
-			time.Sleep(time.Second)
-		}
-	}()
-
-	go handler.GetYandre()
-
-	r := middleware.New(prodMode)
-	r.SetFuncMap(template.FuncMap{
-		"session":     func() int64 { return time.Now().Unix()<<32 | int64(rand.Uint32()) },
-		"cssVersion":  func() string { return cssVersion },
-		"asciiEmojis": func() []string { return common.AsciiEmojis },
-		"abbrTitle": func(in string) string {
-			return common.AbbrText(in, 9)
-		},
-		"contains": func(a interface{}, b string) bool {
-			aa, _ := a.(string)
-			return strings.Contains(aa, b)
-		},
-		"pollMap": func(a ...string) map[string]string {
-			m := map[string]string{}
-			for i := 0; i < len(a); i += 2 {
-				m[a[i]] = a[i+1]
-			}
-			return m
-		},
-		"emptyUser": func() string {
-			u := model.Dummy
-			return middleware.RenderTemplateString("user_public.html", u)
-		},
-		"blend": func(args ...interface{}) interface{} {
-			return args
-		},
-		"getTotalPosts": func(id string) int {
-			a, _ := dal.GetArticle(ik.NewID(ik.IDAuthor, id).String())
-			if a != nil {
-				return int(a.Replies)
-			}
-			return 0
-		},
-		"getLastActiveTime": func(id string) time.Time {
-			return dal.LastActiveTime(id)
-		},
-		"sub": func(a, b int) int {
-			return a - b
-		},
-		"ipChainLookup": func(chain string) [][3]interface{} {
-			res := [][3]interface{}{}
-			for _, part := range strings.Split(chain, ",") {
-				part = strings.Trim(strings.TrimSpace(part), "{}")
-				if len(part) == 0 {
-					continue
-				}
-				var date time.Time
-				data := strings.Split(part, "/")
-				loc, _ := geoip.LookupIP(data[0])
-				if len(data) > 1 {
-					ts, _ := strconv.ParseInt(data[1], 36, 64)
-					date = time.Unix(ts, 0)
-				}
-				res = append(res, [3]interface{}{data[0], loc, date})
-			}
-			return res
-		},
-		"formatTime": func(a time.Time) template.HTML {
-			if a == (time.Time{}) || a.IsZero() || a.Unix() == 0 {
-				return template.HTML("<span class='time none'></span>")
-			}
-			s := time.Since(a).Seconds()
-			if s < 5 {
-				return template.HTML("<span class='time now'></span>")
-			}
-			if s < 60 {
-				return template.HTML("<span class='time sec'>" + strconv.Itoa(int(s)) + "</span>")
-			}
-			if s < 3600 {
-				return template.HTML("<span class='time min'>" + strconv.Itoa(int(s)/60) + "</span>")
-			}
-			if s < 86400 {
-				return template.HTML("<span class='time hour'>" + strconv.Itoa(int(s)/3600) + "</span>")
-			}
-			if s < 7*86400 {
-				return template.HTML("<span title='" + a.Format(time.ANSIC) + "' class='time day'>" + strconv.Itoa(int(s)/86400) + "</span>")
-			}
-			return template.HTML("<span title='" + a.Format(time.ANSIC) + "' class='time' data='" +
-				strconv.FormatInt(a.Unix(), 10) + "'>" + a.Format("2006-01-02 <i>1504Z</i>") + "</span>")
-		},
+func generateSession(tag, name string, w http.ResponseWriter, r *http.Request) {
+	req := types.Request{Request: r}
+	_, v := req.GenerateSession(name)
+	http.SetCookie(w, &http.Cookie{
+		Name:   "session",
+		Value:  v,
+		Path:   "/",
+		MaxAge: 365 * 86400,
 	})
-	r.LoadHTMLGlob("template/*.html")
-	r.Static("/s/", "template")
-
-	r.NoRoute(handler.NotFound)
-	r.Handle("GET", "/help", func(g *gin.Context) { g.HTML(200, "help.html", nil) })
-
-	r.Handle("GET", "/", handler.Home)
-	r.Handle("GET", "/eriri.jpg", handler.Eriri)
-	r.Handle("GET", "/i/*img", handler.LocalImage)
-	r.Handle("GET", "/avatar/:id", handler.Avatar)
-	r.Handle("GET", "/tag/:tag", handler.TagTimeline)
-	r.Handle("GET", "/user", handler.User)
-	r.Handle("GET", "/user_security", handler.UserSecurity)
-	r.Handle("GET", "/user_api", handler.UserSecurity)
-	r.Handle("GET", "/user/:type/:uid", handler.UserList)
-	r.Handle("POST", "/user/:type/:uid", handler.UserList)
-	r.Handle("GET", "/likes/:uid", handler.UserLikes)
-	r.Handle("GET", "/t", handler.Timeline)
-	r.Handle("GET", "/t/:user", handler.Timeline)
-	r.Handle("GET", "/search/:query", handler.Search)
-	r.Handle("GET", "/search", handler.Search)
-	r.Handle("GET", "/S/:id", handler.S)
-	r.Handle("GET", "/inbox", handler.Inbox)
-	r.Handle("GET", "/mod/user", handler.ModUser)
-	r.Handle("GET", "/mod/kv", handler.ModKV)
-	r.Handle("GET", "/post_box", handler.PostBox)
-	r.Handle("GET", "/api/timeline", handler.APITimeline) // crawler special case
-
-	r.Handle("POST", "/api/u/:id", handler.APIGetUserInfoBox)
-	r.Handle("POST", "/api/upload_image", handler.APIUpload)
-	r.Handle("POST", "/api/timeline", handler.APITimeline)
-	r.Handle("POST", "/api/user_kimochi", handler.APIUserKimochi)
-	r.Handle("POST", "/api/new_captcha", handler.APINewCaptcha)
-	r.Handle("POST", "/api/search", handler.APISearch)
-	r.Handle("POST", "/api/ban", handler.APIBan)
-	r.Handle("POST", "/api/promote_mod", handler.APIPromoteMod)
-	r.Handle("POST", "/api/mod_kv", handler.APIModKV)
-	r.Handle("POST", "/api/user_settings", handler.APIUpdateUserSettings)
-	r.Handle("POST", "/api/clear_inbox", handler.APIClearInbox)
-	r.Handle("POST", "/api2/follow_block", handler.APIFollowBlock)
-	r.Handle("POST", "/api2/like_article", handler.APILike)
-	r.Handle("POST", "/api2/signup", handler.APISignup)
-	r.Handle("POST", "/api2/login", handler.APILogin)
-	r.Handle("POST", "/api2/logout", handler.APILogout)
-	r.Handle("POST", "/api2/new", handler.APINew)
-	r.Handle("POST", "/api2/user_password", handler.APIUpdateUserPassword)
-	r.Handle("POST", "/api2/delete", handler.APIDeleteArticle)
-	r.Handle("POST", "/api2/toggle_nsfw", handler.APIToggleNSFWArticle)
-	r.Handle("POST", "/api2/toggle_lock", handler.APIToggleLockArticle)
-	r.Handle("POST", "/api2/drop_top", handler.APIDropTop)
-	r.Handle("POST", "/api2/poll", handler.APIPoll)
-
-	r.Handle("GET", "/debug/pprof/*name", func(g *gin.Context) {
-		u, _ := g.Get("user")
-		uu, _ := u.(*model.User)
-		if uu == nil || !uu.IsAdmin() {
-			g.Status(400)
-			return
-		}
-		name := strings.TrimPrefix(g.Param("name"), "/")
-		if name == "" {
-			pprof.Index(g.Writer, g.Request)
-		} else {
-			pprof.Handler(name).ServeHTTP(g.Writer, g.Request)
-		}
-	})
-
-	if len(common.Cfg.Domains) > 0 {
-		go func() {
-			m := &autocert.Manager{
-				Cache:      autocert.DirCache("secret-dir"),
-				Prompt:     autocert.AcceptTOS,
-				HostPolicy: autocert.HostWhitelist(common.Cfg.Domains...),
-			}
-			s := &http.Server{
-				Addr:      ":https",
-				TLSConfig: m.TLSConfig(),
-				Handler:   r,
-			}
-			hello := &tls.ClientHelloInfo{ServerName: common.Cfg.Domains[0]}
-			_, err := m.GetCertificate(hello)
-			fmt.Println("ssl test:", err)
-			fmt.Println(s.ListenAndServeTLS("", ""))
-		}()
-	}
-
-	fmt.Println(r.Run(":5010"))
+	logrus.Info("generate root session: ", v, " remote: ", req.RemoteIPv4())
+	http.Redirect(w, r, "/", 302)
 }

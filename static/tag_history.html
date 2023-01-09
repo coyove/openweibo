@@ -1,0 +1,100 @@
+{{template "header.html" .}}
+<title>标签历史</title>
+
+<style>
+.diff { font-size: 90%; white-space:initial;line-height:1.25em;margin:0.2em 0}
+.hl, .hltag{border-bottom: solid 1px #233;display:inline-block;padding:0 0.5em;}
+.hltag span{ margin: 0 0.5em}
+</style>
+
+<div style='display:flex;align-items:center'>
+    <div class='tag-box button {{if (not .T.desc)}}selected{{end}}'><a href='?id={{.T.tag.Id}}'>最旧</a></div>
+    <div class='tag-box button {{if (.T.desc)}}selected{{end}}'><a href='?desc=1&id={{.T.tag.Id}}'>最新</a></div>
+</div>
+
+<div>
+    <table id=list>
+        <tr>
+            <td colspan=2>
+                <div class=display >
+                    <span>
+                        {{if .T.tag.Valid}}
+                        <b>{{.T.tag.Name}}</b>
+                        <a class=tag-edit-button href='/tag/manage?sort=0&edittagid={{.T.tag.Id}}'><span class=li_pen></span></a>
+                        {{else}}
+                        全局
+                        {{end}}
+                        操作记录 ({{.T.total}})
+                    </span>
+                </div>
+            </td>
+        </tr>
+        {{range .T.records}}
+        <tr id='record{{.Id}}'>
+            <td class='small'>
+                <div style='padding:0.5em'>
+                {{$tagid := .TagId}}
+                {{if not $.T.tag.Valid}}<div><a href='/tag/manage?edittagid={{$tagid}}'>#{{$tagid}}</a></div>{{end}}
+                <div>{{.Action}}</div>
+                <div>{{.Modifier}}</div>
+                <div>{{.ModifierIP}}</div>
+                <div>{{formatUnixMilli .CreateUnix}}</div>
+                </div>
+            </td>
+            <td>
+                {{if not .Diffs}}
+                    <div class=diff>NA</div>
+                {{else}}
+                    {{range $i, $d := .Diffs}}
+                    <div class=diff>
+                        {{$el := (index $d 0)}}
+                        {{$old := index $d 1}}
+                        {{$new := index $d 2}}
+                        <b>{{add $i 1}}.</b>&emsp;
+                        {{if eq $el "parents"}}
+                            父标签由
+                            <div class='hltag'>{{if not $old}}<i>空</i>{{else}}{{range $old}}<span>{{.Name}}</span>{{end}}{{end}}</div>
+                            变为 
+                            <div class='hltag'>{{if not $new}}<i>空</i>{{else}}{{range $new}}<span>{{.Name}}</span>{{end}}{{end}}</div>
+                        {{else}}
+                            {{if eq $el "lock"}}
+                            {{if $new}}锁定{{else}}解锁{{end}}
+                            {{else}}
+                            {{if eq $el "pendingreview"}}
+                            {{if $new}}请求审核{{else}}解除审核{{end}}
+                            {{else}}
+                            {{if eq $el "name"}}标签名由{{end}}
+                            {{if eq $el "reviewname"}}审核标签名由{{end}}
+                            {{if eq $el "desc"}}描述由{{end}}
+                            {{if eq $el "reviewdesc"}}审核描述由{{end}}
+                            <div class=hl>{{if not $old}}<i>空</i>{{else}}{{$old}}{{end}}</div>
+                            变为
+                            <div class=hl>{{if not $new}}<i>空</i>{{else}}{{$new}}{{end}}</div>
+                            {{end}}
+                            {{end}}
+                        {{end}}
+                    </div>
+                    {{end}}
+                {{end}}
+            </td>
+        </tr>
+        {{end}}
+    </table>
+</div>
+
+<div id=page style='text-align:center'>
+    {{range (generatePages .T.page .T.pages)}}
+        {{if eq . 0}}
+        <span>...</span>
+        {{else}}
+        <div class='tag-box nav-page button {{if eq . $.T.page}}selected{{end}}'>
+            {{if eq . $.T.page}}
+            <span><b>{{.}}</b></span>
+            {{else}}
+            <a href='?{{$.BuildPageLink .}}&id={{$.T.tag.Id}}'>{{.}}</a>
+            {{end}}
+        </div>
+        {{end}}
+    {{end}}
+</div>
+{{template "footer.html" .}}

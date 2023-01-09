@@ -1,0 +1,67 @@
+{{template "header.html" .}}
+<title>标签管理</title>
+
+<style>
+    
+</style>
+
+<div style='display:flex;align-items:center'>
+    <input class=border1 placeholder='搜索' style='flex-grow:1;margin-right:1em' onkeyup='if(event.keyCode==13)location.href="?q="+encodeURIComponent(this.value)'>
+    <div class='tag-box button' id='tag-edit-new-tag' style='margin-right: 0.8em'><a>新标签</a></div>
+    <div class='tag-box button {{if and (eq .T.sort 1) (not .T.desc)}}selected{{end}}'><a href='?sort=1&pid={{.T.pid}}'>A-Z</a></div>
+    <div class='tag-box button {{if and (eq .T.sort 1) (.T.desc)}}selected{{end}}'><a href='?sort=1&desc=1&pid={{.T.pid}}'>Z-A</a></div>
+    <div class='tag-box button {{if and (eq .T.sort 0) (not .T.desc)}}selected{{end}}'><a href='?sort=0&pid={{.T.pid}}'>最旧</a></div>
+    <div class='tag-box button {{if and (eq .T.sort 0) (.T.desc)}}selected{{end}}'><a href='?sort=0&desc=1&pid={{.T.pid}}'>最新</a></div>
+</div>
+
+<div>
+    <table id=list>
+        {{if .T.query}}
+        <tr><td><div class=display ><span>搜索：<b>{{.T.query}}</b> ({{.T.queryResultsCount}})</span></div></td></tr>
+        {{end}}
+        {{if .T.pid}}{{if .T.ptag.Valid}}
+        <tr>
+            <td>
+                <div class=display >
+                    <span><b>{{.T.ptag.Name}}</b>
+                    <a class=tag-edit-button href='?sort=0&edittagid={{.T.pid}}'><span class=li_pen></span></a>
+                    下的子标签 ({{.T.total}})</span>
+                </div>
+            </td>
+        </tr>
+        {{end}}{{end}}
+        {{range .T.tags}}
+        <tr id='tag{{.Id}}'>
+            <td tag-id={{.Id}} class='tag-edit'>
+                <script type="application/json" class=tag-data>{{.Data}}</script>
+                <div class=display >
+                    <a href='/t/{{.Name}}' class=tag-edit-name>{{if .PendingReview}}{{.ReviewName}}{{else}}{{.Name}}{{end}}</a>
+                    {{if .Lock}}<div class='tag-edit-button li_lock' disabled></div>{{end}}
+                    {{if .PendingReview}}<div class='tag-edit-button li_stack' disabled title='审核中'></div>{{end}}
+                    <div class='tag-edit-button tag-edit-button-update li_pen'></div>
+                </div>
+            </td>
+            <td class='small'>{{formatUnixMilli .UpdateUnix}}</td>
+        </tr>
+        {{end}}
+    </table>
+    <table id=edit style='display:none'>
+    </table>
+</div>
+
+<div id=page style='text-align:center'>
+    {{range (generatePages .T.page .T.pages)}}
+        {{if eq . 0}}
+        <span>...</span>
+        {{else}}
+        <div class='tag-box nav-page button {{if eq . $.T.page}}selected{{end}}'>
+            {{if eq . $.T.page}}
+            <span><b>{{.}}</b></span>
+            {{else}}
+            <a href='?{{$.BuildPageLink .}}&pid={{$.T.pid}}'>{{.}}</a>
+            {{end}}
+        </div>
+        {{end}}
+    {{end}}
+</div>
+{{template "footer.html" .}}

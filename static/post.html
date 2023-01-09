@@ -1,0 +1,9 @@
+{{template "header.html" .}}
+
+<div>
+    <textarea class="border1" rows=10 style='width:100%;padding:0.5em;resize:vertical;font-family:inherit;font-size:inherit;border-radius:0.8em'></textarea>
+    <div id=test2 max-tags=4 edit=edit class='tag-search-input-container border1'></div>
+</div>
+
+<div onclicktag='alert(id)' id=test class='tag-search-input-container border1' tag-data0='90,zzz' tag-data1='100,aaa'></div>
+{{template "footer.html" .}}
