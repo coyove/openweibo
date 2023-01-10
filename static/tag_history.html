@@ -2,14 +2,14 @@
 <title>标签历史</title>
 
 <style>
-.diff { font-size: 90%; white-space:initial;line-height:1.25em;margin:0.2em 0}
+.diff { align-items:center; display:flex;font-size:90%; white-space:initial;line-height:1.25em;margin:0.2em 0}
 .hl, .hltag{border-bottom: solid 1px #233;display:inline-block;padding:0 0.5em;}
 .hltag span{ margin: 0 0.5em}
 </style>
 
 <div style='display:flex;align-items:center'>
-    <div class='tag-box button {{if (not .T.desc)}}selected{{end}}'><a href='?id={{.T.tag.Id}}'>最旧</a></div>
-    <div class='tag-box button {{if (.T.desc)}}selected{{end}}'><a href='?desc=1&id={{.T.tag.Id}}'>最新</a></div>
+    <div class='tag-box button {{if (not .T.desc)}}selected{{end}}'><a href='?id={{.T.id}}'>最旧</a></div>
+    <div class='tag-box button {{if (.T.desc)}}selected{{end}}'><a href='?desc=1&id={{.T.id}}'>最新</a></div>
 </div>
 
 <div>
@@ -20,9 +20,9 @@
                     <span>
                         {{if .T.tag.Valid}}
                         <b>{{.T.tag.Name}}</b>
-                        <a class=tag-edit-button href='/tag/manage?sort=0&edittagid={{.T.tag.Id}}'><span class=li_pen></span></a>
+                        <a class=tag-edit-button href='/tag/manage?sort=0&edittagid={{.T.id}}'><span class=li_pen></span></a>
                         {{else}}
-                        全局
+                        {{if .T.id}}{{.T.id}}{{else}}全局{{end}}
                         {{end}}
                         操作记录 ({{.T.total}})
                     </span>
@@ -30,20 +30,26 @@
             </td>
         </tr>
         {{range .T.records}}
+        {{$tagid := .TagId}}
+        <tr>
+            <td colspan=2>
+                <div class=diff>
+                    <div style='flex-grow:1'>{{.Modifier}} ({{.ModifierIP}})</div>
+                    <a href='/tag/history?id={{.Modifier}}' class='tag-edit-button li_user'></a>
+                    <a href='/tag/manage?edittagid={{$tagid}}' class='tag-edit-button li_tag'></a>
+                </div>
+            </td>
+        </tr>
         <tr id='record{{.Id}}'>
             <td class='small'>
                 <div style='padding:0.5em'>
-                {{$tagid := .TagId}}
-                {{if not $.T.tag.Valid}}<div><a href='/tag/manage?edittagid={{$tagid}}'>#{{$tagid}}</a></div>{{end}}
                 <div>{{.Action}}</div>
-                <div>{{.Modifier}}</div>
-                <div>{{.ModifierIP}}</div>
                 <div>{{formatUnixMilli .CreateUnix}}</div>
                 </div>
             </td>
             <td>
                 {{if not .Diffs}}
-                    <div class=diff>NA</div>
+                    <div class=diff><b>0.</b>&emsp;&nbsp;无变更</div>
                 {{else}}
                     {{range $i, $d := .Diffs}}
                     <div class=diff>
@@ -91,7 +97,7 @@
             {{if eq . $.T.page}}
             <span><b>{{.}}</b></span>
             {{else}}
-            <a href='?{{$.BuildPageLink .}}&id={{$.T.tag.Id}}'>{{.}}</a>
+            <a href='?{{$.BuildPageLink .}}&id={{$.T.id}}'>{{.}}</a>
             {{end}}
         </div>
         {{end}}

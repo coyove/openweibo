@@ -131,10 +131,8 @@ func ProcessTagHistory(tagId uint64, user, action string, ip net.IP, old, new st
 			Value:  tr.MarshalBinary(),
 			NoSort: true,
 		})
-		return KSVUpsert(tx, fmt.Sprintf("tags_history_%d", tagId), KeySortValue{
-			Key:    k[:],
-			NoSort: true,
-		})
+		KSVUpsert(tx, fmt.Sprintf("tags_history_%s", user), KeySortValue{Key: k[:], NoSort: true})
+		return KSVUpsert(tx, fmt.Sprintf("tags_history_%d", tagId), KeySortValue{Key: k[:], NoSort: true})
 	})
 }
 

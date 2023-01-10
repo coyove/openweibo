@@ -257,25 +257,32 @@ func HandleTagManage(w http.ResponseWriter, r *types.Request) {
 
 func HandleTagHistory(w http.ResponseWriter, r *types.Request) {
 	p, _, desc, pageSize := r.GetPagingArgs()
-	id, _ := strconv.ParseUint(r.URL.Query().Get("id"), 10, 64)
-
+	idStr := r.URL.Query().Get("id")
+	if idStr == "0" {
+		idStr = ""
+	}
 	var results []dal.KeySortValue
 	var tags []*types.TagRecordDiff
 	var tag *types.Tag
 	var total, pages int
 
-	if id == 0 {
+	if idStr == "" {
 		results, total, pages = dal.KSVPaging(nil, "tags_history", -1, desc, p-1, pageSize)
 		tag = &types.Tag{}
 	} else {
-		if tag, _ = dal.GetTag(id); tag.Valid() {
-			results, total, pages = dal.KSVPaging(nil, fmt.Sprintf("tags_history_%d", tag.Id), -1, desc, p-1, pageSize)
+		id, _ := strconv.ParseUint(idStr, 10, 64)
+		if id > 0 {
+			if tag, _ = dal.GetTag(id); tag.Valid() {
+				results, total, pages = dal.KSVPaging(nil, fmt.Sprintf("tags_history_%d", tag.Id), -1, desc, p-1, pageSize)
+			}
+		} else {
+			results, total, pages = dal.KSVPaging(nil, "tags_history_"+idStr, -1, desc, p-1, pageSize)
 		}
 	}
 
 	for i := range results {
 		var t *types.TagRecord
-		if id == 0 {
+		if idStr == "" {
 			t = types.UnmarshalTagRecordBinary(results[i].Value)
 		} else {
 			t, _ = dal.GetTagRecord(bitmap.BytesKey(results[i].Key))
@@ -317,6 +324,7 @@ func HandleTagHistory(w http.ResponseWriter, r *types.Request) {
 		tags = append(tags, &res)
 	}
 
+	r.AddTemplateValue("id", idStr)
 	r.AddTemplateValue("tag", tag)
 	r.AddTemplateValue("total", total)
 	r.AddTemplateValue("records", tags)

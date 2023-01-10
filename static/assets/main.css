@@ -185,6 +185,7 @@ td.tag-edit .tag-edit-name { text-decoration:none;color:#233;word-break: break-a
     height: 2em;
     width: 2em;
     line-height: 1em;
+    text-align: center;
 }
 .tag-edit-button:not([disabled]):hover { background: rgba(0, 0, 0, 0.1); }
 .tag-edit-button:not([disabled]):active { background: rgba(0, 0, 0, 0.2); }
