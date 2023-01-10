@@ -66,6 +66,7 @@ func main() {
 
 	serve("/t/", HandleSingleTag)
 	serve("/post", HandlePostPage)
+	serve("/tag/new", HandleTagNew)
 	serve("/tag/store_status", HandleTagStoreStatus)
 	serve("/tag/search", HandleTagSearch)
 	serve("/tag/manage", HandleTagManage)

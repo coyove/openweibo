@@ -173,15 +173,24 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 			target.Reviewer = r.UserDisplay
 		}
 		target.ReviewName, target.ReviewDesc = "", ""
+
+		var exist bool
 		if err := dal.TagsStore.Update(func(tx *bbolt.Tx) error {
 			if target.Name == "" && action == "reject" {
 				return dal.KSVDelete(tx, "tags", idKey[:])
+			}
+			if _, exist = dal.KSVFirstKeyOfSort1(tx, "tags", []byte(target.Name)); exist {
+				return nil
 			}
 			dal.UpdateTagCreator(tx, target)
 			return dal.KSVUpsert(tx, "tags", dal.KSVFromTag(target))
 		}); err != nil {
 			logrus.Errorf("tag manage action %s %d: %v", action, id, err)
 			writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
+			return
+		}
+		if exist {
+			writeJSON(w, "success", false, "code", "TAG_ALREADY_EXISTS")
 			return
 		}
 	case "lock", "unlock":
@@ -392,6 +401,10 @@ func HandleTagSearch(w http.ResponseWriter, r *types.Request) {
 		"debug", fmt.Sprint(jms),
 		"count", len(results),
 	)
+}
+
+func HandleTagNew(w http.ResponseWriter, r *types.Request) {
+	httpTemplates.ExecuteTemplate(w, "tag_new.html", r)
 }
 
 func HandleSingleTag(w http.ResponseWriter, r *types.Request) {

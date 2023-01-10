@@ -119,7 +119,7 @@ window.onload = function() {
                 trParents.find('.display').html('').
                     append($("<div max-tags=8 class='tag-search-input-container border1' style='width:100%'></div>"));
                 parentsSelector = trParents.find('.tag-search-input-container').get(0);
-                parentsSelector.onclicktag = function(id) { window.open('/tag/manage?edittagid=' + id); }
+                parentsSelector.onclicktag = function(id) { location.href=('/tag/manage?edittagid=' + id); }
                 data.tags.forEach(function(t, i) { $(parentsSelector).attr('tag-data' + i, t[0] + ',' + t[1]) });
                 wrapTagSearchInput(parentsSelector );
                 if (!tagData.pr) btnUpdate.show();
@@ -135,7 +135,11 @@ window.onload = function() {
             }, reload);
             tab.append(tr);
 
-            tab.append($("<tr><td class=small>创建者</td><td><div class=display>" + tagData.U + "</div></td></tr>"));
+            var tr = $("<tr><td class=small>创建者</td><td><div class=display>" + tagData.U + "&nbsp;</div></td></tr>");
+            tab.append(tr);
+            if (tagData.U)
+                tr.find('.display').append($("<a class='tag-edit-button' href='/tag/manage?pid=@" + tagData.U +"'><span class=li_user></span></a>"));
+
             tab.append($("<tr><td class=small>创建时间</td><td><div class=display>" + new Date(tagData.C || 0).toLocaleString() + "</div></td></tr>"));
             tab.append($("<tr><td class=small>最近修改人</td><td><div class=display>" + (tagData.M || '') + "</div></td></tr>"));
             tab.append($("<tr><td class=small>最近审核人</td><td><div class=display>" + (tagData.R || '') + "</div></td></tr>"));

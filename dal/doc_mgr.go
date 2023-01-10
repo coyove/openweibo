@@ -7,6 +7,7 @@ import (
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/bitmap"
 	"github.com/coyove/sdss/contrib/clock"
+	"github.com/tidwall/gjson"
 	"go.etcd.io/bbolt"
 )
 
@@ -80,6 +81,17 @@ func GetTagRecord(id bitmap.Key) (*types.TagRecord, error) {
 		return nil
 	})
 	return t, err
+}
+
+func GetTagJSONDescription(name string) (gjson.Result, error) {
+	t, err := GetTagByName(name)
+	if err != nil {
+		return gjson.Result{}, err
+	}
+	if !t.Valid() {
+		return gjson.Result{}, nil
+	}
+	return gjson.Parse(t.Desc), nil
 }
 
 func GetTagByName(name string) (*types.Tag, error) {

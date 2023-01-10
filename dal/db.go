@@ -88,10 +88,11 @@ func (ksv KeySortValue) String() string {
 
 func KSVFromTag(tag *types.Tag) KeySortValue {
 	k := bitmap.Uint64Key(tag.Id)
+	n := tag.Name
 	return KeySortValue{
 		Key:   k[:],
 		Sort0: uint64(tag.UpdateUnix),
-		Sort1: []byte(tag.Name),
+		Sort1: []byte(n),
 		Value: tag.MarshalBinary(),
 	}
 }

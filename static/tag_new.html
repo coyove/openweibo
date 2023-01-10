@@ -1,0 +1,44 @@
+{{template "header.html" .}}
+<title>新建标签</title>
+<table>
+    <tr>
+        <td class=small>标签名</td>
+        <td>
+            <div class=display>
+                <input id=name class=tag-edit-name placeholder='32字符' />
+                <div id=submit class='tag-box button'><span>创建</span></div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td class=small>描述</td>
+        <td>
+            <div class=display>
+                <input id=desc class=tag-edit-desc placeholder='500字符' />
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td class=small>父标签</td>
+        <td>
+            <div class=display>
+                <div max-tags=8 id=parents class='tag-search-input-container border1' style='width:100%'></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+        <script>
+        clickAjax($('#submit'), '/tag/manage/action', function() {
+            return {
+                            'action': 'create',
+                            'text': $('#name').val(),
+                            'description': $('#desc').val(),
+                            'parents': JSON.stringify($('#parents').get(0).getTags()),
+                        };
+        }, function(data) {
+            location.href = '/tag/manage?sort=0&desc=1';
+        });
+        </script>
+
+{{template "footer.html" .}}
