@@ -20,9 +20,14 @@
                     <span>
                         {{if .T.tag.Valid}}
                         <b>{{.T.tag.Name}}</b>
-                        <a class=tag-edit-button href='/tag/manage?sort=0&edittagid={{.T.id}}'><span class=li_pen></span></a>
+                        <a class=tag-edit-button href='/tag/manage?sort=0&edittagid={{.T.tag.Id}}'><span class=li_pen></span></a>
                         {{else}}
-                        {{if .T.id}}{{.T.id}}{{else}}全局{{end}}
+                        {{if .T.id}}
+                        <b>{{.T.id}}</b>
+                        <a class=tag-edit-button href='/tag/manage?sort=0&pid={{.T.id}}'><span class=li_vynil></span></a>
+                        {{else}}
+                        全局
+                        {{end}}
                         {{end}}
                         操作记录 ({{.T.total}})
                     </span>
@@ -35,8 +40,8 @@
             <td colspan=2>
                 <div class=diff>
                     <div style='flex-grow:1'>{{.Modifier}} ({{.ModifierIP}})</div>
-                    <a href='/tag/history?id={{.Modifier}}' class='tag-edit-button li_user'></a>
-                    <a href='/tag/manage?edittagid={{$tagid}}' class='tag-edit-button li_tag'></a>
+                    <a href='/tag/history?id=@{{.Modifier}}' class='tag-edit-button li_user'></a>
+                    <a href='/tag/history?id={{$tagid}}' class='tag-edit-button li_tag'></a>
                 </div>
             </td>
         </tr>

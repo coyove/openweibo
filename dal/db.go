@@ -27,6 +27,7 @@ var (
 		*bitmap.Manager
 		locks [256]sync.Mutex
 	}
+	BBoltOptions = &bbolt.Options{FreelistType: bbolt.FreelistMapType}
 )
 
 func InitDB() {
@@ -59,7 +60,7 @@ func InitDB() {
 		logrus.Fatal("init bitmap manager: ", err)
 	}
 
-	TagsStore.DB, err = bbolt.Open("bitmap_cache/tags.db", 0777, &bbolt.Options{FreelistType: bbolt.FreelistMapType})
+	TagsStore.DB, err = bbolt.Open("bitmap_cache/tags.db", 0777, BBoltOptions)
 	if err != nil {
 		logrus.Fatal("init tags db: ", err)
 	}

@@ -8,43 +8,53 @@ import (
 	"unsafe"
 )
 
-func (r *Request) newUserHash(name string) (UserHash, []byte) {
-	tmp := make([]byte, 15+20)
-	enc := tmp[15:]
-	tmp = tmp[:15]
+func (r *Request) newUserHash(name byte) (UserHash, []byte) {
+	tmp := make([]byte, 12+16)
+	enc := tmp[12:]
+	tmp = tmp[:12]
 
 	ip := r.RemoteIPv4()
-	copy(tmp[:3], ip)
+	copy(tmp[:2], ip)
 	ua := r.UserAgent()
 
 	var uaHash uint64
 	var uaBytes []byte
-	for i := 0; i < len(ua) && uaHash <= 0x00ffffffffffffff; i++ {
-		if ua[i] >= '0' && ua[i] <= '9' {
-			uaHash = uaHash*36 + uint64(ua[i]-'0'+26)
-			uaBytes = append(uaBytes, ua[i])
-		}
-		if ua[i] >= 'A' && ua[i] <= 'Z' {
-			uaHash = uaHash*36 + uint64(ua[i]-'A')
-			uaBytes = append(uaBytes, ua[i])
+	for i := len(ua) - 1; i >= 0 && uaHash <= 0x000f_ffff_ffff_ffff; i-- {
+		ch := ua[i]
+		if ch >= '1' && ch <= '9' {
+			uaHash = uaHash*11 + uint64(ch-'0')
+			uaBytes = append(uaBytes, ch)
+		} else if ch == '0' {
+			if x := uaHash % 11; x != 0 && x != 10 {
+				uaHash = uaHash * 11
+				uaBytes = append(uaBytes, ch)
+			}
+		} else {
+			if x := uaHash % 11; x != 10 {
+				uaHash = uaHash*11 + 10
+				uaBytes = append(uaBytes, '.')
+			}
 		}
 	}
 
-	binary.BigEndian.PutUint64(tmp[3:], uaHash)
-
-	if name == "" {
-		for i := 11; i < len(tmp); i++ {
-			tmp[i] = byte(rand.Int())
-		}
-	} else {
-		copy(tmp[11:], name)
+	for i := 0; i < len(uaBytes)/2; i++ {
+		uaBytes[i], uaBytes[len(uaBytes)-i-1] = uaBytes[len(uaBytes)-i-1], uaBytes[i]
 	}
+
+	binary.LittleEndian.PutUint64(tmp[2:], uaHash)
+
+	tmp[9] = byte(rand.Int())
+	tmp[10] = byte(rand.Int())
+	tmp[11] = name
+
+	Config.Runtime.XTEA.Encrypt(tmp[4:], tmp[4:])
+	Config.Runtime.XTEA.Encrypt(tmp[:8], tmp[:8])
 
 	base64.URLEncoding.Encode(enc, tmp)
 	return UserHash{
 		IP:     ip,
 		UA:     string(uaBytes),
-		Name:   string(tmp[11:]),
+		Name:   name,
 		base64: enc,
 	}, enc
 }
@@ -52,51 +62,55 @@ func (r *Request) newUserHash(name string) (UserHash, []byte) {
 type UserHash struct {
 	IP     net.IP
 	UA     string
-	Name   string
+	Name   byte
 	base64 []byte
 }
 
 func (uh UserHash) IsRoot() bool {
-	return uh.Name == "root"
+	return uh.Name == 'r'
 }
 
 func (uh UserHash) IsMod() bool {
-	return uh.Name == "root" || uh.Name == "mods"
+	return uh.Name == 'r' || uh.Name == 'm'
 }
 
 func (uh UserHash) Display() string {
-	if uh.Name == "root" {
-		return uh.Name
+	if uh.Name == 'r' {
+		return "root"
 	}
-	if uh.Name == "mods" {
-		return uh.Name
+	if uh.Name == 'm' {
+		return "mod"
 	}
 	return string(uh.base64)
 }
 
 func ParseUserHash(v []byte) UserHash {
-	tmp := make([]byte, 15)
+	tmp := make([]byte, 12)
+	if len(v) > 16 {
+		v = v[:16]
+	}
 	base64.URLEncoding.Decode(tmp, []byte(v))
 
-	uaHash := binary.BigEndian.Uint64(tmp[3:])
+	Config.Runtime.XTEA.Decrypt(tmp[:8], tmp[:8])
+	Config.Runtime.XTEA.Decrypt(tmp[4:], tmp[4:])
+
+	uaHash := binary.LittleEndian.Uint64(tmp[2:])
+	uaHash &= 0x00ff_ffff_ffff_ffff
 
 	ip := net.IP(tmp[:4])
-	ip[3] = 0
-	name := string(tmp[11:])
+	ip[2], ip[3] = 0, 0
+	name := tmp[11]
 
 	tmp = tmp[4:4]
 	for i := 0; uaHash > 0; i++ {
-		m := byte(uaHash % 36)
-		if m < 26 {
-			m += 'A'
+		m := byte(uaHash % 11)
+		uaHash /= 11
+		if m == 10 {
+			tmp = append(tmp, '.')
 		} else {
-			m = m - 26 + '0'
+			tmp = append(tmp, m+'0')
 		}
-		uaHash /= 36
-		tmp = append(tmp, m)
 	}
-	for i := 0; i < len(tmp)/2; i++ {
-		tmp[i], tmp[len(tmp)-i-1] = tmp[len(tmp)-i-1], tmp[i]
-	}
+
 	return UserHash{ip, *(*string)(unsafe.Pointer(&tmp)), name, v}
 }

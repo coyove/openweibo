@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/xtea"
 )
 
 var Config struct {
@@ -26,6 +27,7 @@ var Config struct {
 	}
 	Runtime struct {
 		AESBlock cipher.Block
+		XTEA     *xtea.Cipher
 	}
 }
 
@@ -38,9 +40,17 @@ func LoadConfig(path string) {
 		logrus.Fatal("load config unmarshal: ", err)
 	}
 
-	Config.Runtime.AESBlock, err = aes.NewCipher([]byte(Config.Key))
+	for ; len(Config.Key) < 48; Config.Key += "0123456789abcdef" {
+	}
+
+	Config.Runtime.AESBlock, err = aes.NewCipher([]byte(Config.Key[16:48]))
 	if err != nil {
 		logrus.Fatal("load config cipher key: ", err)
+	}
+
+	Config.Runtime.XTEA, err = xtea.NewCipher([]byte(Config.Key[:16]))
+	if err != nil {
+		logrus.Fatal("load config xtea cipher key: ", err)
 	}
 }
 
@@ -61,7 +71,7 @@ type Request struct {
 	UserDisplay string
 }
 
-func (r *Request) GenerateSession(name string) (UserHash, string) {
+func (r *Request) GenerateSession(name byte) (UserHash, string) {
 	uh, h := r.newUserHash(name)
 	nonce := [12]byte{}
 	rand.Read(nonce[:])
@@ -91,7 +101,11 @@ func (r *Request) ParseSession() (string, bool) {
 			return sess.Value, false
 		}
 	}
-	uh, s := r.GenerateSession("")
+	uh, s := r.GenerateSession(0)
+
+	// fmt.Println(uh, r.UserAgent())
+	// fmt.Println(ParseUserHash(uh.base64))
+
 	r.User = uh
 	r.UserDisplay = uh.Display()
 	return s, true

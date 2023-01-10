@@ -2,9 +2,11 @@ package main
 
 import (
 	"embed"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"reflect"
 	"sort"
 	"strconv"
@@ -38,20 +40,20 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 	q := r.URL.Query()
 	id, err := strconv.ParseUint(q.Get("id"), 10, 64)
 	action := q.Get("action")
-	k := bitmap.Uint64Key(id)
+	idKey := bitmap.Uint64Key(id)
 
-	var old *types.Tag
+	var target *types.Tag
 	var oldData string
 	if action != "create" {
 		dal.LockKey(id)
 		defer dal.UnlockKey(id)
-		old, err = dal.GetTag(id)
-		if !old.Valid() || err != nil {
+		target, err = dal.GetTag(id)
+		if !target.Valid() || err != nil {
 			logrus.Errorf("tag manage action %s, can't find %d: %v", action, id, err)
 			writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
 			return
 		}
-		oldData = old.Data()
+		oldData = target.Data()
 	}
 
 	switch action {
@@ -64,11 +66,11 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 
 	switch action {
 	case "update":
-		if old.PendingReview {
+		if target.PendingReview {
 			writeJSON(w, "success", false, "code", "TAG_PENDING_REVIEW")
 			return
 		}
-		if old.Lock && !r.User.IsMod() {
+		if target.Lock && !r.User.IsMod() {
 			writeJSON(w, "success", false, "code", "TAG_LOCKED")
 			return
 		}
@@ -100,36 +102,38 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 		var err error
 		var exist bool
 		if action == "create" {
-			old = &types.Tag{
+			target = &types.Tag{
 				Id:            clock.Id(),
 				PendingReview: true,
 				ReviewName:    n,
 				ReviewDesc:    desc,
 				Creator:       r.UserDisplay,
+				Modifier:      r.UserDisplay,
 				ParentIds:     parentTags,
 			}
-			k = bitmap.Uint64Key(old.Id)
-			exist, err = dal.CreateTag(n, old)
+			idKey = bitmap.Uint64Key(target.Id)
+			exist, err = dal.CreateTag(n, target)
 		} else {
 			err = dal.TagsStore.Update(func(tx *bbolt.Tx) error {
-				if n != old.Name {
+				if n != target.Name {
 					if _, exist = dal.KSVFirstKeyOfSort1(tx, "tags", []byte(n)); exist {
 						return nil
 					}
 				}
-				dal.ProcessTagParentChanges(tx, old, old.ParentIds, parentTags)
-				old.ParentIds = parentTags
+				dal.ProcessTagParentChanges(tx, target, target.ParentIds, parentTags)
+				target.ParentIds = parentTags
 				if !r.User.IsMod() {
-					old.PendingReview = true
-					old.ReviewName = n
-					old.ReviewDesc = desc
+					target.PendingReview = true
+					target.ReviewName = n
+					target.ReviewDesc = desc
 				} else {
-					old.Name = n
-					old.Desc = desc
+					target.Name = n
+					target.Desc = desc
 				}
-				old.Modifier = r.UserDisplay
-				old.UpdateUnix = clock.UnixMilli()
-				return dal.KSVUpsert(tx, "tags", dal.KSVFromTag(old))
+				target.Modifier = r.UserDisplay
+				target.UpdateUnix = clock.UnixMilli()
+				dal.UpdateTagCreator(tx, target)
+				return dal.KSVUpsert(tx, "tags", dal.KSVFromTag(target))
 			})
 		}
 		if err != nil {
@@ -141,49 +145,50 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 			writeJSON(w, "success", false, "code", "TAG_ALREADY_EXISTS")
 			return
 		}
-		if old.ReviewName != old.Name {
-			dal.TagsStore.Saver().AddAsync(k, h)
+		if target.ReviewName != target.Name {
+			dal.TagsStore.Saver().AddAsync(idKey, h)
 		}
 	case "delete":
 		if err := dal.TagsStore.Update(func(tx *bbolt.Tx) error {
-			dal.ProcessTagParentChanges(tx, old, old.ParentIds, nil)
-			return dal.KSVDelete(tx, "tags", k[:])
+			dal.ProcessTagParentChanges(tx, target, target.ParentIds, nil)
+			return dal.KSVDelete(tx, "tags", idKey[:])
 		}); err != nil {
 			logrus.Errorf("tag manage action %s %d: %v", action, id, err)
 			writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
 			return
 		}
 	case "approve", "reject":
-		if !old.PendingReview {
+		if !target.PendingReview {
 			writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
 			return
 		}
-		if !r.User.IsMod() && old.Modifier == r.UserDisplay && action == "approve" {
+		if !r.User.IsMod() && target.Modifier == r.UserDisplay && action == "approve" {
 			writeJSON(w, "success", false, "code", "ILLEGAL_SELF_APPROVE")
 			return
 		}
-		old.PendingReview = false
+		target.PendingReview = false
 		if action == "approve" {
-			old.Name = old.ReviewName
-			old.Desc = old.ReviewDesc
-			old.Reviewer = r.UserDisplay
+			target.Name = target.ReviewName
+			target.Desc = target.ReviewDesc
+			target.Reviewer = r.UserDisplay
 		}
-		old.ReviewName, old.ReviewDesc = "", ""
+		target.ReviewName, target.ReviewDesc = "", ""
 		if err := dal.TagsStore.Update(func(tx *bbolt.Tx) error {
-			if old.Name == "" && action == "reject" {
-				return dal.KSVDelete(tx, "tags", k[:])
+			if target.Name == "" && action == "reject" {
+				return dal.KSVDelete(tx, "tags", idKey[:])
 			}
-			return dal.KSVUpsert(tx, "tags", dal.KSVFromTag(old))
+			dal.UpdateTagCreator(tx, target)
+			return dal.KSVUpsert(tx, "tags", dal.KSVFromTag(target))
 		}); err != nil {
 			logrus.Errorf("tag manage action %s %d: %v", action, id, err)
 			writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
 			return
 		}
 	case "lock", "unlock":
-		old.Lock = action == "lock"
-		old.UpdateUnix = clock.UnixMilli()
+		target.Lock = action == "lock"
+		target.UpdateUnix = clock.UnixMilli()
 		if err := dal.TagsStore.Update(func(tx *bbolt.Tx) error {
-			return dal.KSVUpsert(tx, "tags", dal.KSVFromTag(old))
+			return dal.KSVUpsert(tx, "tags", dal.KSVFromTag(target))
 		}); err != nil {
 			logrus.Errorf("tag manage action %s %d: %v", action, id, err)
 			writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
@@ -194,14 +199,14 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 		return
 	}
 
-	go dal.ProcessTagHistory(old.Id, r.UserDisplay, action, r.RemoteIPv4Masked(), oldData, old.Data())
-	writeJSON(w, "success", true, "tag", old)
+	go dal.ProcessTagHistory(target.Id, r.UserDisplay, action, r.RemoteIPv4Masked(), oldData, target.Data())
+	writeJSON(w, "success", true, "tag", target)
 }
 
 func HandleTagManage(w http.ResponseWriter, r *types.Request) {
 	p, st, desc, pageSize := r.GetPagingArgs()
 	q := r.URL.Query().Get("q")
-	pid, _ := strconv.ParseUint(r.URL.Query().Get("pid"), 10, 64)
+	pidStr := r.URL.Query().Get("pid")
 
 	var tags []*types.Tag
 	var total, pages int
@@ -214,21 +219,28 @@ func HandleTagManage(w http.ResponseWriter, r *types.Request) {
 		tags = tags[:imin(500, len(tags))]
 	} else {
 		var results []dal.KeySortValue
-		if pid > 0 {
-			results, total, pages = dal.KSVPaging(nil, fmt.Sprintf("tags_children_%d", pid), st, desc, p-1, pageSize)
-			ids := make([]bitmap.Key, len(results))
-			for i := range ids {
-				ids[i] = bitmap.BytesKey(results[i].Key)
+		if !strings.HasPrefix(pidStr, "@") {
+			pid, _ := strconv.ParseUint(pidStr, 10, 64)
+			if pid > 0 {
+				results, total, pages = dal.KSVPaging(nil, fmt.Sprintf("tags_children_%d", pid), st, desc, p-1, pageSize)
+				ids := make([]bitmap.Key, len(results))
+				for i := range ids {
+					ids[i] = bitmap.BytesKey(results[i].Key)
+				}
+				tags, _ = dal.BatchGetTags(ids)
+				ptag, _ := dal.GetTag(pid)
+				r.AddTemplateValue("ptag", ptag)
+			} else {
+				results, total, pages = dal.KSVPaging(nil, "tags", st, desc, p-1, pageSize)
+				tags = make([]*types.Tag, len(results))
+				for i := range tags {
+					tags[i] = types.UnmarshalTagBinary(results[i].Value)
+				}
+				pidStr = ""
 			}
-			tags, _ = dal.BatchGetTags(ids)
-			ptag, _ := dal.GetTag(pid)
-			r.AddTemplateValue("ptag", ptag)
 		} else {
-			results, total, pages = dal.KSVPaging(nil, "tags", st, desc, p-1, pageSize)
-			tags = make([]*types.Tag, len(results))
-			for i := range tags {
-				tags[i] = types.UnmarshalTagBinary(results[i].Value)
-			}
+			results, total, pages = dal.KSVPaging(nil, "tags_creator_"+pidStr[1:], st, desc, p-1, pageSize)
+			tags, _ = dal.BatchGetTags(results)
 		}
 	}
 
@@ -245,7 +257,8 @@ func HandleTagManage(w http.ResponseWriter, r *types.Request) {
 	}
 
 	r.AddTemplateValue("query", q)
-	r.AddTemplateValue("pid", pid)
+	r.AddTemplateValue("pid", pidStr)
+	r.AddTemplateValue("pid_is_user", strings.HasPrefix(pidStr, "@"))
 	r.AddTemplateValue("tags", tags)
 	r.AddTemplateValue("total", total)
 	r.AddTemplateValue("pages", pages)
@@ -269,15 +282,13 @@ func HandleTagHistory(w http.ResponseWriter, r *types.Request) {
 	if idStr == "" {
 		results, total, pages = dal.KSVPaging(nil, "tags_history", -1, desc, p-1, pageSize)
 		tag = &types.Tag{}
-	} else {
+	} else if !strings.HasPrefix(idStr, "@") {
 		id, _ := strconv.ParseUint(idStr, 10, 64)
-		if id > 0 {
-			if tag, _ = dal.GetTag(id); tag.Valid() {
-				results, total, pages = dal.KSVPaging(nil, fmt.Sprintf("tags_history_%d", tag.Id), -1, desc, p-1, pageSize)
-			}
-		} else {
-			results, total, pages = dal.KSVPaging(nil, "tags_history_"+idStr, -1, desc, p-1, pageSize)
+		if tag, _ = dal.GetTag(id); tag.Valid() {
+			results, total, pages = dal.KSVPaging(nil, fmt.Sprintf("tags_history_%d", tag.Id), -1, desc, p-1, pageSize)
 		}
+	} else {
+		results, total, pages = dal.KSVPaging(nil, "tags_history_"+idStr[1:], -1, desc, p-1, pageSize)
 	}
 
 	for i := range results {
@@ -292,7 +303,7 @@ func HandleTagHistory(w http.ResponseWriter, r *types.Request) {
 
 		var res types.TagRecordDiff
 		res.TagRecord = *t
-		res.TagId = from.Id
+		res.TagId = to.Id
 		if res.Action == "delete" {
 			*to = types.Tag{}
 		}
@@ -394,6 +405,20 @@ func HandleSingleTag(w http.ResponseWriter, r *types.Request) {
 }
 
 func HandleTagStoreStatus(w http.ResponseWriter, r *types.Request) {
+	stats := dal.TagsStore.DB.Stats()
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	enc.Encode(stats)
+	w.Write([]byte("\n"))
+
+	fi, err := os.Stat(dal.TagsStore.DB.Path())
+	if err != nil {
+		fmt.Fprintf(w, "<failed to read data on disk>\n\n")
+	} else {
+		sz := fi.Size()
+		fmt.Fprintf(w, "data on disk: %d (%.2f)\n\n", sz, float64(sz)/1024/1024)
+	}
+
 	dal.TagsStore.WalkDesc(clock.UnixMilli(), func(b *bitmap.Range) bool {
 		fmt.Fprint(w, b.String())
 		return true

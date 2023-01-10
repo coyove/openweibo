@@ -197,12 +197,18 @@ func rebuildData(count int) {
 					Value: (&types.Tag{
 						Id:         uint64(i),
 						Name:       line,
-						Creator:    "root",
+						Creator:    "bulk",
 						CreateUnix: now,
 						UpdateUnix: now,
 					}).MarshalBinary(),
 				}
 				dal.KSVUpsert(tx, "tags", ksv)
+				dal.KSVUpsert(tx, "tags_creator_bulk", dal.KeySortValue{
+					Key:   k[:],
+					Sort0: uint64(now),
+					Sort1: []byte(line),
+				})
+
 				delete(data, i)
 				c++
 				if c > 1000 {

@@ -19,23 +19,36 @@
         {{if .T.query}}
         <tr><td><div class=display ><span>搜索：<b>{{.T.query}}</b> ({{.T.total}})</span></div></td></tr>
         {{end}}
-        {{if .T.pid}}{{if .T.ptag.Valid}}
+        {{if .T.pid}}
         <tr>
             <td>
                 <div class=display >
-                    <span><b>{{.T.ptag.Name}}</b>
+                    <span>
+                    {{if .T.ptag.Valid}}
+                    <b>{{.T.ptag.Name}}</b>
                     <a class=tag-edit-button href='?sort=0&edittagid={{.T.pid}}'><span class=li_pen></span></a>
-                    下的子标签 ({{.T.total}})</span>
+                    下的子标签 ({{.T.total}})
+                    {{else}}
+                    <b>{{.T.pid}}</b> 
+                    <a class=tag-edit-button href='/tag/history?id={{.T.pid}}'><span class=li_vynil></span></a>
+                    创建的标签 ({{.T.total}})
+                    {{end}}
+                    </span>
                 </div>
             </td>
         </tr>
-        {{end}}{{end}}
+        {{end}}
+
         {{range .T.tags}}
         <tr id='tag{{.Id}}'>
             <td tag-id={{.Id}} class='tag-edit'>
                 <script type="application/json" class=tag-data>{{.Data}}</script>
                 <div class=display >
-                    <a href='/t/{{.Name}}' class=tag-edit-name>{{if .PendingReview}}{{.ReviewName}}{{else}}{{.Name}}{{end}}</a>
+                    {{if .PendingReview}}
+                    <a href='/tag/manage?edittagid={{.Id}}' class=tag-edit-name>{{.ReviewName}}</a>
+                    {{else}}
+                    <a href='/t/{{.Name}}' class=tag-edit-name>{{.Name}}</a>
+                    {{end}}
                     {{if .Lock}}<div class='tag-edit-button li_lock' disabled></div>{{end}}
                     {{if .PendingReview}}<div class='tag-edit-button li_stack' disabled title='审核中'></div>{{end}}
                     <div class='tag-edit-button tag-edit-button-update li_pen'></div>

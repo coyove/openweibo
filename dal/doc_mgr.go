@@ -21,9 +21,20 @@ func CreateTag(name string, tag *types.Tag) (existed bool, err error) {
 		tag.UpdateUnix = now
 
 		ProcessTagParentChanges(tx, tag, nil, tag.ParentIds)
+
+		UpdateTagCreator(tx, tag)
 		return KSVUpsert(tx, "tags", KSVFromTag(tag))
 	})
 	return
+}
+
+func UpdateTagCreator(tx *bbolt.Tx, tag *types.Tag) error {
+	k := bitmap.Uint64Key(tag.Id)
+	return KSVUpsert(tx, "tags_creator_"+tag.Creator, KeySortValue{
+		Key:   k[:],
+		Sort0: uint64(clock.UnixMilli()),
+		Sort1: []byte(tag.Name),
+	})
 }
 
 func BatchGetTags(v interface{}) (tags []*types.Tag, err error) {
@@ -34,6 +45,10 @@ func BatchGetTags(v interface{}) (tags []*types.Tag, err error) {
 	case []uint64:
 		for _, v := range v {
 			ids = append(ids, bitmap.Uint64Key(v))
+		}
+	case []KeySortValue:
+		for _, v := range v {
+			ids = append(ids, bitmap.BytesKey(v.Key))
 		}
 	default:
 		panic(v)
