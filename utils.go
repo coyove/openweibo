@@ -298,5 +298,6 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 		}
 		return
 	},
-	"add": func(a, b int) int { return a + b },
+	"add":  func(a, b int) int { return a + b },
+	"uuid": func() string { return types.UUIDStr() },
 }).ParseFS(httpStaticPages, "static/*.html"))

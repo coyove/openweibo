@@ -183,7 +183,7 @@ td .tag-edit-desc {
     resize: vertical;
     border: none;
     width: 100%;
-    padding: 0.5em 0;
+    padding: 0;
     min-height: 3em;
 }
 .tag-edit-button {
@@ -205,3 +205,7 @@ td .display .button .closer { cursor: pointer }
 td .tag-box { font-size: 90%; margin-right: 0.5em }
 tr:nth-child(even) { background: #f7f8f9; }
 .page {display:inline-block; min-width: 2em; text-align:center}
+
+div.diff-row {white-space:pre-wrap;padding:0 0.5em}
+div.diff-row.del{background:#ef9a9a}
+div.diff-row.ins{background:#a5d6a7}

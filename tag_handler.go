@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -67,8 +68,11 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 	switch action {
 	case "update":
 		if target.PendingReview {
-			writeJSON(w, "success", false, "code", "TAG_PENDING_REVIEW")
-			return
+			if target.Modifier == r.UserDisplay || r.User.IsMod() {
+			} else {
+				writeJSON(w, "success", false, "code", "TAG_PENDING_REVIEW")
+				return
+			}
 		}
 		if target.Lock && !r.User.IsMod() {
 			writeJSON(w, "success", false, "code", "TAG_LOCKED")
@@ -180,8 +184,11 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 			if target.Name == "" && action == "reject" {
 				return dal.KSVDelete(tx, "tags", idKey[:])
 			}
-			if _, exist = dal.KSVFirstKeyOfSort1(tx, "tags", []byte(target.Name)); exist {
-				return nil
+			if key, found := dal.KSVFirstKeyOfSort1(tx, "tags", []byte(target.Name)); found {
+				if !bytes.Equal(key, idKey[:]) {
+					exist = true
+					return nil
+				}
 			}
 			dal.UpdateTagCreator(tx, target)
 			return dal.KSVUpsert(tx, "tags", dal.KSVFromTag(target))

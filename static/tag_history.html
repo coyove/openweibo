@@ -62,28 +62,39 @@
                         {{$el := (index $d 0)}}
                         {{$old := index $d 1}}
                         {{$new := index $d 2}}
+                        {{$u := uuid}}
+                        <script type="text/plain" id=record-data-{{$u}}-old>{{$old}}</script>
+                        <script type="text/plain" id=record-data-{{$u}}-new>{{$new}}</script>
                         <b>{{add $i 1}}.</b>&emsp;
                         {{if eq $el "parents"}}
                             父标签由
                             <div class='hltag'>{{if not $old}}<i>空</i>{{else}}{{range $old}}<span>{{.Name}}</span>{{end}}{{end}}</div>
                             变为 
                             <div class='hltag'>{{if not $new}}<i>空</i>{{else}}{{range $new}}<span>{{.Name}}</span>{{end}}{{end}}</div>
-                        {{else}}
-                            {{if eq $el "lock"}}
+                        {{end}}
+                        {{if eq $el "lock"}}
                             {{if $new}}锁定{{else}}解锁{{end}}
-                            {{else}}
-                            {{if eq $el "pendingreview"}}
+                        {{end}}
+                        {{if eq $el "pendingreview"}}
                             {{if $new}}请求审核{{else}}解除审核{{end}}
-                            {{else}}
-                            {{if eq $el "name"}}标签名由{{end}}
-                            {{if eq $el "reviewname"}}审核标签名由{{end}}
-                            {{if eq $el "desc"}}描述由{{end}}
-                            {{if eq $el "reviewdesc"}}审核描述由{{end}}
+                        {{end}}
+                        {{if eq $el "name"}}
+                            标签名由
                             <div class=hl>{{if not $old}}<i>空</i>{{else}}{{$old}}{{end}}</div>
                             变为
                             <div class=hl>{{if not $new}}<i>空</i>{{else}}{{$new}}{{end}}</div>
-                            {{end}}
-                            {{end}}
+                        {{end}}
+                        {{if eq $el "reviewname"}}
+                            待审核标签名由
+                            <div class=hl>{{if not $old}}<i>空</i>{{else}}{{$old}}{{end}}</div>
+                            变为
+                            <div class=hl>{{if not $new}}<i>空</i>{{else}}{{$new}}{{end}}</div>
+                        {{end}}
+                        {{if eq $el "desc"}}
+                        内容发生变更 (<a href='javascript:openDiff("record-data-{{$u}}-old", "record-data-{{$u}}-new", true)'>diff</a>)
+                        {{end}}
+                        {{if eq $el "reviewdesc"}}
+                            待审核内容发生变更 (<a href='javascript:openDiff("record-data-{{$u}}-old", "record-data-{{$u}}-new", true)'>diff</a>)
                         {{end}}
                     </div>
                     {{end}}
