@@ -176,6 +176,16 @@ td { white-space: nowrap; padding: 0.1em 0.5em; }
 td.small { font-size:80%; width: 1px }
 td .display { display: flex; min-height: 2.5em; align-items:center; flex-wrap: wrap }
 td.tag-edit .tag-edit-name { text-decoration:none;color:#233;word-break: break-all; white-space: pre-wrap;flex-grow:1}
+td .tag-edit-desc {
+    outline: none;
+    background: transparent;
+    font: inherit;
+    resize: vertical;
+    border: none;
+    width: 100%;
+    padding: 0.5em 0;
+    min-height: 3em;
+}
 .tag-edit-button {
     color: #233;
     text-decoration:none;
@@ -190,7 +200,7 @@ td.tag-edit .tag-edit-name { text-decoration:none;color:#233;word-break: break-a
 }
 .tag-edit-button:not([disabled]):hover { background: rgba(0, 0, 0, 0.1); }
 .tag-edit-button:not([disabled]):active { background: rgba(0, 0, 0, 0.2); }
-td .display input { outline:none; border:none; font:inherit; background:transparent; flex-grow: 1; }
+td .display input { outline:none; border:none; font:inherit; background:transparent; flex-grow: 1; padding:0 }
 td .display .button .closer { cursor: pointer }
 td .tag-box { font-size: 90%; margin-right: 0.5em }
 tr:nth-child(even) { background: #f7f8f9; }

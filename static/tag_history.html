@@ -2,7 +2,8 @@
 <title>标签历史</title>
 
 <style>
-.diff { align-items:center; display:flex;font-size:90%; white-space:initial;line-height:1.25em;margin:0.2em 0}
+.diff { font-size:90%; white-space:initial;line-height:1.25em;margin:0.2em 0}
+.diff-header { align-items:center; display:flex;}
 .hl, .hltag{border-bottom: solid 1px #233;display:inline-block;padding:0 0.5em;}
 .hltag span{ margin: 0 0.5em}
 </style>
@@ -38,7 +39,7 @@
         {{$tagid := .TagId}}
         <tr>
             <td colspan=2>
-                <div class=diff>
+                <div class='diff diff-header'>
                     <div style='flex-grow:1'>{{.Modifier}} ({{.ModifierIP}})</div>
                     <a href='/tag/history?id=@{{.Modifier}}' class='tag-edit-button li_user'></a>
                     <a href='/tag/history?id={{$tagid}}' class='tag-edit-button li_tag'></a>

@@ -100,7 +100,7 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 		}
 
 		var err error
-		var exist bool
+		var exist, addDirectly bool
 		if action == "create" {
 			target = &types.Tag{
 				Id:            clock.Id(),
@@ -129,6 +129,7 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 				} else {
 					target.Name = n
 					target.Desc = desc
+					addDirectly = true
 				}
 				target.Modifier = r.UserDisplay
 				target.UpdateUnix = clock.UnixMilli()
@@ -145,7 +146,7 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 			writeJSON(w, "success", false, "code", "TAG_ALREADY_EXISTS")
 			return
 		}
-		if target.ReviewName != target.Name {
+		if addDirectly {
 			dal.TagsStore.Saver().AddAsync(idKey, h)
 		}
 	case "delete":
@@ -193,6 +194,7 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 			writeJSON(w, "success", false, "code", "TAG_ALREADY_EXISTS")
 			return
 		}
+		dal.TagsStore.Saver().AddAsync(idKey, buildBitmapHashes(target.Name))
 	case "lock", "unlock":
 		target.Lock = action == "lock"
 		target.UpdateUnix = clock.UnixMilli()

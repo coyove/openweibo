@@ -94,8 +94,8 @@ window.onload = function() {
             }, reload);
             tab.append(tr);
 
-            var tr = $("<tr><td class=small>描述</td><td><div class=display><input class=tag-edit-desc /></div></td></tr>");
-            var trDesc = tr.find('input').val(tagData.D);
+            var tr = $("<tr><td class=small>描述</td><td><div class=display><textarea class=tag-edit-desc></textarea></div></td></tr>");
+            var trDesc = tr.find('textarea').val(tagData.D);
             tab.append(tr);
 
             if (tagData.pr) {
@@ -107,8 +107,8 @@ window.onload = function() {
                 clickAjax(tr.find('[tag=reject]'), path, function() { return {'action': 'reject', 'id': tagID} }, reload);
                 tab.append(tr);
 
-                var tr = $("<tr><td class=small>描述（待审核）</td><td><div class=display><input class=tag-edit-name readonly/></div></td></tr>");
-                tr.find('input').val(tagData.pd);
+                var tr = $("<tr><td class=small>描述（待审核）</td><td><div class=display><textarea class=tag-edit-desc readonly></textarea></div></td></tr>");
+                tr.find('textarea').val(tagData.pd);
                 tab.append(tr);
             }
 
@@ -169,7 +169,7 @@ window.onload = function() {
         });
         tab.append(tr);
 
-        var tr = $("<tr><td class=small>描述</td><td><div class=display><input class=tag-edit-desc placeholder='500字符' /></div></td></tr>");
+        var tr = $("<tr><td class=small>描述</td><td><div class=display><textarea class=tag-edit-desc placeholder='500字符' /></textarea></td></tr>");
         var trDesc = tr.find('input');
         tab.append(tr);
 
