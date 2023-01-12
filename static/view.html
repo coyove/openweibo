@@ -1,0 +1,17 @@
+{{template "header.html" .}}
+
+{{with .T.note}}
+<h1>{{.Title}}</h1>
+<div style='font-size: 90%'>
+    <div>
+    <a href='/manage?pid=@{{.Creator}}'>{{.Creator}}</a> 创建于 {{formatUnixMilli .CreateUnix}}
+    </div>
+    {{if .Modifier}}
+    <div>
+    <a href='/manage?pid=@{{.Modifier}}'>{{.Modifier}}</a> 修改于 {{formatUnixMilli .UpdateUnix}}
+    </div>
+    {{end}}
+</div>
+{{end}}
+
+{{template "footer.html" .}}

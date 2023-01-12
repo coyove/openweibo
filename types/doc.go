@@ -8,12 +8,12 @@ import (
 	"github.com/gogo/protobuf/proto"
 )
 
-type Tag struct {
+type Note struct {
 	Id            uint64   `protobuf:"fixed64,1,opt" json:"I"`
-	Name          string   `protobuf:"bytes,2,opt" json:"O"`
-	ReviewName    string   `protobuf:"bytes,3,opt" json:"pn,omitempty"`
+	Title         string   `protobuf:"bytes,2,opt" json:"O"`
+	ReviewTitle   string   `protobuf:"bytes,3,opt" json:"pn,omitempty"`
 	Content       string   `protobuf:"bytes,4,opt" json:"D,omitempty"`
-	ReviewDesc    string   `protobuf:"bytes,5,opt" json:"pd,omitempty"`
+	ReviewContent string   `protobuf:"bytes,5,opt" json:"pd,omitempty"`
 	ParentIds     []uint64 `protobuf:"fixed64,6,rep" json:"P,omitempty"`
 	Creator       string   `protobuf:"bytes,7,opt" json:"U"`
 	Modifier      string   `protobuf:"bytes,8,opt" json:"M,omitempty"`
@@ -24,7 +24,7 @@ type Tag struct {
 	UpdateUnix    int64    `protobuf:"fixed64,13,opt" json:"u"`
 }
 
-func (t *Tag) MarshalBinary() []byte {
+func (t *Note) MarshalBinary() []byte {
 	buf, err := proto.Marshal(t)
 	if err != nil {
 		panic(err)
@@ -32,50 +32,50 @@ func (t *Tag) MarshalBinary() []byte {
 	return buf
 }
 
-func (t *Tag) Reset() { *t = Tag{} }
+func (t *Note) Reset() { *t = Note{} }
 
-func (t *Tag) ProtoMessage() {}
+func (t *Note) ProtoMessage() {}
 
-func (t *Tag) String() string { return proto.CompactTextString(t) }
+func (t *Note) String() string { return proto.CompactTextString(t) }
 
-func (t *Tag) Data() string {
+func (t *Note) Data() string {
 	buf, _ := json.Marshal(t)
 	return string(buf)
 }
 
-func (t *Tag) Valid() bool {
+func (t *Note) Valid() bool {
 	return t != nil && t.Id > 0
 }
 
-func UnmarshalTagBinary(p []byte) *Tag {
-	t := &Tag{}
+func UnmarshalTagBinary(p []byte) *Note {
+	t := &Note{}
 	if err := proto.Unmarshal(p, t); err != nil {
 		panic(err)
 	}
 	return t
 }
 
-type TagRecord struct {
+type NoteRecord struct {
 	Id         uint64 `protobuf:"fixed64,1,opt" json:"I"`
 	Action     int64  `protobuf:"varint,2,opt" json:"A"`
-	Tag        *Tag   `protobuf:"bytes,3,opt" json:"T"`
+	Note       *Note  `protobuf:"bytes,3,opt" json:"T"`
 	Modifier   string `protobuf:"bytes,4,opt" json:"M"`
 	ModifierIP string `protobuf:"bytes,5,opt" json:"ip"`
 	CreateUnix int64  `protobuf:"fixed64,6,opt" json:"C"`
 }
 
-func (t *TagRecord) Reset() { *t = TagRecord{} }
+func (t *NoteRecord) Reset() { *t = NoteRecord{} }
 
-func (t *TagRecord) ProtoMessage() {}
+func (t *NoteRecord) ProtoMessage() {}
 
-func (t *TagRecord) String() string { return proto.CompactTextString(t) }
+func (t *NoteRecord) String() string { return proto.CompactTextString(t) }
 
-func (t *TagRecord) MarshalBinary() []byte {
+func (t *NoteRecord) MarshalBinary() []byte {
 	buf, _ := proto.Marshal(t)
 	return buf
 }
 
-func (t *TagRecord) ActionName() string {
+func (t *NoteRecord) ActionName() string {
 	switch t.Action {
 	case 'c':
 		return "create"
@@ -95,8 +95,8 @@ func (t *TagRecord) ActionName() string {
 	return "unknown"
 }
 
-func UnmarshalTagRecordBinary(p []byte) *TagRecord {
-	t := &TagRecord{}
+func UnmarshalTagRecordBinary(p []byte) *NoteRecord {
+	t := &NoteRecord{}
 	proto.Unmarshal(p, t)
 	return t
 }

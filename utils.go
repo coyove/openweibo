@@ -215,16 +215,16 @@ func rebuildData(count int) {
 					Key:   k[:],
 					Sort0: uint64(now),
 					Sort1: []byte(line),
-					Value: (&types.Tag{
+					Value: (&types.Note{
 						Id:         uint64(i),
-						Name:       line,
+						Title:      line,
 						Creator:    "bulk",
 						CreateUnix: now,
 						UpdateUnix: now,
 					}).MarshalBinary(),
 				}
-				dal.KSVUpsert(tx, "tags", ksv)
-				dal.KSVUpsert(tx, "tags_creator_bulk", dal.KeySortValue{
+				dal.KSVUpsert(tx, "notes", ksv)
+				dal.KSVUpsert(tx, "creator_bulk", dal.KeySortValue{
 					Key:   k[:],
 					Sort0: uint64(now),
 					Sort1: []byte(line),

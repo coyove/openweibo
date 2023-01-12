@@ -11,9 +11,9 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-func CreateTag(name string, tag *types.Tag) (existed bool, err error) {
+func CreateTag(name string, tag *types.Note) (existed bool, err error) {
 	err = TagsStore.Update(func(tx *bbolt.Tx) error {
-		if _, existed = KSVFirstKeyOfSort1(tx, "tags", []byte(name)); existed {
+		if _, existed = KSVFirstKeyOfSort1(tx, "notes", []byte(name)); existed {
 			return nil
 		}
 
@@ -24,21 +24,21 @@ func CreateTag(name string, tag *types.Tag) (existed bool, err error) {
 		ProcessTagParentChanges(tx, tag, nil, tag.ParentIds)
 
 		UpdateTagCreator(tx, tag)
-		return KSVUpsert(tx, "tags", KSVFromTag(tag))
+		return KSVUpsert(tx, "notes", KSVFromTag(tag))
 	})
 	return
 }
 
-func UpdateTagCreator(tx *bbolt.Tx, tag *types.Tag) error {
+func UpdateTagCreator(tx *bbolt.Tx, tag *types.Note) error {
 	k := bitmap.Uint64Key(tag.Id)
-	return KSVUpsert(tx, "tags_creator_"+tag.Creator, KeySortValue{
+	return KSVUpsert(tx, "creator_"+tag.Creator, KeySortValue{
 		Key:   k[:],
 		Sort0: uint64(clock.UnixMilli()),
-		Sort1: []byte(tag.Name),
+		Sort1: []byte(tag.Title),
 	})
 }
 
-func BatchGetTags(v interface{}) (tags []*types.Tag, err error) {
+func BatchGetNotes(v interface{}) (tags []*types.Note, err error) {
 	var ids []bitmap.Key
 	switch v := v.(type) {
 	case []bitmap.Key:
@@ -55,7 +55,7 @@ func BatchGetTags(v interface{}) (tags []*types.Tag, err error) {
 		panic(v)
 	}
 	err = TagsStore.View(func(tx *bbolt.Tx) error {
-		bk := tx.Bucket([]byte("tags"))
+		bk := tx.Bucket([]byte("notes"))
 		if bk == nil {
 			return nil
 		}
@@ -70,10 +70,10 @@ func BatchGetTags(v interface{}) (tags []*types.Tag, err error) {
 	return
 }
 
-func GetTagRecord(id bitmap.Key) (*types.TagRecord, error) {
-	var t *types.TagRecord
+func GetTagRecord(id bitmap.Key) (*types.NoteRecord, error) {
+	var t *types.NoteRecord
 	err := TagsStore.View(func(tx *bbolt.Tx) error {
-		bk := tx.Bucket([]byte("tags_history"))
+		bk := tx.Bucket([]byte("history"))
 		if bk == nil {
 			return nil
 		}
@@ -84,7 +84,7 @@ func GetTagRecord(id bitmap.Key) (*types.TagRecord, error) {
 }
 
 func GetTagJSONDescription(name string) (gjson.Result, error) {
-	t, err := GetTagByName(name)
+	t, err := GetNoteByName(name)
 	if err != nil {
 		return gjson.Result{}, err
 	}
@@ -94,22 +94,22 @@ func GetTagJSONDescription(name string) (gjson.Result, error) {
 	return gjson.Parse(t.Content), nil
 }
 
-func GetTagByName(name string) (*types.Tag, error) {
-	var t *types.Tag
+func GetNoteByName(name string) (*types.Note, error) {
+	var t *types.Note
 	err := TagsStore.View(func(tx *bbolt.Tx) error {
-		k, found := KSVFirstKeyOfSort1(tx, "tags", []byte(name))
+		k, found := KSVFirstKeyOfSort1(tx, "notes", []byte(name))
 		if found {
-			t = types.UnmarshalTagBinary(tx.Bucket([]byte("tags")).Get(k[:]))
+			t = types.UnmarshalTagBinary(tx.Bucket([]byte("notes")).Get(k[:]))
 		}
 		return nil
 	})
 	return t, err
 }
 
-func GetTag(id uint64) (*types.Tag, error) {
-	var t *types.Tag
+func GetTag(id uint64) (*types.Note, error) {
+	var t *types.Note
 	err := TagsStore.View(func(tx *bbolt.Tx) error {
-		bk := tx.Bucket([]byte("tags"))
+		bk := tx.Bucket([]byte("notes"))
 		if bk == nil {
 			return nil
 		}
@@ -120,19 +120,19 @@ func GetTag(id uint64) (*types.Tag, error) {
 	return t, err
 }
 
-func ProcessTagParentChanges(tx *bbolt.Tx, tag *types.Tag, old, new []uint64) error {
+func ProcessTagParentChanges(tx *bbolt.Tx, tag *types.Note, old, new []uint64) error {
 	k := bitmap.Uint64Key(tag.Id)
 	for _, o := range old {
-		if err := KSVDelete(tx, fmt.Sprintf("tags_children_%d", o), k[:]); err != nil {
+		if err := KSVDelete(tx, fmt.Sprintf("children_%d", o), k[:]); err != nil {
 			return err
 		}
 	}
 	now := clock.UnixMilli()
 	for _, n := range new {
-		if err := KSVUpsert(tx, fmt.Sprintf("tags_children_%d", n), KeySortValue{
+		if err := KSVUpsert(tx, fmt.Sprintf("children_%d", n), KeySortValue{
 			Key:   k[:],
 			Sort0: uint64(now),
-			Sort1: []byte(tag.Name),
+			Sort1: []byte(tag.Title),
 			Value: nil,
 		}); err != nil {
 			return err
@@ -141,25 +141,25 @@ func ProcessTagParentChanges(tx *bbolt.Tx, tag *types.Tag, old, new []uint64) er
 	return nil
 }
 
-func ProcessTagHistory(tagId uint64, user, action string, ip net.IP, old *types.Tag) error {
+func ProcessTagHistory(tagId uint64, user, action string, ip net.IP, old *types.Note) error {
 	return TagsStore.Update(func(tx *bbolt.Tx) error {
 		id := clock.Id()
-		tr := (&types.TagRecord{
+		tr := (&types.NoteRecord{
 			Id:         id,
 			Action:     int64(action[0]),
 			CreateUnix: clock.UnixMilli(),
-			Tag:        old,
+			Note:       old,
 			Modifier:   user,
 			ModifierIP: ip.String(),
 		})
 		k := bitmap.Uint64Key(tr.Id)
-		KSVUpsert(tx, "tags_history", KeySortValue{
+		KSVUpsert(tx, "history", KeySortValue{
 			Key:    k[:],
 			Value:  tr.MarshalBinary(),
 			NoSort: true,
 		})
-		KSVUpsert(tx, fmt.Sprintf("tags_history_%s", user), KeySortValue{Key: k[:], NoSort: true})
-		return KSVUpsert(tx, fmt.Sprintf("tags_history_%d", tagId), KeySortValue{Key: k[:], NoSort: true})
+		KSVUpsert(tx, fmt.Sprintf("history_%s", user), KeySortValue{Key: k[:], NoSort: true})
+		return KSVUpsert(tx, fmt.Sprintf("history_%d", tagId), KeySortValue{Key: k[:], NoSort: true})
 	})
 }
 

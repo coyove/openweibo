@@ -236,7 +236,7 @@ window.onload = function() {
                     append($("<div max-tags=8 class='tag-search-input-container border1' style='width:100%'></div>"));
                 parentsSelector = trParents.find('.tag-search-input-container').get(0);
                 parentsSelector.onclicktag = function(id) { location.href=('/manage?edittagid=' + id); }
-                data.tags.forEach(function(t, i) { $(parentsSelector).attr('tag-data' + i, t[0] + ',' + t[1]) });
+                data.notes.forEach(function(t, i) { $(parentsSelector).attr('tag-data' + i, t[0] + ',' + t[1]) });
                 wrapTagSearchInput(parentsSelector );
                 btnUpdate.show();
             })
@@ -380,7 +380,7 @@ window.onload = function() {
                     if (that.textContent != val) return;
                     
                     reset();
-                    data.tags.forEach(function(tag, i) {
+                    data.notes.forEach(function(tag, i) {
                         const t = $("<div>").
                             addClass('candidate tag-box ' + (i == 0 ? 'selected' : '')).
                             attr('tag-id', tag[0]).
@@ -392,7 +392,7 @@ window.onload = function() {
                         div.candidates.push(t);
                     })
 
-                    console.log(new Date(), val, data.tags.length);
+                    console.log(new Date(), val, data.notes.length);
                 });
             }, 200);
         }
@@ -509,7 +509,7 @@ window.onload = function() {
                     if (that.value != val) return;
                     
                     reset();
-                    data.tags.forEach(function(tag, i) {
+                    data.notes.forEach(function(tag, i) {
                         const t = $("<div>").
                             addClass('candidate tag-box ' + (i == 0 ? 'selected' : '')).
                             attr('tag-id', tag[0]).
@@ -521,7 +521,7 @@ window.onload = function() {
                         div.candidates.push(t);
                     })
                     $(div).show();
-                    if (data.tags.length == 0) {
+                    if (data.notes.length == 0) {
                         $(div).append($("<div class='candidate tag-box'>").css('font-style', 'italic').text('无结果'));
                     }
                 });

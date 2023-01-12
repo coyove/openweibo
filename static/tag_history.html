@@ -37,7 +37,7 @@
             <td colspan=2>
                 <div class=display >
                     {{if .T.tag.Valid}}
-                        <b>{{.T.tag.Name}}</b>
+                        <b>{{.T.tag.Title}}</b>
                         <a class=tag-edit-button href='/manage?sort=0&edittagid={{.T.tag.Id}}'><span class=li_pen></span></a>
                     {{else}}
                         {{if .T.id}}
@@ -52,7 +52,7 @@
             </td>
         </tr>
         {{range .T.records}}
-        {{$tagid := .Tag.Id}}
+        {{$tagid := .Note.Id}}
         <tr>
             <td>
                 <input onclick='diff()' name=diff-left value={{.Id}} type=radio>
@@ -75,13 +75,13 @@
             <td class='small'>
                 <div>{{formatUnixMilli .CreateUnix}}</div>
             </td>
-            {{with .Tag}}
+            {{with .Note}}
             <td tag-id={{.Id}} class='tag-edit'>
                 <script type="application/json" class=tag-data>{{.Data}}</script>
                 <div class=display>
                     <div style='flex-grow:1'>
                     <a href='javascript:void(0)' tag-readonly=true class='tag-edit-button-update tag-edit-name'
-                        >{{if .PendingReview}}{{.ReviewName}}{{else}}{{.Name}}{{end}}</a>
+                        >{{if .PendingReview}}{{.ReviewName}}{{else}}{{.Title}}{{end}}</a>
                     </div>
                     <div>
                     <a href='/history?id={{$tagid}}' class='tag-edit-button li_note'></a>

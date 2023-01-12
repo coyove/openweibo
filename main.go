@@ -66,11 +66,12 @@ func main() {
 
 	serve("/t/", HandleSingleTag)
 	serve("/new", HandleTagNew)
+	serve("/edit", HandleEdit)
 	serve("/search", HandleTagSearch)
 	serve("/manage", HandleTagManage)
 	serve("/manage/action", HandleTagAction)
 	serve("/history", HandleHistory)
-	serve("/store_status", HandleTagStoreStatus)
+	serve("/ps", HandlePublicStatus)
 
 	root := types.UUIDStr()
 	http.HandleFunc("/"+root, func(w http.ResponseWriter, r *http.Request) { generateSession(root, "root", w, r) })

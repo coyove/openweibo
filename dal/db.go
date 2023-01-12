@@ -86,9 +86,9 @@ func (ksv KeySortValue) String() string {
 	return fmt.Sprintf("ksv(%x, %d, %v, %s)", ksv.Key, ksv.Sort0, ksv.Sort1, ksv.Value)
 }
 
-func KSVFromTag(tag *types.Tag) KeySortValue {
+func KSVFromTag(tag *types.Note) KeySortValue {
 	k := bitmap.Uint64Key(tag.Id)
-	n := tag.Name
+	n := tag.Title
 	return KeySortValue{
 		Key:   k[:],
 		Sort0: uint64(tag.UpdateUnix),

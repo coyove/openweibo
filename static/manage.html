@@ -25,7 +25,7 @@
                 <div class=display >
                     <span>
                     {{if .T.ptag.Valid}}
-                    <b>{{.T.ptag.Name}}</b>
+                    <b>{{.T.ptag.Title}}</b>
                     <a class=tag-edit-button href='?sort=0&edittagid={{.T.pid}}'><span class=li_pen></span></a>
                     下的子记事 ({{.T.total}})
                     {{else}}
@@ -47,7 +47,7 @@
                     {{if .PendingReview}}
                     <a href='/manage?edittagid={{.Id}}' class=tag-edit-name>{{.ReviewName}}</a>
                     {{else}}
-                    <a href='/t/{{.Name}}' class=tag-edit-name>{{.Name}}</a>
+                    <a href='/t/{{.Title}}' class=tag-edit-name>{{.Title}}</a>
                     {{end}}
                     {{if .Lock}}<div class='tag-edit-button li_lock' disabled></div>{{end}}
                     {{if .PendingReview}}<div class='tag-edit-button li_stack' disabled title='审核中'></div>{{end}}
