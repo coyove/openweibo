@@ -1,16 +1,34 @@
 {{template "header.html" .}}
-<title>标签历史</title>
+<title>操作历史</title>
 
 <style>
-.diff { font-size:90%; white-space:initial;line-height:1.25em;margin:0.2em 0}
-.diff-header { align-items:center; display:flex;}
-.hl, .hltag{border-bottom: solid 1px #233;display:inline-block;padding:0 0.5em;}
-.hltag span{ margin: 0 0.5em}
+.diff {
+    display: flex;
+    line-height: 2em;
+}
+.diff-header {
+    font-size:90%; white-space:initial;line-height:1.25em;margin:0.2em 0;
+    align-items:center; display:flex; flex-grow: 1;
+}
+.diff-header-ip {
+    font-size:90%; color: #aaa;
+}
 </style>
 
 <div style='display:flex;align-items:center'>
     <div class='tag-box button {{if (not .T.desc)}}selected{{end}}'><a href='?id={{.T.id}}'>最旧</a></div>
     <div class='tag-box button {{if (.T.desc)}}selected{{end}}'><a href='?desc=1&id={{.T.id}}'>最新</a></div>
+            <script>
+                function diff() {
+                    const left = $('input[type=radio][name=diff-left]:checked').val();
+                    const right = $('input[type=radio][name=diff-right]:checked').val();
+                    if (!left || !right) return;
+                    openDiff(
+                        JSON.parse($('#record' + left).find('.tag-data').text()).D,
+                        JSON.parse($('#record' + right).find('.tag-data').text()).D,
+                    )
+                }
+            </script>
 </div>
 
 <div>
@@ -18,90 +36,63 @@
         <tr>
             <td colspan=2>
                 <div class=display >
-                    <span>
-                        {{if .T.tag.Valid}}
+                    {{if .T.tag.Valid}}
                         <b>{{.T.tag.Name}}</b>
-                        <a class=tag-edit-button href='/tag/manage?sort=0&edittagid={{.T.tag.Id}}'><span class=li_pen></span></a>
-                        {{else}}
+                        <a class=tag-edit-button href='/manage?sort=0&edittagid={{.T.tag.Id}}'><span class=li_pen></span></a>
+                    {{else}}
                         {{if .T.id}}
                         <b>{{.T.id}}</b>
-                        <a class=tag-edit-button href='/tag/manage?sort=0&pid={{.T.id}}'><span class=li_vynil></span></a>
+                        <a class=tag-edit-button href='/manage?sort=0&pid={{.T.id}}'><span class=li_vynil></span></a>
                         {{else}}
-                        全局
+                        <div>全局</div>
                         {{end}}
-                        {{end}}
-                        操作记录 ({{.T.total}})
-                    </span>
+                    {{end}}
+                    <span>操作记录 ({{.T.total}})</span>
                 </div>
             </td>
         </tr>
         {{range .T.records}}
-        {{$tagid := .TagId}}
+        {{$tagid := .Tag.Id}}
         <tr>
-            <td colspan=2>
-                <div class='diff diff-header'>
-                    <div style='flex-grow:1'>{{.Modifier}} ({{.ModifierIP}})</div>
-                    <a href='/tag/history?id=@{{.Modifier}}' class='tag-edit-button li_user'></a>
-                    <a href='/tag/history?id={{$tagid}}' class='tag-edit-button li_tag'></a>
+            <td>
+                <input onclick='diff()' name=diff-left value={{.Id}} type=radio>
+                <input onclick='diff()' name=diff-right value={{.Id}} type=radio>
+                <b>{{.ActionName}}</b>
+            </td>
+            <td>
+                <div class=diff>
+                    <div class='diff-header'>
+                        {{.Modifier}}&nbsp;
+                        <a href='/history?id=@{{.Modifier}}' class='tag-edit-button li_user'></a>&nbsp;
+                    </div>
+                    <div class=diff-header-ip>
+                        {{.ModifierIP}}
+                    </div>
                 </div>
             </td>
         </tr>
         <tr id='record{{.Id}}'>
             <td class='small'>
-                <div style='padding:0.5em'>
-                <div>{{.Action}}</div>
                 <div>{{formatUnixMilli .CreateUnix}}</div>
+            </td>
+            {{with .Tag}}
+            <td tag-id={{.Id}} class='tag-edit'>
+                <script type="application/json" class=tag-data>{{.Data}}</script>
+                <div class=display>
+                    <div style='flex-grow:1'>
+                    <a href='javascript:void(0)' tag-readonly=true class='tag-edit-button-update tag-edit-name'
+                        >{{if .PendingReview}}{{.ReviewName}}{{else}}{{.Name}}{{end}}</a>
+                    </div>
+                    <div>
+                    <a href='/history?id={{$tagid}}' class='tag-edit-button li_note'></a>
+                    </div>
                 </div>
             </td>
-            <td>
-                {{if not .Diffs}}
-                    <div class=diff><b>0.</b>&emsp;&nbsp;无变更</div>
-                {{else}}
-                    {{range $i, $d := .Diffs}}
-                    <div class=diff>
-                        {{$el := (index $d 0)}}
-                        {{$old := index $d 1}}
-                        {{$new := index $d 2}}
-                        {{$u := uuid}}
-                        <script type="text/plain" id=record-data-{{$u}}-old>{{$old}}</script>
-                        <script type="text/plain" id=record-data-{{$u}}-new>{{$new}}</script>
-                        <b>{{add $i 1}}.</b>&emsp;
-                        {{if eq $el "parents"}}
-                            父标签由
-                            <div class='hltag'>{{if not $old}}<i>空</i>{{else}}{{range $old}}<span>{{.Name}}</span>{{end}}{{end}}</div>
-                            变为 
-                            <div class='hltag'>{{if not $new}}<i>空</i>{{else}}{{range $new}}<span>{{.Name}}</span>{{end}}{{end}}</div>
-                        {{end}}
-                        {{if eq $el "lock"}}
-                            {{if $new}}锁定{{else}}解锁{{end}}
-                        {{end}}
-                        {{if eq $el "pendingreview"}}
-                            {{if $new}}请求审核{{else}}解除审核{{end}}
-                        {{end}}
-                        {{if eq $el "name"}}
-                            标签名由
-                            <div class=hl>{{if not $old}}<i>空</i>{{else}}{{$old}}{{end}}</div>
-                            变为
-                            <div class=hl>{{if not $new}}<i>空</i>{{else}}{{$new}}{{end}}</div>
-                        {{end}}
-                        {{if eq $el "reviewname"}}
-                            待审核标签名由
-                            <div class=hl>{{if not $old}}<i>空</i>{{else}}{{$old}}{{end}}</div>
-                            变为
-                            <div class=hl>{{if not $new}}<i>空</i>{{else}}{{$new}}{{end}}</div>
-                        {{end}}
-                        {{if eq $el "desc"}}
-                        内容发生变更 (<a href='javascript:openDiff("record-data-{{$u}}-old", "record-data-{{$u}}-new", true)'>diff</a>)
-                        {{end}}
-                        {{if eq $el "reviewdesc"}}
-                            待审核内容发生变更 (<a href='javascript:openDiff("record-data-{{$u}}-old", "record-data-{{$u}}-new", true)'>diff</a>)
-                        {{end}}
-                    </div>
-                    {{end}}
-                {{end}}
-            </td>
+            {{end}}
         </tr>
         {{end}}
+    </table>
+    <table id=edit style='display:none'>
     </table>
 </div>
 

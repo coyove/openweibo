@@ -31,13 +31,34 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-func utf16Len(v string) (sz int) {
-	for len(v) > 0 {
-		_, n := utf8.DecodeRuneInString(v)
+func utf16Trunc(v string, max int) string {
+	src, sz := v, 0
+	for len(v) > 0 && sz < max {
+		r, n := utf8.DecodeRuneInString(v)
 		if n == 0 {
 			break
 		}
-		sz++
+		if r > 65535 {
+			sz += 2
+		} else {
+			sz++
+		}
+		v = v[n:]
+	}
+	return src[:len(src)-len(v)]
+}
+
+func utf16Len(v string) (sz int) {
+	for len(v) > 0 {
+		r, n := utf8.DecodeRuneInString(v)
+		if n == 0 {
+			break
+		}
+		if r > 65535 {
+			sz += 2
+		} else {
+			sz++
+		}
 		v = v[n:]
 	}
 	return

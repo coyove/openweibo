@@ -1,25 +1,25 @@
 {{template "header.html" .}}
-<title>新建标签</title>
+<title>新建记事</title>
 <table>
     <tr>
-        <td class=small>标签名</td>
+        <td class=small>标题</td>
         <td>
             <div class=display>
-                <input id=name class=tag-edit-name placeholder='32字符' />
+                <input id=name class='tag-edit-name tag-search-input-oneline' placeholder='50字符' />
                 <div id=submit class='tag-box button'><span>创建</span></div>
             </div>
         </td>
     </tr>
     <tr>
-        <td class=small>描述</td>
+        <td class=small>内容</td>
         <td>
             <div class=display>
-                <textarea id=desc class=tag-edit-desc placeholder='500字符' rows=3></textarea>
+                <textarea id=desc class=tag-edit-desc placeholder='50000字符' rows=20></textarea>
             </div>
         </td>
     </tr>
     <tr>
-        <td class=small>父标签</td>
+        <td class=small>父记事</td>
         <td>
             <div class=display>
                 <div max-tags=8 id=parents class='tag-search-input-container border1' style='width:100%'></div>
@@ -29,16 +29,17 @@
 </table>
 
         <script>
-        clickAjax($('#submit'), '/tag/manage/action', function() {
+        clickAjax($('#submit'), '/manage/action', function() {
             return {
                             'action': 'create',
-                            'text': $('#name').val(),
-                            'description': $('#desc').val(),
+                            'title': $('#name').val(),
+                            'content': $('#desc').val(),
                             'parents': JSON.stringify($('#parents').get(0).getTags()),
                         };
         }, function(data) {
-            location.href = '/tag/manage?sort=0&desc=1';
+            location.href = '/manage?sort=0&desc=1';
         });
+        $('#desc').linedtextarea();
         </script>
 
 {{template "footer.html" .}}

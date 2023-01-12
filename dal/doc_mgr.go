@@ -91,7 +91,7 @@ func GetTagJSONDescription(name string) (gjson.Result, error) {
 	if !t.Valid() {
 		return gjson.Result{}, nil
 	}
-	return gjson.Parse(t.Desc), nil
+	return gjson.Parse(t.Content), nil
 }
 
 func GetTagByName(name string) (*types.Tag, error) {

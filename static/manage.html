@@ -1,13 +1,13 @@
 {{template "header.html" .}}
-<title>标签管理</title>
+<title>记事管理</title>
 
 <style>
     
 </style>
 
 <div style='display:flex;align-items:center'>
-    <input class=border1 placeholder='搜索' style='flex-grow:1;margin-right:1em' onkeyup='if(event.keyCode==13)location.href="?q="+encodeURIComponent(this.value)'>
-    <div class='tag-box button' id='tag-edit-new-tag' style='margin-right: 0.8em'><a>新标签</a></div>
+    <input id=search class='tag-search-input-oneline border1' style='flex-grow:1;margin-right:1em' open-tag='true'>
+    <div class='tag-box button' style='margin-right:1.5em' onclick='location.href="?q="+encodeURIComponent($("#search").val())'><a>搜索</a></div>
     <div class='tag-box button {{if and (eq .T.sort 1) (not .T.desc)}}selected{{end}}'><a href='?sort=1&pid={{.T.pid}}'>A-Z</a></div>
     <div class='tag-box button {{if and (eq .T.sort 1) (.T.desc)}}selected{{end}}'><a href='?sort=1&desc=1&pid={{.T.pid}}'>Z-A</a></div>
     <div class='tag-box button {{if and (eq .T.sort 0) (not .T.desc)}}selected{{end}}'><a href='?sort=0&pid={{.T.pid}}'>最旧</a></div>
@@ -21,17 +21,17 @@
         {{end}}
         {{if .T.pid}}
         <tr>
-            <td>
+            <td colspan=2>
                 <div class=display >
                     <span>
                     {{if .T.ptag.Valid}}
                     <b>{{.T.ptag.Name}}</b>
                     <a class=tag-edit-button href='?sort=0&edittagid={{.T.pid}}'><span class=li_pen></span></a>
-                    下的子标签 ({{.T.total}})
+                    下的子记事 ({{.T.total}})
                     {{else}}
                     <b>{{.T.pid}}</b> 
-                    <a class=tag-edit-button href='/tag/history?id={{.T.pid}}'><span class=li_vynil></span></a>
-                    创建的标签 ({{.T.total}})
+                    <a class=tag-edit-button href='/history?id={{.T.pid}}'><span class=li_vynil></span></a>
+                    创建的记事 ({{.T.total}})
                     {{end}}
                     </span>
                 </div>
@@ -45,7 +45,7 @@
                 <script type="application/json" class=tag-data>{{.Data}}</script>
                 <div class=display >
                     {{if .PendingReview}}
-                    <a href='/tag/manage?edittagid={{.Id}}' class=tag-edit-name>{{.ReviewName}}</a>
+                    <a href='/manage?edittagid={{.Id}}' class=tag-edit-name>{{.ReviewName}}</a>
                     {{else}}
                     <a href='/t/{{.Name}}' class=tag-edit-name>{{.Name}}</a>
                     {{end}}

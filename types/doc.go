@@ -12,7 +12,7 @@ type Tag struct {
 	Id            uint64   `protobuf:"fixed64,1,opt" json:"I"`
 	Name          string   `protobuf:"bytes,2,opt" json:"O"`
 	ReviewName    string   `protobuf:"bytes,3,opt" json:"pn,omitempty"`
-	Desc          string   `protobuf:"bytes,4,opt" json:"D,omitempty"`
+	Content       string   `protobuf:"bytes,4,opt" json:"D,omitempty"`
 	ReviewDesc    string   `protobuf:"bytes,5,opt" json:"pd,omitempty"`
 	ParentIds     []uint64 `protobuf:"fixed64,6,rep" json:"P,omitempty"`
 	Creator       string   `protobuf:"bytes,7,opt" json:"U"`
@@ -73,6 +73,26 @@ func (t *TagRecord) String() string { return proto.CompactTextString(t) }
 func (t *TagRecord) MarshalBinary() []byte {
 	buf, _ := proto.Marshal(t)
 	return buf
+}
+
+func (t *TagRecord) ActionName() string {
+	switch t.Action {
+	case 'c':
+		return "create"
+	case 'a':
+		return "approve"
+	case 'r':
+		return "reject"
+	case 'u':
+		return "update"
+	case 'd':
+		return "delete"
+	case 'L':
+		return "lock"
+	case 'U':
+		return "unlock"
+	}
+	return "unknown"
 }
 
 func UnmarshalTagRecordBinary(p []byte) *TagRecord {

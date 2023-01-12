@@ -7,6 +7,7 @@ html, body {
     margin: 0;
     font-family: "Arial","Microsoft YaHei",sans-serif;
     position: relative;
+    min-width: 360px;
 }
 
 #container {
@@ -129,11 +130,21 @@ input.border1, textarea.border1 { padding: 0.2em 0.5em; font-size: 90% }
     cursor: pointer;
 }
 
-.tag-search-input .tag-box.candidate:hover {
+.tag-search-input-oneline-dropdown .tag-box.candidate {
+    display: block;
+    color: #666; 
+    cursor: pointer;
+    padding: 0 0.5em;
+    border-radius: 0;
+}
+
+.tag-search-input .tag-box.candidate:hover,
+.tag-search-input-oneline-dropdown .tag-box.candidate:hover {
     background: #fffeee;
 }
 
-.tag-search-input .tag-box.candidate.selected {
+.tag-search-input .tag-box.candidate.selected,
+.tag-search-input-oneline-dropdown .tag-box.candidate.selected {
     background: #fffddd;
 }
 

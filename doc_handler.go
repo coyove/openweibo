@@ -55,7 +55,7 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 	}
 
 	switch action {
-	case "lock", "unlock" /* "approve", "reject", */, "delete":
+	case "Lock", "Unlock" /* "approve", "reject", */, "delete":
 		if !r.User.IsMod() {
 			writeJSON(w, "success", false, "code", "MODS_REQUIRED")
 			return
@@ -65,21 +65,22 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 	switch action {
 	case "update":
 		if target.PendingReview {
-			if target.Modifier == r.UserDisplay || r.User.IsMod() {
+			if target.Modifier == r.UserDisplay || target.Creator == r.UserDisplay || r.User.IsMod() {
+				// Creator, modifier and moderators can still update the content.
 			} else {
-				writeJSON(w, "success", false, "code", "TAG_PENDING_REVIEW")
+				writeJSON(w, "success", false, "code", "PENDING_REVIEW")
 				return
 			}
 		}
 		if target.Lock && !r.User.IsMod() {
-			writeJSON(w, "success", false, "code", "TAG_LOCKED")
+			writeJSON(w, "success", false, "code", "LOCKED")
 			return
 		}
 		fallthrough
 	case "create":
-		n, desc := strings.TrimSpace(q.Get("text")), strings.TrimSpace(q.Get("description"))
+		n, content := strings.TrimSpace(q.Get("title")), strings.TrimSpace(q.Get("content"))
 		h := buildBitmapHashes(n)
-		if len(n) < 1 || utf16Len(n) > 32 || len(h) == 0 || utf16Len(desc) > 500 {
+		if len(n) < 1 || utf16Len(n) > 50 || len(h) == 0 || utf16Len(content) > 50000 {
 			writeJSON(w, "success", false, "code", "INVALID_CONTENT")
 			return
 		}
@@ -104,16 +105,16 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 		var exist, addDirectly bool
 		if action == "create" {
 			target = &types.Tag{
-				Id:            clock.Id(),
-				PendingReview: true,
-				ReviewName:    n,
-				ReviewDesc:    desc,
-				Creator:       r.UserDisplay,
-				Modifier:      r.UserDisplay,
-				ParentIds:     parentTags,
+				Id:        clock.Id(),
+				Name:      n,
+				Content:   content,
+				Creator:   r.UserDisplay,
+				Modifier:  r.UserDisplay,
+				ParentIds: parentTags,
 			}
 			idKey = bitmap.Uint64Key(target.Id)
 			exist, err = dal.CreateTag(n, target)
+			addDirectly = true
 		} else {
 			err = dal.TagsStore.Update(func(tx *bbolt.Tx) error {
 				if n != target.Name {
@@ -123,14 +124,14 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 				}
 				dal.ProcessTagParentChanges(tx, target, target.ParentIds, parentTags)
 				target.ParentIds = parentTags
-				if !r.User.IsMod() {
+				if r.User.IsMod() || r.UserDisplay == target.Creator {
+					target.Name = n
+					target.Content = content
+					addDirectly = true
+				} else {
 					target.PendingReview = true
 					target.ReviewName = n
-					target.ReviewDesc = desc
-				} else {
-					target.Name = n
-					target.Desc = desc
-					addDirectly = true
+					target.ReviewDesc = content
 				}
 				target.Modifier = r.UserDisplay
 				target.UpdateUnix = clock.UnixMilli()
@@ -144,7 +145,7 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 			return
 		}
 		if exist {
-			writeJSON(w, "success", false, "code", "TAG_ALREADY_EXISTS")
+			writeJSON(w, "success", false, "code", "DUPLICATED_TITLE")
 			return
 		}
 		if addDirectly {
@@ -164,16 +165,16 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 			writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
 			return
 		}
-		if !r.User.IsMod() && target.Modifier == r.UserDisplay && action == "approve" {
-			writeJSON(w, "success", false, "code", "ILLEGAL_SELF_APPROVE")
-			return
-		}
-		target.PendingReview = false
 		if action == "approve" {
+			if !r.User.IsMod() && target.Creator != r.UserDisplay {
+				writeJSON(w, "success", false, "code", "ILLEGAL_APPROVE")
+				return
+			}
 			target.Name = target.ReviewName
-			target.Desc = target.ReviewDesc
+			target.Content = target.ReviewDesc
 			target.Reviewer = r.UserDisplay
 		}
+		target.PendingReview = false
 		target.ReviewName, target.ReviewDesc = "", ""
 
 		var exist bool
@@ -195,11 +196,11 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 			return
 		}
 		if exist {
-			writeJSON(w, "success", false, "code", "TAG_ALREADY_EXISTS")
+			writeJSON(w, "success", false, "code", "DUPLICATED_TITLE")
 			return
 		}
 		dal.TagsStore.Saver().AddAsync(idKey, buildBitmapHashes(target.Name))
-	case "lock", "unlock":
+	case "Lock", "Unlock":
 		target.Lock = action == "lock"
 		target.UpdateUnix = clock.UnixMilli()
 		if err := dal.TagsStore.Update(func(tx *bbolt.Tx) error {
@@ -280,17 +281,17 @@ func HandleTagManage(w http.ResponseWriter, r *types.Request) {
 	r.AddTemplateValue("page", p)
 	r.AddTemplateValue("sort", st)
 	r.AddTemplateValue("desc", desc)
-	httpTemplates.ExecuteTemplate(w, "tag_manage.html", r)
+	httpTemplates.ExecuteTemplate(w, "manage.html", r)
 }
 
-func HandleTagHistory(w http.ResponseWriter, r *types.Request) {
+func HandleHistory(w http.ResponseWriter, r *types.Request) {
 	p, _, desc, pageSize := r.GetPagingArgs()
 	idStr := r.URL.Query().Get("id")
 	if idStr == "0" {
 		idStr = ""
 	}
 	var results []dal.KeySortValue
-	var tags []*types.TagRecord
+	var records []*types.TagRecord
 	var tag *types.Tag
 	var total, pages int
 
@@ -312,49 +313,17 @@ func HandleTagHistory(w http.ResponseWriter, r *types.Request) {
 			t = types.UnmarshalTagRecordBinary(results[i].Value)
 		} else {
 			t, _ = dal.GetTagRecord(bitmap.BytesKey(results[i].Key))
+			if t == nil || t.Tag == nil {
+				continue
+			}
 		}
-		_ = t
-		// from := types.UnmarshalTagBinary([]byte(t.From))
-		// to := types.UnmarshalTagBinary([]byte(t.To))
-
-		// var res types.TagRecordDiff
-		// res.TagRecord = *t
-		// res.TagId = to.Id
-		// if res.Action == "delete" {
-		// 	*to = types.Tag{}
-		// }
-		// if from.Name != to.Name {
-		// 	res.Diffs = append(res.Diffs, [3]interface{}{"name", from.Name, to.Name})
-		// }
-		// if from.ReviewName != to.ReviewName {
-		// 	res.Diffs = append(res.Diffs, [3]interface{}{"reviewname", from.ReviewName, to.ReviewName})
-		// }
-		// if from.Desc != to.Desc {
-		// 	res.Diffs = append(res.Diffs, [3]interface{}{"desc", from.Desc, to.Desc})
-		// }
-		// if from.ReviewDesc != to.ReviewDesc {
-		// 	res.Diffs = append(res.Diffs, [3]interface{}{"reviewdesc", from.ReviewDesc, to.ReviewDesc})
-		// }
-		// if from.Lock != to.Lock {
-		// 	res.Diffs = append(res.Diffs, [3]interface{}{"lock", from.Lock, to.Lock})
-		// }
-		// sort.Slice(from.ParentIds, func(i, j int) bool { return from.ParentIds[i] < from.ParentIds[j] })
-		// sort.Slice(to.ParentIds, func(i, j int) bool { return to.ParentIds[i] < to.ParentIds[j] })
-		// if !reflect.DeepEqual(from.ParentIds, to.ParentIds) {
-		// 	old, _ := dal.BatchGetTags(from.ParentIds)
-		// 	new, _ := dal.BatchGetTags(to.ParentIds)
-		// 	res.Diffs = append(res.Diffs, [3]interface{}{"parents", old, new})
-		// }
-		// if from.PendingReview != to.PendingReview {
-		// 	res.Diffs = append(res.Diffs, [3]interface{}{"pendingreview", from.PendingReview, to.PendingReview})
-		// }
-		// tags = append(tags, &res)
+		records = append(records, t)
 	}
 
 	r.AddTemplateValue("id", idStr)
 	r.AddTemplateValue("tag", tag)
 	r.AddTemplateValue("total", total)
-	r.AddTemplateValue("records", tags)
+	r.AddTemplateValue("records", records)
 	r.AddTemplateValue("pages", pages)
 	r.AddTemplateValue("page", p)
 	r.AddTemplateValue("desc", desc)
@@ -363,8 +332,11 @@ func HandleTagHistory(w http.ResponseWriter, r *types.Request) {
 
 func HandleTagSearch(w http.ResponseWriter, r *types.Request) {
 	start := time.Now()
-	q := r.URL.Query().Get("q")
+	q := utf16Trunc(r.URL.Query().Get("q"), 50)
 	n, _ := strconv.Atoi(r.URL.Query().Get("n"))
+	if n == 0 {
+		n = 100
+	}
 	n = imin(100, n)
 	n = imax(1, n)
 
@@ -418,9 +390,9 @@ func HandleSingleTag(w http.ResponseWriter, r *types.Request) {
 	t := strings.TrimPrefix(r.URL.Path, "/t/")
 	tag, _ := dal.GetTagByName(t)
 	if tag.Valid() {
-		http.Redirect(w, r.Request, "/tag/manage?edittagid="+strconv.FormatUint(tag.Id, 10), 302)
+		http.Redirect(w, r.Request, "/manage?edittagid="+strconv.FormatUint(tag.Id, 10), 302)
 	} else {
-		http.Redirect(w, r.Request, "/tag/manage?q="+url.QueryEscape(t), 302)
+		http.Redirect(w, r.Request, "/manage?q="+url.QueryEscape(t), 302)
 	}
 }
 
