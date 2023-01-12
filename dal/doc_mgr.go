@@ -141,17 +141,17 @@ func ProcessTagParentChanges(tx *bbolt.Tx, tag *types.Tag, old, new []uint64) er
 	return nil
 }
 
-func ProcessTagHistory(tagId uint64, user, action string, ip net.IP, old, new string) error {
+func ProcessTagHistory(tagId uint64, user, action string, ip net.IP, old *types.Tag) error {
 	return TagsStore.Update(func(tx *bbolt.Tx) error {
-		tr := &types.TagRecord{
-			Id:         clock.Id(),
+		id := clock.Id()
+		tr := (&types.TagRecord{
+			Id:         id,
+			Action:     int64(action[0]),
 			CreateUnix: clock.UnixMilli(),
-			Action:     action,
-			From:       old,
-			To:         new,
+			Tag:        old,
 			Modifier:   user,
 			ModifierIP: ip.String(),
-		}
+		})
 		k := bitmap.Uint64Key(tr.Id)
 		KSVUpsert(tx, "tags_history", KeySortValue{
 			Key:    k[:],

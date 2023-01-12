@@ -25,3 +25,24 @@ func UUIDStr() string {
 	hex.Encode(uuid[16:], uuid[:16])
 	return string(uuid[16:])
 }
+
+func DedupUint64(v []uint64) []uint64 {
+	if len(v) <= 1 {
+		return v
+	}
+	if len(v) == 2 {
+		if v[0] == v[1] {
+			return v[:1]
+		}
+		return v
+	}
+	m := make(map[uint64]bool, len(v))
+	for i := len(v) - 1; i >= 0; i-- {
+		if m[v[i]] {
+			v = append(v[:i], v[i+1:]...)
+			continue
+		}
+		m[v[i]] = true
+	}
+	return v
+}

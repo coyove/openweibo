@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -44,7 +43,6 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 	idKey := bitmap.Uint64Key(id)
 
 	var target *types.Tag
-	var oldData string
 	if action != "create" {
 		dal.LockKey(id)
 		defer dal.UnlockKey(id)
@@ -54,7 +52,6 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 			writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
 			return
 		}
-		oldData = target.Data()
 	}
 
 	switch action {
@@ -217,7 +214,7 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 		return
 	}
 
-	go dal.ProcessTagHistory(target.Id, r.UserDisplay, action, r.RemoteIPv4Masked(), oldData, target.Data())
+	go dal.ProcessTagHistory(target.Id, r.UserDisplay, action, r.RemoteIPv4Masked(), target)
 	writeJSON(w, "success", true, "tag", target)
 }
 
@@ -293,7 +290,7 @@ func HandleTagHistory(w http.ResponseWriter, r *types.Request) {
 		idStr = ""
 	}
 	var results []dal.KeySortValue
-	var tags []*types.TagRecordDiff
+	var tags []*types.TagRecord
 	var tag *types.Tag
 	var total, pages int
 
@@ -316,41 +313,42 @@ func HandleTagHistory(w http.ResponseWriter, r *types.Request) {
 		} else {
 			t, _ = dal.GetTagRecord(bitmap.BytesKey(results[i].Key))
 		}
-		from := types.UnmarshalTagBinary([]byte(t.From))
-		to := types.UnmarshalTagBinary([]byte(t.To))
+		_ = t
+		// from := types.UnmarshalTagBinary([]byte(t.From))
+		// to := types.UnmarshalTagBinary([]byte(t.To))
 
-		var res types.TagRecordDiff
-		res.TagRecord = *t
-		res.TagId = to.Id
-		if res.Action == "delete" {
-			*to = types.Tag{}
-		}
-		if from.Name != to.Name {
-			res.Diffs = append(res.Diffs, [3]interface{}{"name", from.Name, to.Name})
-		}
-		if from.ReviewName != to.ReviewName {
-			res.Diffs = append(res.Diffs, [3]interface{}{"reviewname", from.ReviewName, to.ReviewName})
-		}
-		if from.Desc != to.Desc {
-			res.Diffs = append(res.Diffs, [3]interface{}{"desc", from.Desc, to.Desc})
-		}
-		if from.ReviewDesc != to.ReviewDesc {
-			res.Diffs = append(res.Diffs, [3]interface{}{"reviewdesc", from.ReviewDesc, to.ReviewDesc})
-		}
-		if from.Lock != to.Lock {
-			res.Diffs = append(res.Diffs, [3]interface{}{"lock", from.Lock, to.Lock})
-		}
-		sort.Slice(from.ParentIds, func(i, j int) bool { return from.ParentIds[i] < from.ParentIds[j] })
-		sort.Slice(to.ParentIds, func(i, j int) bool { return to.ParentIds[i] < to.ParentIds[j] })
-		if !reflect.DeepEqual(from.ParentIds, to.ParentIds) {
-			old, _ := dal.BatchGetTags(from.ParentIds)
-			new, _ := dal.BatchGetTags(to.ParentIds)
-			res.Diffs = append(res.Diffs, [3]interface{}{"parents", old, new})
-		}
-		if from.PendingReview != to.PendingReview {
-			res.Diffs = append(res.Diffs, [3]interface{}{"pendingreview", from.PendingReview, to.PendingReview})
-		}
-		tags = append(tags, &res)
+		// var res types.TagRecordDiff
+		// res.TagRecord = *t
+		// res.TagId = to.Id
+		// if res.Action == "delete" {
+		// 	*to = types.Tag{}
+		// }
+		// if from.Name != to.Name {
+		// 	res.Diffs = append(res.Diffs, [3]interface{}{"name", from.Name, to.Name})
+		// }
+		// if from.ReviewName != to.ReviewName {
+		// 	res.Diffs = append(res.Diffs, [3]interface{}{"reviewname", from.ReviewName, to.ReviewName})
+		// }
+		// if from.Desc != to.Desc {
+		// 	res.Diffs = append(res.Diffs, [3]interface{}{"desc", from.Desc, to.Desc})
+		// }
+		// if from.ReviewDesc != to.ReviewDesc {
+		// 	res.Diffs = append(res.Diffs, [3]interface{}{"reviewdesc", from.ReviewDesc, to.ReviewDesc})
+		// }
+		// if from.Lock != to.Lock {
+		// 	res.Diffs = append(res.Diffs, [3]interface{}{"lock", from.Lock, to.Lock})
+		// }
+		// sort.Slice(from.ParentIds, func(i, j int) bool { return from.ParentIds[i] < from.ParentIds[j] })
+		// sort.Slice(to.ParentIds, func(i, j int) bool { return to.ParentIds[i] < to.ParentIds[j] })
+		// if !reflect.DeepEqual(from.ParentIds, to.ParentIds) {
+		// 	old, _ := dal.BatchGetTags(from.ParentIds)
+		// 	new, _ := dal.BatchGetTags(to.ParentIds)
+		// 	res.Diffs = append(res.Diffs, [3]interface{}{"parents", old, new})
+		// }
+		// if from.PendingReview != to.PendingReview {
+		// 	res.Diffs = append(res.Diffs, [3]interface{}{"pendingreview", from.PendingReview, to.PendingReview})
+		// }
+		// tags = append(tags, &res)
 	}
 
 	r.AddTemplateValue("id", idStr)
