@@ -16,15 +16,17 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-var debugRebuild = flag.Int("debug-rebuild", 0, "")
-var compactDB = flag.Bool("compact", false, "")
-var listen = flag.String("l", ":8888", "")
+var (
+	debugRebuild = flag.Int("debug-rebuild", 0, "")
+	compactDB    = flag.Bool("compact", false, "")
+	listen       = flag.String("l", ":8888", "")
+)
 
 func main() {
 	flag.Parse()
 	logrus.SetFormatter(&LogFormatter{})
 	logrus.SetOutput(io.MultiWriter(os.Stdout, &lumberjack.Logger{
-		Filename:   "bitmap_cache/ts.log",
+		Filename:   "bitmap_cache/ns.log",
 		MaxSize:    100,
 		MaxBackups: 10,
 		MaxAge:     7,
@@ -38,13 +40,13 @@ func main() {
 	if *compactDB {
 		start := time.Now()
 
-		logrus.Info("start serving WIP page")
+		logrus.Info("start serving maintenance page")
 
 		var pc, pt int64
 		mux := http.NewServeMux()
 		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add("Content-Type", "text/html")
-			fmt.Fprintf(w, "<title>TagServer</title><pre>[%v] Progress %02d%%, elapsed %.1fs, be patient...</pre>",
+			fmt.Fprintf(w, "<title>NoteServer</title><pre>[%v] Progress %02d%%, elapsed %.1fs, be patient...</pre>",
 				time.Now().Format(time.Stamp),
 				int(float64(pc)/float64(pt+1)*100),
 				time.Since(start).Seconds())
@@ -65,30 +67,44 @@ func main() {
 	}
 
 	serve("/", HandleIndex)
-	serve("/t/", HandleView)
-	serve("/new", HandleTagNew)
-	serve("/edit", HandleEdit)
-	serve("/search", HandleTagSearch)
-	serve("/manage", HandleManage)
-	serve("/manage/action", HandleTagAction)
-	serve("/history", HandleHistory)
-	serve("/ps", HandlePublicStatus)
-	serve("/notfound", func(w http.ResponseWriter, r *types.Request) {
+	serve("/ns:new", HandleNew)
+	serve("/ns:edit", HandleEdit)
+	serve("/ns:search", HandleTagSearch)
+	serve("/ns:manage", HandleManage)
+	serve("/ns:action", HandleTagAction)
+	serve("/ns:history", HandleHistory)
+	serve("/ns:status", HandlePublicStatus)
+	serve("/ns:notfound", func(w http.ResponseWriter, r *types.Request) {
 		w.WriteHeader(404)
 		httpTemplates.ExecuteTemplate(w, "404.html", r)
 	})
 	http.NotFoundHandler()
 
 	root := types.UUIDStr()
-	http.HandleFunc("/"+root, func(w http.ResponseWriter, r *http.Request) { generateSession(root, "root", w, r) })
-	http.Handle("/"+root+"/debug/pprof/", http.StripPrefix("/"+root, http.HandlerFunc(pprof.Index)))
+	http.HandleFunc("/ns:"+root, func(w http.ResponseWriter, r *http.Request) { generateSession(root, "root", w, r) })
+	http.Handle("/ns:"+root+"/debug/pprof/", http.StripPrefix("/"+root, http.HandlerFunc(pprof.Index)))
 
-	logrus.Info("root token page:  /", root)
-	logrus.Info("debug pprof page: /", root, "/debug/pprof/")
+	logrus.Info("root token page:  /ns:", root)
+	logrus.Info("debug pprof page: /ns:", root, "/debug/pprof/")
 
-	http.Handle("/static/", http.StripPrefix("/", http.FileServer(http.FS(httpStaticAssets))))
+	http.HandleFunc("/ns:static/", HandleAssets)
 
-	logrus.Infof("start serving %s, pid=%d", *listen, os.Getpid())
+	logrus.Infof("start serving %s, pid=%d, ServeUUID=%s", *listen, os.Getpid(), serveUUID)
+
+	// go func() {
+	// 	time.Sleep(time.Second)
+	// 	var wg sync.WaitGroup
+	// 	start := time.Now()
+	// 	for i := 0; i < 2000; i++ {
+	// 		wg.Add(1)
+	// 		go func() {
+	// 			defer wg.Done()
+	// 			http.Get("http://127.0.0.1:8888/ns:manage?desc=1&pid=Qawqwr71dxgSlZx_")
+	// 		}()
+	// 	}
+	// 	wg.Wait()
+	// 	fmt.Println(time.Since(start))
+	// }()
 	http.ListenAndServe(*listen, nil)
 }
 

@@ -67,6 +67,7 @@ type Request struct {
 		sort     int
 	}
 
+	ServeUUID   string
 	Config      func() gjson.Result
 	User        UserHash
 	UserDisplay string
@@ -183,6 +184,14 @@ func (r *Request) GetContentMaxLen() int {
 	v := r.Config().Get("content_max").Int()
 	if v <= 0 {
 		return 500000
+	}
+	return int(v)
+}
+
+func (r *Request) GetParentsMax() int {
+	v := r.Config().Get("parents_max").Int()
+	if v <= 0 {
+		return 8
 	}
 	return int(v)
 }

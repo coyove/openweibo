@@ -14,16 +14,16 @@
 
 <div>
     <table id=list>
-        {{if .T.query}}
-        <tr class=title><td><div class=display ><span>搜索：<b>{{.T.query}}</b> ({{.T.total}})</span></div></td></tr>
-        {{else}}
         <tr class=title>
             <td colspan=2>
                 <div class=display >
+        {{if .T.query}}
+                    <span>搜索：<b>{{.T.query}}</b> ({{.T.total}})</span>
+        {{else}}
                     <span style='flex-grow:1'>
                     {{if .T.pid}}
                         <b>{{.T.pid}}</b> 
-                        <a class=tag-edit-button href='/history?user={{.T.pid}}'><span class=li_vynil></span></a>
+                        <a class=tag-edit-button href='/ns:history?user={{.T.pid}}&desc=1'><span class=li_vynil></span></a>
                         创建的记事 ({{.T.total}})
                     {{else}}
                         {{if .T.view}}
@@ -37,27 +37,27 @@
                     <div>
                         {{if .T.view}}
                         {{$title := .T.note.EscapedTitle}}
-                        <a class='tag-edit-button li_paperplane' href='/new?pt={{.T.note.Id}},{{$title}}&title=Re:%20{{$title}}%20{{add .T.total 1}}'></a>
+                        <a class='tag-edit-button li_paperplane' href='/ns:new?pt={{.T.note.Id}},{{$title}}&title=Re:%20{{$title}}%20{{add .T.total 1}}'></a>
                         {{end}}
                         <a class='tag-edit-button icon-sort-name-up {{if and (eq .T.sort 1) (not .T.desc)}}selected{{end}}' href='?sort=1&pid={{.T.pid}}'></a>
                         <a class='tag-edit-button icon-sort-name-down {{if and (eq .T.sort 1) (.T.desc)}}selected{{end}}' href='?sort=1&desc=1&pid={{.T.pid}}'></a>
                         <a class='tag-edit-button icon-sort-number-up {{if and (eq .T.sort 0) (not .T.desc)}}selected{{end}}' href='?sort=0&pid={{.T.pid}}'></a>
                         <a class='tag-edit-button icon-sort-number-down {{if and (eq .T.sort 0) (.T.desc)}}selected{{end}}' href='?sort=0&desc=1&pid={{.T.pid}}'></a>
                     </div>
+        {{end}}
                 </div>
             </td>
         </tr>
-        {{end}}
 
         {{range .T.tags}}
         <tr id='tag{{.Id}}'>
             <td tag-id={{.Id}} class='tag-edit'>
                 <script type="application/json" class=tag-data>{{.Data}}</script>
                 <div class=display >
-                    <a href='/t/{{.EscapedTitle}}' class=tag-edit-name>{{if .PendingReview}}{{.ReviewTitle}}{{else}}{{.Title}}{{end}}</a>
+                    <a href='/{{.EscapedTitle}}' class=tag-edit-name>{{if .PendingReview}}{{.ReviewTitle}}{{else}}{{.Title}}{{end}}</a>
                     {{if .Lock}}<div class='tag-edit-button li_lock' disabled></div>{{end}}
                     {{if .PendingReview}}<div class='tag-edit-button li_stack' disabled title='审核中'></div>{{end}}
-                    <a class='tag-edit-button li_pen' href='/edit?id={{.Id}}'></a>
+                    <a class='tag-edit-button li_pen' href='/ns:edit?id={{.Id}}'></a>
                 </div>
             </td>
             <td class='small'>{{formatUnixMilli .UpdateUnix}}</td>

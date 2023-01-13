@@ -16,7 +16,6 @@ import (
 	"github.com/coyove/sdss/contrib/clock"
 	"github.com/coyove/sdss/contrib/ngram"
 	"github.com/sirupsen/logrus"
-	"github.com/tidwall/gjson"
 	"go.etcd.io/bbolt"
 )
 
@@ -72,31 +71,10 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 		}
 		fallthrough
 	case "create":
-		title := cleanTitle(q.Get("title"))
-		content := strings.TrimSpace(q.Get("content"))
-		h := buildBitmapHashes(title)
-		if len(title) < 1 ||
-			types.UTF16LenExceeds(title, r.GetTitleMaxLen()) ||
-			len(h) == 0 ||
-			types.UTF16LenExceeds(content, r.GetContentMaxLen()) {
-			writeJSON(w, "success", false, "code", "INVALID_CONTENT")
+		title, content, parentIds, h, msg := actionGetData(r, q)
+		if msg != "" {
+			writeJSON(w, "success", false, "code", msg)
 			return
-		}
-		if strings.HasPrefix(title, "ns:") && !r.User.IsMod() {
-			writeJSON(w, "success", false, "code", "MODS_REQUIRED")
-			return
-		}
-
-		var parentIds []uint64
-		if pt := q.Get("parents"); pt != "" {
-			gjson.Parse(pt).ForEach(func(key, value gjson.Result) bool {
-				parentIds = append(parentIds, key.Uint())
-				return true
-			})
-			if len(parentIds) > 8 {
-				writeJSON(w, "success", false, "code", "TOO_MANY_PARENTS")
-				return
-			}
 		}
 
 		var err error
@@ -304,7 +282,7 @@ func HandleHistory(w http.ResponseWriter, r *types.Request) {
 		if note, _ = dal.GetNote(id); note.Valid() {
 			results, total, pages = dal.KSVPaging(nil, fmt.Sprintf("history_%d", note.Id), -1, desc, p-1, pageSize)
 		} else {
-			http.Redirect(w, r.Request, "/notfound", 302)
+			http.Redirect(w, r.Request, "/ns:notfound", 302)
 			return
 		}
 	case "user":
@@ -389,7 +367,7 @@ func HandleTagSearch(w http.ResponseWriter, r *types.Request) {
 	)
 }
 
-func HandleTagNew(w http.ResponseWriter, r *types.Request) {
+func HandleNew(w http.ResponseWriter, r *types.Request) {
 	httpTemplates.ExecuteTemplate(w, "new.html", r)
 }
 
@@ -411,7 +389,7 @@ func HandleEdit(w http.ResponseWriter, r *types.Request) {
 		}
 	}
 	if !note.Valid() {
-		http.Redirect(w, r.Request, "/notfound", 302)
+		http.Redirect(w, r.Request, "/ns:notfound", 302)
 		return
 	}
 	r.AddTemplateValue("note", note)
@@ -421,10 +399,10 @@ func HandleEdit(w http.ResponseWriter, r *types.Request) {
 }
 
 func HandleView(w http.ResponseWriter, r *types.Request) {
-	t := strings.TrimPrefix(r.URL.Path, "/t/")
+	t := strings.TrimPrefix(r.URL.Path, "/")
 	note, _ := dal.GetNoteByName(t)
 	if !note.Valid() {
-		http.Redirect(w, r.Request, "/manage?q="+url.QueryEscape(t), 302)
+		http.Redirect(w, r.Request, "/ns:manage?q="+url.QueryEscape(t), 302)
 		return
 	}
 

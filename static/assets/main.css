@@ -186,7 +186,7 @@ input.border1, textarea.border1 { padding: 0.2em 0.5em; font-size: 90% }
 }
 
 table { border-collapse: collapse; width: 100%; border-radius: 0.5em; box-shadow: 0 0 2px #666; margin: 1em 0; overflow: hidden }
-tr.title {background:#e2e9ec}
+tr.title {background:#e2e9ec !important}
 td { white-space: nowrap; padding: 0.1em 0.5em; }
 td.small { font-size:80%; width: 1px }
 td .display { display: flex; padding: 0.25em; min-height: 2.5em; align-items:center; flex-wrap: wrap }
@@ -222,6 +222,6 @@ tr:nth-child(even) { background: #f7f8f9; }
 tr:nth-child(odd) { background: white; }
 .page {display:inline-block; min-width: 2em; text-align:center}
 
-div.diff-row {white-space:pre-wrap;padding:0 0.5em}
+div.diff-row {white-space:pre-wrap;padding:0.2em 0.5em}
 div.diff-row.del{background:#ef9a9a}
 div.diff-row.ins{background:#a5d6a7}

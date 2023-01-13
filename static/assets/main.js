@@ -253,7 +253,7 @@ function wrapTagSearchInput(container) {
         this.timer = setTimeout(function(){
             if (that.textContent != val) return;
             loader.style.display = '';
-            $.get('/search?n=100&q=' + encodeURIComponent(val), function(data) {
+            $.get('/ns:search?n=100&q=' + encodeURIComponent(val), function(data) {
                 if (that.textContent != val) return;
 
                 reset();
@@ -366,7 +366,7 @@ window.onload = function() {
             input.value = el.text();
             $(div).hide();
             input.focus();
-            openTag && (location.href = '/t/' + encodeURIComponent(el.text()));
+            openTag && (location.href = '/' + encodeURIComponent(el.text()));
         }
 
         function reset() {
@@ -385,7 +385,7 @@ window.onload = function() {
             if (this.timer) clearTimeout(this.timer);
             this.timer = setTimeout(function(){
                 if (that.value != val) return;
-                $.get('/search?n=100&q=' + encodeURIComponent(val), function(data) {
+                $.get('/ns:search?n=100&q=' + encodeURIComponent(val), function(data) {
                     if (that.value != val) return;
                     
                     reset();
@@ -413,7 +413,7 @@ window.onload = function() {
                 div.selector = (div.selector + (e.keyCode == 38 ? -1 : 1) + div.candidates.length) % div.candidates.length;
                 div.candidates[current].removeClass('selected');
                 const el = div.candidates[div.selector].addClass('selected');
-                el.get(0).scrollIntoView();
+                el.get(0).scrollIntoView({block: "nearest", inline: "nearest"});
                 e.preventDefault();
             }
             if (e.keyCode == 13) {

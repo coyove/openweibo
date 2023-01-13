@@ -26,8 +26,8 @@
                     <div style='flex-grow:1'>{{.ReviewTitle}}</div>
                     <div class='tag-box button' onclick='openDiff("content{{.Id}}","review-content{{.Id}}",true)'><span>内容diff</span></div>
                     {{if not $.T.readonly}}
-                    <div class='tag-box button' onclick='ajaxBtn(this,"/manage/action",{"action":"approve","id":{{.Id}}})'><span>通过</span></div>
-                    <div class='tag-box button' onclick='ajaxBtn(this,"/manage/action",{"action":"reject","id":{{.Id}}})'><span>驳回</span></div>
+                    <div class='tag-box button' onclick='ajaxBtn(this,"/ns:action",{"action":"approve","id":{{.Id}}})'><span>通过</span></div>
+                    <div class='tag-box button' onclick='ajaxBtn(this,"/ns:action",{"action":"reject","id":{{.Id}}})'><span>驳回</span></div>
                     {{end}}
                 </div>
             </td>
@@ -39,7 +39,7 @@
             <td>
                 <div class=display>
                     <span>{{.Id}}&nbsp;</span>
-                    <a class='tag-edit-button li_eye' href='/t/{{.EscapedTitle}}'></a>
+                    <a class='tag-edit-button li_eye' href='/{{.EscapedTitle}}'></a>
                 </div>
             </td>
         </tr>
@@ -70,7 +70,7 @@
         </tr>
 
         <tr><td class=small>父记事</td><td><div class=display id=parents-container><div class=lds-dual-ring></div></div></td></tr>
-        <tr><td class=small>变更历史</td><td><div class=display><a href='/history?note={{.Id}}&desc=1'>查看</a></div></td></tr>
+        <tr><td class=small>变更历史</td><td><div class=display><a href='/ns:history?note={{.Id}}&desc=1'>查看</a></div></td></tr>
         <tr>
             <td class=small>状态</td>
             <td>
@@ -78,7 +78,7 @@
                     <span>{{if .Lock}}<b>锁定中</b>{{else}}正常{{end}}&nbsp;</span>
                     {{if not $.T.readonly}}
                     <div class='tag-edit-button button' action=''
-                         onclick='ajaxBtn(this, "/manage/action", {"action": {{if .Lock}}"Unlock"{{else}}"Lock"{{end}}, "id": {{.Id}}})'>
+                         onclick='ajaxBtn(this, "/ns:action", {"action": {{if .Lock}}"Unlock"{{else}}"Lock"{{end}}, "id": {{.Id}}})'>
                         <span class=li_lock></span>
                     </div>
                     {{end}}
@@ -90,7 +90,7 @@
             <td>
                 <div class=display>
                     {{.Creator}}&nbsp;
-                    <a class='tag-edit-button' href='/manage?pid=@{{.Creator}}'><span class=li_user></span></a>
+                    <a class='tag-edit-button' href='/ns:manage?pid={{.Creator}}'><span class=li_user></span></a>
                 </div>
             </td>
         </tr>
@@ -111,10 +111,10 @@
         {{end}}
 
         <script>
-            $.get('/search?n=100&ids={{.JoinParentIds}}', function(data) {
-                const ps = $("<div max-tags=8 class='tag-search-input-container border1' style='width:100%'></div>").get(0);
+            $.get('/ns:search?n=100&ids={{.JoinParentIds}}', function(data) {
+                const ps = $("<div max-tags={{$.GetParentsMax}} class='tag-search-input-container border1' style='width:100%'></div>").get(0);
                 $('#parents-container').html('').append(ps);
-                ps.onclicktag = function(id) { location.href='/edit?id='+id; }
+                ps.onclicktag = function(id) { location.href='/ns:edit?id='+id; }
                 data.notes.forEach(function(t, i) { $(ps).attr('tag-data' + i, t[0] + ',' + t[1]) });
                 wrapTagSearchInput(ps);
                 window.ps = ps;
@@ -124,7 +124,7 @@
             $('#content').linedtextarea();
 
             function updateNote(btn) {
-                ajaxBtn(btn, "/manage/action", {
+                ajaxBtn(btn, "/ns:action", {
                     'action': 'update',
                     'id': {{.Id}},
                     'title': $("#title").val(),
@@ -135,8 +135,8 @@
 
             function deleteNote(btn) {
                 if (!confirm("确认删除该记事?")) return;
-                ajaxBtn(btn, '/manage/action', {'action': 'delete', 'id': {{.Id}}}, function(data) {
-                    location.href = '/manage?desc=1';
+                ajaxBtn(btn, '/ns:action', {'action': 'delete', 'id': {{.Id}}}, function(data) {
+                    location.href = '/ns:manage?desc=1';
                 });
             }
         </script>
