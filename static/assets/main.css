@@ -8,16 +8,19 @@ html, body {
     font-family: "Arial","Microsoft YaHei",sans-serif;
     position: relative;
     min-width: 360px;
+    background: #fffffc;
 }
+
+a { color: #1565c0 }
 
 #container {
     max-width: 1000px;
     margin: 0 auto;
-    padding: 0.5em 0.5em 0.5em 2.5em;
+    padding: 0.5em 0.5em 0.5em 3em;
 }
 
 #header {
-    position: fixed; background: #516a76; height: 100%; width: 2em;
+    position: fixed; background: #516a76; height: 100%; width: 2.5em;
     box-shadow: 1px 0 1px #ccc;
 }
 
@@ -29,7 +32,7 @@ html, body {
     #header {
         display: flex;
         position: relative;
-        height: 2em; width: 100%;
+        height: 2.5em; width: 100%;
     }
     #container, #footer {
         padding-left: 0.5em;
@@ -37,8 +40,8 @@ html, body {
 }
 
 #header .header-entry {
-    width: 2em;
-    height: 2em;
+    width: 2.5em;
+    height: 2.5em;
     color: white;
     align-items: center;
     display: flex;
@@ -183,9 +186,10 @@ input.border1, textarea.border1 { padding: 0.2em 0.5em; font-size: 90% }
 }
 
 table { border-collapse: collapse; width: 100%; border-radius: 0.5em; box-shadow: 0 0 2px #666; margin: 1em 0; overflow: hidden }
+tr.title {background:#e2e9ec}
 td { white-space: nowrap; padding: 0.1em 0.5em; }
 td.small { font-size:80%; width: 1px }
-td .display { display: flex; min-height: 2.5em; align-items:center; flex-wrap: wrap }
+td .display { display: flex; padding: 0.25em; min-height: 2.5em; align-items:center; flex-wrap: wrap }
 td.tag-edit .tag-edit-name { text-decoration:none;color:#233;word-break: break-all; white-space: pre-wrap;flex-grow:1}
 td .tag-edit-desc {
     outline: none;
@@ -213,8 +217,9 @@ td .tag-edit-desc {
 .tag-edit-button:not([disabled]):not(.selected):active { background: rgba(0, 0, 0, 0.2); }
 td .display input { outline:none; border:none; font:inherit; background:transparent; flex-grow: 1; padding:0 }
 td .display .button .closer { cursor: pointer }
-td .tag-box { font-size: 90%; margin-right: 0.5em }
+td .tag-box { font-size: 90%; }
 tr:nth-child(even) { background: #f7f8f9; }
+tr:nth-child(odd) { background: white; }
 .page {display:inline-block; min-width: 2em; text-align:center}
 
 div.diff-row {white-space:pre-wrap;padding:0 0.5em}

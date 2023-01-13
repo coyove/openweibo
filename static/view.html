@@ -1,22 +1,28 @@
-{{template "header.html" .}}
-
 {{with .T.note}}
-<h1>{{.Title}}</h1>
+<h1 style='word-break:break-all'>{{.Title}}</h1>
 <title>{{.Title}}</title>
 <div style='font-size: 90%'>
     <div>
-    <a href='/manage?pid=@{{.Creator}}'>{{.Creator}}</a> 创建于 {{formatUnixMilli .CreateUnix}}
+    <a href='/manage?pid={{.Creator}}'>{{.Creator}}</a> 创建于 {{formatUnixMilli .CreateUnix}}
         <a class=tag-edit-button href='/edit?id={{.Id}}'><span class=li_pen></span></a>
     </div>
     {{if .Modifier}}
     <div>
-    <a href='/manage?pid=@{{.Modifier}}'>{{.Modifier}}</a> 修改于 {{formatUnixMilli .UpdateUnix}}
+    <a href='/manage?pid={{.Modifier}}'>{{.Modifier}}</a> 修改于 {{formatUnixMilli .UpdateUnix}}
+    </div>
+    {{end}}
+    {{if $.T.parents}}
+    <div style='padding:0.5em 0'>
+        <b>父记事</b>
+        <div style='padding-left: 1em'>
+            {{range $.T.parents}}
+            <div><a href='/t/{{.EscapedTitle}}'>{{.Title}}</a></div>
+            {{end}}
+        </div>
     </div>
     {{end}}
 </div>
+<hr style='border:dotted 1px #ccc'>
 
-<pre style='font:inherit'>{{.Content}}</pre>
-<hr>
+<pre style='white-space:pre-wrap;font:inherit'>{{.Content}}</pre>
 {{end}}
-
-{{template "footer.html" .}}

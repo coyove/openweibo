@@ -5,15 +5,14 @@ import (
 	"net"
 
 	"github.com/coyove/iis/types"
-	"github.com/coyove/sdss/contrib/bitmap"
 	"github.com/coyove/sdss/contrib/clock"
 	"github.com/tidwall/gjson"
 	"go.etcd.io/bbolt"
 )
 
-func CreateTag(name string, tag *types.Note) (existed bool, err error) {
-	err = TagsStore.Update(func(tx *bbolt.Tx) error {
-		if _, existed = KSVFirstKeyOfSort1(tx, "notes", []byte(name)); existed {
+func CreateNote(name string, tag *types.Note) (existed bool, err error) {
+	err = Store.Update(func(tx *bbolt.Tx) error {
+		if _, existed = KSVFirstKeyOfSort1(tx, NoteBK, []byte(name)); existed {
 			return nil
 		}
 
@@ -22,40 +21,38 @@ func CreateTag(name string, tag *types.Note) (existed bool, err error) {
 		tag.UpdateUnix = now
 
 		ProcessTagParentChanges(tx, tag, nil, tag.ParentIds)
-
-		UpdateTagCreator(tx, tag)
-		return KSVUpsert(tx, "notes", KSVFromTag(tag))
+		UpdateCreator(tx, tag)
+		return KSVUpsert(tx, NoteBK, KSVFromTag(tag))
 	})
 	return
 }
 
-func UpdateTagCreator(tx *bbolt.Tx, tag *types.Note) error {
-	k := bitmap.Uint64Key(tag.Id)
+func UpdateCreator(tx *bbolt.Tx, tag *types.Note) error {
 	return KSVUpsert(tx, "creator_"+tag.Creator, KeySortValue{
-		Key:   k[:],
+		Key:   types.Uint64Bytes(tag.Id),
 		Sort0: uint64(clock.UnixMilli()),
 		Sort1: []byte(tag.Title),
 	})
 }
 
 func BatchGetNotes(v interface{}) (tags []*types.Note, err error) {
-	var ids []bitmap.Key
+	var ids [][]byte
 	switch v := v.(type) {
-	case []bitmap.Key:
+	case [][]byte:
 		ids = v
 	case []uint64:
 		for _, v := range v {
-			ids = append(ids, bitmap.Uint64Key(v))
+			ids = append(ids, types.Uint64Bytes(v))
 		}
 	case []KeySortValue:
 		for _, v := range v {
-			ids = append(ids, bitmap.BytesKey(v.Key))
+			ids = append(ids, v.Key)
 		}
 	default:
 		panic(v)
 	}
-	err = TagsStore.View(func(tx *bbolt.Tx) error {
-		bk := tx.Bucket([]byte("notes"))
+	err = Store.View(func(tx *bbolt.Tx) error {
+		bk := tx.Bucket([]byte(NoteBK + "_kv"))
 		if bk == nil {
 			return nil
 		}
@@ -70,20 +67,36 @@ func BatchGetNotes(v interface{}) (tags []*types.Note, err error) {
 	return
 }
 
-func GetTagRecord(id bitmap.Key) (*types.NoteRecord, error) {
+func GetTagRecord(id uint64) (*types.NoteRecord, error) {
 	var t *types.NoteRecord
-	err := TagsStore.View(func(tx *bbolt.Tx) error {
-		bk := tx.Bucket([]byte("history"))
+	err := Store.View(func(tx *bbolt.Tx) error {
+		bk := tx.Bucket([]byte("history_kv"))
 		if bk == nil {
 			return nil
 		}
-		t = types.UnmarshalTagRecordBinary(bk.Get(id[:]))
+		t = types.UnmarshalTagRecordBinary(bk.Get(types.Uint64Bytes(id)))
 		return nil
 	})
 	return t, err
 }
 
-func GetTagJSONDescription(name string) (gjson.Result, error) {
+func GetJsonizedNoteCache(name string) func() gjson.Result {
+	var cached gjson.Result
+	var ok bool
+	return func() gjson.Result {
+		if ok {
+			return cached
+		}
+		res, err := GetJsonizedNote(name)
+		if err != nil {
+			panic(err)
+		}
+		cached, ok = res, true
+		return res
+	}
+}
+
+func GetJsonizedNote(name string) (gjson.Result, error) {
 	t, err := GetNoteByName(name)
 	if err != nil {
 		return gjson.Result{}, err
@@ -96,32 +109,31 @@ func GetTagJSONDescription(name string) (gjson.Result, error) {
 
 func GetNoteByName(name string) (*types.Note, error) {
 	var t *types.Note
-	err := TagsStore.View(func(tx *bbolt.Tx) error {
-		k, found := KSVFirstKeyOfSort1(tx, "notes", []byte(name))
+	err := Store.View(func(tx *bbolt.Tx) error {
+		k, found := KSVFirstKeyOfSort1(tx, NoteBK, []byte(name))
 		if found {
-			t = types.UnmarshalTagBinary(tx.Bucket([]byte("notes")).Get(k[:]))
+			t = types.UnmarshalTagBinary(tx.Bucket([]byte(NoteBK + "_kv")).Get(k[:]))
 		}
 		return nil
 	})
 	return t, err
 }
 
-func GetTag(id uint64) (*types.Note, error) {
+func GetNote(id uint64) (*types.Note, error) {
 	var t *types.Note
-	err := TagsStore.View(func(tx *bbolt.Tx) error {
-		bk := tx.Bucket([]byte("notes"))
+	err := Store.View(func(tx *bbolt.Tx) error {
+		bk := tx.Bucket([]byte(NoteBK + "_kv"))
 		if bk == nil {
 			return nil
 		}
-		k := bitmap.Uint64Key(id)
-		t = types.UnmarshalTagBinary(bk.Get(k[:]))
+		t = types.UnmarshalTagBinary(bk.Get(types.Uint64Bytes(id)))
 		return nil
 	})
 	return t, err
 }
 
 func ProcessTagParentChanges(tx *bbolt.Tx, tag *types.Note, old, new []uint64) error {
-	k := bitmap.Uint64Key(tag.Id)
+	k := types.Uint64Bytes(tag.Id)
 	for _, o := range old {
 		if err := KSVDelete(tx, fmt.Sprintf("children_%d", o), k[:]); err != nil {
 			return err
@@ -142,7 +154,7 @@ func ProcessTagParentChanges(tx *bbolt.Tx, tag *types.Note, old, new []uint64) e
 }
 
 func ProcessTagHistory(tagId uint64, user, action string, ip net.IP, old *types.Note) error {
-	return TagsStore.Update(func(tx *bbolt.Tx) error {
+	return Store.Update(func(tx *bbolt.Tx) error {
 		id := clock.Id()
 		tr := (&types.NoteRecord{
 			Id:         id,
@@ -152,7 +164,7 @@ func ProcessTagHistory(tagId uint64, user, action string, ip net.IP, old *types.
 			ModifierIP: ip.String(),
 		})
 		tr.SetNote(old)
-		k := bitmap.Uint64Key(tr.Id)
+		k := types.Uint64Bytes(tr.Id)
 		KSVUpsert(tx, "history", KeySortValue{
 			Key:    k[:],
 			Value:  tr.MarshalBinary(),
@@ -161,6 +173,14 @@ func ProcessTagHistory(tagId uint64, user, action string, ip net.IP, old *types.
 		KSVUpsert(tx, fmt.Sprintf("history_%s", user), KeySortValue{Key: k[:], NoSort: true})
 		return KSVUpsert(tx, fmt.Sprintf("history_%d", tagId), KeySortValue{Key: k[:], NoSort: true})
 	})
+}
+
+func IsLike(tx *bbolt.Tx, user string, id uint64) bool {
+	bk := tx.Bucket([]byte("like_" + user + "_kss"))
+	if bk == nil {
+		return false
+	}
+	return len(bk.Get(types.Uint64Bytes(id))) > 0
 }
 
 type int64Heap struct {

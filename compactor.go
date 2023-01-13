@@ -10,7 +10,7 @@ import (
 )
 
 func compact(pCurrent, pTotal *int64) {
-	oldPath := dal.TagsStore.DB.Path()
+	oldPath := dal.Store.DB.Path()
 	tmpPath := oldPath + ".compacted"
 	os.Remove(tmpPath)
 
@@ -44,12 +44,12 @@ func compact(pCurrent, pTotal *int64) {
 		}
 	}()
 
-	if err := bbolt.Compact(db, dal.TagsStore.DB, 40960); err != nil {
+	if err := bbolt.Compact(db, dal.Store.DB, 40960); err != nil {
 		logrus.Fatal("[compactor] ", err)
 	}
 
 	db.Close()
-	dal.TagsStore.DB.Close()
+	dal.Store.DB.Close()
 
 	tmpfi, err := os.Stat(tmpPath)
 	if err != nil {
@@ -72,6 +72,6 @@ func compact(pCurrent, pTotal *int64) {
 		logrus.Fatal("[compactor] rename: ", err)
 	}
 
-	dal.TagsStore.DB = db
+	dal.Store.DB = db
 	exited = true
 }

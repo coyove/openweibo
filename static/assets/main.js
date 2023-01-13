@@ -112,8 +112,8 @@ function openDiff(a, b, id) {
 }
 
 function ajaxBtn(el, path, args, f) {
-    var url = path + '?ajax=1';
-    for (const k in args) url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(args[k]);
+    const fd = new FormData();    
+    for (const k in args) fd.append(k, args[k]);
     const that = $(el);
     const rect = el.getBoundingClientRect();
     const loader = $("<div style='display:inline-block;text-align:center'>" + window.CONST_loaderHTML + "</div>").
@@ -121,10 +121,17 @@ function ajaxBtn(el, path, args, f) {
         css('margin', that.css('margin'));
     that.hide();
     loader.insertBefore(that);
-    $.post(url, function(data) {
-        if (!data.success) {
-            var i18n = ({
+    $.ajax({
+        url: path,
+        data: fd,
+        processData: false,
+        contentType: false,
+        type: 'POST',
+        success: function(data){
+            if (!data.success) {
+                var i18n = ({
 "INTERNAL_ERROR": "服务器错误",
+"IP_BANNED": "IP封禁",
 "MODS_REQUIRED": "无管理员权限",
 "PENDING_REVIEW": "修改审核中",
 "LOCKED": "记事已锁定",
@@ -133,16 +140,19 @@ function ajaxBtn(el, path, args, f) {
 "DUPLICATED_TITLE": "标题重名",
 "ILLEGAL_APPROVE": "无权审核",
 "INVALID_ACTION": "请求错误",
-            })[data.code];
-            alert('发生错误: ' + i18n + ' (' + data.code + ')');
-            return;
-        }
-        f ? f(data, args) : location.reload();
-    }).fail(function() {
-        alert('网络错误');
-    }).always(function() {
-        that.show();
-        loader.remove();
+                })[data.code];
+                alert('发生错误: ' + i18n + ' (' + data.code + ')');
+                return;
+            }
+            f ? f(data, args) : location.reload();
+        },
+        error: function() {
+            alert('网络错误');
+        },
+        complete: function () {
+            that.show();
+            loader.remove();
+        },
     });
 }
 
@@ -333,8 +343,6 @@ function wrapTagSearchInput(container) {
     container.wrapped = true;
 }
 
-window.searchParams = new URLSearchParams(window.location.search)
-
 window.onload = function() {
     $('.tag-search-input-container').each(function(_, container) { wrapTagSearchInput(container) });
     
@@ -392,7 +400,7 @@ window.onload = function() {
                         }));
                         div.candidates.push(t);
                     })
-                    $(div).show();
+                    input === document.activeElement && $(div).show();
                     if (data.notes.length == 0) {
                         $(div).append($("<div class='candidate tag-box'>").css('font-style', 'italic').text('无结果'));
                     }

@@ -20,47 +20,52 @@ import (
 )
 
 var (
-	db        *dynamodb.DynamoDB
-	tableFTS  = "fts"
-	TagsStore struct {
+	db       *dynamodb.DynamoDB
+	tableFTS = "fts"
+	Store    struct {
 		*bbolt.DB
 		*bitmap.Manager
 		locks [256]sync.Mutex
 	}
 	BBoltOptions = &bbolt.Options{FreelistType: bbolt.FreelistMapType}
+
+	NoteBK = "notes"
 )
 
 func InitDB() {
-	ddb := types.Config.DynamoDB
-	sess, err := session.NewSession(&aws.Config{
-		Region:      aws.String(ddb.Region),
-		Credentials: credentials.NewStaticCredentials(ddb.AccessKey, ddb.SecretKey, ""),
-		HTTPClient: &http.Client{
-			Timeout: time.Second,
-			Transport: &http.Transport{
-				MaxConnsPerHost: 200,
+	var err error
+	if false {
+		ddb := types.Config.DynamoDB
+		sess, err := session.NewSession(&aws.Config{
+			Region:      aws.String(ddb.Region),
+			Credentials: credentials.NewStaticCredentials(ddb.AccessKey, ddb.SecretKey, ""),
+			HTTPClient: &http.Client{
+				Timeout: time.Second,
+				Transport: &http.Transport{
+					MaxConnsPerHost: 200,
+				},
 			},
-		},
-	})
-	if err != nil {
-		logrus.Fatal("init DB: ", err)
+		})
+		if err != nil {
+			logrus.Fatal("init DB: ", err)
+		}
+
+		db = dynamodb.New(sess)
+		info, err := db.DescribeEndpoints(&dynamodb.DescribeEndpointsInput{})
+		if err != nil {
+			logrus.Fatal("init DB, describe: ", err)
+		}
+		for _, ep := range info.Endpoints {
+			logrus.Info("dynamodb endpoint: ", strings.Replace(ep.String(), "\n", " ", -1))
+		}
 	}
 
-	db = dynamodb.New(sess)
-	info, err := db.DescribeEndpoints(&dynamodb.DescribeEndpointsInput{})
-	if err != nil {
-		logrus.Fatal("init DB, describe: ", err)
-	}
-	for _, ep := range info.Endpoints {
-		logrus.Info("dynamodb endpoint: ", strings.Replace(ep.String(), "\n", " ", -1))
-	}
-
-	TagsStore.Manager, err = bitmap.NewManager("bitmap_cache/tags", 1024000, 1*1024*1024*1024)
+	Store.Manager, err = bitmap.NewManager("bitmap_cache/tags", 1024000, 1*1024*1024*1024)
 	if err != nil {
 		logrus.Fatal("init bitmap manager: ", err)
 	}
 
-	TagsStore.DB, err = bbolt.Open("bitmap_cache/tags.db", 0777, BBoltOptions)
+	Store.DB, err = bbolt.Open("bitmap_cache/tags.db", 0777, BBoltOptions)
 	if err != nil {
 		logrus.Fatal("init tags db: ", err)
 	}
@@ -87,10 +92,9 @@ func (ksv KeySortValue) String() string {
 }
 
 func KSVFromTag(tag *types.Note) KeySortValue {
-	k := bitmap.Uint64Key(tag.Id)
 	n := tag.Title
 	return KeySortValue{
-		Key:   k[:],
+		Key:   types.Uint64Bytes(tag.Id),
 		Sort0: uint64(tag.UpdateUnix),
 		Sort1: []byte(n),
 		Value: tag.MarshalBinary(),
@@ -105,7 +109,7 @@ func KSVUpsert(tx *bbolt.Tx, bkPrefix string, ksv KeySortValue) error {
 		return fmt.Errorf("key exceeds 255 bytes")
 	}
 
-	keyValue, err := tx.CreateBucketIfNotExists([]byte(bkPrefix))
+	keyValue, err := tx.CreateBucketIfNotExists([]byte(bkPrefix + "_kv"))
 	if err != nil {
 		return err
 	}
@@ -152,7 +156,7 @@ func KSVUpsert(tx *bbolt.Tx, bkPrefix string, ksv KeySortValue) error {
 }
 
 func KSVDelete(tx *bbolt.Tx, bkPrefix string, key []byte) error {
-	keyValue := tx.Bucket([]byte(bkPrefix))
+	keyValue := tx.Bucket([]byte(bkPrefix + "_kv"))
 	sortKey := tx.Bucket([]byte(bkPrefix + "_s0k"))
 	sort1Key := tx.Bucket([]byte(bkPrefix + "_s1k"))
 	keySortSort2 := tx.Bucket([]byte(bkPrefix + "_kss"))
@@ -185,13 +189,13 @@ func KSVDelete(tx *bbolt.Tx, bkPrefix string, key []byte) error {
 
 func KSVPaging(tx *bbolt.Tx, bkPrefix string, bySort int, desc bool, page, pageSize int) (res []KeySortValue, total, pages int) {
 	if tx == nil {
-		TagsStore.View(func(tx *bbolt.Tx) error {
+		Store.View(func(tx *bbolt.Tx) error {
 			res, total, pages = KSVPaging(tx, bkPrefix, bySort, desc, page, pageSize)
 			return nil
 		})
 		return
 	}
-	keyValue := tx.Bucket([]byte(bkPrefix))
+	keyValue := tx.Bucket([]byte(bkPrefix + "_kv"))
 	sort0Key := tx.Bucket([]byte(bkPrefix + "_s0k"))
 	sort1Key := tx.Bucket([]byte(bkPrefix + "_s1k"))
 
@@ -276,10 +280,10 @@ func KSVFirstKeyOfSort1(tx *bbolt.Tx, bkPrefix string, sort1 []byte) (key []byte
 
 func LockKey(key interface{}) {
 	k := fmt.Sprint(key)
-	TagsStore.locks[types.StrHash(k)%uint64(len(TagsStore.locks))].Lock()
+	Store.locks[types.StrHash(k)%uint64(len(Store.locks))].Lock()
 }
 
 func UnlockKey(key interface{}) {
 	k := fmt.Sprint(key)
-	TagsStore.locks[types.StrHash(k)%uint64(len(TagsStore.locks))].Unlock()
+	Store.locks[types.StrHash(k)%uint64(len(Store.locks))].Unlock()
 }

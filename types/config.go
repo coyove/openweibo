@@ -11,10 +11,10 @@ import (
 	"net"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/tidwall/gjson"
 	"golang.org/x/crypto/xtea"
 )
 
@@ -67,8 +67,10 @@ type Request struct {
 		sort     int
 	}
 
+	Config      func() gjson.Result
 	User        UserHash
 	UserDisplay string
+	RemoteIPv4  net.IP
 }
 
 func (r *Request) GenerateSession(name byte) (UserHash, string) {
@@ -146,6 +148,11 @@ func (r *Request) GetPagingArgs() (int, int, bool, int) {
 
 	r.paging.current, r.paging.sort, r.paging.desc, r.paging.pageSize = p, sort, desc, pageSize
 	r.paging.built = true
+
+	r.AddTemplateValue("page", p)
+	r.AddTemplateValue("sort", sort)
+	r.AddTemplateValue("desc", desc)
+	r.AddTemplateValue("pageSize", pageSize)
 	return p, sort, desc, pageSize
 }
 
@@ -159,25 +166,23 @@ func (r *Request) BuildPageLink(p int) string {
 }
 
 func (r *Request) RemoteIPv4Masked() net.IP {
-	ip := r.RemoteIPv4()
+	ip := append(net.IP{}, r.RemoteIPv4...)
 	ip[3] = 0
 	return ip
 }
 
-func (r *Request) RemoteIPv4() net.IP {
-	xff := r.Header.Get("X-Forwarded-For")
-	ips := strings.Split(xff, ",")
-	for _, ip := range ips {
-		p := net.ParseIP(strings.TrimSpace(ip))
-		if p != nil {
-			return p.To4()
-		}
-		break
+func (r *Request) GetTitleMaxLen() int {
+	v := r.Config().Get("title_max").Int()
+	if v <= 0 {
+		return 50
 	}
-	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
-	p := net.ParseIP(ip)
-	if p != nil {
-		return p.To4()
+	return int(v)
+}
+
+func (r *Request) GetContentMaxLen() int {
+	v := r.Config().Get("content_max").Int()
+	if v <= 0 {
+		return 500000
 	}
-	return net.IP{0, 0, 0, 0}
+	return int(v)
 }

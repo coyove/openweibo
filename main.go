@@ -64,14 +64,20 @@ func main() {
 		rebuildData(*debugRebuild)
 	}
 
-	serve("/t/", HandleSingleTag)
+	serve("/", HandleIndex)
+	serve("/t/", HandleView)
 	serve("/new", HandleTagNew)
 	serve("/edit", HandleEdit)
 	serve("/search", HandleTagSearch)
-	serve("/manage", HandleTagManage)
+	serve("/manage", HandleManage)
 	serve("/manage/action", HandleTagAction)
 	serve("/history", HandleHistory)
 	serve("/ps", HandlePublicStatus)
+	serve("/notfound", func(w http.ResponseWriter, r *types.Request) {
+		w.WriteHeader(404)
+		httpTemplates.ExecuteTemplate(w, "404.html", r)
+	})
+	http.NotFoundHandler()
 
 	root := types.UUIDStr()
 	http.HandleFunc("/"+root, func(w http.ResponseWriter, r *http.Request) { generateSession(root, "root", w, r) })
@@ -95,6 +101,6 @@ func generateSession(tag, name string, w http.ResponseWriter, r *http.Request) {
 		Path:   "/",
 		MaxAge: 365 * 86400,
 	})
-	logrus.Info("generate root session: ", v, " remote: ", req.RemoteIPv4())
+	logrus.Info("generate root session: ", v, " remote: ", req.RemoteIPv4)
 	http.Redirect(w, r, "/", 302)
 }

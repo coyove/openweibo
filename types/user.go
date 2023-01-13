@@ -13,7 +13,7 @@ func (r *Request) newUserHash(name byte) (UserHash, []byte) {
 	enc := tmp[12:]
 	tmp = tmp[:12]
 
-	ip := r.RemoteIPv4()
+	ip := r.RemoteIPv4
 	copy(tmp[:2], ip)
 	ua := r.UserAgent()
 

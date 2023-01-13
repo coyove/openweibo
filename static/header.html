@@ -8,10 +8,11 @@
 
     <body>
         <div id=header>
-            <a class="header-entry" title='' href='/new'><div class="li_paperplane"></div></a>
-            <a class="header-entry" title='文章' href='/manage?desc=1'><div class="li_note"></div></a>
-            <a class="header-entry" title='历史' href='/history?desc=1'><div class="li_calendar"></div></a>
-            <a class="header-entry" title='用户' href='/manage?desc=1&pid=@{{.UserDisplay}}'><div class="li_user"></div></a>
+            <a class="header-entry" title='首页' href='/'><div class="li_world"></div></a>
+            <a class="header-entry" title='新记事' href='/new'><div class="li_paperplane"></div></a>
+            <a class="header-entry" title='记事' href='/manage?desc=1'><div class="li_note"></div></a>
+            <a class="header-entry" title='我的记事' href='/manage?desc=1&pid={{.UserDisplay}}'><div class="li_user"></div></a>
+            <a class="header-entry" title='全站历史' href='/history?desc=1'><div class="li_calendar"></div></a>
         </div>
         <div id=container style=''>
             <div>

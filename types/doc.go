@@ -3,13 +3,11 @@ package types
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/url"
 	"strconv"
 	"strings"
 
-	"github.com/coyove/sdss/contrib/clock"
 	"github.com/gogo/protobuf/proto"
 	"github.com/pierrec/lz4"
 )
@@ -28,6 +26,7 @@ type Note struct {
 	Lock          bool     `protobuf:"varint,11,opt" json:"L,omitempty"`
 	CreateUnix    int64    `protobuf:"fixed64,12,opt" json:"C"`
 	UpdateUnix    int64    `protobuf:"fixed64,13,opt" json:"u"`
+	Likes         int64    `protobuf:"fixed64,14,opt" json:"lk"`
 }
 
 func (t *Note) Reset() { *t = Note{} }
@@ -132,30 +131,6 @@ func UnmarshalTagRecordBinary(p []byte) *NoteRecord {
 	t := &NoteRecord{}
 	proto.Unmarshal(p, t)
 	return t
-}
-
-type Document struct {
-	Id      string `json:"I"`
-	Content string `json:"C"`
-}
-
-func (doc Document) PartKey() string {
-	ts := doc.CreateTime()
-	return fmt.Sprintf("doc%d", ts>>16)
-}
-
-func (doc *Document) MarshalBinary() []byte {
-	buf, _ := json.Marshal(doc)
-	return buf
-}
-
-func (doc *Document) CreateTime() int64 {
-	ts, _ := clock.ParseIdStrUnix(doc.Id)
-	return ts
-}
-
-func (doc *Document) String() string {
-	return fmt.Sprintf("%d(%s): %q", doc.CreateTime(), doc.Id, doc.Content)
 }
 
 func StrHash(s string) uint64 {

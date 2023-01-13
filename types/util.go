@@ -4,6 +4,10 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
+	"net"
+	"net/http"
+	"strings"
+	"unicode/utf8"
 )
 
 func Uint64Bytes(v uint64) []byte {
@@ -45,4 +49,61 @@ func DedupUint64(v []uint64) []uint64 {
 		m[v[i]] = true
 	}
 	return v
+}
+
+func UTF16Trunc(v string, max int) string {
+	src, sz := v, 0
+	for len(v) > 0 && sz < max {
+		r, n := utf8.DecodeRuneInString(v)
+		if n == 0 {
+			break
+		}
+		if r > 65535 {
+			sz += 2
+		} else {
+			sz++
+		}
+		v = v[n:]
+	}
+	return src[:len(src)-len(v)]
+}
+
+func UTF16LenExceeds(v string, max int) bool {
+	if len(v) < max {
+		return false
+	}
+	for sz := 0; len(v) > 0; {
+		r, n := utf8.DecodeRuneInString(v)
+		if n == 0 {
+			break
+		}
+		if r > 65535 {
+			sz += 2
+		} else {
+			sz++
+		}
+		if sz > max {
+			return true
+		}
+		v = v[n:]
+	}
+	return false
+}
+
+func RemoteIPv4(r *http.Request) net.IP {
+	xff := r.Header.Get("X-Forwarded-For")
+	ips := strings.Split(xff, ",")
+	for _, ip := range ips {
+		p := net.ParseIP(strings.TrimSpace(ip))
+		if p != nil {
+			return p.To4()
+		}
+		break
+	}
+	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+	p := net.ParseIP(ip)
+	if p != nil {
+		return p.To4()
+	}
+	return net.IP{0, 0, 0, 0}
 }

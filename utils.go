@@ -18,7 +18,6 @@ import (
 	"text/template"
 	"time"
 	"unicode"
-	"unicode/utf8"
 
 	"github.com/NYTimes/gziphandler"
 	"github.com/coyove/iis/dal"
@@ -31,47 +30,18 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-func utf16Trunc(v string, max int) string {
-	src, sz := v, 0
-	for len(v) > 0 && sz < max {
-		r, n := utf8.DecodeRuneInString(v)
-		if n == 0 {
-			break
-		}
-		if r > 65535 {
-			sz += 2
-		} else {
-			sz++
-		}
-		v = v[n:]
-	}
-	return src[:len(src)-len(v)]
-}
-
-func utf16Len(v string) (sz int) {
-	for len(v) > 0 {
-		r, n := utf8.DecodeRuneInString(v)
-		if n == 0 {
-			break
-		}
-		if r > 65535 {
-			sz += 2
-		} else {
-			sz++
-		}
-		v = v[n:]
-	}
-	return
+func cleanTitle(v string) string {
+	title := strings.TrimSpace(v)
+	title = strings.Replace(title, "//", "/", -1)
+	title = strings.TrimLeft(title, "/")
+	title = strings.TrimRight(title, "/")
+	return title
 }
 
 func serve(pattern string, f func(http.ResponseWriter, *types.Request)) {
-	auth := false
-	if strings.HasPrefix(pattern, "!") {
-		auth = true
-		pattern = pattern[1:]
-	}
 	h := gziphandler.GzipHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		url := r.URL
+		now := time.Now()
 		defer func() {
 			if r := recover(); r != nil {
 				logrus.Errorf("fatal serving %v: %v, trace: %s", url, r, debug.Stack())
@@ -79,10 +49,11 @@ func serve(pattern string, f func(http.ResponseWriter, *types.Request)) {
 		}()
 
 		req := &types.Request{
-			Request: r,
-			Start:   time.Now(),
+			Request:    r,
+			Start:      now,
+			Config:     dal.GetJsonizedNoteCache("ns:config"),
+			RemoteIPv4: types.RemoteIPv4(r),
 		}
-		_ = auth
 
 		if s, created := req.ParseSession(); created {
 			http.SetCookie(w, &http.Cookie{
@@ -181,7 +152,7 @@ func downloadData() {
 
 func rebuildData(count int) {
 	data := map[uint64]string{}
-	mgr := dal.TagsStore.Manager
+	mgr := dal.Store.Manager
 	f, _ := os.Open("out.gz")
 	gr, _ := gzip.NewReader(f)
 	rd := bufio.NewReader(gr)
@@ -206,10 +177,10 @@ func rebuildData(count int) {
 	mgr.Saver().Close()
 
 	for len(data) > 0 {
-		dal.TagsStore.DB.Update(func(tx *bbolt.Tx) error {
+		dal.Store.DB.Update(func(tx *bbolt.Tx) error {
 			c := 0
 			for i, line := range data {
-				k := bitmap.Uint64Key(uint64(i))
+				k := types.Uint64Bytes(uint64(i))
 				now := clock.UnixMilli()
 				ksv := dal.KeySortValue{
 					Key:   k[:],
@@ -269,7 +240,7 @@ func collectSimple(q string) ([]bitmap.Key, []bitmap.JoinMetrics) {
 		return nil, nil
 	}
 
-	res, jms := dal.TagsStore.CollectSimple(cursor.New(), bitmap.Values{Major: h2, Exact: h}, 2000)
+	res, jms := dal.Store.CollectSimple(cursor.New(), bitmap.Values{Major: h2, Exact: h}, 2000)
 	var tags []bitmap.Key
 	for _, kis := range res {
 		tags = append(tags, kis.Key)
