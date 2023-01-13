@@ -3,22 +3,33 @@
 
 <div>
     <table id=edit>
+        {{if .T.readonly}}
+        <tr style='background:#ffe0b2'>
+            <td colspan=2>
+                <div class=display>
+                    <b style='word-break:break-all;white-space:pre-wrap;margin-right:0.5em'>{{.T.note.Title}}</b>
+                    <span>{{formatUnixMilli .T.recordUnix}} 的历史记录</span>
+                </div>
+            </td>
+        </tr>
+        {{end}}
+
         {{with .T.note}}
         {{if .PendingReview}}
-        <tr>
+        <tr style='background:#fffddd'>
             <td class=small>待审核</td>
             <td>
                 <script type="text/plain" id=content{{.Id}}>{{.Content}}</script>
                 <script type="text/plain" id=review-content{{.Id}}>{{.ReviewContent}}</script>
 
-                <div class=display><span class=tag-edit-name>{{.ReviewTitle}}</span></div>
-                <div class='tag-box button' onclick='openDiff("content{{.Id}}","review-content{{.Id}}",true)'><span>内容diff</span></div>
-                {{if not $.T.readonly}}
-                <div class='tag-box button' tag=approve><span>通过</span></div>
-                <div class='tag-box button' tag=reject><span>驳回</span></div>
-                    clickAjax(tr.find('[tag=approve]'), path, function() { return {'action': 'approve', 'id': tagID} }, reload);
-                    clickAjax(tr.find('[tag=reject]'), path, function() { return {'action': 'reject', 'id': tagID} }, reload);
-                {{end}}
+                <div class=display>
+                    <div style='flex-grow:1'>{{.ReviewTitle}}</div>
+                    <div class='tag-box button' onclick='openDiff("content{{.Id}}","review-content{{.Id}}",true)'><span>内容diff</span></div>
+                    {{if not $.T.readonly}}
+                    <div class='tag-box button' onclick='ajaxBtn(this,"/manage/action",{"action":"approve","id":{{.Id}}})'><span>通过</span></div>
+                    <div class='tag-box button' onclick='ajaxBtn(this,"/manage/action",{"action":"reject","id":{{.Id}}})'><span>驳回</span></div>
+                    {{end}}
+                </div>
             </td>
         </tr>
         {{end}}
@@ -28,61 +39,40 @@
             <td class=small>标题</td>
             <td>
                 <div class=display>
-                    <input class=tag-edit-name value="{{.Title}}"/>
+                    <script type="text/plain" id=title{{.Id}}>{{.Title}}</script>
+                    <input id="title" class=tag-edit-name {{if $.T.readonly}}readonly{{end}}/>
                     {{if not $.T.readonly}}
-                    <div class='tag-box button'><span>更新</span></div>
+                    <div class='tag-box button' onclick='updateNote(this)'><span>更新</span></div>
                     {{end}}
                 </div>
             </td>
         </tr>
-                var btnUpdate = tr.find('.display .button').hide();
-                clickAjax(btnUpdate, path, function() {
-                    return {
-                        'action': 'update',
-                        'id': tagID,
-                        'title': trInput.val(),
-                        'content': trDesc.val(),
-                        'parents': JSON.stringify(parentsSelector.getTags()),
-                    };
-                }, reload);
-
         <tr>
             <td class=small>内容</td>
             <td>
                 <div class=display>
-                    <textarea class=tag-edit-desc style='height:10em'>{{.Content}}</textarea>
+                    <textarea {{if $.T.readonly}}readonly{{end}} id="content" class=tag-edit-desc style='height:10em'>{{.Content}}</textarea>
                 </div>
             </td>
         </tr>
 
-        <tr><td class=small>父记事</td><td><div class=display><div class=lds-dual-ring></div></div></td></tr>
-
-            $.get('/search?n=100&ids=' + (tagData.P || []).join(','), function(data) {
-                trParents.find('.display').html('').
-                    append($("<div max-tags=8 class='tag-search-input-container border1' style='width:100%'></div>"));
-                parentsSelector = trParents.find('.tag-search-input-container').get(0);
-                parentsSelector.onclicktag = function(id) { location.href=('/manage?edittagid=' + id); }
-                data.notes.forEach(function(t, i) { $(parentsSelector).attr('tag-data' + i, t[0] + ',' + t[1]) });
-                wrapTagSearchInput(parentsSelector );
-                btnUpdate.show();
-            })
-
-        <tr><td class=small>子记事</td><td><div class=display><a href='?pid={{.Id}}'>查看</a></div></td></tr>
+        <tr><td class=small>父记事</td><td><div class=display id=parents-container><div class=lds-dual-ring></div></div></td></tr>
+        <tr><td class=small>子记事</td><td><div class=display><a href='/manage?pid={{.Id}}'>查看</a></div></td></tr>
         <tr><td class=small>变更历史</td><td><div class=display><a href='/history?desc=1&id={{.Id}}'>查看</a></div></td></tr>
         <tr>
             <td class=small>状态</td>
             <td>
                 <div class=display>
                     <span>{{if .Lock}}<b>锁定中</b>{{else}}正常{{end}}&nbsp;</span>
-                    <div class='tag-edit-button button'><span class=li_lock></span></div>
+                    {{if not $.T.readonly}}
+                    <div class='tag-edit-button button' action=''
+                         onclick='ajaxBtn(this, "/manage/action", {"action": {{if .Lock}}"Unlock"{{else}}"Lock"{{end}}, "id": {{.Id}}})'>
+                        <span class=li_lock></span>
+                    </div>
+                    {{end}}
                 </div>
             </td>
         </tr>
-            clickAjax(tr.find('.display .button'), path, function(btn) {
-                return {'action': tagData.L ? 'Unlock' : 'Lock', 'id': tagID};
-            }, reload);
-            tab.append(tr);
-
         <tr>
             <td class=small>创建者</td>
             <td>
@@ -94,8 +84,8 @@
         </tr>
         <tr><td class=small>创建时间</td><td><div class=display>{{formatUnixMilli .CreateUnix}}</div></td></tr>
         <tr><td class=small>最近修改人</td><td><div class=display>{{.Modifier}}</div></td></tr>
-        <tr><td class=small>最近审核人</td><td><div class=display>{{.Reviewer}}</div></td></tr>"));
-        <tr><td class=small>修改时间</td><td><div class=display>{{formatUnixMilli .UpdateUnix}}</div></td></tr>"));
+        <tr><td class=small>最近审核人</td><td><div class=display>{{.Reviewer}}</div></td></tr>
+        <tr><td class=small>修改时间</td><td><div class=display>{{formatUnixMilli .UpdateUnix}}</div></td></tr>
 
         {{if not $.T.readonly}}
         <tr>
@@ -106,14 +96,37 @@
                 </div>
             </td>
         </tr>
-                clickAjax(tr.find('.display .button'), path, function() {
-                    return {'action': 'delete', 'id': tagID};
-                }, function(data) {
-                    window.searchParams.delete('edittagid');
-                    location.href = '?' + window.searchParams.toString();
-                }, {'ask': '确认删除 ' + input.val()});
-                tab.append(tr);
         {{end}}
+
+        <script>
+            $.get('/search?n=100&ids={{.JoinParentIds}}', function(data) {
+                const ps = $("<div max-tags=8 class='tag-search-input-container border1' style='width:100%'></div>").get(0);
+                $('#parents-container').html('').append(ps);
+                ps.onclicktag = function(id) { location.href='/edit?id='+id; }
+                data.notes.forEach(function(t, i) { $(ps).attr('tag-data' + i, t[0] + ',' + t[1]) });
+                wrapTagSearchInput(ps);
+                window.ps = ps;
+            });
+            $('#title').val($('#title{{.Id}}').text());
+            $('#content').linedtextarea();
+
+            function updateNote(btn) {
+                ajaxBtn(btn, "/manage/action", {
+                    'action': 'update',
+                    'id': {{.Id}},
+                    'title': $("#title").val(),
+                    'content': $("#content").val(),
+                    'parents': JSON.stringify(window.ps.getTags()),
+                });
+            }
+
+            function deleteNote(btn) {
+                if (!confirm("确认删除该记事?")) return;
+                ajaxBtn(btn, path, {'action': 'delete', 'id': {{.Id}}}, function(data) {
+                    location.href = '/manage?desc=1';
+                });
+            }
+        </script>
         {{end}}
     </table>
 </div>

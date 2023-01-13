@@ -90,7 +90,7 @@ input.border1, textarea.border1 { padding: 0.2em 0.5em; font-size: 90% }
 }
 
 .tag-box.button:not(.selected):not(.alert):hover { background: #cfd8dc; }
-.tag-box.button.selected { background: #607d8b; color: white }
+.tag-edit-button.selected, .tag-box.button.selected { background: #607d8b; color: white }
 .tag-box.button a { text-decoration: none; color: #233; }
 .tag-box.button.selected a { color: white }
 
@@ -209,8 +209,8 @@ td .tag-edit-desc {
     text-align: center;
     display: inline-flex;
 }
-.tag-edit-button:not([disabled]):hover { background: rgba(0, 0, 0, 0.1); }
-.tag-edit-button:not([disabled]):active { background: rgba(0, 0, 0, 0.2); }
+.tag-edit-button:not([disabled]):not(.selected):hover { background: rgba(0, 0, 0, 0.1); }
+.tag-edit-button:not([disabled]):not(.selected):active { background: rgba(0, 0, 0, 0.2); }
 td .display input { outline:none; border:none; font:inherit; background:transparent; flex-grow: 1; padding:0 }
 td .display .button .closer { cursor: pointer }
 td .tag-box { font-size: 90%; margin-right: 0.5em }

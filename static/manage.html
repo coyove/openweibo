@@ -8,32 +8,38 @@
 <div style='display:flex;align-items:center'>
     <input id=search class='tag-search-input-oneline border1' style='flex-grow:1;margin-right:1em' open-tag='true'>
     <div class='tag-box button' style='margin-right:1.5em' onclick='location.href="?q="+encodeURIComponent($("#search").val())'><a>搜索</a></div>
-    <div class='tag-box button {{if and (eq .T.sort 1) (not .T.desc)}}selected{{end}}'><a href='?sort=1&pid={{.T.pid}}'>A-Z</a></div>
-    <div class='tag-box button {{if and (eq .T.sort 1) (.T.desc)}}selected{{end}}'><a href='?sort=1&desc=1&pid={{.T.pid}}'>Z-A</a></div>
-    <div class='tag-box button {{if and (eq .T.sort 0) (not .T.desc)}}selected{{end}}'><a href='?sort=0&pid={{.T.pid}}'>最旧</a></div>
-    <div class='tag-box button {{if and (eq .T.sort 0) (.T.desc)}}selected{{end}}'><a href='?sort=0&desc=1&pid={{.T.pid}}'>最新</a></div>
 </div>
 
 <div>
     <table id=list>
         {{if .T.query}}
         <tr><td><div class=display ><span>搜索：<b>{{.T.query}}</b> ({{.T.total}})</span></div></td></tr>
-        {{end}}
-        {{if .T.pid}}
+        {{else}}
         <tr>
             <td colspan=2>
                 <div class=display >
-                    <span>
+                    <span style='flex-grow:1'>
+        {{if .T.pid}}
                     {{if .T.ptag.Valid}}
                     <b>{{.T.ptag.Title}}</b>
-                    <a class=tag-edit-button href='?sort=0&edittagid={{.T.pid}}'><span class=li_pen></span></a>
+                    <a class=tag-edit-button href='/edit?id={{.T.pid}}'><span class=li_pen></span></a>
                     下的子记事 ({{.T.total}})
                     {{else}}
                     <b>{{.T.pid}}</b> 
                     <a class=tag-edit-button href='/history?id={{.T.pid}}'><span class=li_vynil></span></a>
                     创建的记事 ({{.T.total}})
                     {{end}}
+        {{else}}
+                    全部记事 ({{.T.total}})
+        {{end}}
                     </span>
+
+                    <div>
+                        <a class='tag-edit-button icon-sort-name-up {{if and (eq .T.sort 1) (not .T.desc)}}selected{{end}}' href='?sort=1&pid={{.T.pid}}'></a>
+                        <a class='tag-edit-button icon-sort-name-down {{if and (eq .T.sort 1) (.T.desc)}}selected{{end}}' href='?sort=1&desc=1&pid={{.T.pid}}'></a>
+                        <a class='tag-edit-button icon-sort-number-up {{if and (eq .T.sort 0) (not .T.desc)}}selected{{end}}' href='?sort=0&pid={{.T.pid}}'></a>
+                        <a class='tag-edit-button icon-sort-number-down {{if and (eq .T.sort 0) (.T.desc)}}selected{{end}}' href='?sort=0&desc=1&pid={{.T.pid}}'></a>
+                    </div>
                 </div>
             </td>
         </tr>
@@ -45,13 +51,13 @@
                 <script type="application/json" class=tag-data>{{.Data}}</script>
                 <div class=display >
                     {{if .PendingReview}}
-                    <a href='/manage?edittagid={{.Id}}' class=tag-edit-name>{{.ReviewName}}</a>
+                    <a href='/edit?id={{.Id}}' class=tag-edit-name>{{.ReviewTitle}}</a>
                     {{else}}
-                    <a href='/t/{{.Title}}' class=tag-edit-name>{{.Title}}</a>
+                    <a href='/t/{{.EscapedTitle}}' class=tag-edit-name>{{.Title}}</a>
                     {{end}}
                     {{if .Lock}}<div class='tag-edit-button li_lock' disabled></div>{{end}}
                     {{if .PendingReview}}<div class='tag-edit-button li_stack' disabled title='审核中'></div>{{end}}
-                    <div class='tag-edit-button tag-edit-button-update li_pen'></div>
+                    <a class='tag-edit-button li_pen' href='/edit?id={{.Id}}'></a>
                 </div>
             </td>
             <td class='small'>{{formatUnixMilli .UpdateUnix}}</td>

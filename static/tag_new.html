@@ -5,7 +5,7 @@
         <td class=small>标题</td>
         <td>
             <div class=display>
-                <input id=name class='tag-edit-name tag-search-input-oneline' placeholder='50字符' />
+                <input id=name maxlength=50 class='tag-edit-name tag-search-input-oneline' placeholder='50字符' />
                 <div id=submit class='tag-box button'><span>创建</span></div>
             </div>
         </td>
@@ -14,7 +14,7 @@
         <td class=small>内容</td>
         <td>
             <div class=display>
-                <textarea id=desc class=tag-edit-desc placeholder='50000字符' rows=20></textarea>
+                <textarea id=desc maxlength=50000 class=tag-edit-desc placeholder='50000字符' rows=20></textarea>
             </div>
         </td>
     </tr>
@@ -29,17 +29,17 @@
 </table>
 
         <script>
-        clickAjax($('#submit'), '/manage/action', function() {
-            return {
-                            'action': 'create',
-                            'title': $('#name').val(),
-                            'content': $('#desc').val(),
-                            'parents': JSON.stringify($('#parents').get(0).getTags()),
-                        };
-        }, function(data) {
-            location.href = '/manage?sort=0&desc=1';
-        });
-        $('#desc').linedtextarea();
+            $('#submit').click(function() {
+                ajaxBtn(this, '/manage/action', {
+                    'action': 'create',
+                    'title': $('#name').val(),
+                    'content': $('#desc').val(),
+                    'parents': JSON.stringify($('#parents').get(0).getTags()),
+                }, function(data) {
+                    location.href = '/manage?sort=0&desc=1';
+                });
+            })
+            $('#desc').linedtextarea();
         </script>
 
 {{template "footer.html" .}}

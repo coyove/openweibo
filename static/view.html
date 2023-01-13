@@ -2,9 +2,11 @@
 
 {{with .T.note}}
 <h1>{{.Title}}</h1>
+<title>{{.Title}}</title>
 <div style='font-size: 90%'>
     <div>
     <a href='/manage?pid=@{{.Creator}}'>{{.Creator}}</a> 创建于 {{formatUnixMilli .CreateUnix}}
+        <a class=tag-edit-button href='/edit?id={{.Id}}'><span class=li_pen></span></a>
     </div>
     {{if .Modifier}}
     <div>
@@ -12,6 +14,9 @@
     </div>
     {{end}}
 </div>
+
+<pre style='font:inherit'>{{.Content}}</pre>
+<hr>
 {{end}}
 
 {{template "footer.html" .}}

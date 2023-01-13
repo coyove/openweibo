@@ -171,6 +171,11 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 			target.Title = target.ReviewTitle
 			target.Content = target.ReviewContent
 			target.Reviewer = r.UserDisplay
+		} else {
+			if !r.User.IsMod() && target.Creator != r.UserDisplay && target.Modifier != r.UserDisplay {
+				writeJSON(w, "success", false, "code", "ILLEGAL_APPROVE")
+				return
+			}
 		}
 		target.PendingReview = false
 		target.ReviewTitle, target.ReviewContent = "", ""
@@ -199,7 +204,7 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 		}
 		dal.TagsStore.Saver().AddAsync(idKey, buildBitmapHashes(target.Title))
 	case "Lock", "Unlock":
-		target.Lock = action == "lock"
+		target.Lock = action == "Lock"
 		target.UpdateUnix = clock.UnixMilli()
 		if err := dal.TagsStore.Update(func(tx *bbolt.Tx) error {
 			return dal.KSVUpsert(tx, "notes", dal.KSVFromTag(target))
@@ -387,6 +392,7 @@ func HandleTagNew(w http.ResponseWriter, r *types.Request) {
 func HandleEdit(w http.ResponseWriter, r *types.Request) {
 	var note *types.Note
 	var readonly bool
+	var recordUnix int64
 	id, _ := strconv.ParseUint(r.URL.Query().Get("id"), 10, 64)
 	if id > 0 {
 		note, _ = dal.GetTag(id)
@@ -395,7 +401,8 @@ func HandleEdit(w http.ResponseWriter, r *types.Request) {
 	if hid > 0 {
 		r, _ := dal.GetTagRecord(bitmap.Uint64Key(hid))
 		if r != nil {
-			note = r.Note
+			note = r.Note()
+			recordUnix = r.CreateUnix
 			readonly = true
 		}
 	}
@@ -405,6 +412,7 @@ func HandleEdit(w http.ResponseWriter, r *types.Request) {
 	}
 	r.AddTemplateValue("note", note)
 	r.AddTemplateValue("readonly", readonly)
+	r.AddTemplateValue("recordUnix", recordUnix)
 	httpTemplates.ExecuteTemplate(w, "edit.html", r)
 }
 

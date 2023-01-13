@@ -1,11 +1,17 @@
 package types
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/url"
+	"strconv"
+	"strings"
 
 	"github.com/coyove/sdss/contrib/clock"
 	"github.com/gogo/protobuf/proto"
+	"github.com/pierrec/lz4"
 )
 
 type Note struct {
@@ -24,14 +30,6 @@ type Note struct {
 	UpdateUnix    int64    `protobuf:"fixed64,13,opt" json:"u"`
 }
 
-func (t *Note) MarshalBinary() []byte {
-	buf, err := proto.Marshal(t)
-	if err != nil {
-		panic(err)
-	}
-	return buf
-}
-
 func (t *Note) Reset() { *t = Note{} }
 
 func (t *Note) ProtoMessage() {}
@@ -43,8 +41,28 @@ func (t *Note) Data() string {
 	return string(buf)
 }
 
+func (t *Note) JoinParentIds() string {
+	var tmp []string
+	for _, id := range t.ParentIds {
+		tmp = append(tmp, strconv.FormatUint(id, 10))
+	}
+	return strings.Join(tmp, ",")
+}
+
+func (t *Note) EscapedTitle() string {
+	return url.PathEscape(t.Title)
+}
+
 func (t *Note) Valid() bool {
 	return t != nil && t.Id > 0
+}
+
+func (t *Note) MarshalBinary() []byte {
+	buf, err := proto.Marshal(t)
+	if err != nil {
+		panic(err)
+	}
+	return buf
 }
 
 func UnmarshalTagBinary(p []byte) *Note {
@@ -56,12 +74,12 @@ func UnmarshalTagBinary(p []byte) *Note {
 }
 
 type NoteRecord struct {
-	Id         uint64 `protobuf:"fixed64,1,opt" json:"I"`
-	Action     int64  `protobuf:"varint,2,opt" json:"A"`
-	Note       *Note  `protobuf:"bytes,3,opt" json:"T"`
-	Modifier   string `protobuf:"bytes,4,opt" json:"M"`
-	ModifierIP string `protobuf:"bytes,5,opt" json:"ip"`
-	CreateUnix int64  `protobuf:"fixed64,6,opt" json:"C"`
+	Id         uint64 `protobuf:"fixed64,1,opt"`
+	Action     int64  `protobuf:"varint,2,opt"`
+	NoteBytes  []byte `protobuf:"bytes,3,opt"`
+	Modifier   string `protobuf:"bytes,4,opt"`
+	ModifierIP string `protobuf:"bytes,5,opt"`
+	CreateUnix int64  `protobuf:"fixed64,6,opt"`
 }
 
 func (t *NoteRecord) Reset() { *t = NoteRecord{} }
@@ -69,6 +87,21 @@ func (t *NoteRecord) Reset() { *t = NoteRecord{} }
 func (t *NoteRecord) ProtoMessage() {}
 
 func (t *NoteRecord) String() string { return proto.CompactTextString(t) }
+
+func (t *NoteRecord) SetNote(n *Note) {
+	out := &bytes.Buffer{}
+	x := n.MarshalBinary()
+	w := lz4.NewWriter(out)
+	w.Write(x)
+	w.Close()
+	t.NoteBytes = out.Bytes()
+}
+
+func (t *NoteRecord) Note() *Note {
+	rd := lz4.NewReader(bytes.NewReader(t.NoteBytes))
+	buf, _ := ioutil.ReadAll(rd)
+	return UnmarshalTagBinary(buf)
+}
 
 func (t *NoteRecord) MarshalBinary() []byte {
 	buf, _ := proto.Marshal(t)

@@ -148,10 +148,10 @@ func ProcessTagHistory(tagId uint64, user, action string, ip net.IP, old *types.
 			Id:         id,
 			Action:     int64(action[0]),
 			CreateUnix: clock.UnixMilli(),
-			Note:       old,
 			Modifier:   user,
 			ModifierIP: ip.String(),
 		})
+		tr.SetNote(old)
 		k := bitmap.Uint64Key(tr.Id)
 		KSVUpsert(tx, "history", KeySortValue{
 			Key:    k[:],

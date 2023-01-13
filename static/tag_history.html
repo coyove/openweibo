@@ -15,39 +15,41 @@
 }
 </style>
 
-<div style='display:flex;align-items:center'>
-    <div class='tag-box button {{if (not .T.desc)}}selected{{end}}'><a href='?id={{.T.id}}'>最旧</a></div>
-    <div class='tag-box button {{if (.T.desc)}}selected{{end}}'><a href='?desc=1&id={{.T.id}}'>最新</a></div>
-            <script>
-                function diff() {
-                    const left = $('input[type=radio][name=diff-left]:checked').val();
-                    const right = $('input[type=radio][name=diff-right]:checked').val();
-                    if (!left || !right) return;
-                    openDiff(
-                        JSON.parse($('#record' + left).find('.tag-data').text()).D,
-                        JSON.parse($('#record' + right).find('.tag-data').text()).D,
-                    )
-                }
-            </script>
-</div>
+<script>
+    function diff() {
+        const left = $('input[type=radio][name=diff-left]:checked').val();
+        const right = $('input[type=radio][name=diff-right]:checked').val();
+        if (!left || !right) return;
+        openDiff(
+            JSON.parse($('#record' + left).find('.tag-data').text()).D,
+            JSON.parse($('#record' + right).find('.tag-data').text()).D,
+        )
+    }
+</script>
 
 <div>
     <table id=list>
         <tr>
             <td colspan=2>
                 <div class=display >
+                    <div style='flex-grow:1'>
                     {{if .T.tag.Valid}}
-                        <b>{{.T.tag.Title}}</b>
-                        <a class=tag-edit-button href='/manage?sort=0&edittagid={{.T.tag.Id}}'><span class=li_pen></span></a>
+                        <b>{{.T.tag.Title}}&nbsp;</b>
+                        <a class=tag-edit-button href='/edit?id={{.T.tag.Id}}'><span class=li_pen></span></a>
                     {{else}}
                         {{if .T.id}}
-                        <b>{{.T.id}}</b>
+                        <b>{{.T.id}}&nbsp;</b>
                         <a class=tag-edit-button href='/manage?sort=0&pid={{.T.id}}'><span class=li_vynil></span></a>
                         {{else}}
                         <div>全局</div>
                         {{end}}
                     {{end}}
-                    <span>操作记录 ({{.T.total}})</span>
+                    <span>&nbsp;操作记录 ({{.T.total}})</span>
+                    </div>
+                    <div>
+                        <a class='tag-edit-button icon-sort-number-up {{if (not .T.desc)}}selected{{end}}' href='?id={{.T.id}}'></a>
+                        <a class='tag-edit-button icon-sort-number-down {{if (.T.desc)}}selected{{end}}' href='?desc=1&id={{.T.id}}'></a>
+                    </div>
                 </div>
             </td>
         </tr>
@@ -75,16 +77,16 @@
             <td class='small'>
                 <div>{{formatUnixMilli .CreateUnix}}</div>
             </td>
+            {{$rid := .Id}}
             {{with .Note}}
             <td tag-id={{.Id}} class='tag-edit'>
                 <script type="application/json" class=tag-data>{{.Data}}</script>
                 <div class=display>
                     <div style='flex-grow:1'>
-                    <a href='javascript:void(0)' tag-readonly=true class='tag-edit-button-update tag-edit-name'
-                        >{{if .PendingReview}}{{.ReviewName}}{{else}}{{.Title}}{{end}}</a>
+                        <a href='/edit?hid={{$rid}}'>{{if .PendingReview}}{{.ReviewTitle}}{{else}}{{.Title}}{{end}}</a>
                     </div>
                     <div>
-                    <a href='/history?id={{$tagid}}' class='tag-edit-button li_note'></a>
+                        <a href='/history?id={{$tagid}}' class='tag-edit-button li_note'></a>
                     </div>
                 </div>
             </td>
