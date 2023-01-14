@@ -38,7 +38,7 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
 			var textarea = $(this);
 
 			/* Wrap the text area in the elements we need */
-			textarea.wrap($("<div style='overflow:hidden;flex-grow:1'></div>").height(textarea.height()));
+			textarea.wrap($("<div style='overflow:hidden;flex-grow:1;min-height:10em'></div>"));
 			textarea.height('100%').css({'float': "right", 'line-height': '1.2em'}).attr('wrap', 'off');
 			textarea.parent().
                 prepend("<div class='lines' style='float:left;color:#ccc;text-align:right;line-height:1.2em'></div>").
@@ -70,9 +70,30 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
                 textarea.parent().height(textarea.height());
 			});
 			observer.observe(textarea[0], {attributes: true});
+			observer.observe(textarea.parents()[0], {attributes: true});
 		});
 	};
 
+	$.fn.imageSelector = function(img) {
+        const that = this;
+        const readonly = !!this.attr('readonly');
+        const title = this.attr('title');
+        const div = $('<div class=image-selector-container>').
+            css('cursor', readonly ? 'inherit' : 'pointer').
+            append($("<div>").append($("<img>"))).
+            click(function() { !readonly && that.click() });
+        title && div.append($("<div class=title>").text(title));
+        !readonly && div.append($("<div class='title hover'>").append('<span class=li_camera></span>'));
+        this.parent().append(div);
+        this.hide();
+        this.change(function() {
+            const file = that.get(0).files[0];
+            div.find('img').get(0).src = file ? URL.createObjectURL(file) : '';
+            that.attr('changed', 'true');
+        });
+        img && (div.find('img').get(0).src = img);
+        return this;
+    }
 })(jQuery);
 
 function openDiff(a, b, id) {
@@ -140,6 +161,7 @@ function ajaxBtn(el, path, args, f) {
 "DUPLICATED_TITLE": "标题重名",
 "ILLEGAL_APPROVE": "无权审核",
 "INVALID_ACTION": "请求错误",
+"INVALID_IMAGE_NAME": "无效图片名",
                 })[data.code];
                 alert('发生错误: ' + i18n + ' (' + data.code + ')');
                 return;
@@ -199,7 +221,10 @@ function wrapTagSearchInput(container) {
                     selected[tagID].required = t.hasClass('tag-required');
                 }));
             }
-            t.append($("<span>").css('cursor', 'pointer').text(src.text()).click(function() { onClickTag(tagID) }));
+            const txt = src.text();
+            t.append($("<span>").css('cursor', 'pointer').
+                text(txt.length < 20 ? txt : txt.substr(0, 20) + '...').
+                click(function() { onClickTag(tagID) }));
             t.append($(window.CONST_closeSVG).click(function(ev) {
                 delete selected[tagID];
                 t.remove();

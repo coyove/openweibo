@@ -2,7 +2,6 @@ package types
 
 import (
 	"bytes"
-	"encoding/json"
 	"io/ioutil"
 	"net/url"
 	"strconv"
@@ -26,7 +25,8 @@ type Note struct {
 	Lock          bool     `protobuf:"varint,11,opt" json:"L,omitempty"`
 	CreateUnix    int64    `protobuf:"fixed64,12,opt" json:"C"`
 	UpdateUnix    int64    `protobuf:"fixed64,13,opt" json:"u"`
-	Likes         int64    `protobuf:"fixed64,14,opt" json:"lk"`
+	Image         string   `protobuf:"bytes,14,opt" json:"img,omitempty"`
+	ReviewImage   string   `protobuf:"bytes,15,opt" json:"pimg,omitempty"`
 }
 
 func (t *Note) Reset() { *t = Note{} }
@@ -34,11 +34,6 @@ func (t *Note) Reset() { *t = Note{} }
 func (t *Note) ProtoMessage() {}
 
 func (t *Note) String() string { return proto.CompactTextString(t) }
-
-func (t *Note) Data() string {
-	buf, _ := json.Marshal(t)
-	return string(buf)
-}
 
 func (t *Note) JoinParentIds() string {
 	var tmp []string
@@ -48,8 +43,26 @@ func (t *Note) JoinParentIds() string {
 	return strings.Join(tmp, ",")
 }
 
-func (t *Note) EscapedTitle() string {
-	return url.PathEscape(t.Title)
+func (t *Note) EscapedTitle() string { return url.PathEscape(t.Title) }
+
+func (t *Note) QueryTitle() string { return url.QueryEscape(t.Title) }
+
+func (t *Note) HTMLTitle() string { return SafeHTML(t.Title) }
+
+func (t *Note) HTMLContent() string { return SafeHTML(t.Content) }
+
+func (t *Note) HTMLReviewContent() string { return SafeHTML(t.ReviewContent) }
+
+func (t *Note) HTMLTitleDisplay() string {
+	if t.PendingReview {
+		return SafeHTML(t.ReviewTitle)
+	}
+	return t.HTMLTitle()
+}
+
+func (t *Note) ClearReviewStatus() {
+	t.PendingReview = false
+	t.ReviewTitle, t.ReviewContent, t.ReviewImage = "", "", ""
 }
 
 func (t *Note) Valid() bool {
@@ -133,13 +146,30 @@ func UnmarshalTagRecordBinary(p []byte) *NoteRecord {
 	return t
 }
 
-func StrHash(s string) uint64 {
+func Uint64Hash(v uint64) uint64 {
 	const offset64 = 14695981039346656037
 	const prime64 = 1099511628211
-	var hash uint64 = offset64
-	for i := 0; i < len(s); i++ {
-		hash *= prime64
-		hash ^= uint64(s[i])
+	var h uint64 = offset64
+	for i := 0; i < 64; i += 8 {
+		h *= prime64
+		h ^= v >> i
 	}
-	return uint64(hash)
+	return h
+}
+
+func SafeHTML(v string) string {
+	buf := &bytes.Buffer{}
+	for i := 0; i < len(v); i++ {
+		switch v[i] {
+		case '&':
+			buf.WriteString("&amp;")
+		case '<':
+			buf.WriteString("&lt;")
+		case '>':
+			buf.WriteString("&gt;")
+		default:
+			buf.WriteByte(v[i])
+		}
+	}
+	return buf.String()
 }

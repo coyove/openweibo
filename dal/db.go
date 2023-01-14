@@ -14,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/bitmap"
+	"github.com/coyove/sdss/contrib/ngram"
 	"github.com/sirupsen/logrus"
 	"go.etcd.io/bbolt"
 	//sync "github.com/sasha-s/go-deadlock"
@@ -280,10 +281,10 @@ func KSVFirstKeyOfSort1(tx *bbolt.Tx, bkPrefix string, sort1 []byte) (key []byte
 
 func LockKey(key interface{}) {
 	k := fmt.Sprint(key)
-	Store.locks[types.StrHash(k)%uint64(len(Store.locks))].Lock()
+	Store.locks[ngram.StrHash(k)%uint64(len(Store.locks))].Lock()
 }
 
 func UnlockKey(key interface{}) {
 	k := fmt.Sprint(key)
-	Store.locks[types.StrHash(k)%uint64(len(Store.locks))].Unlock()
+	Store.locks[ngram.StrHash(k)%uint64(len(Store.locks))].Unlock()
 }

@@ -88,6 +88,7 @@ func main() {
 	logrus.Info("debug pprof page: /ns:", root, "/debug/pprof/")
 
 	http.HandleFunc("/ns:static/", HandleAssets)
+	http.HandleFunc("/ns:image/", HandleImage)
 
 	logrus.Infof("start serving %s, pid=%d, ServeUUID=%s", *listen, os.Getpid(), serveUUID)
 

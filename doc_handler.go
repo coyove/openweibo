@@ -26,189 +26,260 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 	}
 
 	r.ParseMultipartForm(10 * 1024 * 1024)
-	q := r.Form
-	id, err := strconv.ParseUint(q.Get("id"), 10, 64)
-	action := q.Get("action")
-	idKey := types.Uint64Bytes(id)
-
-	defer func(start time.Time) {
-		logrus.Infof("action %q - %d, in %v", action, id, time.Since(start))
-	}(time.Now())
+	action := r.Form.Get("action")
 
 	var target *types.Note
-	if action != "create" {
+	var ok bool
+	if action == "create" {
+		target, ok = doCreate(w, r)
+	} else if action == "update" {
+		target, ok = doUpdate(w, r)
+	} else {
+		id, err := strconv.ParseUint(r.Form.Get("id"), 10, 64)
+
+		defer func(start time.Time) {
+			logrus.Infof("action %q - %d in %v", action, id, time.Since(start))
+		}(time.Now())
+
 		dal.LockKey(id)
 		defer dal.UnlockKey(id)
+
 		target, err = dal.GetNote(id)
 		if !target.Valid() || err != nil {
 			logrus.Errorf("action %q, can't find %d: %v", action, id, err)
 			writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
 			return
 		}
-	}
 
-	switch action {
-	case "Lock", "Unlock", "delete":
-		if !r.User.IsMod() {
-			writeJSON(w, "success", false, "code", "MODS_REQUIRED")
-			return
-		}
-	}
-
-	switch action {
-	case "update":
-		if target.PendingReview {
-			if target.Modifier == r.UserDisplay || target.Creator == r.UserDisplay || r.User.IsMod() {
-				// Creator, modifier and moderators can still update the content.
-			} else {
-				writeJSON(w, "success", false, "code", "PENDING_REVIEW")
-				return
-			}
-		}
-		if target.Lock && !r.User.IsMod() {
-			writeJSON(w, "success", false, "code", "LOCKED")
-			return
-		}
-		fallthrough
-	case "create":
-		title, content, parentIds, h, msg := actionGetData(r, q)
-		if msg != "" {
-			writeJSON(w, "success", false, "code", msg)
-			return
-		}
-
-		var err error
-		var exist, shouldIndex bool
-		if action == "create" {
-			target = &types.Note{
-				Id:        clock.Id(),
-				Title:     title,
-				Content:   content,
-				Creator:   r.UserDisplay,
-				ParentIds: parentIds,
-			}
-			id, idKey = target.Id, types.Uint64Bytes(target.Id)
-			exist, err = dal.CreateNote(title, target)
-			shouldIndex = true
-		} else {
-			err = dal.Store.Update(func(tx *bbolt.Tx) error {
-				if title != target.Title {
-					if _, exist = dal.KSVFirstKeyOfSort1(tx, dal.NoteBK, []byte(title)); exist {
-						return nil
-					}
-				}
-				dal.ProcessTagParentChanges(tx, target, target.ParentIds, parentIds)
-				target.ParentIds = parentIds
-				if r.User.IsMod() || r.UserDisplay == target.Creator {
-					shouldIndex = title != target.Title
-					target.Title = title
-					target.Content = content
-				} else {
-					target.PendingReview = true
-					target.ReviewTitle = title
-					target.ReviewContent = content
-				}
-				target.Modifier = r.UserDisplay
-				target.UpdateUnix = clock.UnixMilli()
-				dal.UpdateCreator(tx, target)
-				return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
-			})
-		}
-		if err != nil {
-			logrus.Errorf("tag manage action %s %d: %v", action, id, err)
-			writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
-			return
-		}
-		if exist {
-			writeJSON(w, "success", false, "code", "DUPLICATED_TITLE")
-			return
-		}
-		if shouldIndex {
-			dal.Store.Saver().AddAsync(bitmap.Uint64Key(id), h)
-		}
-	case "delete":
-		if err := dal.Store.Update(func(tx *bbolt.Tx) error {
-			dal.ProcessTagParentChanges(tx, target, target.ParentIds, nil)
-			return dal.KSVDelete(tx, dal.NoteBK, idKey[:])
-		}); err != nil {
-			logrus.Errorf("tag manage action %s %d: %v", action, id, err)
-			writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
-			return
-		}
-	case "approve", "reject":
-		if !target.PendingReview {
-			writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
-			return
-		}
-		var shouldIndex bool
 		if action == "approve" {
-			if !r.User.IsMod() && target.Creator != r.UserDisplay {
-				writeJSON(w, "success", false, "code", "ILLEGAL_APPROVE")
+			ok = doApprove(target, w, r)
+		} else if action == "reject" {
+			ok = doReject(target, w, r)
+		} else if action == "delete" || action == "Lock" || action == "Unlock" {
+			if !r.User.IsMod() {
+				writeJSON(w, "success", false, "code", "MODS_REQUIRED")
 				return
 			}
-			shouldIndex = target.Title != target.ReviewTitle
-			target.Title = target.ReviewTitle
-			target.Content = target.ReviewContent
-			target.Reviewer = r.UserDisplay
-		} else {
-			if !r.User.IsMod() && target.Creator != r.UserDisplay && target.Modifier != r.UserDisplay {
-				writeJSON(w, "success", false, "code", "ILLEGAL_APPROVE")
-				return
-			}
-		}
-		target.PendingReview = false
-		target.ReviewTitle, target.ReviewContent = "", ""
-
-		var exist bool
-		if err := dal.Store.Update(func(tx *bbolt.Tx) error {
-			if target.Title == "" && action == "reject" {
-				return dal.KSVDelete(tx, dal.NoteBK, idKey[:])
-			}
-			if key, found := dal.KSVFirstKeyOfSort1(tx, dal.NoteBK, []byte(target.Title)); found {
-				if !bytes.Equal(key, idKey[:]) {
-					exist = true
-					return nil
+			if err := dal.Store.Update(func(tx *bbolt.Tx) error {
+				if action == "delete" {
+					dal.ProcessTagParentChanges(tx, target, target.ParentIds, nil)
+					return dal.KSVDelete(tx, dal.NoteBK, types.Uint64Bytes(target.Id))
 				}
+				target.Lock = action == "Lock"
+				target.UpdateUnix = clock.UnixMilli()
+				return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
+			}); err != nil {
+				logrus.Errorf("mod %s %d: %v", action, id, err)
+				writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
+				return
 			}
-			dal.UpdateCreator(tx, target)
-			return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
-		}); err != nil {
-			logrus.Errorf("tag manage action %s %d: %v", action, id, err)
-			writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
+			ok = true
+		} else {
+			writeJSON(w, "success", false, "code", "INVALID_ACTION")
 			return
 		}
-		if exist {
-			writeJSON(w, "success", false, "code", "DUPLICATED_TITLE")
-			return
-		}
-		if shouldIndex {
-			dal.Store.Saver().AddAsync(bitmap.Uint64Key(id), buildBitmapHashes(target.Title))
-		}
-	case "Lock", "Unlock":
-		target.Lock = action == "Lock"
-		target.UpdateUnix = clock.UnixMilli()
-		if err := dal.Store.Update(func(tx *bbolt.Tx) error {
-			return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
-		}); err != nil {
-			logrus.Errorf("tag manage action %s %d: %v", action, id, err)
-			writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
-			return
-		}
-	case "like":
-		if err := dal.Store.Update(func(tx *bbolt.Tx) error {
-			return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
-		}); err != nil {
-			logrus.Errorf("tag manage action %s %d: %v", action, id, err)
-			writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
-			return
-		}
-	default:
-		writeJSON(w, "success", false, "code", "INVALID_ACTION")
-		return
+	}
+	if ok {
+		go dal.ProcessTagHistory(target.Id, r.UserDisplay, action, r.RemoteIPv4Masked(), target)
+		writeJSON(w, "success", true, "note", target)
+	}
+}
+
+func doCreate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
+	id := clock.Id()
+	ad, msg := getActionData(id, r)
+
+	defer func(start time.Time) {
+		logrus.Infof("create %d, data: %v in %v", id, ad, time.Since(start))
+	}(time.Now())
+
+	if msg != "" {
+		writeJSON(w, "success", false, "code", msg)
+		return nil, false
 	}
 
-	go dal.ProcessTagHistory(target.Id, r.UserDisplay, action, r.RemoteIPv4Masked(), target)
-	writeJSON(w, "success", true, "note", target)
+	target := &types.Note{
+		Id:        id,
+		Title:     ad.title,
+		Content:   ad.content,
+		Image:     ad.image,
+		Creator:   r.UserDisplay,
+		ParentIds: ad.parentIds,
+	}
+	exist, err := dal.CreateNote(ad.title, target)
+	if err != nil {
+		logrus.Errorf("create %d: %v", id, err)
+		writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
+		return nil, false
+	}
+	if exist {
+		writeJSON(w, "success", false, "code", "DUPLICATED_TITLE")
+		return nil, false
+	}
+
+	dal.Store.Saver().AddAsync(bitmap.Uint64Key(id), ad.hash)
+	return target, true
+}
+
+func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
+	id, _ := strconv.ParseUint(r.Form.Get("id"), 10, 64)
+
+	ad, msg := getActionData(id, r)
+	defer func(start time.Time) {
+		logrus.Infof("update %d, data: %v in %v", id, ad, time.Since(start))
+	}(time.Now())
+
+	if msg != "" {
+		writeJSON(w, "success", false, "code", msg)
+		return nil, false
+	}
+
+	dal.LockKey(id)
+	defer dal.UnlockKey(id)
+
+	target, err := dal.GetNote(id)
+	if !target.Valid() || err != nil {
+		logrus.Errorf("update can't load note %d: %v", id, err)
+		writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
+		return nil, false
+	}
+
+	if target.PendingReview {
+		if target.Modifier == r.UserDisplay || target.Creator == r.UserDisplay || r.User.IsMod() {
+			// Creator, modifier and moderators can still update the content.
+		} else {
+			writeJSON(w, "success", false, "code", "PENDING_REVIEW")
+			return nil, false
+		}
+	}
+
+	if target.Lock && !r.User.IsMod() {
+		writeJSON(w, "success", false, "code", "LOCKED")
+		return nil, false
+	}
+
+	var exist, shouldIndex bool
+	err = dal.Store.Update(func(tx *bbolt.Tx) error {
+		if ad.title != target.Title {
+			if _, exist = dal.KSVFirstKeyOfSort1(tx, dal.NoteBK, []byte(ad.title)); exist {
+				return nil
+			}
+		}
+		dal.ProcessTagParentChanges(tx, target, target.ParentIds, ad.parentIds)
+		target.ParentIds = ad.parentIds
+		if target.Creator == "bulk" {
+			target.Creator = r.UserDisplay
+		}
+		if r.User.IsMod() || r.UserDisplay == target.Creator {
+			shouldIndex = ad.title != target.Title
+			target.Title = ad.title
+			target.Content = ad.content
+			if ad.imageChanged {
+				target.Image = ad.image
+			}
+			target.ClearReviewStatus()
+		} else {
+			target.PendingReview = true
+			target.ReviewTitle = ad.title
+			target.ReviewContent = ad.content
+			if ad.imageChanged {
+				target.ReviewImage = ad.image
+			} else {
+				target.ReviewImage = target.Image
+			}
+		}
+		target.Modifier = r.UserDisplay
+		target.UpdateUnix = clock.UnixMilli()
+		dal.UpdateCreator(tx, target)
+		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
+	})
+	if err != nil {
+		logrus.Errorf("update %d: %v", id, err)
+		writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
+		return nil, false
+	}
+	if exist {
+		writeJSON(w, "success", false, "code", "DUPLICATED_TITLE")
+		return nil, false
+	}
+	if shouldIndex {
+		dal.Store.Saver().AddAsync(bitmap.Uint64Key(id), ad.hash)
+	}
+	return target, true
+}
+
+func doApprove(target *types.Note, w http.ResponseWriter, r *types.Request) bool {
+	idKey := types.Uint64Bytes(target.Id)
+
+	defer func(start time.Time) {
+		logrus.Infof("approve %d in %v", target.Id, time.Since(start))
+	}(time.Now())
+
+	if !target.PendingReview {
+		writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
+		return false
+	}
+
+	if !r.User.IsMod() && target.Creator != r.UserDisplay {
+		writeJSON(w, "success", false, "code", "ILLEGAL_APPROVE")
+		return false
+	}
+
+	shouldIndex := target.Title != target.ReviewTitle
+	target.Title = target.ReviewTitle
+	target.Content = target.ReviewContent
+	target.Image = target.ReviewImage
+	target.Reviewer = r.UserDisplay
+	target.ClearReviewStatus()
+
+	var exist bool
+	if err := dal.Store.Update(func(tx *bbolt.Tx) error {
+		if key, found := dal.KSVFirstKeyOfSort1(tx, dal.NoteBK, []byte(target.Title)); found {
+			if !bytes.Equal(key, idKey[:]) {
+				exist = true
+				return nil
+			}
+		}
+		dal.UpdateCreator(tx, target)
+		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
+	}); err != nil {
+		logrus.Errorf("approve %d: %v", target.Id, err)
+		writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
+		return false
+	}
+	if exist {
+		writeJSON(w, "success", false, "code", "DUPLICATED_TITLE")
+		return false
+	}
+	if shouldIndex {
+		dal.Store.Saver().AddAsync(bitmap.Uint64Key(target.Id), buildBitmapHashes(target.Title))
+	}
+	return true
+}
+
+func doReject(target *types.Note, w http.ResponseWriter, r *types.Request) bool {
+	if !target.PendingReview {
+		writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
+		return false
+	}
+	if !r.User.IsMod() && target.Creator != r.UserDisplay && target.Modifier != r.UserDisplay {
+		writeJSON(w, "success", false, "code", "ILLEGAL_APPROVE")
+		return false
+	}
+	target.ClearReviewStatus()
+
+	if err := dal.Store.Update(func(tx *bbolt.Tx) error {
+		if target.Title == "" {
+			return dal.KSVDelete(tx, dal.NoteBK, types.Uint64Bytes(target.Id))
+		}
+		dal.UpdateCreator(tx, target)
+		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
+	}); err != nil {
+		logrus.Errorf("reject %d: %v", target.Id, err)
+		writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
+		return false
+	}
+	return true
 }
 
 func HandleManage(w http.ResponseWriter, r *types.Request) {

@@ -3,6 +3,7 @@ token_test
 config.json
 build.sh
 bitmap_cache
+image_cache
 contrib/bitmap/cache
 test
 cpuprofile

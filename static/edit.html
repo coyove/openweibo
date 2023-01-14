@@ -7,7 +7,7 @@
         <tr style='background:#ffe0b2'>
             <td colspan=2>
                 <div class=display>
-                    <b style='word-break:break-all;white-space:pre-wrap;margin-right:0.5em'>{{.T.note.Title}}</b>
+                    <b style='word-break:break-all;white-space:pre-wrap;margin-right:0.5em'>{{.T.note.HTMLTitle}}</b>
                     <span>{{formatUnixMilli .T.recordUnix}} 的历史记录</span>
                 </div>
             </td>
@@ -19,12 +19,8 @@
         <tr style='background:#fffddd'>
             <td class=small>待审核</td>
             <td>
-                <script type="text/plain" id=content{{.Id}}>{{.Content}}</script>
-                <script type="text/plain" id=review-content{{.Id}}>{{.ReviewContent}}</script>
-
                 <div class=display>
                     <div style='flex-grow:1'>{{.ReviewTitle}}</div>
-                    <div class='tag-box button' onclick='openDiff("content{{.Id}}","review-content{{.Id}}",true)'><span>内容diff</span></div>
                     {{if not $.T.readonly}}
                     <div class='tag-box button' onclick='ajaxBtn(this,"/ns:action",{"action":"approve","id":{{.Id}}})'><span>通过</span></div>
                     <div class='tag-box button' onclick='ajaxBtn(this,"/ns:action",{"action":"reject","id":{{.Id}}})'><span>驳回</span></div>
@@ -56,18 +52,51 @@
             </td>
         </tr>
         <tr>
-            <td class=small>内容</td>
+            <td class=small>图片</td>
             <td>
                 <div class=display>
-                    <textarea
-                        {{if $.T.readonly}}readonly{{end}}
-                        maxlength={{$.GetContentMaxLen}}
-                        id="content"
-                        class=tag-edit-desc
-                        style='height:10em'>{{.Content}}</textarea>
+                    <input id="image" type=file class='image-selector' {{if .PendingReview}}title='现图片'{{end}}>
+                    <input readonly id="review-image" type=file class='image-selector' style='display:none' title='新图片'>
                 </div>
             </td>
         </tr>
+        {{if .PendingReview}}
+        <tr>
+            <td class=small></td>
+            <td>
+                <div class=display>
+                    <label><input onclick='switchDiffView(this)' type=radio name=diff value=current checked> 原内容&emsp;</label>
+                    <label><input onclick='switchDiffView(this)' type=radio name=diff value=review> 新内容&emsp;</label>
+                    <label><input onclick='switchDiffView(this)' type=radio name=diff value=diff> Diff内容&emsp;</label>
+                </div>
+            </td>
+        </tr>
+        {{end}}
+        <tr id='tr-content-current'>
+            <td class=small>内容</td>
+            <td>
+                <div class=display>
+                    <textarea id="content"
+                        {{if $.T.readonly}}readonly{{end}}
+                        maxlength={{$.GetContentMaxLen}}
+                        class=tag-edit-desc
+                        style='height:10em'>{{.HTMLContent}}</textarea>
+                </div>
+            </td>
+        </tr>
+        {{if .PendingReview}}
+        <tr id='tr-content-review' style='display:none'>
+            <td class=small>新内容</td>
+            <td>
+                <div class=display>
+                    <textarea id="review-content" readonly class=tag-edit-desc style='height:10em'>{{.HTMLReviewContent}}</textarea>
+                </div>
+            </td>
+        </tr>
+        <tr id='tr-content-diff' style='display:none'>
+            <td class=small>Diff</td><td><div class=display><div id=diff style='width: 100%'></div></div></td>
+        </tr>
+        {{end}}
 
         <tr><td class=small>父记事</td><td><div class=display id=parents-container><div class=lds-dual-ring></div></div></td></tr>
         <tr><td class=small>变更历史</td><td><div class=display><a href='/ns:history?note={{.Id}}&desc=1'>查看</a></div></td></tr>
@@ -121,7 +150,35 @@
                 $('#update').show();
             });
             $('#title').val($('#title{{.Id}}').text());
+            $('#image').imageSelector("{{imageURL .Image}}");
             $('#content').linedtextarea();
+            {{if .PendingReview}}
+            {{if ne .Image .ReviewImage}}
+            $('#review-image').imageSelector("{{imageURL .ReviewImage}}");
+            {{end}}
+            $('#review-content').linedtextarea();
+            const diff = JsDiff.diffLines($('#content').val(), $('#review-content').val());
+            var fragment = document.createDocumentFragment();
+            for (var i=0; i < diff.length; i++) {
+                if (diff[i].added && diff[i + 1] && diff[i + 1].removed) {
+                    var swap = diff[i];
+                    diff[i] = diff[i + 1];
+                    diff[i + 1] = swap;
+                }
+
+                var node = document.createElement('div');
+                if (diff[i].removed) {
+                    node.className = 'diff-row del';
+                } else if (diff[i].added) {
+                    node.className = 'diff-row ins';
+                } else {
+                    node.className = 'diff-row';
+                }
+                node.appendChild(document.createTextNode(diff[i].value || ' '));
+                fragment.appendChild(node);
+            }
+            $('#diff').append(fragment);
+            {{end}}
 
             function updateNote(btn) {
                 ajaxBtn(btn, "/ns:action", {
@@ -129,6 +186,8 @@
                     'id': {{.Id}},
                     'title': $("#title").val(),
                     'content': $("#content").val(),
+                    'image': $('#image').get(0).files[0],
+                    'image_changed': $('#image').attr('changed'),
                     'parents': JSON.stringify(window.ps.getTags()),
                 });
             }
@@ -138,6 +197,11 @@
                 ajaxBtn(btn, '/ns:action', {'action': 'delete', 'id': {{.Id}}}, function(data) {
                     location.href = '/ns:manage?desc=1';
                 });
+            }
+
+            function switchDiffView(i) {
+                $('[id^="tr-content-"]').hide();
+                $("#tr-content-" + i.value).show().css('min-height','10em');
             }
         </script>
         {{end}}

@@ -19,6 +19,14 @@
         </td>
     </tr>
     <tr>
+        <td class=small>图片</td>
+        <td>
+            <div class=display>
+                <input id="image" type=file class='image-selector'>
+            </div>
+        </td>
+    </tr>
+    <tr>
         <td class=small>父记事</td>
         <td>
             <div class=display id=parents></div>
@@ -32,17 +40,21 @@
                     'action': 'create',
                     'title': $('#name').val(),
                     'content': $('#desc').val(),
+                    'image': $('#image').get(0).files[0],
+                    'image_changed': $('#image').attr('changed'),
                     'parents': JSON.stringify(ps.get(0).getTags()),
                 }, function(data) {
                     location.href = '/ns:manage?sort=0&desc=1';
                 });
             })
             $('#desc').linedtextarea();
+            $('#image').imageSelector();
 
             const searchParams = new URLSearchParams(window.location.search)
             const pre = searchParams.get('pt');
             const title = searchParams.get('title');
             const ps = $("<div max-tags={{.GetParentsMax}} id=parents class='tag-search-input-container border1' style='width:100%'></div>");
+            ps.get(0).onclicktag = function(id) { window.open('/ns:edit?id='+id) }
             pre && ps.attr('tag-data0', pre);
             title && $('#name').val(title.substr(0, {{.GetTitleMaxLen}}));
             $('#parents').append(ps);

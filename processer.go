@@ -7,16 +7,17 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
-	"net/url"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 	"unicode"
 
@@ -34,6 +35,44 @@ import (
 
 //go:embed static/assets/*
 var httpStaticAssets embed.FS
+
+//go:embed static/*
+var httpStaticPages embed.FS
+
+var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
+	"formatUnixMilli": func(v int64) string {
+		return time.Unix(0, v*1e6).Format("2006-01-02 15:04:05")
+	},
+	"generatePages": func(p int, pages int) (a []int) {
+		if pages > 0 {
+			a = append(a, 1)
+			i := p - 5
+			if i < 2 {
+				i = 2
+			} else if i > 2 {
+				a = append(a, 0)
+			}
+			for ; i < pages && len(a) < 10; i++ {
+				a = append(a, i)
+			}
+			if a[len(a)-1] != pages {
+				if a[len(a)-1]+1 != pages {
+					a = append(a, 0)
+				}
+				a = append(a, pages)
+			}
+		}
+		return
+	},
+	"add":  func(a, b int) int { return a + b },
+	"uuid": func() string { return types.UUIDStr() },
+	"imageURL": func(a string) string {
+		if a == "" {
+			return ""
+		}
+		return "/ns:image/" + a
+	},
+}).ParseFS(httpStaticPages, "static/*.html"))
 
 var serveUUID = types.UUIDStr()
 
@@ -60,6 +99,26 @@ func HandleAssets(w http.ResponseWriter, r *http.Request) {
 
 	buf, _ := httpStaticAssets.ReadFile(p)
 	w.Write(buf)
+}
+
+func HandleImage(w http.ResponseWriter, r *http.Request) {
+	p := strings.TrimPrefix(r.URL.Path, "/ns:image/")
+	f, err := os.Open("image_cache/" + p)
+	if err != nil {
+		if os.IsNotExist(err) {
+			w.WriteHeader(404)
+		} else {
+			logrus.Errorf("image server error %q: %v", p, err)
+			w.WriteHeader(500)
+		}
+		return
+	}
+	defer f.Close()
+	rd := bufio.NewReader(f)
+	buf, _ := rd.Peek(512)
+	w.Header().Add("Cache-Control", "public, max-age=8640000")
+	w.Header().Add("Content-Type", http.DetectContentType(buf))
+	io.Copy(w, rd)
 }
 
 func HandlePublicStatus(w http.ResponseWriter, r *types.Request) {
@@ -126,36 +185,70 @@ func writeJSON(w http.ResponseWriter, args ...interface{}) {
 	w.Write(buf)
 }
 
-func actionGetData(r *types.Request, q url.Values) (string, string, []uint64, []uint64, string) {
-	title := q.Get("title")
-	title = strings.TrimSpace(title)
-	title = strings.Replace(title, "//", "/", -1)
-	title = strings.TrimLeft(title, "/")
-	title = strings.TrimRight(title, "/")
+type actionData struct {
+	title, content, image string
+	imageChanged          bool
+	parentIds, hash       []uint64
+}
 
-	content := strings.TrimSpace(q.Get("content"))
-	h := buildBitmapHashes(title)
-	if len(title) < 1 ||
-		types.UTF16LenExceeds(title, r.GetTitleMaxLen()) ||
-		len(h) == 0 ||
-		types.UTF16LenExceeds(content, r.GetContentMaxLen()) {
-		return "", "", nil, nil, "INVALID_CONTENT"
-	}
-	if strings.HasPrefix(title, "ns:") && !r.User.IsRoot() {
-		return "", "", nil, nil, "MODS_REQUIRED"
+func (ad actionData) String() string {
+	return fmt.Sprintf("title: %d, content: %d, parents: %d, image: %q",
+		len(ad.title), len(ad.content), len(ad.parentIds), ad.image)
+}
+
+func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
+	q := r.Form
+
+	img, hdr, _ := r.Request.FormFile("image")
+	if img != nil {
+		ext := filepath.Ext(filepath.Base(hdr.Filename))
+		if ext == "" {
+			return ad, "INVALID_IMAGE_NAME"
+		}
+		ad.image = fmt.Sprintf("%d/%x%04x-%x%s",
+			types.Uint64Hash(id)%1024, clock.Unix(), rand.Uint32()&65535, id, ext)
+		path := "image_cache/" + ad.image
+		os.MkdirAll(filepath.Dir(path), 0777)
+		out, err := os.Create(path)
+		if err != nil {
+			logrus.Errorf("create file %s err: %v", path, err)
+			return ad, "INTERNAL_ERROR"
+		}
+		defer out.Close()
+		if _, err := io.Copy(out, img); err != nil {
+			logrus.Errorf("copy image to local %s err: %v", path, err)
+			return ad, "INTERNAL_ERROR"
+		}
+		ad.imageChanged = q.Get("image_changed") == "true"
 	}
 
-	var parentIds []uint64
+	ad.title = q.Get("title")
+	ad.title = strings.TrimSpace(ad.title)
+	ad.title = strings.Replace(ad.title, "//", "/", -1)
+	ad.title = strings.Trim(ad.title, "/")
+	ad.hash = buildBitmapHashes(ad.title)
+
+	ad.content = strings.TrimSpace(q.Get("content"))
+	if len(ad.title) < 1 ||
+		types.UTF16LenExceeds(ad.title, r.GetTitleMaxLen()) ||
+		len(ad.hash) == 0 ||
+		types.UTF16LenExceeds(ad.content, r.GetContentMaxLen()) {
+		return ad, "INVALID_CONTENT"
+	}
+	if strings.HasPrefix(ad.title, "ns:") && !r.User.IsRoot() {
+		return ad, "MODS_REQUIRED"
+	}
+
 	if pt := q.Get("parents"); pt != "" {
 		gjson.Parse(pt).ForEach(func(key, value gjson.Result) bool {
-			parentIds = append(parentIds, key.Uint())
+			ad.parentIds = append(ad.parentIds, key.Uint())
 			return true
 		})
-		if len(parentIds) > r.GetParentsMax() {
-			return "", "", nil, nil, "TOO_MANY_PARENTS"
+		if len(ad.parentIds) > r.GetParentsMax() {
+			return ad, "TOO_MANY_PARENTS"
 		}
 	}
-	return title, content, parentIds, h, ""
+	return ad, ""
 }
 
 func downloadData() {
@@ -326,6 +419,13 @@ func collectSimple(q string) ([]bitmap.Key, []bitmap.JoinMetrics) {
 	return tags, jms
 }
 
+func deleteImage(id string) {
+	if id == "" {
+		return
+	}
+	os.Remove("image_cache/" + id)
+}
+
 func imax(a, b int) int {
 	if a > b {
 		return a
@@ -339,35 +439,3 @@ func imin(a, b int) int {
 	}
 	return b
 }
-
-//go:embed static/*
-var httpStaticPages embed.FS
-
-var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
-	"formatUnixMilli": func(v int64) string {
-		return time.Unix(0, v*1e6).Format("2006-01-02 15:04:05")
-	},
-	"generatePages": func(p int, pages int) (a []int) {
-		if pages > 0 {
-			a = append(a, 1)
-			i := p - 5
-			if i < 2 {
-				i = 2
-			} else if i > 2 {
-				a = append(a, 0)
-			}
-			for ; i < pages && len(a) < 10; i++ {
-				a = append(a, i)
-			}
-			if a[len(a)-1] != pages {
-				if a[len(a)-1]+1 != pages {
-					a = append(a, 0)
-				}
-				a = append(a, pages)
-			}
-		}
-		return
-	},
-	"add":  func(a, b int) int { return a + b },
-	"uuid": func() string { return types.UUIDStr() },
-}).ParseFS(httpStaticPages, "static/*.html"))
