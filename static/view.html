@@ -9,12 +9,12 @@
     {{if .Modifier}}
     <div>
         <a href='/ns:manage?pid={{.Modifier}}'>{{.Modifier}}</a> 修改于 {{formatUnixMilli .UpdateUnix}}
-        <a class=tag-edit-button href='/ns:history?note={{.Id}}'><span class=li_calendar></span></a>
+        <a class=tag-edit-button href='/ns:history?note={{.Id}}&desc=1'><span class=li_calendar></span></a>
     </div>
     {{end}}
     {{if $.T.parents}}
     <div style='padding:0.5em 0'>
-        <b>父记事</b>
+        <b>父记事 <span class=li_clip></span></b>
         <div style='padding-left: 1em'>
             {{range $.T.parents}}
             <div><a href='/{{.EscapedTitle}}'>{{.HTMLTitle}}</a></div>
@@ -26,5 +26,6 @@
 <hr style='border:dotted 1px #ccc'>
 
 <pre style='white-space:pre-wrap;font:inherit'
->{{if .Image}}<img src="/ns:image/{{.Image}}" style='max-width:100%;max-height:400px;float:left;margin:0 1em 1em 0'>{{end}}{{.HTMLContent}}</pre>
+     >{{if .Image}}<a href="{{imageURL "image" .Image}}"><img src="{{imageURL "thumb" .Image}}"
+style='max-width:100%;max-height:400px;float:left;margin:0 1em 1em 0'></a>{{end}}{{renderClip .HTMLContent}}</pre>
 {{end}}

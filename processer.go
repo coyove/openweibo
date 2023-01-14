@@ -11,8 +11,10 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
+	"mime/multipart"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime/debug"
 	"strconv"
@@ -23,6 +25,7 @@ import (
 
 	"github.com/NYTimes/gziphandler"
 	"github.com/coyove/iis/dal"
+	"github.com/coyove/iis/limiter"
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/bitmap"
 	"github.com/coyove/sdss/contrib/clock"
@@ -64,14 +67,14 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 		}
 		return
 	},
-	"add":  func(a, b int) int { return a + b },
-	"uuid": func() string { return types.UUIDStr() },
-	"imageURL": func(a string) string {
-		if a == "" {
-			return ""
-		}
-		return "/ns:image/" + a
+	"add":      func(a, b int) int { return a + b },
+	"uuid":     func() string { return types.UUIDStr() },
+	"imageURL": imageURL,
+	"imageBox": func(a string) string {
+		return fmt.Sprintf("<div class='image-selector-container small'><a href='%s'><img data-src='%s'></a></div>",
+			imageURL("image", a), imageURL("thumb", a))
 	},
+	"renderClip": types.RenderClip,
 }).ParseFS(httpStaticPages, "static/*.html"))
 
 var serveUUID = types.UUIDStr()
@@ -102,7 +105,14 @@ func HandleAssets(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleImage(w http.ResponseWriter, r *http.Request) {
-	p := strings.TrimPrefix(r.URL.Path, "/ns:image/")
+	var p string
+	if strings.HasPrefix(r.URL.Path, "/ns:image/") {
+		p = strings.TrimPrefix(r.URL.Path, "/ns:image/")
+	} else {
+		p = strings.TrimPrefix(r.URL.Path, "/ns:thumb/")
+		ext := filepath.Ext(p)
+		p = p[:len(p)-len(ext)] + ".thumb.jpg"
+	}
 	f, err := os.Open("image_cache/" + p)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -122,6 +132,11 @@ func HandleImage(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandlePublicStatus(w http.ResponseWriter, r *types.Request) {
+	fmt.Fprintf(w, "Server started at %v\n", serverStart)
+
+	df, _ := exec.Command("df", "-h").Output()
+	fmt.Fprintf(w, "Disk:\n%s\n", df)
+
 	stats := dal.Store.DB.Stats()
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
@@ -153,11 +168,12 @@ func serve(pattern string, f func(http.ResponseWriter, *types.Request)) {
 		}()
 
 		req := &types.Request{
-			Request:    r,
-			Start:      now,
-			Config:     dal.GetJsonizedNoteCache("ns:config"),
-			RemoteIPv4: types.RemoteIPv4(r),
-			ServeUUID:  serveUUID,
+			Request:     limiter.LimitRequestSize(r, 10*1024*1024),
+			ServerStart: serverStart,
+			Start:       now,
+			Config:      dal.GetJsonizedNoteCache("ns:config"),
+			RemoteIPv4:  types.RemoteIPv4(r),
+			ServeUUID:   serveUUID,
 		}
 
 		if s, created := req.ParseSession(); created {
@@ -201,25 +217,25 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 
 	img, hdr, _ := r.Request.FormFile("image")
 	if img != nil {
+		thumb, thhdr, _ := r.Request.FormFile("thumb")
+		if thumb == nil || thhdr == nil {
+			return ad, "INVALID_IMAGE"
+		}
 		ext := filepath.Ext(filepath.Base(hdr.Filename))
 		if ext == "" {
 			return ad, "INVALID_IMAGE_NAME"
 		}
-		ad.image = fmt.Sprintf("%d/%x%04x-%x%s",
-			types.Uint64Hash(id)%1024, clock.Unix(), rand.Uint32()&65535, id, ext)
-		path := "image_cache/" + ad.image
-		os.MkdirAll(filepath.Dir(path), 0777)
-		out, err := os.Create(path)
-		if err != nil {
-			logrus.Errorf("create file %s err: %v", path, err)
-			return ad, "INTERNAL_ERROR"
-		}
-		defer out.Close()
-		if _, err := io.Copy(out, img); err != nil {
-			logrus.Errorf("copy image to local %s err: %v", path, err)
-			return ad, "INTERNAL_ERROR"
-		}
+
+		seed := int(rand.Uint32() & 65535)
 		ad.imageChanged = q.Get("image_changed") == "true"
+		ad.image, msg = saveImage(r, id, seed, ext, img, hdr)
+		if msg != "" {
+			return ad, msg
+		}
+		_, msg = saveImage(r, id, seed, ".thumb.jpg", thumb, thhdr)
+		if msg != "" {
+			return ad, msg
+		}
 	}
 
 	ad.title = q.Get("title")
@@ -438,4 +454,29 @@ func imin(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func saveImage(r *types.Request, id uint64, seed int, ext string,
+	img multipart.File, hdr *multipart.FileHeader) (string, string) {
+	fn := fmt.Sprintf("%d/%x%04x-%x%s", types.Uint64Hash(id)%1024, clock.Unix(), seed, id, ext)
+	path := "image_cache/" + fn
+	os.MkdirAll(filepath.Dir(path), 0777)
+	out, err := os.Create(path)
+	if err != nil {
+		logrus.Errorf("create image %s err: %v", path, err)
+		return "", "INTERNAL_ERROR"
+	}
+	defer out.Close()
+	if _, err := io.Copy(out, img); err != nil {
+		logrus.Errorf("copy image to local %s err: %v", path, err)
+		return "", "INTERNAL_ERROR"
+	}
+	return fn, ""
+}
+
+func imageURL(p, a string) string {
+	if a == "" {
+		return ""
+	}
+	return "/ns:" + p + "/" + a
 }

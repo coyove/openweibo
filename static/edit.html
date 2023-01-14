@@ -55,7 +55,7 @@
             <td class=small>图片</td>
             <td>
                 <div class=display>
-                    <input id="image" type=file class='image-selector' {{if .PendingReview}}title='现图片'{{end}}>
+                    <input id="image" type=file class='image-selector' {{if .PendingReview}}title='现图片'{{end}} accept="image/*">
                     <input readonly id="review-image" type=file class='image-selector' style='display:none' title='新图片'>
                 </div>
             </td>
@@ -150,11 +150,11 @@
                 $('#update').show();
             });
             $('#title').val($('#title{{.Id}}').text());
-            $('#image').imageSelector("{{imageURL .Image}}");
+            $('#image').imageSelector("{{imageURL "thumb" .Image}}");
             $('#content').linedtextarea();
             {{if .PendingReview}}
             {{if ne .Image .ReviewImage}}
-            $('#review-image').imageSelector("{{imageURL .ReviewImage}}");
+            $('#review-image').imageSelector("{{imageURL "thumb" .ReviewImage}}");
             {{end}}
             $('#review-content').linedtextarea();
             const diff = JsDiff.diffLines($('#content').val(), $('#review-content').val());
@@ -187,6 +187,7 @@
                     'title': $("#title").val(),
                     'content': $("#content").val(),
                     'image': $('#image').get(0).files[0],
+                    'thumb': $('#image').get(0).thumb,
                     'image_changed': $('#image').attr('changed'),
                     'parents': JSON.stringify(window.ps.getTags()),
                 });

@@ -39,6 +39,7 @@
                         {{$title := .T.note.QueryTitle}}
                         <a class='tag-edit-button li_paperplane' href='/ns:new?pt={{.T.note.Id}},{{$title}}&title=Re:%20{{$title}}%20{{add .T.total 1}}'></a>
                         {{end}}
+                        <a class='tag-edit-button li_photo' onclick='switchImageDisplay(this)' id=show-pic></a>
                         <a class='tag-edit-button icon-sort-name-up {{if and (eq .T.sort 1) (not .T.desc)}}selected{{end}}' href='?sort=1&pid={{.T.pid}}'></a>
                         <a class='tag-edit-button icon-sort-name-down {{if and (eq .T.sort 1) (.T.desc)}}selected{{end}}' href='?sort=1&desc=1&pid={{.T.pid}}'></a>
                         <a class='tag-edit-button icon-sort-number-up {{if and (eq .T.sort 0) (not .T.desc)}}selected{{end}}' href='?sort=0&pid={{.T.pid}}'></a>
@@ -53,6 +54,7 @@
         <tr id='tag{{.Id}}'>
             <td tag-id={{.Id}} class='tag-edit'>
                 <div class=display >
+                    {{if .Image}}{{imageBox .Image}}{{end}}
                     <a href='/{{.EscapedTitle}}' class=tag-edit-name>{{.HTMLTitleDisplay}}</a>
                     {{if .Lock}}<div class='tag-edit-button li_lock' disabled></div>{{end}}
                     {{if .PendingReview}}<div class='tag-edit-button li_stack' disabled title='审核中'></div>{{end}}

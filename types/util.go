@@ -1,11 +1,16 @@
 package types
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
+	"fmt"
 	"net"
 	"net/http"
+	"net/url"
+	"reflect"
+	"regexp"
 	"strings"
 	"unicode/utf8"
 )
@@ -106,4 +111,87 @@ func RemoteIPv4(r *http.Request) net.IP {
 		return p.To4()
 	}
 	return net.IP{0, 0, 0, 0}
+}
+
+func Uint64Hash(v uint64) uint64 {
+	const offset64 = 14695981039346656037
+	const prime64 = 1099511628211
+	var h uint64 = offset64
+	for i := 0; i < 64; i += 8 {
+		h *= prime64
+		h ^= v >> i
+	}
+	return h
+}
+
+func SafeHTML(v string) string {
+	buf := &bytes.Buffer{}
+	for i := 0; i < len(v); i++ {
+		switch v[i] {
+		case '&':
+			buf.WriteString("&amp;")
+		case '<':
+			buf.WriteString("&lt;")
+		case '>':
+			buf.WriteString("&gt;")
+		default:
+			buf.WriteByte(v[i])
+		}
+	}
+	return buf.String()
+}
+
+var regClip = regexp.MustCompile(`(https?://[^\s]+)`)
+
+func unq(v string) string {
+	x, err := url.QueryUnescape(v)
+	if err != nil {
+		return v
+	}
+	return x
+}
+
+func RenderClip(v string) string {
+	return regClip.ReplaceAllStringFunc(v, func(in string) string {
+		prefix := "http://"
+		if strings.HasPrefix(in, "https://") {
+			prefix = "https://"
+		}
+		switch rest := in[len(prefix):]; {
+		case strings.HasPrefix(rest, "text:"):
+			return unq(rest[5:])
+		case strings.HasPrefix(rest, "section:"):
+			return "<h2 style='display:inline'>" + unq(rest[8:]) + "</h2>"
+		case strings.HasPrefix(rest, "u:") || strings.HasPrefix(rest, "i:") || strings.HasPrefix(rest, "b:"):
+			return fmt.Sprintf("<%c>%s</%c>", rest[0], unq(rest[2:]), rest[0])
+		case strings.HasPrefix(rest, "hl:"):
+			return "<b class=highlight>" + unq(rest[3:]) + "</b>"
+		case strings.HasPrefix(rest, "title:"):
+			if idx := strings.IndexByte(rest, '/'); idx >= 0 {
+				title := unq(rest[6:idx])
+				return "<a href='" + prefix + rest[idx+1:] + "'>" + title + "</a>"
+			}
+		case strings.HasPrefix(rest, "img:"):
+			if idx := strings.IndexByte(rest, '/'); idx >= 0 {
+				tag := reflect.StructTag(unq(rest[4:idx]))
+				var width, height int
+				fmt.Sscanf(tag.Get("size"), "%dx%d", &width, &height)
+				if height <= 0 {
+					height = 200
+				}
+				if width <= 0 {
+					width = 200
+				}
+				url := prefix + rest[idx+1:]
+				a := tag.Get("href")
+				if a == "" {
+					a = url
+				}
+				return fmt.Sprintf("<a href='%s' target=_blank>"+
+					"<img src='%s' style='max-width:%dpx;width:100%%;max-height:%dpx;height:100%%;display:block'>"+
+					"</a>", a, url, width, height)
+			}
+		}
+		return "<a href='" + in + "'>" + in + "</a>"
+	})
 }

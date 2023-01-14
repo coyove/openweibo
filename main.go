@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/types"
+	"github.com/coyove/sdss/contrib/clock"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -20,10 +22,14 @@ var (
 	debugRebuild = flag.Int("debug-rebuild", 0, "")
 	compactDB    = flag.Bool("compact", false, "")
 	listen       = flag.String("l", ":8888", "")
+	serverStart  time.Time
 )
 
 func main() {
 	flag.Parse()
+	rand.Seed(clock.Unix())
+	serverStart = clock.Now()
+
 	logrus.SetFormatter(&LogFormatter{})
 	logrus.SetOutput(io.MultiWriter(os.Stdout, &lumberjack.Logger{
 		Filename:   "bitmap_cache/ns.log",
@@ -89,6 +95,7 @@ func main() {
 
 	http.HandleFunc("/ns:static/", HandleAssets)
 	http.HandleFunc("/ns:image/", HandleImage)
+	http.HandleFunc("/ns:thumb/", HandleImage)
 
 	logrus.Infof("start serving %s, pid=%d, ServeUUID=%s", *listen, os.Getpid(), serveUUID)
 

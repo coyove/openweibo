@@ -56,8 +56,9 @@ func LoadConfig(path string) {
 
 type Request struct {
 	*http.Request
-	Start time.Time
-	T     map[string]interface{}
+	Start       time.Time
+	ServerStart time.Time
+	T           map[string]interface{}
 
 	paging struct {
 		built    bool

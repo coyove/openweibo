@@ -145,31 +145,3 @@ func UnmarshalTagRecordBinary(p []byte) *NoteRecord {
 	proto.Unmarshal(p, t)
 	return t
 }
-
-func Uint64Hash(v uint64) uint64 {
-	const offset64 = 14695981039346656037
-	const prime64 = 1099511628211
-	var h uint64 = offset64
-	for i := 0; i < 64; i += 8 {
-		h *= prime64
-		h ^= v >> i
-	}
-	return h
-}
-
-func SafeHTML(v string) string {
-	buf := &bytes.Buffer{}
-	for i := 0; i < len(v); i++ {
-		switch v[i] {
-		case '&':
-			buf.WriteString("&amp;")
-		case '<':
-			buf.WriteString("&lt;")
-		case '>':
-			buf.WriteString("&gt;")
-		default:
-			buf.WriteByte(v[i])
-		}
-	}
-	return buf.String()
-}

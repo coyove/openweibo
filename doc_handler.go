@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/coyove/iis/dal"
+	"github.com/coyove/iis/limiter"
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/bitmap"
 	"github.com/coyove/sdss/contrib/clock"
@@ -25,7 +26,15 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 		return
 	}
 
-	r.ParseMultipartForm(10 * 1024 * 1024)
+	if err := r.ParseMultipartForm(10 * 1024 * 1024); err != nil {
+		if err == limiter.ErrRequestTooLarge {
+			writeJSON(w, "success", false, "code", "CONTENT_TOO_LARGE")
+		} else {
+			logrus.Errorf("failed to parse multipart: %v", err)
+			writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
+		}
+		return
+	}
 	action := r.Form.Get("action")
 
 	var target *types.Note

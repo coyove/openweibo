@@ -88,8 +88,36 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
         this.hide();
         this.change(function() {
             const file = that.get(0).files[0];
-            div.find('img').get(0).src = file ? URL.createObjectURL(file) : '';
-            that.attr('changed', 'true');
+            if (!file) {
+                div.find('img').get(0).src = '';
+                that.attr('changed', '');
+                return;
+            }
+            const reader = new FileReader();
+            const size = 300;
+            reader.onload = function (e) {
+                var img = document.createElement("img");
+                img.onload = function (event) {
+                    const canvas = document.createElement("canvas");
+                    const ctx = canvas.getContext("2d");
+                    if (img.width > img.height) {
+                        var w = size, h = size / img.width * img.height;
+                    } else {
+                        var h = size, w = size / img.height * img.width;
+                    }
+                    canvas.width = w;
+                    canvas.height = h;
+                    ctx.drawImage(img, 0, 0, w, h);
+                    canvas.toBlob(function(blob)  {
+                        const thumb = new File([blob], "thumb.jpg", { type: "image/jpeg" })
+                        div.find('img').get(0).src = URL.createObjectURL(file);
+                        that.attr('changed', 'true');
+                        that.get(0).thumb = thumb;
+                    }, 'image/jpeg');
+                }
+                img.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
         });
         img && (div.find('img').get(0).src = img);
         return this;
@@ -162,6 +190,8 @@ function ajaxBtn(el, path, args, f) {
 "ILLEGAL_APPROVE": "无权审核",
 "INVALID_ACTION": "请求错误",
 "INVALID_IMAGE_NAME": "无效图片名",
+"INVALID_IMAGE": "无效图片",
+"CONTENT_TOO_LARGE": "图片过大",
                 })[data.code];
                 alert('发生错误: ' + i18n + ' (' + data.code + ')');
                 return;
@@ -368,6 +398,20 @@ function wrapTagSearchInput(container) {
     container.wrapped = true;
 }
 
+function switchImageDisplay(btn, s) {
+    if (!btn) return;
+    if (s !== true && s!== false) {
+        s = !(window.localStorage.getItem('show-pic') == 'true');
+        window.localStorage.setItem('show-pic', s);
+    }
+    $('.image-selector-container.small img').each(function(_, el) {
+        s ?
+            $(el).attr('src', $(el).attr('data-src')).parent().parent().show() :
+            $(el).attr('src', '').parent().parent().hide();
+    });
+    s ? $(btn).addClass('selected') : $(btn).removeClass('selected')
+}
+
 window.onload = function() {
     $('.tag-search-input-container').each(function(_, container) { wrapTagSearchInput(container) });
     
@@ -460,4 +504,6 @@ window.onload = function() {
         $(div).hide();
         document.body.appendChild(div);
     }
+
+    switchImageDisplay($('#show-pic'), window.localStorage.getItem('show-pic') == 'true');
 }
