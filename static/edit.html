@@ -20,7 +20,7 @@
             <td class=small>待审核</td>
             <td>
                 <div class=display>
-                    <div style='flex-grow:1'>{{.ReviewTitle}}</div>
+                    <div style='flex-grow:1'>{{.HTMLReviewTitle}}</div>
                     {{if not $.T.readonly}}
                     <div class='tag-box button' onclick='ajaxBtn(this,"/ns:action",{"action":"approve","id":{{.Id}}})'><span>通过</span></div>
                     <div class='tag-box button' onclick='ajaxBtn(this,"/ns:action",{"action":"reject","id":{{.Id}}})'><span>驳回</span></div>

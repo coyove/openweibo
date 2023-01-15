@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
+	"unicode/utf8"
 
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/clock"
@@ -220,7 +221,9 @@ func titleOrRandomForSort(v string) []byte {
 	x := []byte(v)
 	if len(x) == 0 {
 		x = append(x, 0, 0, 0, 0, 0, 0, 0, 0)
-		binary.BigEndian.PutUint64(x, rand.Uint64())
+		n := utf8.EncodeRune(x, rune(rand.Uint32()&0xffff))
+		x = append(x[:n], 0, 0, 0, 0, 0, 0, 0, 0)
+		binary.BigEndian.PutUint64(x[len(x)-8:], rand.Uint64())
 	}
 	return x
 }

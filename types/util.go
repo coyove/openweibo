@@ -11,6 +11,8 @@ import (
 	"net/url"
 	"reflect"
 	"regexp"
+	"sort"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -54,6 +56,20 @@ func DedupUint64(v []uint64) []uint64 {
 		m[v[i]] = true
 	}
 	return v
+}
+
+func EqualUint64s(a, b []uint64) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	sort.Slice(a, func(i, j int) bool { return a[i] < a[j] })
+	sort.Slice(b, func(i, j int) bool { return b[i] < b[j] })
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 func UTF16Trunc(v string, max int) string {
@@ -141,6 +157,16 @@ func SafeHTML(v string) string {
 	return buf.String()
 }
 
+func SplitUint64List(v string) (ids []uint64) {
+	for _, p := range strings.Split(v, ",") {
+		id, _ := strconv.ParseUint(p, 10, 64)
+		if id > 0 {
+			ids = append(ids, (id))
+		}
+	}
+	return
+}
+
 var regClip = regexp.MustCompile(`(https?://[^\s]+)`)
 
 func unq(v string) string {
@@ -169,7 +195,11 @@ func RenderClip(v string) string {
 		case strings.HasPrefix(rest, "title:"):
 			if idx := strings.IndexByte(rest, '/'); idx >= 0 {
 				title := unq(rest[6:idx])
-				return "<a href='" + prefix + rest[idx+1:] + "'>" + title + "</a>"
+				url := rest[idx+1:]
+				if strings.HasPrefix(url, "rel:") {
+					return "<a href='" + url[4:] + "'>" + title + "</a>"
+				}
+				return "<a href='" + prefix + url + "'>" + title + "</a>"
 			}
 		case strings.HasPrefix(rest, "img:"):
 			if idx := strings.IndexByte(rest, '/'); idx >= 0 {

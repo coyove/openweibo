@@ -43,11 +43,32 @@ func (t *Note) JoinParentIds() string {
 	return strings.Join(tmp, ",")
 }
 
+func (t *Note) ContainsParents(ids []uint64) bool {
+	s := 0
+	for _, id := range ids {
+		for _, p := range t.ParentIds {
+			if p == id {
+				s++
+				break
+			}
+		}
+	}
+	return s > 0 && s == len(ids)
+}
+
 func (t *Note) EscapedTitle() string {
 	if t.Title == "" {
 		return "ns:id:" + strconv.FormatUint(t.Id, 10)
 	}
-	return url.PathEscape(t.Title)
+	buf := &bytes.Buffer{}
+	const hex = "0123456789abcdef"
+	for i := 0; i < len(t.Title); i++ {
+		x := t.Title[i]
+		buf.WriteByte('%')
+		buf.WriteByte(hex[x>>4])
+		buf.WriteByte(hex[x&0xf])
+	}
+	return buf.String()
 }
 
 func (t *Note) QueryTitle() string {
@@ -58,6 +79,8 @@ func (t *Note) QueryTitle() string {
 }
 
 func (t *Note) HTMLTitle() string { return SafeHTML(t.Title) }
+
+func (t *Note) HTMLReviewTitle() string { return SafeHTML(t.ReviewTitle) }
 
 func (t *Note) HTMLContent() string { return SafeHTML(t.Content) }
 

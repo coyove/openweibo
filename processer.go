@@ -17,6 +17,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime/debug"
+	"sort"
 	"strconv"
 	"strings"
 	"text/template"
@@ -46,6 +47,14 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 	"formatUnixMilli": func(v int64) string {
 		return time.Unix(0, v*1e6).Format("2006-01-02 15:04:05")
 	},
+	"formatUnixMilliBR": func(v int64) string {
+		t := time.Unix(0, v*1e6).Format("15:04:05")
+		d := (clock.UnixMilli() - v) / 1e3 / 86400
+		if d < 1 {
+			return t
+		}
+		return "<b>" + strconv.Itoa(int(d)) + "</b>d&emsp;" + t
+	},
 	"generatePages": func(p int, pages int) (a []int) {
 		if pages > 0 {
 			a = append(a, 1)
@@ -72,10 +81,11 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 	"imageURL": imageURL,
 	"imageBox": func(a string) string {
 		if a == "" {
-			return "<div class='li_news' style='margin-right: 0.5em'></div>"
+			return "" //"<div class='icon-doc-text-inv' style='margin-right: 0.5em'></div>"
 		}
-		return fmt.Sprintf("<div class='image-selector-container small'><a href='%s'><img src='%s'></a></div>",
-			imageURL("image", a), imageURL("thumb", a))
+		return fmt.Sprintf("<div class='image-selector-container small'>"+
+			"<a href='javascript:openImage(\"%s\")'><img class=image src='%s' data-src='%s'></a></div>",
+			imageURL("image", a), imageURL("thumb", a), imageURL("image", a))
 	},
 	"renderClip": types.RenderClip,
 }).ParseFS(httpStaticPages, "static/*.html"))
@@ -84,10 +94,10 @@ var serveUUID = types.UUIDStr()
 
 func HandleIndex(w http.ResponseWriter, r *types.Request) {
 	if r.URL.Path == "/" {
-		httpTemplates.ExecuteTemplate(w, "index.html", r)
-		return
+		HandleView("ns:welcome", w, r)
+	} else {
+		HandleView(strings.TrimPrefix(r.URL.Path, "/"), w, r)
 	}
-	HandleView(w, r)
 }
 
 func HandleAssets(w http.ResponseWriter, r *http.Request) {
@@ -245,7 +255,6 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 	ad.title = strings.TrimSpace(ad.title)
 	ad.title = strings.Replace(ad.title, "//", "/", -1)
 	ad.title = strings.Trim(ad.title, "/")
-	ad.hash = buildBitmapHashes(ad.title)
 
 	if strings.HasPrefix(ad.title, "ns:") && !r.User.IsRoot() {
 		return ad, "MODS_REQUIRED"
@@ -261,7 +270,8 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 		}
 	}
 
-	if len(ad.hash) == 0 && len(ad.parentIds) == 0 {
+	ad.hash = buildBitmapHashes(ad.title, ad.parentIds)
+	if len(ad.hash) == 0 {
 		return ad, "EMPTY_TITLE"
 	}
 
@@ -358,7 +368,7 @@ func rebuildData(count int) {
 			break
 		}
 		line = strings.TrimSpace(line)
-		h := buildBitmapHashes(line)
+		h := buildBitmapHashes(line, nil)
 		if len(h) == 0 {
 			continue
 		}
@@ -409,15 +419,19 @@ func rebuildData(count int) {
 	}
 }
 
-func buildBitmapHashes(line string) []uint64 {
+func buildBitmapHashes(line string, parentIds []uint64) []uint64 {
 	m := ngram.SplitMore(line)
 	for k, v := range ngram.Split(line) {
 		m[k] = v
 	}
-	return m.Hashes()
+	tmp := m.Hashes()
+	for _, id := range parentIds {
+		tmp = append(tmp, types.Uint64Hash(id))
+	}
+	return tmp
 }
 
-func collectSimple(q string) ([]bitmap.Key, []bitmap.JoinMetrics) {
+func collectSimple(q string, parentIds []uint64) ([]bitmap.Key, []bitmap.JoinMetrics) {
 	h := ngram.SplitMore(q).Hashes()
 
 	var h2 []uint64
@@ -430,6 +444,9 @@ func collectSimple(q string) ([]bitmap.Key, []bitmap.JoinMetrics) {
 	}
 	if !allLetter {
 		h2 = ngram.Split(q).Hashes()
+	}
+	for _, id := range parentIds {
+		h = append(h, types.Uint64Hash(id))
 	}
 
 	if len(h) == 0 {
@@ -493,4 +510,43 @@ func imageURL(p, a string) string {
 func isClockId(v string) bool {
 	_, ok := clock.ParseIdStrUnix(v)
 	return ok
+}
+
+func doubleCheckFilterResults(q string, pids []uint64, notes []*types.Note, f func(*types.Note) bool) {
+	h := ngram.SplitMore(q)
+	for _, note := range notes {
+		if len(h) == 0 || ngram.SplitMore(note.Title).Contains(h) || note.ContainsParents(pids) {
+			if !f(note) {
+				break
+			}
+		}
+	}
+}
+
+func sortNotes(notes []*types.Note, st int, desc bool) []*types.Note {
+	switch st {
+	case 1:
+		if desc {
+			sort.Slice(notes, func(i, j int) bool {
+				if len(notes[i].Title) == len(notes[j].Title) {
+					return notes[i].Title > notes[j].Title
+				}
+				return len(notes[i].Title) > len(notes[j].Title)
+			})
+		} else {
+			sort.Slice(notes, func(i, j int) bool {
+				if len(notes[i].Title) == len(notes[j].Title) {
+					return notes[i].Title < notes[j].Title
+				}
+				return len(notes[i].Title) < len(notes[j].Title)
+			})
+		}
+	default:
+		if desc {
+			sort.Slice(notes, func(i, j int) bool { return notes[i].UpdateUnix > notes[j].UpdateUnix })
+		} else {
+			sort.Slice(notes, func(i, j int) bool { return notes[i].UpdateUnix < notes[j].UpdateUnix })
+		}
+	}
+	return notes
 }

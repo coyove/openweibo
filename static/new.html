@@ -5,7 +5,8 @@
         <td class=small>标题</td>
         <td>
             <div class=display>
-                <input id=name maxlength={{.GetTitleMaxLen}} class='tag-edit-name tag-search-input-oneline' placeholder='{{.GetTitleMaxLen}}字符' />
+                <input id=name maxlength={{.GetTitleMaxLen}} class='tag-edit-name' placeholder='{{.GetTitleMaxLen}}字符' />
+                <div id=dup style='display:none'><b>重名</b><a class='tag-edit-button icon-eye' style='margin-left:0.5em'></a></div>
                 <div id=submit class='tag-box button'><span>创建</span></div>
             </div>
         </td>
@@ -27,14 +28,15 @@
         </td>
     </tr>
     <tr>
-        <td class=small></td><td><div class=display style='font-size:90%'>标题为空时，请选择至少一个父记事。</div></td>
+        <td class=small></td>
+        <td><div class=display style='font-size:90%'>关于高级语法，请阅读该篇<a href='/ns:edit_syntax'>记事</a>。</div></td>
     </tr>
     <tr>
         <td class=small>父记事</td>
         <td><div class=display id=parents></div></td>
     </tr>
     <tr>
-        <td class=small></td><td><div class=display style='font-size:90%'></div></td>
+        <td class=small></td><td><div class=display style='font-size:90%'>标题为空时，请选择至少一个父记事。</div></td>
     </tr>
 </table>
 
@@ -68,6 +70,32 @@
             const pTitle = pre ? pre.substr(pre.indexOf(',') + 1) : '';
 
             $('#parents').append(ps);
+
+            function checkTitle() {
+                function reset() {
+                    $('#submit').show();
+                    $('#dup').hide().closest('tr').css('background', '');
+                }
+                const that = this, last = this.last || '', input = $('#name').val();
+                if (!input) reset();
+                if (input && input != last) {
+                    $.get('/ns:search?n=1&title=' + encodeURIComponent(input), function(data) {
+                        if (data.notes.length > 0 && $('#name').val() == input) {
+                            $('#submit').hide();
+                            $('#dup').show().find('a').attr('href', '/' + encodeURIComponent(input)).closest('tr').css('background', '#fce4ec')
+                        } else {
+                            reset();
+                        }
+                    }).always(function() {
+                        that.last = input;
+                        setTimeout(checkTitle, 200);
+                    })
+                } else {
+                    this.last = input;
+                    setTimeout(checkTitle, 200);
+                }
+            }
+            checkTitle();
         </script>
 
 {{template "footer.html" .}}

@@ -15,7 +15,6 @@ import (
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/bitmap"
 	"github.com/coyove/sdss/contrib/clock"
-	"github.com/coyove/sdss/contrib/ngram"
 	"github.com/sirupsen/logrus"
 	"go.etcd.io/bbolt"
 )
@@ -177,14 +176,16 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 			}
 		}
 		dal.ProcessTagParentChanges(tx, target, target.ParentIds, ad.parentIds)
-		target.ParentIds = ad.parentIds
 		if target.Creator == "bulk" {
 			target.Creator = r.UserDisplay
 		}
 		if r.User.IsMod() || r.UserDisplay == target.Creator {
-			shouldIndex = ad.title != target.Title && len(ad.hash) > 0
+			if len(ad.hash) > 0 {
+				shouldIndex = ad.title != target.Title || !types.EqualUint64s(ad.parentIds, target.ParentIds)
+			}
 			target.Title = ad.title
 			target.Content = ad.content
+			target.ParentIds = ad.parentIds
 			if ad.imageChanged {
 				target.Image = ad.image
 			}
@@ -193,6 +194,7 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 			target.PendingReview = true
 			target.ReviewTitle = ad.title
 			target.ReviewContent = ad.content
+			target.ParentIds = ad.parentIds
 			if ad.imageChanged {
 				target.ReviewImage = ad.image
 			} else {
@@ -236,7 +238,6 @@ func doApprove(target *types.Note, w http.ResponseWriter, r *types.Request) bool
 		return false
 	}
 
-	shouldIndex := target.Title != target.ReviewTitle
 	target.Title = target.ReviewTitle
 	target.Content = target.ReviewContent
 	target.Image = target.ReviewImage
@@ -245,10 +246,12 @@ func doApprove(target *types.Note, w http.ResponseWriter, r *types.Request) bool
 
 	var exist bool
 	if err := dal.Store.Update(func(tx *bbolt.Tx) error {
-		if key, found := dal.KSVFirstKeyOfSort1(tx, dal.NoteBK, []byte(target.Title)); found {
-			if !bytes.Equal(key, idKey[:]) {
-				exist = true
-				return nil
+		if target.Title != "" {
+			if key, found := dal.KSVFirstKeyOfSort1(tx, dal.NoteBK, []byte(target.Title)); found {
+				if !bytes.Equal(key, idKey[:]) {
+					exist = true
+					return nil
+				}
 			}
 		}
 		dal.UpdateCreator(tx, target)
@@ -262,10 +265,8 @@ func doApprove(target *types.Note, w http.ResponseWriter, r *types.Request) bool
 		writeJSON(w, "success", false, "code", "DUPLICATED_TITLE")
 		return false
 	}
-	if shouldIndex {
-		if h := buildBitmapHashes(target.Title); len(h) > 0 {
-			dal.Store.Saver().AddAsync(bitmap.Uint64Key(target.Id), h)
-		}
+	if h := buildBitmapHashes(target.Title, target.ParentIds); len(h) > 0 {
+		dal.Store.Saver().AddAsync(bitmap.Uint64Key(target.Id), h)
 	}
 	return true
 }
@@ -304,18 +305,22 @@ func HandleManage(w http.ResponseWriter, r *types.Request) {
 	}
 
 	var notes []*types.Note
+	var pids []uint64
 	var total, pages int
 	if q != "" {
-		st, desc = -1, false
-		ids, _ := collectSimple(q)
+		pids = types.SplitUint64List(r.URL.Query().Get("pids"))
+		ids, _ := collectSimple(q, pids)
 		var tmp []uint64
 		for _, id := range ids {
 			tmp = append(tmp, id.LowUint64())
 		}
-		notes, _ = dal.BatchGetNotes(tmp)
-		total = len(notes)
-		sort.Slice(notes, func(i, j int) bool { return len(notes[i].Title) < len(notes[j].Title) })
-		notes = notes[:imin(500, len(notes))]
+		res, _ := dal.BatchGetNotes(tmp)
+		total = len(res)
+		res = sortNotes(res, st, desc)
+		doubleCheckFilterResults(q, pids, res, func(t *types.Note) bool {
+			notes = append(notes, t)
+			return len(notes) < 500
+		})
 	} else {
 		var results []dal.KeySortValue
 		if pidStr == "" {
@@ -332,6 +337,7 @@ func HandleManage(w http.ResponseWriter, r *types.Request) {
 
 	r.AddTemplateValue("query", q)
 	r.AddTemplateValue("pid", pidStr)
+	r.AddTemplateValue("pids", pids)
 	r.AddTemplateValue("tags", notes)
 	r.AddTemplateValue("total", total)
 	r.AddTemplateValue("pages", pages)
@@ -396,28 +402,31 @@ func HandleHistory(w http.ResponseWriter, r *types.Request) {
 }
 
 func HandleTagSearch(w http.ResponseWriter, r *types.Request) {
-	start := time.Now()
-	q := types.UTF16Trunc(r.URL.Query().Get("q"), 50)
-	n, _ := strconv.Atoi(r.URL.Query().Get("n"))
+	start, uq := time.Now(), r.URL.Query()
+	q := types.UTF16Trunc(uq.Get("q"), 50)
+	n, _ := strconv.Atoi(uq.Get("n"))
 	if n == 0 {
 		n = 100
 	}
 	n = imin(100, n)
 	n = imax(1, n)
 
-	var ids []uint64
+	var ids, parentIds []uint64
 	var jms []bitmap.JoinMetrics
 
-	if tagIDs := r.URL.Query().Get("ids"); tagIDs != "" {
-		for _, p := range strings.Split(tagIDs, ",") {
-			id, _ := strconv.ParseUint(p, 10, 64)
-			ids = append(ids, (id))
+	if noteIDs := uq.Get("ids"); noteIDs != "" {
+		ids = types.SplitUint64List(noteIDs)
+	} else if name := uq.Get("title"); name != "" {
+		note, _ := dal.GetNoteByName(name)
+		if note.Valid() {
+			ids = append(ids, note.Id)
 		}
 	} else {
+		parentIds = types.SplitUint64List(uq.Get("pids"))
 		var tmp []bitmap.Key
-		tmp, jms = collectSimple(q)
+		tmp, jms = collectSimple(q, parentIds)
 		for _, id := range tmp {
-			ids = append(ids, (id.LowUint64()))
+			ids = append(ids, id.LowUint64())
 		}
 	}
 
@@ -425,19 +434,14 @@ func HandleTagSearch(w http.ResponseWriter, r *types.Request) {
 	sort.Slice(tags, func(i, j int) bool { return len(tags[i].Title) < len(tags[j].Title) })
 
 	results := []interface{}{}
-	h := ngram.SplitMore(q)
-	for i, tag := range tags {
-		if i >= n {
-			break
+	doubleCheckFilterResults(q, parentIds, tags, func(t *types.Note) bool {
+		tt := t.Title
+		if tt == "" {
+			tt = "ns:id:" + strconv.FormatUint(t.Id, 10)
 		}
-		if len(h) == 0 || ngram.SplitMore(tag.Title).Contains(h) {
-			tt := tag.Title
-			if tt == "" {
-				tt = "ns:id:" + strconv.FormatUint(tag.Id, 10)
-			}
-			results = append(results, [3]interface{}{tag.Id, tt, tag.ParentIds})
-		}
-	}
+		results = append(results, [3]interface{}{t.Id, tt, t.ParentIds})
+		return len(results) < n
+	})
 	diff := time.Since(start)
 	writeJSON(w,
 		"success", true,
@@ -480,8 +484,7 @@ func HandleEdit(w http.ResponseWriter, r *types.Request) {
 	httpTemplates.ExecuteTemplate(w, "edit.html", r)
 }
 
-func HandleView(w http.ResponseWriter, r *types.Request) {
-	t := strings.TrimPrefix(r.URL.Path, "/")
+func HandleView(t string, w http.ResponseWriter, r *types.Request) {
 	var note *types.Note
 	if strings.HasPrefix(t, "ns:id:") {
 		id, _ := strconv.ParseUint(t[6:], 10, 64)

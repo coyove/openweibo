@@ -6,44 +6,52 @@
     {{end}}
 {{else}}
     <title>记事管理</title>
-    <div style='display:flex;align-items:center'>
-        <input id=search class='tag-search-input-oneline border1' style='flex-grow:1;margin-right:1em' open-tag='true'>
-        <div class='tag-box button' onclick='location.href="?q="+encodeURIComponent($("#search").val())'><a>搜索</a></div>
-    </div>
 {{end}}
+
+<div id='search-bar' style='display:none'>
+    <input id=search class='border1' style='width:100%' placeholder='搜索{{if .T.view}}子记事{{end}}'>
+    <script>
+        $('#search').on('keyup', function(ev) {
+            if (ev.keyCode == 13)
+                location.href="/ns:manage?pids={{if .T.view}}{{.T.note.Id}}{{end}}&q="+encodeURIComponent($("#search").val())
+        })
+    </script>
+</div>
 
 <div>
     <table id=list>
         <tr class=title>
             <td colspan=2>
                 <div class=display>
-        {{if .T.query}}
-                    <span>搜索：<b>{{.T.query}}</b> ({{.T.total}})</span>
-        {{else}}
+        
                     <span style='flex-grow:1'>
+                    {{if .T.query}}
+                        <span>搜索{{if.T.pids}}子记事{{end}}：<b>{{.T.query}}</b> ({{.T.total}})</span>
+                    {{else}}
                     {{if .T.pid}}
                         <b>{{.T.pid}}</b> 
                         <a class=tag-edit-button href='/ns:history?user={{.T.pid}}&desc=1'><span class=li_vynil></span></a>
-                  选择一篇    创建的记事 ({{.T.total}})
+                        创建的记事 ({{.T.total}})
                     {{else}}
                         {{if .T.view}}
-                        {{if ne .T.page 1}}<b>{{.T.note.HTMLTitleDisplay}} </b>{{end}}子记事
+                            {{if ne .T.page 1}}<b>{{.T.note.HTMLTitleDisplay}} </b>{{end}}子记事
                         {{else}}
-                        全部记事
+                            全部记事
                         {{end}} ({{.T.total}})
+                    {{end}}
                     {{end}}
                     </span>
 
                     <div>
+                        <a class='tag-edit-button icon-search' href='javascript:$("#search-bar").toggle()'></a>
                         {{if .T.view}}
-                        <a class='tag-edit-button li_paperplane' href='/ns:new?pt={{.T.note.Id}},{{.T.note.QueryTitle}}'></a>
+                        <a class='tag-edit-button icon-paper-plane' href='/ns:new?pt={{.T.note.Id}},{{.T.note.QueryTitle}}'></a>
                         {{end}}
-                        <a class='tag-edit-button icon-sort-name-up {{if and (eq .T.sort 1) (not .T.desc)}}selected{{end}}' href='?sort=1&pid={{.T.pid}}'></a>
-                        <a class='tag-edit-button icon-sort-name-down {{if and (eq .T.sort 1) (.T.desc)}}selected{{end}}' href='?sort=1&desc=1&pid={{.T.pid}}'></a>
-                        <a class='tag-edit-button icon-sort-number-up {{if and (eq .T.sort 0) (not .T.desc)}}selected{{end}}' href='?sort=0&pid={{.T.pid}}'></a>
-                        <a class='tag-edit-button icon-sort-number-down {{if and (eq .T.sort 0) (.T.desc)}}selected{{end}}' href='?sort=0&desc=1&pid={{.T.pid}}'></a>
+                        <a class='tag-edit-button icon-sort-name-up {{if and (eq .T.sort 1) (not .T.desc)}}selected{{end}}' href='?sort=1&pid={{.T.pid}}&q={{.T.query}}'></a>
+                        <a class='tag-edit-button icon-sort-name-down {{if and (eq .T.sort 1) (.T.desc)}}selected{{end}}' href='?sort=1&desc=1&pid={{.T.pid}}&q={{.T.query}}'></a>
+                        <a class='tag-edit-button icon-sort-number-up {{if and (eq .T.sort 0) (not .T.desc)}}selected{{end}}' href='?sort=0&pid={{.T.pid}}&q={{.T.query}}'></a>
+                        <a class='tag-edit-button icon-sort-number-down {{if and (eq .T.sort 0) (.T.desc)}}selected{{end}}' href='?sort=0&desc=1&pid={{.T.pid}}&q={{.T.query}}'></a>
                     </div>
-        {{end}}
                 </div>
             </td>
         </tr>
@@ -59,7 +67,7 @@
                     <a class='tag-edit-button li_pen' href='/ns:edit?id={{.Id}}'></a>
                 </div>
             </td>
-            <td class='small'>{{formatUnixMilli .UpdateUnix}}</td>
+            <td align=right class='small'>{{formatUnixMilliBR .UpdateUnix}}</td>
         </tr>
         {{end}}
     </table>

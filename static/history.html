@@ -20,10 +20,38 @@
         const left = $('input[type=radio][name=diff-left]:checked').val();
         const right = $('input[type=radio][name=diff-right]:checked').val();
         if (!left || !right) return;
-        openDiff(
+        const diff = JsDiff.diffLines(
             $('#record' + left).find('.content').text(),
             $('#record' + right).find('.content').text(),
-        )
+        );
+        var fragment = document.createDocumentFragment();
+        for (var i=0; i < diff.length; i++) {
+            if (diff[i].added && diff[i + 1] && diff[i + 1].removed) {
+                var swap = diff[i];
+                diff[i] = diff[i + 1];
+                diff[i + 1] = swap;
+            }
+
+            var node = document.createElement('div');
+            if (diff[i].removed) {
+                node.className = 'diff-row del';
+            } else if (diff[i].added) {
+                node.className = 'diff-row ins';
+            } else {
+                node.className = 'diff-row';
+            }
+            node.appendChild(document.createTextNode(diff[i].value || ' '));
+            fragment.appendChild(node);
+        }
+        const dialog = $("<div class=dialog>").
+            append($("<div class=display style='padding:0.5em;background:#f1f2f3'><div class='button tag-edit-button'>" + window.CONST_closeSVG + "</div></div>")).
+            append(fragment);
+        dialog.find('.button').click(function() {
+            dialog.remove();
+            document.body.style.overflow = '';
+        });
+        document.body.appendChild(dialog.get(0));
+        document.body.style.overflow = 'hidden';
     }
 </script>
 
@@ -72,16 +100,12 @@
                         {{.Modifier}}&nbsp;
                         <a href='/ns:history?user={{.Modifier}}&desc=1' class='tag-edit-button li_user'></a>&nbsp;
                     </div>
-                    <div class=diff-header-ip>
-                        {{.ModifierIP}}
-                    </div>
+                    <div class=diff-header-ip>{{.ModifierIP}}</div>
                 </div>
             </td>
         </tr>
         <tr id='record{{.Id}}'>
-            <td class='small'>
-                <div>{{formatUnixMilli .CreateUnix}}</div>
-            </td>
+            <td class='small'><div>{{formatUnixMilliBR .CreateUnix}}</div></td>
             {{$rid := .Id}}
             {{with .Note}}
             <td tag-id={{.Id}} class='tag-edit'>

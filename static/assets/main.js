@@ -124,40 +124,65 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
     }
 })(jQuery);
 
-function openDiff(a, b, id) {
-    if (id) {
-        a = $('#' + a).text();
-        b = $('#' + b).text();
-    }
-    const diff = JsDiff.diffLines(a, b)
-    var fragment = document.createDocumentFragment();
-    for (var i=0; i < diff.length; i++) {
-        if (diff[i].added && diff[i + 1] && diff[i + 1].removed) {
-            var swap = diff[i];
-            diff[i] = diff[i + 1];
-            diff[i + 1] = swap;
+function openImage(src) {
+    const images = $('img.image');
+    function move(offset) {
+        var idx = 0, current = dialog.find('div.image-container').attr('current');
+        images.each(function(i, img) {
+            if ($(img).attr('data-src') == current) {
+                idx = i;
+                return false;
+            }
+        });
+        idx += offset;
+        if (idx < 0 || idx >= images.length) {
+            dialog.remove();
+            document.body.style.overflow = '';
+            return;
         }
-
-        var node = document.createElement('div');
-        if (diff[i].removed) {
-            node.className = 'diff-row del';
-        } else if (diff[i].added) {
-            node.className = 'diff-row ins';
+        dialog.find('div.image-container-info').text((idx+1) + '/' + images.length);
+        load($(images[idx]).attr('data-src'))
+    }
+    const dialog = $("<div class=dialog>").css('cursor', 'pointer').
+        append($("<div class=image-container>")).
+        append($("<div class=image-container-left>")).
+        append($("<div class=image-container-right>")).
+        append($("<div class=image-container-info>"))
+    dialog.on('mouseup', function(ev) {
+        if (ev.which != 1) return;
+        const x = ev.clientX, mark = dialog.width() / 4;
+        if (x <= mark) {
+            move(-1);
+        } else if (x >= mark * 3) {
+            move(1);
         } else {
-            node.className = 'diff-row';
+            dialog.remove();
+            document.body.style.overflow = '';
         }
-        node.appendChild(document.createTextNode(diff[i].value || ' '));
-        fragment.appendChild(node);
-    }
-    const dialog = $("<div style='position:fixed;left:0;right:0;top:0;bottom:0;overflow:auto;background:white;padding-bottom:0.5em'>").
-        append($("<div class=display style='padding:0.5em;background:#f1f2f3'><div class='button tag-edit-button'>" + window.CONST_closeSVG + "</div></div>")).
-        append(fragment);
-    dialog.find('.button').click(function() {
-        dialog.remove();
-        document.body.style.overflow = '';
     });
     document.body.appendChild(dialog.get(0));
     document.body.style.overflow = 'hidden';
+    function load(src) {
+        const con = dialog.find('div.image-container').attr('current', src).html('').append(window.CONST_loaderHTML);
+        const img = new Image();
+        img.onload = function() {
+            const imgc = $("<img>");
+            const w = img.width, h = img.height;
+            if (w > dialog.width() || h > dialog.height()) {
+                var w0 = dialog.width(), h0 = dialog.width() / w * h;
+                if (h0 > dialog.height()) {
+                    h0 = dialog.height();
+                    w0 = dialog.height() / h * w;
+                }
+                imgc.width(w0).height(h0);
+            }
+            if (con.attr('current') != src) return;
+            con.html('').append(imgc.attr('src', img.src));
+        }
+        img.src = src;
+    }
+    dialog.find('div.image-container').attr('current', src)
+    move(0);
 }
 
 function ajaxBtn(el, path, args, f) {
@@ -403,94 +428,4 @@ function wrapTagSearchInput(container) {
 
 window.onload = function() {
     $('.tag-search-input-container').each(function(_, container) { wrapTagSearchInput(container) });
-    
-    $('.tag-search-input-oneline').each(function(_, container) { wrapTagSearchInputOneline(container) });
-    function wrapTagSearchInputOneline(input) {
-        const inputPos = input.getBoundingClientRect();
-        const openTag = $(input).attr('open-tag') == 'true';
-        const div = $("<div class=tag-search-input-oneline-dropdown>").css({
-            'position': 'absolute',
-            'left': inputPos.left,
-            'top': inputPos.top + inputPos.height + 4,
-            'width': inputPos.width,
-            'max-height': $(window).height() / 3,
-            'background': 'white',
-            'overflow': 'auto',
-            'box-shadow': '0 0 2px #666',
-            'border-radius': '0.5em',
-        }).get(0);
-
-        function select(el) {
-            input.value = el.text();
-            $(div).hide();
-            input.focus();
-            openTag && (location.href = '/' + encodeURIComponent(el.text()));
-        }
-
-        function reset() {
-            div.selector = 0;
-            div.candidates = [];
-            div.innerHTML = '';
-        }
-
-        input.oninput = function(e){
-            const val = this.value;
-            const that = this;
-            if (val.length < 1) {
-                reset();
-                return;
-            }
-            if (this.timer) clearTimeout(this.timer);
-            this.timer = setTimeout(function(){
-                if (that.value != val) return;
-                $.get('/ns:search?n=100&q=' + encodeURIComponent(val), function(data) {
-                    if (that.value != val) return;
-                    
-                    reset();
-                    data.notes.forEach(function(tag, i) {
-                        const t = $("<div>").
-                            addClass('candidate tag-box ' + (i == 0 ? 'selected' : '')).
-                            attr('tag-id', tag[0]).
-                            append($("<span>").text(tag[1]));
-                        $(div).append(t.click(function(ev) {
-                            select(t);
-                            ev.stopPropagation();
-                        }));
-                        div.candidates.push(t);
-                    })
-                    input === document.activeElement && $(div).show();
-                    if (data.notes.length == 0) {
-                        $(div).append($("<div class='candidate tag-box'>").css('font-style', 'italic').text('无结果'));
-                    }
-                });
-            }, 200);
-        }
-        input.onkeydown = function(e) {
-            if ((e.keyCode == 9 || e.keyCode == 38 || e.keyCode == 40) && div.candidates.length) {
-                const current = div.selector;
-                div.selector = (div.selector + (e.keyCode == 38 ? -1 : 1) + div.candidates.length) % div.candidates.length;
-                div.candidates[current].removeClass('selected');
-                const el = div.candidates[div.selector].addClass('selected');
-                el.get(0).scrollIntoView({block: "nearest", inline: "nearest"});
-                e.preventDefault();
-            }
-            if (e.keyCode == 13) {
-                if (div.candidates.length) {
-                    select(div.candidates[div.selector]);
-                } else {
-                    const oe = input.onenter;
-                    oe && oe();
-                }
-                e.preventDefault();
-            }
-        }
-        input.onfocus = function() {
-            this.blurtimer && clearTimeout(this.blurtimer);
-        }
-        input.onblur = function() {
-            this.blurtimer = setTimeout(function() { $(div).hide() }, 200);
-        }
-        $(div).hide();
-        document.body.appendChild(div);
-    }
 }
