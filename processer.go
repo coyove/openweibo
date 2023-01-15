@@ -71,7 +71,10 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 	"uuid":     func() string { return types.UUIDStr() },
 	"imageURL": imageURL,
 	"imageBox": func(a string) string {
-		return fmt.Sprintf("<div class='image-selector-container small'><a href='%s'><img data-src='%s'></a></div>",
+		if a == "" {
+			return "<div class='li_news' style='margin-right: 0.5em'></div>"
+		}
+		return fmt.Sprintf("<div class='image-selector-container small'><a href='%s'><img src='%s'></a></div>",
 			imageURL("image", a), imageURL("thumb", a))
 	},
 	"renderClip": types.RenderClip,
@@ -168,7 +171,7 @@ func serve(pattern string, f func(http.ResponseWriter, *types.Request)) {
 		}()
 
 		req := &types.Request{
-			Request:     limiter.LimitRequestSize(r, 10*1024*1024),
+			Request:     limiter.LimitRequestSize(r, *reqMaxSize),
 			ServerStart: serverStart,
 			Start:       now,
 			Config:      dal.GetJsonizedNoteCache("ns:config"),
@@ -244,13 +247,6 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 	ad.title = strings.Trim(ad.title, "/")
 	ad.hash = buildBitmapHashes(ad.title)
 
-	ad.content = strings.TrimSpace(q.Get("content"))
-	if len(ad.title) < 1 ||
-		types.UTF16LenExceeds(ad.title, r.GetTitleMaxLen()) ||
-		len(ad.hash) == 0 ||
-		types.UTF16LenExceeds(ad.content, r.GetContentMaxLen()) {
-		return ad, "INVALID_CONTENT"
-	}
 	if strings.HasPrefix(ad.title, "ns:") && !r.User.IsRoot() {
 		return ad, "MODS_REQUIRED"
 	}
@@ -263,6 +259,19 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 		if len(ad.parentIds) > r.GetParentsMax() {
 			return ad, "TOO_MANY_PARENTS"
 		}
+	}
+
+	if len(ad.hash) == 0 && len(ad.parentIds) == 0 {
+		return ad, "EMPTY_TITLE"
+	}
+
+	if types.UTF16LenExceeds(ad.title, r.GetTitleMaxLen()) {
+		return ad, "TITLE_TOO_LONG"
+	}
+
+	ad.content = strings.TrimSpace(q.Get("content"))
+	if types.UTF16LenExceeds(ad.content, r.GetContentMaxLen()) {
+		return ad, "CONTENT_TOO_LONG"
 	}
 	return ad, ""
 }
@@ -479,4 +488,9 @@ func imageURL(p, a string) string {
 		return ""
 	}
 	return "/ns:" + p + "/" + a
+}
+
+func isClockId(v string) bool {
+	_, ok := clock.ParseIdStrUnix(v)
+	return ok
 }

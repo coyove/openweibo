@@ -185,6 +185,9 @@ function ajaxBtn(el, path, args, f) {
 "PENDING_REVIEW": "修改审核中",
 "LOCKED": "记事已锁定",
 "INVALID_CONTENT": "无效内容，过长或过短",
+"EMPTY_TITLE": "标题为空，请输入标题或者选择一篇父记事",
+"TITLE_TOO_LONG": "标题过长",
+"CONTENT_TOO_LONG": "内容过长",
 "TOO_MANY_PARENTS": "父记事过多，最多8个",
 "DUPLICATED_TITLE": "标题重名",
 "ILLEGAL_APPROVE": "无权审核",
@@ -398,20 +401,6 @@ function wrapTagSearchInput(container) {
     container.wrapped = true;
 }
 
-function switchImageDisplay(btn, s) {
-    if (!btn) return;
-    if (s !== true && s!== false) {
-        s = !(window.localStorage.getItem('show-pic') == 'true');
-        window.localStorage.setItem('show-pic', s);
-    }
-    $('.image-selector-container.small img').each(function(_, el) {
-        s ?
-            $(el).attr('src', $(el).attr('data-src')).parent().parent().show() :
-            $(el).attr('src', '').parent().parent().hide();
-    });
-    s ? $(btn).addClass('selected') : $(btn).removeClass('selected')
-}
-
 window.onload = function() {
     $('.tag-search-input-container').each(function(_, container) { wrapTagSearchInput(container) });
     
@@ -504,6 +493,4 @@ window.onload = function() {
         $(div).hide();
         document.body.appendChild(div);
     }
-
-    switchImageDisplay($('#show-pic'), window.localStorage.getItem('show-pic') == 'true');
 }

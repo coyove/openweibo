@@ -43,9 +43,19 @@ func (t *Note) JoinParentIds() string {
 	return strings.Join(tmp, ",")
 }
 
-func (t *Note) EscapedTitle() string { return url.PathEscape(t.Title) }
+func (t *Note) EscapedTitle() string {
+	if t.Title == "" {
+		return "ns:id:" + strconv.FormatUint(t.Id, 10)
+	}
+	return url.PathEscape(t.Title)
+}
 
-func (t *Note) QueryTitle() string { return url.QueryEscape(t.Title) }
+func (t *Note) QueryTitle() string {
+	if t.Title == "" {
+		return "ns:id:" + strconv.FormatUint(t.Id, 10)
+	}
+	return url.QueryEscape(t.Title)
+}
 
 func (t *Note) HTMLTitle() string { return SafeHTML(t.Title) }
 
@@ -54,10 +64,16 @@ func (t *Note) HTMLContent() string { return SafeHTML(t.Content) }
 func (t *Note) HTMLReviewContent() string { return SafeHTML(t.ReviewContent) }
 
 func (t *Note) HTMLTitleDisplay() string {
+	var tt string
 	if t.PendingReview {
-		return SafeHTML(t.ReviewTitle)
+		tt = SafeHTML(t.ReviewTitle)
+	} else {
+		tt = t.HTMLTitle()
 	}
-	return t.HTMLTitle()
+	if tt == "" {
+		return "<span class=untitled></span>"
+	}
+	return tt
 }
 
 func (t *Note) ClearReviewStatus() {

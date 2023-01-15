@@ -1,6 +1,12 @@
 {{with .T.note}}
+
+{{if .Title}}
 <h1 style='word-break:break-all'>{{.HTMLTitle}}</h1>
 <title>{{.HTMLTitle}}</title>
+{{else}}
+<title>无标题</title>
+{{end}}
+
 <div style='font-size: 90%'>
     <div>
         <a href='/ns:manage?pid={{.Creator}}'>{{.Creator}}</a> 创建于 {{formatUnixMilli .CreateUnix}}
@@ -12,20 +18,26 @@
         <a class=tag-edit-button href='/ns:history?note={{.Id}}&desc=1'><span class=li_calendar></span></a>
     </div>
     {{end}}
+</div>
+<hr style='border:dotted 1px #ccc'>
+
+<div>
+    {{if .Image}}
+    <a href="{{imageURL "image" .Image}}">
+        <img src="{{imageURL "thumb" .Image}}" style='max-width:100%;max-height:400px;float:left;margin:0 1em 1em 0'>
+    </a>
+    {{end}}
     {{if $.T.parents}}
     <div style='padding:0.5em 0'>
         <b>父记事 <span class=li_clip></span></b>
-        <div style='padding-left: 1em'>
+        <div style='font-size: 90%'>
             {{range $.T.parents}}
-            <div><a href='/{{.EscapedTitle}}'>{{.HTMLTitle}}</a></div>
+            <a href='/{{.EscapedTitle}}'>{{.HTMLTitleDisplay}}</a>&emsp;
             {{end}}
         </div>
     </div>
     {{end}}
+    <pre style='white-space:pre-wrap;font:inherit'>{{renderClip .HTMLContent}}</pre>
 </div>
-<hr style='border:dotted 1px #ccc'>
 
-<pre style='white-space:pre-wrap;font:inherit'
-     >{{if .Image}}<a href="{{imageURL "image" .Image}}"><img src="{{imageURL "thumb" .Image}}"
-style='max-width:100%;max-height:400px;float:left;margin:0 1em 1em 0'></a>{{end}}{{renderClip .HTMLContent}}</pre>
 {{end}}

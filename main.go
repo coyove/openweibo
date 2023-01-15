@@ -22,6 +22,7 @@ var (
 	debugRebuild = flag.Int("debug-rebuild", 0, "")
 	compactDB    = flag.Bool("compact", false, "")
 	listen       = flag.String("l", ":8888", "")
+	reqMaxSize   = flag.Int64("rms", 15*1024*1024, "")
 	serverStart  time.Time
 )
 

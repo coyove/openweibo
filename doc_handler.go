@@ -26,7 +26,7 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 		return
 	}
 
-	if err := r.ParseMultipartForm(10 * 1024 * 1024); err != nil {
+	if err := r.ParseMultipartForm(int64(*reqMaxSize)); err != nil {
 		if err == limiter.ErrRequestTooLarge {
 			writeJSON(w, "success", false, "code", "CONTENT_TOO_LARGE")
 		} else {
@@ -126,7 +126,9 @@ func doCreate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 		return nil, false
 	}
 
-	dal.Store.Saver().AddAsync(bitmap.Uint64Key(id), ad.hash)
+	if len(ad.hash) > 0 {
+		dal.Store.Saver().AddAsync(bitmap.Uint64Key(id), ad.hash)
+	}
 	return target, true
 }
 
@@ -169,7 +171,7 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 
 	var exist, shouldIndex bool
 	err = dal.Store.Update(func(tx *bbolt.Tx) error {
-		if ad.title != target.Title {
+		if ad.title != "" && ad.title != target.Title {
 			if _, exist = dal.KSVFirstKeyOfSort1(tx, dal.NoteBK, []byte(ad.title)); exist {
 				return nil
 			}
@@ -180,7 +182,7 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 			target.Creator = r.UserDisplay
 		}
 		if r.User.IsMod() || r.UserDisplay == target.Creator {
-			shouldIndex = ad.title != target.Title
+			shouldIndex = ad.title != target.Title && len(ad.hash) > 0
 			target.Title = ad.title
 			target.Content = ad.content
 			if ad.imageChanged {
@@ -261,7 +263,9 @@ func doApprove(target *types.Note, w http.ResponseWriter, r *types.Request) bool
 		return false
 	}
 	if shouldIndex {
-		dal.Store.Saver().AddAsync(bitmap.Uint64Key(target.Id), buildBitmapHashes(target.Title))
+		if h := buildBitmapHashes(target.Title); len(h) > 0 {
+			dal.Store.Saver().AddAsync(bitmap.Uint64Key(target.Id), h)
+		}
 	}
 	return true
 }
@@ -426,14 +430,12 @@ func HandleTagSearch(w http.ResponseWriter, r *types.Request) {
 		if i >= n {
 			break
 		}
-		if tag.Title != "" {
-			if len(h) == 0 || ngram.SplitMore(tag.Title).Contains(h) {
-				results = append(results, [3]interface{}{
-					tag.Id,
-					tag.Title,
-					tag.ParentIds,
-				})
+		if len(h) == 0 || ngram.SplitMore(tag.Title).Contains(h) {
+			tt := tag.Title
+			if tt == "" {
+				tt = "ns:id:" + strconv.FormatUint(tag.Id, 10)
 			}
+			results = append(results, [3]interface{}{tag.Id, tt, tag.ParentIds})
 		}
 	}
 	diff := time.Since(start)
@@ -480,7 +482,13 @@ func HandleEdit(w http.ResponseWriter, r *types.Request) {
 
 func HandleView(w http.ResponseWriter, r *types.Request) {
 	t := strings.TrimPrefix(r.URL.Path, "/")
-	note, _ := dal.GetNoteByName(t)
+	var note *types.Note
+	if strings.HasPrefix(t, "ns:id:") {
+		id, _ := strconv.ParseUint(t[6:], 10, 64)
+		note, _ = dal.GetNote(id)
+	} else {
+		note, _ = dal.GetNoteByName(t)
+	}
 	if !note.Valid() {
 		http.Redirect(w, r.Request, "/ns:manage?q="+url.QueryEscape(t), 302)
 		return

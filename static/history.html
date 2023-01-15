@@ -34,7 +34,7 @@
                 <div class=display >
                     <div style='flex-grow:1'>
                         {{if eq .T.viewType "note"}}
-                            <b>{{.T.note.HTMLTitle}}&nbsp;</b>
+                            <b>{{.T.note.HTMLTitleDisplay}}&nbsp;</b>
                             <a class=tag-edit-button href='/{{.T.note.EscapedTitle}}'><span class=li_eye></span></a>
                             <a class=tag-edit-button href='/ns:edit?id={{.T.note.Id}}'><span class=li_pen></span></a>
                         {{end}}
@@ -50,7 +50,6 @@
                         <span>&nbsp;修改历史 ({{.T.total}})</span>
                     </div>
                     <div>
-                        <a class='tag-edit-button li_photo' onclick='switchImageDisplay(this)' id=show-pic></a>
                         <a class='tag-edit-button icon-sort-number-up {{if not .T.desc}}selected{{end}}' href='/ns:history?{{.T.viewType}}={{.T.id}}'></a>
                         <a class='tag-edit-button icon-sort-number-down {{if .T.desc}}selected{{end}}' href='/ns:history?{{.T.viewType}}={{.T.id}}&desc=1'></a>
                     </div>
@@ -88,7 +87,7 @@
             <td tag-id={{.Id}} class='tag-edit'>
                 <textarea style='display:none' class=content>{{.HTMLContent}}</textarea>
                 <div class=display>
-                    {{if .Image}}{{imageBox .Image}}{{end}}
+                    {{imageBox .Image}}
                     <div style='flex-grow:1;white-space:pre-wrap'><a href='/ns:edit?hid={{$rid}}'>{{.HTMLTitleDisplay}}</a></div>
                     <div>
                         <a href='/ns:history?note={{$tagid}}&desc=1' class='tag-edit-button li_note'></a>

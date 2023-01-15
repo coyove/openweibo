@@ -13,6 +13,7 @@ html, body {
 
 a { color: #1565c0 }
 .highlight {background:wheat;white-space:pre-wrap}
+.untitled:before {content: '无标题';font-style:italic}
 
 #container {
     max-width: 1000px;
@@ -247,7 +248,9 @@ div.diff-row.ins{background:#a5d6a7}
     max-height: 160px;
 }
 .image-selector-container.small, .image-selector-container.small img {
-    box-shadow:none;max-width:64px;max-height:64px;
+    box-shadow:none;
+    height: 100%;
+    max-width:64px;max-height:64px;
     background: transparent;
 }
 .image-selector-container .title {

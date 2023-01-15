@@ -142,10 +142,10 @@ func (r *Request) GetPagingArgs() (int, int, bool, int) {
 	desc := r.URL.Query().Get("desc") == "1"
 	pageSize, _ := strconv.Atoi(r.URL.Query().Get("pagesize"))
 	if pageSize <= 0 {
-		pageSize = 50
+		pageSize = 30
 	}
-	if pageSize > 50 {
-		pageSize = 50
+	if pageSize > 30 {
+		pageSize = 30
 	}
 
 	r.paging.current, r.paging.sort, r.paging.desc, r.paging.pageSize = p, sort, desc, pageSize

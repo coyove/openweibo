@@ -1,7 +1,9 @@
 package dal
 
 import (
+	"encoding/binary"
 	"fmt"
+	"math/rand"
 	"net"
 
 	"github.com/coyove/iis/types"
@@ -12,8 +14,10 @@ import (
 
 func CreateNote(name string, tag *types.Note) (existed bool, err error) {
 	err = Store.Update(func(tx *bbolt.Tx) error {
-		if _, existed = KSVFirstKeyOfSort1(tx, NoteBK, []byte(name)); existed {
-			return nil
+		if name != "" {
+			if _, existed = KSVFirstKeyOfSort1(tx, NoteBK, []byte(name)); existed {
+				return nil
+			}
 		}
 
 		now := clock.UnixMilli()
@@ -31,7 +35,7 @@ func UpdateCreator(tx *bbolt.Tx, tag *types.Note) error {
 	return KSVUpsert(tx, "creator_"+tag.Creator, KeySortValue{
 		Key:   types.Uint64Bytes(tag.Id),
 		Sort0: uint64(clock.UnixMilli()),
-		Sort1: []byte(tag.Title),
+		Sort1: titleOrRandomForSort(tag.Title),
 	})
 }
 
@@ -140,11 +144,12 @@ func ProcessTagParentChanges(tx *bbolt.Tx, tag *types.Note, old, new []uint64) e
 		}
 	}
 	now := clock.UnixMilli()
+	tt := titleOrRandomForSort(tag.Title)
 	for _, n := range new {
 		if err := KSVUpsert(tx, fmt.Sprintf("children_%d", n), KeySortValue{
 			Key:   k[:],
 			Sort0: uint64(now),
-			Sort1: []byte(tag.Title),
+			Sort1: tt,
 			Value: nil,
 		}); err != nil {
 			return err
@@ -208,5 +213,14 @@ func (h *int64Heap) Pop() interface{} {
 	n := len(old)
 	x := old[n-1]
 	h.data = old[:n-1]
+	return x
+}
+
+func titleOrRandomForSort(v string) []byte {
+	x := []byte(v)
+	if len(x) == 0 {
+		x = append(x, 0, 0, 0, 0, 0, 0, 0, 0)
+		binary.BigEndian.PutUint64(x, rand.Uint64())
+	}
 	return x
 }
