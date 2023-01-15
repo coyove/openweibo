@@ -185,7 +185,7 @@ function openImage(src) {
     move(0);
 }
 
-function ajaxBtn(el, path, args, f) {
+function ajaxBtn(el, action, args, f) {
     const fd = new FormData();    
     for (const k in args) fd.append(k, args[k]);
     const that = $(el);
@@ -196,11 +196,12 @@ function ajaxBtn(el, path, args, f) {
     that.hide();
     loader.insertBefore(that);
     $.ajax({
-        url: path,
+        url: '/ns:action',
         data: fd,
         processData: false,
         contentType: false,
         type: 'POST',
+        headers: { 'X-Ns-Action': action },
         success: function(data){
             if (!data.success) {
                 var i18n = ({
@@ -220,6 +221,7 @@ function ajaxBtn(el, path, args, f) {
 "INVALID_IMAGE_NAME": "无效图片名",
 "INVALID_IMAGE": "无效图片",
 "CONTENT_TOO_LARGE": "图片过大",
+"COOLDOWN": "请稍后重试",
                 })[data.code];
                 alert('发生错误: ' + i18n + ' (' + data.code + ')');
                 return;

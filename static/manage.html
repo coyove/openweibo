@@ -29,9 +29,8 @@
                         <span>搜索{{if.T.pids}}子记事{{end}}：<b>{{.T.query}}</b> ({{.T.total}})</span>
                     {{else}}
                     {{if .T.pid}}
-                        <b>{{.T.pid}}</b> 
                         <a class=tag-edit-button href='/ns:history?user={{.T.pid}}&desc=1'><span class=li_vynil></span></a>
-                        创建的记事 ({{.T.total}})
+                        {{if eq .UserDisplay .T.pid}}我{{else}}{{.T.pid}} {{end}}创建的记事 ({{.T.total}})
                     {{else}}
                         {{if .T.view}}
                             {{if ne .T.page 1}}<b>{{.T.note.HTMLTitleDisplay}} </b>{{end}}子记事
@@ -43,7 +42,7 @@
                     </span>
 
                     <div>
-                        <a class='tag-edit-button icon-search' href='javascript:$("#search-bar").toggle()'></a>
+                        <a class='tag-edit-button icon-search' href='javascript:$("#search-bar").toggle().find("input").focus()'></a>
                         {{if .T.view}}
                         <a class='tag-edit-button icon-paper-plane' href='/ns:new?pt={{.T.note.Id}},{{.T.note.QueryTitle}}'></a>
                         {{end}}
@@ -67,7 +66,7 @@
                     <a class='tag-edit-button li_pen' href='/ns:edit?id={{.Id}}'></a>
                 </div>
             </td>
-            <td align=right class='small'>{{formatUnixMilliBR .UpdateUnix}}</td>
+            <td class='time small'>{{formatUnixMilliBR .UpdateUnix}}</td>
         </tr>
         {{end}}
     </table>

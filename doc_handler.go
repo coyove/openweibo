@@ -20,8 +20,12 @@ import (
 )
 
 func HandleTagAction(w http.ResponseWriter, r *types.Request) {
-	if !dal.CheckIP(r.RemoteIPv4) {
-		writeJSON(w, "success", false, "code", "IP_BANNED")
+	if ok, remains := dal.CheckIP(r); !ok {
+		if remains == -1 {
+			writeJSON(w, "success", false, "code", "IP_BANNED")
+		} else {
+			writeJSON(w, "success", false, "code", "COOLDOWN", "remains", remains)
+		}
 		return
 	}
 
@@ -34,7 +38,7 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 		}
 		return
 	}
-	action := r.Form.Get("action")
+	action := r.Header.Get("X-Ns-Action")
 
 	var target *types.Note
 	var ok bool
@@ -90,6 +94,7 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 	if ok {
 		go dal.ProcessTagHistory(target.Id, r.UserDisplay, action, r.RemoteIPv4Masked(), target)
 		writeJSON(w, "success", true, "note", target)
+		dal.AddIP(r)
 	}
 }
 

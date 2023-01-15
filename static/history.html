@@ -62,20 +62,21 @@
                 <div class=display >
                     <div style='flex-grow:1'>
                         {{if eq .T.viewType "note"}}
-                            <b>{{.T.note.HTMLTitleDisplay}}&nbsp;</b>
+                            <b>{{.T.note.HTMLTitleDisplay}}</b>
                             <a class=tag-edit-button href='/{{.T.note.EscapedTitle}}'><span class=li_eye></span></a>
                             <a class=tag-edit-button href='/ns:edit?id={{.T.note.Id}}'><span class=li_pen></span></a>
+                            修改历史
                         {{end}}
 
                         {{if eq .T.viewType "user"}}
-                            <b>{{.T.id}}&nbsp;</b>
                             <a class=tag-edit-button href='/ns:manage?sort=0&pid={{.T.id}}'><span class=li_vynil></span></a>
+                            {{if eq .UserDisplay .T.id}}我的{{else}}{{.T.id}} {{end}}修改历史
                         {{end}}
 
                         {{if eq .T.viewType "all"}}
-                            <span>全站</span>
+                            <span>全站修改历史</span>
                         {{end}}
-                        <span>&nbsp;修改历史 ({{.T.total}})</span>
+                        <span>({{.T.total}})</span>
                     </div>
                     <div>
                         <a class='tag-edit-button icon-sort-number-up {{if not .T.desc}}selected{{end}}' href='/ns:history?{{.T.viewType}}={{.T.id}}'></a>

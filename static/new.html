@@ -42,8 +42,7 @@
 
         <script>
             $('#submit').click(function() {
-                ajaxBtn(this, '/ns:action', {
-                    'action': 'create',
+                ajaxBtn(this, 'create', {
                     'title': $('#name').val(),
                     'content': $('#desc').val(),
                     'image': $('#image').get(0).files[0],

@@ -14,6 +14,7 @@ html, body {
 a { color: #1565c0 }
 .highlight {background:wheat;white-space:pre-wrap}
 .untitled:before {content: '无标题';font-style:italic}
+.time { text-align:right; padding-right: 1em}
 
 #container {
     max-width: 1000px;
