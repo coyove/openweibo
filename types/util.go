@@ -1,11 +1,11 @@
 package types
 
 import (
-	"bytes"
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"html"
 	"net"
 	"net/http"
 	"net/url"
@@ -141,20 +141,15 @@ func Uint64Hash(v uint64) uint64 {
 }
 
 func SafeHTML(v string) string {
-	buf := &bytes.Buffer{}
-	for i := 0; i < len(v); i++ {
-		switch v[i] {
-		case '&':
-			buf.WriteString("&amp;")
-		case '<':
-			buf.WriteString("&lt;")
-		case '>':
-			buf.WriteString("&gt;")
-		default:
-			buf.WriteByte(v[i])
-		}
+	return html.EscapeString(v)
+}
+
+func JoinUint64List(ids []uint64) string {
+	var tmp []string
+	for _, id := range ids {
+		tmp = append(tmp, strconv.FormatUint(id, 10))
 	}
-	return buf.String()
+	return strings.Join(tmp, ",")
 }
 
 func SplitUint64List(v string) (ids []uint64) {
@@ -221,7 +216,15 @@ func RenderClip(v string) string {
 					"<img src='%s' style='max-width:%dpx;width:100%%;max-height:%dpx;height:100%%;display:block'>"+
 					"</a>", a, url, width, height)
 			}
+		case strings.HasPrefix(rest, "search:"):
 		}
 		return "<a href='" + in + "'>" + in + "</a>"
 	})
+}
+
+func CleanTitle(v string) string {
+	v = strings.TrimSpace(v)
+	v = strings.Replace(v, "//", "/", -1)
+	v = strings.Trim(v, "/")
+	return v
 }

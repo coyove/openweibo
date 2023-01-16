@@ -1,10 +1,11 @@
-package dal
+package limiter
 
 import (
 	"net"
 	"sync"
 	"time"
 
+	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/clock"
 	"github.com/tidwall/gjson"
@@ -13,10 +14,13 @@ import (
 var cdMap sync.Map
 
 func CheckIP(r *types.Request) (ok bool, remains int64) {
-	ip := r.RemoteIPv4
+	ipm := r.RemoteIPv4Masked()
+	dal.LockKey(ipm)
+	defer dal.UnlockKey(ipm)
 
+	ip := r.RemoteIPv4
 	ok = true
-	blacklist, _ := GetJsonizedNote("ns:blacklist")
+	blacklist, _ := dal.GetJsonizedNote("ns:blacklist")
 	blacklist.ForEach(func(k, v gjson.Result) bool {
 		_, ra, _ := net.ParseCIDR(k.Str)
 		if ra != nil && ra.Contains(ip) {

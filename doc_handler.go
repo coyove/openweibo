@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
-	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -15,12 +14,13 @@ import (
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/bitmap"
 	"github.com/coyove/sdss/contrib/clock"
+	"github.com/coyove/sdss/contrib/ngram"
 	"github.com/sirupsen/logrus"
 	"go.etcd.io/bbolt"
 )
 
 func HandleTagAction(w http.ResponseWriter, r *types.Request) {
-	if ok, remains := dal.CheckIP(r); !ok {
+	if ok, remains := limiter.CheckIP(r); !ok {
 		if remains == -1 {
 			writeJSON(w, "success", false, "code", "IP_BANNED")
 		} else {
@@ -94,7 +94,7 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 	if ok {
 		go dal.ProcessTagHistory(target.Id, r.UserDisplay, action, r.RemoteIPv4Masked(), target)
 		writeJSON(w, "success", true, "note", target)
-		dal.AddIP(r)
+		limiter.AddIP(r)
 	}
 }
 
@@ -131,7 +131,7 @@ func doCreate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 	}
 
 	if len(ad.hash) > 0 {
-		dal.Store.Saver().AddAsync(bitmap.Uint64Key(id), ad.hash)
+		dal.Store.Saver().AddAsync(bitmap.Uint64Key(id), append(ad.hash, ngram.StrHash(r.UserDisplay)))
 	}
 	return target, true
 }
@@ -221,7 +221,7 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 		return nil, false
 	}
 	if shouldIndex {
-		dal.Store.Saver().AddAsync(bitmap.Uint64Key(id), ad.hash)
+		dal.Store.Saver().AddAsync(bitmap.Uint64Key(id), append(ad.hash, ngram.StrHash(target.Creator)))
 	}
 	return target, true
 }
@@ -270,7 +270,7 @@ func doApprove(target *types.Note, w http.ResponseWriter, r *types.Request) bool
 		writeJSON(w, "success", false, "code", "DUPLICATED_TITLE")
 		return false
 	}
-	if h := buildBitmapHashes(target.Title, target.ParentIds); len(h) > 0 {
+	if h := buildBitmapHashes(target.Title, target.Creator, target.ParentIds); len(h) > 0 {
 		dal.Store.Saver().AddAsync(bitmap.Uint64Key(target.Id), h)
 	}
 	return true
@@ -314,7 +314,7 @@ func HandleManage(w http.ResponseWriter, r *types.Request) {
 	var total, pages int
 	if q != "" {
 		pids = types.SplitUint64List(r.URL.Query().Get("pids"))
-		ids, _ := collectSimple(q, pids)
+		ids, _ := collectSimple(q, pids, pidStr)
 		var tmp []uint64
 		for _, id := range ids {
 			tmp = append(tmp, id.LowUint64())
@@ -342,7 +342,7 @@ func HandleManage(w http.ResponseWriter, r *types.Request) {
 
 	r.AddTemplateValue("query", q)
 	r.AddTemplateValue("pid", pidStr)
-	r.AddTemplateValue("pids", pids)
+	r.AddTemplateValue("pids", types.JoinUint64List(pids))
 	r.AddTemplateValue("tags", notes)
 	r.AddTemplateValue("total", total)
 	r.AddTemplateValue("pages", pages)
@@ -416,20 +416,19 @@ func HandleTagSearch(w http.ResponseWriter, r *types.Request) {
 	n = imin(100, n)
 	n = imax(1, n)
 
-	var ids, parentIds []uint64
+	var ids []uint64
 	var jms []bitmap.JoinMetrics
 
 	if noteIDs := uq.Get("ids"); noteIDs != "" {
 		ids = types.SplitUint64List(noteIDs)
 	} else if name := uq.Get("title"); name != "" {
-		note, _ := dal.GetNoteByName(name)
+		note, _ := dal.GetNoteByName(types.CleanTitle(name))
 		if note.Valid() {
 			ids = append(ids, note.Id)
 		}
 	} else {
-		parentIds = types.SplitUint64List(uq.Get("pids"))
 		var tmp []bitmap.Key
-		tmp, jms = collectSimple(q, parentIds)
+		tmp, jms = collectSimple(q, nil, "")
 		for _, id := range tmp {
 			ids = append(ids, id.LowUint64())
 		}
@@ -439,7 +438,7 @@ func HandleTagSearch(w http.ResponseWriter, r *types.Request) {
 	sort.Slice(tags, func(i, j int) bool { return len(tags[i].Title) < len(tags[j].Title) })
 
 	results := []interface{}{}
-	doubleCheckFilterResults(q, parentIds, tags, func(t *types.Note) bool {
+	doubleCheckFilterResults(q, nil, tags, func(t *types.Note) bool {
 		tt := t.Title
 		if tt == "" {
 			tt = "ns:id:" + strconv.FormatUint(t.Id, 10)
@@ -498,7 +497,7 @@ func HandleView(t string, w http.ResponseWriter, r *types.Request) {
 		note, _ = dal.GetNoteByName(t)
 	}
 	if !note.Valid() {
-		http.Redirect(w, r.Request, "/ns:manage?q="+url.QueryEscape(t), 302)
+		http.Redirect(w, r.Request, "/ns:manage?q="+types.FullEscape(t), 302)
 		return
 	}
 
@@ -512,6 +511,7 @@ func HandleView(t string, w http.ResponseWriter, r *types.Request) {
 	results, total, pages := dal.KSVPaging(nil, fmt.Sprintf("children_%d", note.Id), st, desc, p-1, pageSize)
 	tags, _ := dal.BatchGetNotes(results)
 
+	r.AddTemplateValue("query", "")
 	r.AddTemplateValue("pid", "")
 	r.AddTemplateValue("view", true)
 	r.AddTemplateValue("note", note)

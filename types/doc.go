@@ -56,19 +56,23 @@ func (t *Note) ContainsParents(ids []uint64) bool {
 	return s > 0 && s == len(ids)
 }
 
-func (t *Note) EscapedTitle() string {
-	if t.Title == "" {
-		return "ns:id:" + strconv.FormatUint(t.Id, 10)
-	}
+func FullEscape(v string) string {
 	buf := &bytes.Buffer{}
-	const hex = "0123456789abcdef"
-	for i := 0; i < len(t.Title); i++ {
-		x := t.Title[i]
+	const hex = "0123456789ABCDEF"
+	for i := 0; i < len(v); i++ {
+		x := v[i]
 		buf.WriteByte('%')
 		buf.WriteByte(hex[x>>4])
 		buf.WriteByte(hex[x&0xf])
 	}
 	return buf.String()
+}
+
+func (t *Note) EscapedTitle() string {
+	if t.Title == "" {
+		return "ns:id:" + strconv.FormatUint(t.Id, 10)
+	}
+	return FullEscape(t.Title)
 }
 
 func (t *Note) QueryTitle() string {
@@ -78,20 +82,12 @@ func (t *Note) QueryTitle() string {
 	return url.QueryEscape(t.Title)
 }
 
-func (t *Note) HTMLTitle() string { return SafeHTML(t.Title) }
-
-func (t *Note) HTMLReviewTitle() string { return SafeHTML(t.ReviewTitle) }
-
-func (t *Note) HTMLContent() string { return SafeHTML(t.Content) }
-
-func (t *Note) HTMLReviewContent() string { return SafeHTML(t.ReviewContent) }
-
 func (t *Note) HTMLTitleDisplay() string {
 	var tt string
 	if t.PendingReview {
 		tt = SafeHTML(t.ReviewTitle)
 	} else {
-		tt = t.HTMLTitle()
+		tt = SafeHTML(t.Title)
 	}
 	if tt == "" {
 		return "<span class=untitled></span>"

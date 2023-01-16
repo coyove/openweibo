@@ -20,7 +20,7 @@
             <td class=small>待审核</td>
             <td>
                 <div class=display>
-                    <div style='flex-grow:1'>{{.HTMLReviewTitle}}</div>
+                    <div style='flex-grow:1'>{{safeHTML .ReviewTitle}}</div>
                     {{if not $.T.readonly}}
                     <div class='tag-box button' onclick='ajaxBtn(this,"approve",{"id":{{.Id}}})'><span>通过</span></div>
                     <div class='tag-box button' onclick='ajaxBtn(this,"reject",{"id":{{.Id}}})'><span>驳回</span></div>
@@ -89,7 +89,7 @@
                         {{if $.T.readonly}}readonly{{end}}
                         maxlength={{$.GetContentMaxLen}}
                         class=tag-edit-desc
-                        style='height:10em'>{{.HTMLContent}}</textarea>
+                        style='height:10em'>{{safeHTML .Content}}</textarea>
                 </div>
             </td>
         </tr>
@@ -98,7 +98,8 @@
             <td class=small>新内容</td>
             <td>
                 <div class=display>
-                    <textarea id="review-content" readonly class=tag-edit-desc style='height:10em'>{{.HTMLReviewContent}}</textarea>
+                    <textarea id="review-content" readonly class=tag-edit-desc style='height:10em'
+                        >{{safeHTML .ReviewContent}}</textarea>
                 </div>
             </td>
         </tr>

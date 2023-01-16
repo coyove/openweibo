@@ -176,7 +176,7 @@ func (r *Request) RemoteIPv4Masked() net.IP {
 func (r *Request) GetTitleMaxLen() int {
 	v := r.Config().Get("title_max").Int()
 	if v <= 0 {
-		return 50
+		return 80
 	}
 	return int(v)
 }

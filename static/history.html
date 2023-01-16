@@ -110,7 +110,7 @@
             {{$rid := .Id}}
             {{with .Note}}
             <td tag-id={{.Id}} class='tag-edit'>
-                <textarea style='display:none' class=content>{{.HTMLContent}}</textarea>
+                <textarea style='display:none' class=content>{{safeHTML .Content}}</textarea>
                 <div class=display>
                     {{imageBox .Image}}
                     <div style='flex-grow:1;white-space:pre-wrap'><a href='/ns:edit?hid={{$rid}}'>{{.HTMLTitleDisplay}}</a></div>

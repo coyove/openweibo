@@ -2,14 +2,10 @@ package main
 
 import (
 	"bufio"
-	"compress/bzip2"
-	"compress/gzip"
 	"embed"
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"log"
 	"math/rand"
 	"mime/multipart"
 	"net/http"
@@ -34,7 +30,6 @@ import (
 	"github.com/coyove/sdss/contrib/ngram"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
-	"go.etcd.io/bbolt"
 )
 
 //go:embed static/assets/*
@@ -88,6 +83,8 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 			imageURL("image", a), imageURL("thumb", a), imageURL("image", a))
 	},
 	"renderClip": types.RenderClip,
+	"safeHTML":   types.SafeHTML,
+	"fullEscape": types.FullEscape,
 }).ParseFS(httpStaticPages, "static/*.html"))
 
 var serveUUID = types.UUIDStr()
@@ -146,6 +143,7 @@ func HandleImage(w http.ResponseWriter, r *http.Request) {
 
 func HandlePublicStatus(w http.ResponseWriter, r *types.Request) {
 	fmt.Fprintf(w, "Server started at %v\n", serverStart)
+	fmt.Fprintf(w, "Request max size: %v\n", *reqMaxSize)
 
 	df, _ := exec.Command("df", "-h").Output()
 	fmt.Fprintf(w, "Disk:\n%s\n", df)
@@ -251,10 +249,7 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 		}
 	}
 
-	ad.title = q.Get("title")
-	ad.title = strings.TrimSpace(ad.title)
-	ad.title = strings.Replace(ad.title, "//", "/", -1)
-	ad.title = strings.Trim(ad.title, "/")
+	ad.title = types.CleanTitle(q.Get("title"))
 
 	if strings.HasPrefix(ad.title, "ns:") && !r.User.IsRoot() {
 		return ad, "MODS_REQUIRED"
@@ -270,7 +265,7 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 		}
 	}
 
-	ad.hash = buildBitmapHashes(ad.title, ad.parentIds)
+	ad.hash = buildBitmapHashes(ad.title, "", ad.parentIds)
 	if len(ad.hash) == 0 {
 		return ad, "EMPTY_TITLE"
 	}
@@ -286,140 +281,7 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 	return ad, ""
 }
 
-func downloadData() {
-	downloadWiki := func(p string) ([]string, error) {
-		req, _ := http.NewRequest("GET", "https://dumps.wikimedia.org/zhwiki/20230101/"+p, nil)
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return nil, err
-		}
-		defer resp.Body.Close()
-		rd := bufio.NewReader(bzip2.NewReader(resp.Body))
-
-		var res []string
-		for {
-			line, err := rd.ReadString('\n')
-			if err != nil {
-				if err != io.EOF {
-					return nil, err
-				}
-				break
-			}
-			parts := strings.SplitN(strings.TrimSpace(line), ":", 3)
-			x := parts[2]
-			if strings.HasPrefix(x, "Category:") ||
-				strings.HasPrefix(x, "WikiProject:") ||
-				strings.HasPrefix(x, "Wikipedia:") ||
-				strings.HasPrefix(x, "File:") ||
-				strings.HasPrefix(x, "Template:") {
-				continue
-			}
-			res = append(res, x)
-		}
-		return res, nil
-	}
-
-	for i, p := range strings.Split(`zhwiki-20230101-pages-articles-multistream-index1.txt-p1p187712.bz2
-	zhwiki-20230101-pages-articles-multistream-index2.txt-p187713p630160.bz2
-	zhwiki-20230101-pages-articles-multistream-index3.txt-p630161p1389648.bz2
-	zhwiki-20230101-pages-articles-multistream-index4.txt-p1389649p2889648.bz2
-	zhwiki-20230101-pages-articles-multistream-index4.txt-p2889649p3391029.bz2
-	zhwiki-20230101-pages-articles-multistream-index5.txt-p3391030p4891029.bz2
-	zhwiki-20230101-pages-articles-multistream-index5.txt-p4891030p5596379.bz2
-	zhwiki-20230101-pages-articles-multistream-index6.txt-p5596380p7096379.bz2
-	zhwiki-20230101-pages-articles-multistream-index6.txt-p7096380p8231694.bz2`, "\n") {
-		v, err := downloadWiki(p)
-		fmt.Println(p, len(v), err)
-
-		buf := strings.Join(v, "\n")
-		ioutil.WriteFile("data"+strconv.Itoa(i), []byte(buf), 0777)
-	}
-
-	f, _ := os.Open("out")
-	rd := bufio.NewReader(f)
-	data := map[string]bool{}
-	for i := 0; ; i++ {
-		line, err := rd.ReadString('\n')
-		if err != nil {
-			break
-		}
-		if data[line] {
-			continue
-		}
-		data[line] = true
-	}
-	f.Close()
-	f, _ = os.Create("out2")
-	for k := range data {
-		f.WriteString(k)
-	}
-	f.Close()
-}
-
-func rebuildData(count int) {
-	data := map[uint64]string{}
-	mgr := dal.Store.Manager
-	f, _ := os.Open("out.gz")
-	gr, _ := gzip.NewReader(f)
-	rd := bufio.NewReader(gr)
-	for i := 0; count <= 0 || i < count; i++ {
-		line, err := rd.ReadString('\n')
-		if err != nil {
-			break
-		}
-		line = strings.TrimSpace(line)
-		h := buildBitmapHashes(line, nil)
-		if len(h) == 0 {
-			continue
-		}
-		id := clock.Id()
-		data[id] = line
-		k := bitmap.Uint64Key(id)
-		mgr.Saver().AddAsync(k, h)
-		if i%100000 == 0 {
-			log.Println(i)
-		}
-	}
-	mgr.Saver().Close()
-
-	for len(data) > 0 {
-		dal.Store.DB.Update(func(tx *bbolt.Tx) error {
-			c := 0
-			for i, line := range data {
-				k := types.Uint64Bytes(uint64(i))
-				now := clock.UnixMilli()
-				ksv := dal.KeySortValue{
-					Key:   k[:],
-					Sort0: uint64(now),
-					Sort1: []byte(line),
-					Value: (&types.Note{
-						Id:         uint64(i),
-						Title:      line,
-						Creator:    "bulk",
-						CreateUnix: now,
-						UpdateUnix: now,
-					}).MarshalBinary(),
-				}
-				dal.KSVUpsert(tx, "notes", ksv)
-				dal.KSVUpsert(tx, "creator_bulk", dal.KeySortValue{
-					Key:   k[:],
-					Sort0: uint64(now),
-					Sort1: []byte(line),
-				})
-
-				delete(data, i)
-				c++
-				if c > 1000 {
-					break
-				}
-			}
-			return nil
-		})
-		fmt.Println(len(data))
-	}
-}
-
-func buildBitmapHashes(line string, parentIds []uint64) []uint64 {
+func buildBitmapHashes(line string, uid string, parentIds []uint64) []uint64 {
 	m := ngram.SplitMore(line)
 	for k, v := range ngram.Split(line) {
 		m[k] = v
@@ -428,10 +290,13 @@ func buildBitmapHashes(line string, parentIds []uint64) []uint64 {
 	for _, id := range parentIds {
 		tmp = append(tmp, types.Uint64Hash(id))
 	}
+	if len(tmp) > 0 && uid != "" {
+		tmp = append(tmp, ngram.StrHash(uid))
+	}
 	return tmp
 }
 
-func collectSimple(q string, parentIds []uint64) ([]bitmap.Key, []bitmap.JoinMetrics) {
+func collectSimple(q string, parentIds []uint64, uid string) ([]bitmap.Key, []bitmap.JoinMetrics) {
 	h := ngram.SplitMore(q).Hashes()
 
 	var h2 []uint64
@@ -447,6 +312,9 @@ func collectSimple(q string, parentIds []uint64) ([]bitmap.Key, []bitmap.JoinMet
 	}
 	for _, id := range parentIds {
 		h = append(h, types.Uint64Hash(id))
+	}
+	if uid != "" {
+		h = append(h, ngram.StrHash(uid))
 	}
 
 	if len(h) == 0 {
@@ -505,11 +373,6 @@ func imageURL(p, a string) string {
 		return ""
 	}
 	return "/ns:" + p + "/" + a
-}
-
-func isClockId(v string) bool {
-	_, ok := clock.ParseIdStrUnix(v)
-	return ok
 }
 
 func doubleCheckFilterResults(q string, pids []uint64, notes []*types.Note, f func(*types.Note) bool) {

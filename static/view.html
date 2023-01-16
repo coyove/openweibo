@@ -1,8 +1,8 @@
 {{with .T.note}}
 
 {{if .Title}}
-<h1 style='word-break:break-all'>{{.HTMLTitle}}</h1>
-<title>{{.HTMLTitle}}</title>
+<h1 style='word-break:break-all'>{{safeHTML .Title}}</h1>
+<title>{{safeHTML .Title}}</title>
 {{else}}
 <title>无标题</title>
 {{end}}
@@ -44,7 +44,7 @@
         </div>
     </div>
     {{end}}
-    <pre style='white-space:pre-wrap;font:inherit'>{{renderClip .HTMLContent}}</pre>
+    <pre style='white-space:pre-wrap;font:inherit'>{{renderClip (safeHTML .Content)}}</pre>
 </div>
 
 {{end}}
