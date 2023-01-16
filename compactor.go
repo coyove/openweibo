@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/coyove/iis/dal"
+	"github.com/pierrec/lz4"
 	"github.com/sirupsen/logrus"
 	"go.etcd.io/bbolt"
 )
@@ -74,4 +75,22 @@ func compact(pCurrent, pTotal *int64) {
 
 	dal.Store.DB = db
 	exited = true
+}
+
+func dump() error {
+	oldPath := dal.Store.DB.Path()
+	tmpPath := oldPath + ".dumped.lz4"
+	os.Remove(tmpPath)
+
+	f, err := os.Create(tmpPath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	out := lz4.NewWriter(f)
+	return dal.Store.View(func(tx *bbolt.Tx) error {
+		_, err := tx.WriteTo(out)
+		return err
+	})
 }

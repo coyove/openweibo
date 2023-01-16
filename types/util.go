@@ -225,6 +225,8 @@ func RenderClip(v string) string {
 func CleanTitle(v string) string {
 	v = strings.TrimSpace(v)
 	v = strings.Replace(v, "//", "/", -1)
+	v = strings.Replace(v, "\n", "", -1)
+	v = strings.Replace(v, "\r", "", -1)
 	v = strings.Trim(v, "/")
 	return v
 }

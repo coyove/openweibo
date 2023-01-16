@@ -72,6 +72,7 @@ type Request struct {
 	Config      func() gjson.Result
 	User        UserHash
 	UserDisplay string
+	UserSession string
 	RemoteIPv4  net.IP
 }
 
@@ -102,6 +103,7 @@ func (r *Request) ParseSession() (string, bool) {
 		if ok {
 			r.User = uh
 			r.UserDisplay = uh.Display()
+			r.UserSession = sess.Value
 			return sess.Value, false
 		}
 	}
@@ -112,6 +114,7 @@ func (r *Request) ParseSession() (string, bool) {
 
 	r.User = uh
 	r.UserDisplay = uh.Display()
+	r.UserSession = s
 	return s, true
 }
 

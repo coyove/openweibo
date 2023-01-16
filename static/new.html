@@ -2,41 +2,43 @@
 <title>新建记事</title>
 <table>
     <tr>
-        <td class=small>标题</td>
         <td>
-            <div class=display>
-                <input id=name maxlength={{.GetTitleMaxLen}} class='tag-edit-name' placeholder='{{.GetTitleMaxLen}}字符' />
-                <div id=dup style='display:none'><b>重名</b><a class='tag-edit-button icon-eye' style='margin-left:0.5em'></a></div>
-                <div id=submit class='tag-box button'><span>创建</span></div>
-            </div>
-        </td>
-    </tr>
-    <tr>
-        <td class=small>图片</td>
-        <td>
-            <div class=display>
+            <div class=display style='flex-wrap:nowrap;align-items:stretch;padding:0.5em 0'>
                 <input id="image" type=file class='image-selector' accept="image/*">
+                <div style='display: flex;flex-grow:1;flex-direction:column'>
+                    <div style='display: flex;flex-grow:1'>
+                        <textarea
+                                id=name
+                                maxlength={{.GetTitleMaxLen}}
+                                class='tag-edit-title tag-edit-desc'
+                                placeholder='标题：{{.GetTitleMaxLen}}字符'></textarea>
+                        <div>
+                            <div id=dup style='display:none'><b>重名</b><a class='tag-edit-button icon-eye' style='margin-left:0.5em'></a></div>
+                            <div id=submit class='tag-edit-button icon-paper-plane'></div>
+                        </div>
+                    </div>
+                    <div style='color:#ccc;font-size:80%;white-space:pre-wrap;word-break:break-all'>标题为空时，请选择至少一个父记事。</div>
+                </div>
             </div>
         </td>
     </tr>
     <tr>
-        <td class=small>内容</td>
         <td>
             <div class=display>
-                <textarea id=desc maxlength={{.GetContentMaxLen}} class=tag-edit-desc placeholder='{{.GetContentMaxLen}}字符' rows=20></textarea>
+                <textarea id=desc maxlength={{.GetContentMaxLen}} class=tag-edit-desc placeholder='内容：0-{{.GetContentMaxLen}}字符' rows=20></textarea>
             </div>
         </td>
     </tr>
     <tr>
-        <td class=small></td>
-        <td><div class=display style='font-size:90%'>关于高级语法，请阅读该篇<a href='/ns:edit_syntax'>记事</a>。</div></td>
+        <td>
+            <div class=display style='min-height: 2em'>
+                <span style='font-size:90%;flex-grow:1'>父记事</span>
+                <span style='font-size:90%;color:#ccc'>关于高级语法，请阅读该篇<a href='/ns:edit_syntax'>记事</a></span>
+            </div>
+        </td>
     </tr>
     <tr>
-        <td class=small>父记事</td>
         <td><div class=display id=parents></div></td>
-    </tr>
-    <tr>
-        <td class=small></td><td><div class=display style='font-size:90%'>标题为空时，请选择至少一个父记事。</div></td>
     </tr>
 </table>
 
@@ -61,18 +63,17 @@
             const searchParams = new URLSearchParams(window.location.search)
             const pre = searchParams.get('pt');
             const title = searchParams.get('title');
-            const ps = $("<div max-tags={{.GetParentsMax}} id=parents class='tag-search-input-container border1' style='width:100%'></div>");
-            ps.get(0).onclicktag = function(id) { window.open('/ns:edit?id='+id) }
+            const ps = $("<div max-tags={{.GetParentsMax}} id=parents class='tag-search-input-container' style='width:100%'></div>");
 
             pre && ps.attr('tag-data0', pre);
             title && $('#name').val(title.substr(0, {{.GetTitleMaxLen}}));
             const pTitle = pre ? pre.substr(pre.indexOf(',') + 1) : '';
 
             $('#parents').append(ps);
+            wrapTagSearchInput(ps.get(0));
 
             function checkTitle() {
                 function reset() {
-                    $('#submit').show();
                     $('#dup').hide().closest('tr').css('background', '');
                 }
                 const that = this, last = this.last || '', input = $('#name').val();
@@ -80,8 +81,7 @@
                 if (input && input != last) {
                     $.get('/ns:search?n=1&title=' + encodeURIComponent(input), function(data) {
                         if (data.notes.length > 0 && $('#name').val() == input) {
-                            $('#submit').hide();
-                            $('#dup').show().find('a').attr('href', '/' + encodeURIComponent(input)).closest('tr').css('background', '#fce4ec')
+                            $('#dup').show().find('a').attr('href', '/ns:id:' + data.notes[0][0]).closest('tr').css('background', '#fce4ec')
                         } else {
                             reset();
                         }

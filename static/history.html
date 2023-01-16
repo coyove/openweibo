@@ -62,7 +62,7 @@
                 <div class=display >
                     <div style='flex-grow:1'>
                         {{if eq .T.viewType "note"}}
-                            <b>{{.T.note.HTMLTitleDisplay}}</b>
+                            <b class=wrapall>{{.T.note.HTMLTitleDisplay}}</b>
                             <a class=tag-edit-button href='/{{.T.note.EscapedTitle}}'><span class=li_eye></span></a>
                             <a class=tag-edit-button href='/ns:edit?id={{.T.note.Id}}'><span class=li_pen></span></a>
                             修改历史
@@ -114,9 +114,6 @@
                 <div class=display>
                     {{imageBox .Image}}
                     <div style='flex-grow:1;white-space:pre-wrap'><a href='/ns:edit?hid={{$rid}}'>{{.HTMLTitleDisplay}}</a></div>
-                    <div>
-                        <a href='/ns:history?note={{$tagid}}&desc=1' class='tag-edit-button li_note'></a>
-                    </div>
                 </div>
             </td>
             {{end}}

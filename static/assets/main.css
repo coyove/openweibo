@@ -14,10 +14,12 @@ html, body {
 a { color: #1565c0 }
 .highlight {background:wheat;white-space:pre-wrap}
 .untitled:before {content: '无标题';font-style:italic}
-.time { text-align:right; padding-right: 1em}
+.status { display:flex;align-items:center;flex-grow: 1; justify-content: flex-end; }
+.status .time { font-size:80%;margin-left:0.5em }
+.wrapall{word-break:break-all;white-space:pre-wrap}
 
 #container {
-    max-width: 1000px;
+    max-width: 1120px;
     margin: 0 auto;
     padding: 0.5em 0.5em 0.5em 3em;
 }
@@ -37,9 +39,9 @@ a { color: #1565c0 }
         position: relative;
         height: 2.5em; width: 100%;
     }
-    #container, #footer {
-        padding-left: 0.5em;
-    }
+    table { margin: 0.25em 0 }
+    #container { padding: 0.25em }
+    #footer { padding-left: 0.5em }
 }
 
 #header .header-entry {
@@ -194,6 +196,8 @@ td .tag-edit-desc {
     padding: 0;
     min-height: 3em;
 }
+td .tag-edit-title { resize: none; height: 100% }
+td .tag-edit-title::-webkit-scrollbar { display: none }
 .tag-edit-button {
     color: #233;
     text-decoration:none;
@@ -238,11 +242,10 @@ div.diff-row.ins{background:#a5d6a7}
     max-width: 160px;
     max-height: 160px;
 }
-.image-selector-container.small, .image-selector-container.small img {
-    box-shadow:none;
-    max-width:64px;max-height:64px;
-    background: transparent;
-}
+
+.image-selector-container.thumb { box-shadow: none; background: transparent }
+.image-selector-container.small, .image-selector-container.small img { max-width: 64px; max-height: 64px }
+.image-selector-container.medium, .image-selector-container.medium img { max-width: 160px; max-height: 160px }
 .image-selector-container .title {
     position: absolute;
     left: 0;

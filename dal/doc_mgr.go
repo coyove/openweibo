@@ -40,8 +40,22 @@ func UpdateCreator(tx *bbolt.Tx, tag *types.Note) error {
 	})
 }
 
-func BatchGetNotes(v interface{}) (tags []*types.Note, err error) {
-	var ids [][]byte
+func BatchCheckNoteExistences(v interface{}) (res []bool, err error) {
+	ids := convertToBkIDs(v)
+	err = Store.View(func(tx *bbolt.Tx) error {
+		bk := tx.Bucket([]byte(NoteBK + "_kv"))
+		if bk == nil {
+			return nil
+		}
+		for _, kis := range ids {
+			res = append(res, len(bk.Get(kis[:])) > 0)
+		}
+		return nil
+	})
+	return
+}
+
+func convertToBkIDs(v interface{}) (ids [][]byte) {
 	switch v := v.(type) {
 	case [][]byte:
 		ids = v
@@ -56,6 +70,11 @@ func BatchGetNotes(v interface{}) (tags []*types.Note, err error) {
 	default:
 		panic(v)
 	}
+	return
+}
+
+func BatchGetNotes(v interface{}) (tags []*types.Note, err error) {
+	ids := convertToBkIDs(v)
 	err = Store.View(func(tx *bbolt.Tx) error {
 		bk := tx.Bucket([]byte(NoteBK + "_kv"))
 		if bk == nil {

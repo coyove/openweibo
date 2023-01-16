@@ -18,6 +18,7 @@ import (
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/bitmap"
 	"github.com/coyove/sdss/contrib/clock"
+	"github.com/sirupsen/logrus"
 	"go.etcd.io/bbolt"
 )
 
@@ -91,7 +92,7 @@ func downloadData() {
 	f.Close()
 }
 
-func rebuildData(count int) {
+func rebuildDataFromWiki(count int) {
 	data := map[uint64]string{}
 	mgr := dal.Store.Manager
 	f, _ := os.Open("out.gz")
@@ -152,4 +153,41 @@ func rebuildData(count int) {
 		})
 		fmt.Println(len(data))
 	}
+}
+
+func rebuildDataFromDB() {
+	dal.Store.Saver().Close()
+
+	out := "bitmap_cache/rebuilt"
+	os.RemoveAll(out)
+
+	mgr, err := bitmap.NewManager(out, 1024000, 1*1024*1024*1024)
+	if err != nil {
+		logrus.Fatal("init bitmap manager: ", err)
+	}
+
+	dal.Store.DB.View(func(tx *bbolt.Tx) error {
+		bk := tx.Bucket([]byte(dal.NoteBK + "_kv"))
+		if bk == nil {
+			return nil
+		}
+
+		c := bk.Cursor()
+		i, tot := 0, bk.Stats().KeyN
+		for k, v := c.First(); len(k) > 0; k, v = c.Next() {
+			note := types.UnmarshalTagBinary(v)
+			h := buildBitmapHashes(note.Title, note.Creator, note.ParentIds)
+			mgr.Saver().AddAsync(bitmap.Uint64Key(note.Id), h)
+			if i++; i%10000 == 0 {
+				logrus.Infof("rebuild bitmap progress: %v / %v", i, tot)
+			}
+		}
+		return nil
+	})
+
+	logrus.Infof("rebuild bitmap progress: done, wait for closing...")
+	mgr.Saver().Close()
+
+	logrus.Infof("remove current bitmaps: %v", os.RemoveAll("bitmap_cache/index"))
+	logrus.Infof("rename rebuilt bitmaps: %v", os.Rename("bitmap_cache/rebuilt", "bitmap_cache/index"))
 }

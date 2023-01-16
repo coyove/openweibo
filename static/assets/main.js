@@ -84,7 +84,7 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
             click(function() { !readonly && that.click() });
         title && div.append($("<div class=title>").text(title));
         !readonly && div.append($("<div class='title hover'>").append('<span class=li_camera></span>'));
-        this.parent().append(div);
+        this.parent().prepend(div);
         this.hide();
         this.change(function() {
             const file = that.get(0).files[0];
@@ -204,26 +204,7 @@ function ajaxBtn(el, action, args, f) {
         headers: { 'X-Ns-Action': action },
         success: function(data){
             if (!data.success) {
-                var i18n = ({
-"INTERNAL_ERROR": "服务器错误",
-"IP_BANNED": "IP封禁",
-"MODS_REQUIRED": "无管理员权限",
-"PENDING_REVIEW": "修改审核中",
-"LOCKED": "记事已锁定",
-"INVALID_CONTENT": "无效内容，过长或过短",
-"EMPTY_TITLE": "标题为空，请输入标题或者选择一篇父记事",
-"TITLE_TOO_LONG": "标题过长",
-"CONTENT_TOO_LONG": "内容过长",
-"TOO_MANY_PARENTS": "父记事过多，最多8个",
-"DUPLICATED_TITLE": "标题重名",
-"ILLEGAL_APPROVE": "无权审核",
-"INVALID_ACTION": "请求错误",
-"INVALID_IMAGE_NAME": "无效图片名",
-"INVALID_IMAGE": "无效图片",
-"CONTENT_TOO_LARGE": "图片过大",
-"COOLDOWN": "请稍后重试",
-                })[data.code];
-                alert('发生错误: ' + i18n + ' (' + data.code + ')');
+                alert('发生错误: ' + data.msg + ' (' + data.code + ')');
                 return;
             }
             f ? f(data, args) : location.reload();
@@ -240,18 +221,13 @@ function ajaxBtn(el, action, args, f) {
 
 function wrapTagSearchInput(container) {
     if (container.wrapped) return;
-    const editable = $(container).attr('edit') == 'edit';
     const maxTags = parseInt($(container).attr('max-tags') || '99');
+    const readonly = !!$(container).attr('readonly');
     const div = document.createElement('div');
     div.className = 'tag-search-input';
 
-    var onClickTag = null;
-    if ($(container).attr('onclicktag')) 
-        onClickTag = function(id) { eval('var id = ' + id + '; ' + $(container).attr('onclicktag')) };
-    onClickTag = onClickTag || container.onclicktag || function() {};
-
     const el = document.createElement('div');
-    el.setAttribute('contenteditable', true);
+    el.setAttribute('contenteditable', !readonly);
     el.className = 'tag-box tag-search-box';
     el.style.outline = 'none';
     el.style.minWidth = '2em';
@@ -267,7 +243,7 @@ function wrapTagSearchInput(container) {
     function updateInfo() {
         const sz = Object.keys(selected).length;
         info.innerText = sz + '/' + maxTags;
-        el.setAttribute('contenteditable', sz < maxTags);
+        el.setAttribute('contenteditable', sz < maxTags && !readonly);
     }
 
     function select(src, fromHistory) {
@@ -275,23 +251,19 @@ function wrapTagSearchInput(container) {
         if (!(tagID in selected) && Object.keys(selected).length < maxTags) {
             selected[tagID] = {'tag': src.text()};
             const t = $("<div>").addClass('tag-box normal user-selected').attr('tag-id', tagID);
-            if (editable) {
-                t.append($(window.CONST_starSVG).click(function(ev){
-                    t.toggleClass('tag-required');
-                    selected[tagID].required = t.hasClass('tag-required');
-                }));
-            }
             const txt = src.text();
             t.append($("<span>").css('cursor', 'pointer').
                 text(txt.length < 20 ? txt : txt.substr(0, 20) + '...').
-                click(function() { onClickTag(tagID) }));
-            t.append($(window.CONST_closeSVG).click(function(ev) {
-                delete selected[tagID];
-                t.remove();
-                updateInfo();
-                el.focus();
-                ev.stopPropagation();
-            }));
+                click(function() { window.open('/ns:id:' + tagID) }));
+            if (!readonly) {
+                t.append($(window.CONST_closeSVG).click(function(ev) {
+                    delete selected[tagID];
+                    t.remove();
+                    updateInfo();
+                    el.focus();
+                    ev.stopPropagation();
+                }));
+            }
             if (fromHistory) {
                 t.insertBefore(src);
                 src.remove();
@@ -367,9 +339,7 @@ function wrapTagSearchInput(container) {
             e.preventDefault();
         }
         if (e.keyCode == 13) {
-            if (div.candidates.length) {
-                select(div.candidates[div.selector]);
-            }
+            div.candidates.length && select(div.candidates[div.selector]);
             e.preventDefault();
         }
         if (e.keyCode == 8 && el.textContent.length == 0) {
@@ -383,14 +353,14 @@ function wrapTagSearchInput(container) {
         }
     }
     el.onblur = function() {
-        if (this.blurtimer) clearTimeout(this.blurtimer);
+        this.blurtimer && clearTimeout(this.blurtimer);
         this.blurtimer = setTimeout(function() {
             el.innerHTML = '';
             reset();
         }, 1000);
     }
     el.onfocus = function() {
-        if (this.blurtimer) clearTimeout(this.blurtimer);
+        this.blurtimer && clearTimeout(this.blurtimer);
     }
     container.onmouseup = function(ev) {
         el.focus();
@@ -403,17 +373,19 @@ function wrapTagSearchInput(container) {
     container.appendChild(div);
     reset();
 
-    const history = JSON.parse(window.localStorage.getItem('tags-history') || '{}');
-    for (const k in history) {
-        const t = $("<div>").
-            addClass('candidate tag-box').
-            attr('tag-id', k).
-            append($("<span>").text(history[k].tag));
-        t.click(function(ev) {
-            select(t, true);
-            ev.stopPropagation();
-        }).insertBefore(el);
-        div.candidates.push(t);
+    if (!readonly) {
+        const history = JSON.parse(window.localStorage.getItem('tags-history') || '{}');
+        for (const k in history) {
+            const t = $("<div>").
+                addClass('candidate tag-box').
+                attr('tag-id', k).
+                append($("<span>").text(history[k].tag));
+            t.click(function(ev) {
+                select(t, true);
+                ev.stopPropagation();
+            }).insertBefore(el);
+            div.candidates.push(t);
+        }
     }
 
     for (var i = 0; ; i++) {
@@ -428,6 +400,3 @@ function wrapTagSearchInput(container) {
     container.wrapped = true;
 }
 
-window.onload = function() {
-    $('.tag-search-input-container').each(function(_, container) { wrapTagSearchInput(container) });
-}

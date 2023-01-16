@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
-	"mime/multipart"
 	"net/http"
 	"os"
 	"os/exec"
@@ -48,7 +47,7 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 		if d < 1 {
 			return t
 		}
-		return "<b>" + strconv.Itoa(int(d)) + "</b>d&emsp;" + t
+		return "<b>" + strconv.Itoa(int(d)) + "d.</b> " + t
 	},
 	"generatePages": func(p int, pages int) (a []int) {
 		if pages > 0 {
@@ -78,8 +77,9 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 		if a == "" {
 			return "" //"<div class='icon-doc-text-inv' style='margin-right: 0.5em'></div>"
 		}
-		return fmt.Sprintf("<div class='image-selector-container small'>"+
-			"<a href='javascript:openImage(\"%s\")'><img class=image src='%s' data-src='%s'></a></div>",
+		return fmt.Sprintf("<a href='javascript:openImage(\"%s\")'>"+
+			"<div class='image-selector-container thumb small'>"+
+			"<img class=image src='%s' data-src='%s'></div></a>",
 			imageURL("image", a), imageURL("thumb", a), imageURL("image", a))
 	},
 	"renderClip": types.RenderClip,
@@ -88,6 +88,27 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 }).ParseFS(httpStaticPages, "static/*.html"))
 
 var serveUUID = types.UUIDStr()
+
+var errorMessages = map[string]string{
+	"INTERNAL_ERROR":     "服务器错误",
+	"IP_BANNED":          "IP封禁",
+	"MODS_REQUIRED":      "无管理员权限",
+	"PENDING_REVIEW":     "修改审核中",
+	"LOCKED":             "记事已锁定",
+	"INVALID_CONTENT":    "无效内容，过长或过短",
+	"EMPTY_TITLE":        "标题为空，请输入标题或者选择一篇父记事",
+	"TITLE_TOO_LONG":     "标题过长",
+	"CONTENT_TOO_LONG":   "内容过长",
+	"TOO_MANY_PARENTS":   "父记事过多，最多8个",
+	"DUPLICATED_TITLE":   "标题重名",
+	"ILLEGAL_APPROVE":    "无权审核",
+	"INVALID_ACTION":     "请求错误",
+	"INVALID_IMAGE_NAME": "无效图片名",
+	"INVALID_IMAGE":      "无效图片",
+	"INVALID_PARENT":     "无效父记事",
+	"CONTENT_TOO_LARGE":  "图片过大",
+	"COOLDOWN":           "请稍后重试",
+}
 
 func HandleIndex(w http.ResponseWriter, r *types.Request) {
 	if r.URL.Path == "/" {
@@ -142,6 +163,7 @@ func HandleImage(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandlePublicStatus(w http.ResponseWriter, r *types.Request) {
+	fmt.Fprintf(w, "Your cookie: %s (Display: %s)\n\n", r.UserSession, r.UserDisplay)
 	fmt.Fprintf(w, "Server started at %v\n", serverStart)
 	fmt.Fprintf(w, "Request max size: %v\n", *reqMaxSize)
 
@@ -196,7 +218,7 @@ func serve(pattern string, f func(http.ResponseWriter, *types.Request)) {
 			})
 		}
 
-		// 	time.Sleep(time.Second)
+		// time.Sleep(time.Second)
 		f(w, req)
 	}))
 	http.Handle(pattern, h)
@@ -205,7 +227,11 @@ func serve(pattern string, f func(http.ResponseWriter, *types.Request)) {
 func writeJSON(w http.ResponseWriter, args ...interface{}) {
 	m := map[string]interface{}{}
 	for i := 0; i < len(args); i += 2 {
-		m[args[i].(string)] = args[i+1]
+		k, v := args[i].(string), args[i+1]
+		if k == "code" {
+			m["msg"] = errorMessages[v.(string)]
+		}
+		m[k] = v
 	}
 	buf, _ := json.Marshal(m)
 	w.Header().Add("Content-Type", "application/json")
@@ -262,6 +288,12 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 		})
 		if len(ad.parentIds) > r.GetParentsMax() {
 			return ad, "TOO_MANY_PARENTS"
+		}
+		res, _ := dal.BatchCheckNoteExistences(ad.parentIds)
+		for _, ok := range res {
+			if !ok {
+				return ad, "INVALID_PARENT"
+			}
 		}
 	}
 
@@ -329,13 +361,6 @@ func collectSimple(q string, parentIds []uint64, uid string) ([]bitmap.Key, []bi
 	return tags, jms
 }
 
-func deleteImage(id string) {
-	if id == "" {
-		return
-	}
-	os.Remove("image_cache/" + id)
-}
-
 func imax(a, b int) int {
 	if a > b {
 		return a
@@ -348,31 +373,6 @@ func imin(a, b int) int {
 		return a
 	}
 	return b
-}
-
-func saveImage(r *types.Request, id uint64, seed int, ext string,
-	img multipart.File, hdr *multipart.FileHeader) (string, string) {
-	fn := fmt.Sprintf("%d/%x%04x-%x%s", types.Uint64Hash(id)%1024, clock.Unix(), seed, id, ext)
-	path := "image_cache/" + fn
-	os.MkdirAll(filepath.Dir(path), 0777)
-	out, err := os.Create(path)
-	if err != nil {
-		logrus.Errorf("create image %s err: %v", path, err)
-		return "", "INTERNAL_ERROR"
-	}
-	defer out.Close()
-	if _, err := io.Copy(out, img); err != nil {
-		logrus.Errorf("copy image to local %s err: %v", path, err)
-		return "", "INTERNAL_ERROR"
-	}
-	return fn, ""
-}
-
-func imageURL(p, a string) string {
-	if a == "" {
-		return ""
-	}
-	return "/ns:" + p + "/" + a
 }
 
 func doubleCheckFilterResults(q string, pids []uint64, notes []*types.Note, f func(*types.Note) bool) {

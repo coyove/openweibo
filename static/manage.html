@@ -10,12 +10,6 @@
 
 <div id='search-bar' style='display:none'>
     <input id=search class='border1' style='width:100%' placeholder='搜索{{if or .T.view .T.pids}}子{{end}}{{if .T.pid}}{{.T.pid}}的{{end}}记事'>
-    <script>
-        $('#search').on('keyup', function(ev) {
-            if (ev.keyCode == 13)
-                location.href="/ns:manage?pids={{if .T.view}}{{.T.note.Id}}{{end}}{{if .T.pids}}{{.T.pids}}{{end}}&pid={{.T.pid}}&q="+encodeURIComponent($("#search").val())
-        }).val(decodeURIComponent('{{fullEscape .T.query}}'))
-    </script>
 </div>
 
 <div>
@@ -26,14 +20,16 @@
         
                     <span style='flex-grow:1'>
                     {{if .T.query}}
-                        <span>搜索{{if .T.pids}}子记事{{end}}{{if .T.pid}} {{.T.pid}} 的记事{{end}}：<b>{{safeHTML .T.query}}</b> ({{.T.total}})</span>
+                        <span>
+                            搜索{{if .T.pids}}子记事{{end}}{{if .T.pid}} {{.T.pid}} 的记事{{end}}：<b class=wrapall>{{safeHTML .T.query}}</b> ({{.T.total}})
+                        </span>
                     {{else}}
                     {{if .T.pid}}
                         <a class=tag-edit-button href='/ns:history?user={{.T.pid}}&desc=1'><span class=li_vynil></span></a>
                         {{if eq .UserDisplay .T.pid}}我{{else}}{{.T.pid}} {{end}}创建的记事 ({{.T.total}})
                     {{else}}
                         {{if .T.view}}
-                            {{if ne .T.page 1}}<b>{{.T.note.HTMLTitleDisplay}} </b>{{end}}子记事
+                            {{if ne .T.page 1}}<b class=wrapall>{{.T.note.HTMLTitleDisplay}} </b>{{end}}子记事
                         {{else}}
                             全部记事
                         {{end}} ({{.T.total}})
@@ -43,6 +39,7 @@
 
                     <div>
                         <a class='tag-edit-button icon-search' href='javascript:$("#search-bar").toggle().find("input").focus()'></a>
+                        <a class='tag-edit-button icon-resize-full' href='javascript:void(0)' id=switch-image-size></a>
                         {{if .T.view}}
                         <a class='tag-edit-button icon-paper-plane' href='/ns:new?pt={{.T.note.Id}},{{.T.note.QueryTitle}}'></a>
                         {{end}}
@@ -58,17 +55,18 @@
 
         {{range .T.tags}}
         <tr id='tag{{.Id}}'>
-            <td tag-id={{.Id}} class='tag-edit'>
+            <td tag-id={{.Id}} class='tag-edit' colspan=2>
                 <div class=display >
                     {{imageBox .Image}}
                     <a href='/{{.EscapedTitle}}' class=tag-edit-name>{{.HTMLTitleDisplay}}</a>
-                    {{if .ParentIds}}<div class='tag-edit-button li_vallet' disabled title='子记事'></div>{{end}}
-                    {{if .Lock}}<div class='tag-edit-button li_lock' disabled></div>{{end}}
-                    {{if .PendingReview}}<div class='tag-edit-button li_stack' disabled title='审核中'></div>{{end}}
-                    <a class='tag-edit-button li_pen' href='/ns:edit?id={{.Id}}'></a>
+                    <div class=status>
+                        {{if .ParentIds}}<div class='tag-edit-button li_data' disabled title='子记事'></div>{{end}}
+                        {{if .Lock}}<div class='tag-edit-button li_lock' disabled></div>{{end}}
+                        {{if .PendingReview}}<div class='tag-edit-button li_stack' disabled title='审核中'></div>{{end}}
+                        <span class=time>{{formatUnixMilliBR .UpdateUnix}}</span>
+                    </div>
                 </div>
             </td>
-            <td class='time small'>{{formatUnixMilliBR .UpdateUnix}}</td>
         </tr>
         {{end}}
     </table>
@@ -89,5 +87,25 @@
         {{end}}
     {{end}}
 </div>
+
+<script>
+    $('#search').on('keyup', function(ev) {
+        if (ev.keyCode == 13)
+            location.href="/ns:manage?pids={{if .T.view}}{{.T.note.Id}}{{end}}{{if .T.pids}}{{.T.pids}}{{end}}&pid={{.T.pid}}&q="+encodeURIComponent($("#search").val())
+    }).val(decodeURIComponent('{{fullEscape .T.query}}'))
+    $('#switch-image-size').on('click', function(ev) {
+        if ($(this).hasClass('icon-resize-full')) {
+            $(this).removeClass('icon-resize-full').addClass('icon-resize-small');
+            $('.thumb').removeClass('small').addClass('medium');
+            window.localStorage.setItem('large-image', '1');
+        } else {
+            $(this).addClass('icon-resize-full').removeClass('icon-resize-small');
+            $('.thumb').addClass('small').removeClass('medium');
+            window.localStorage.removeItem('large-image');
+        }
+    });
+    if (window.localStorage.getItem('large-image') == '1')
+        $('#switch-image-size').click();
+</script>
 
 {{template "footer.html" .}}

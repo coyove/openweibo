@@ -303,7 +303,7 @@ func doReject(target *types.Note, w http.ResponseWriter, r *types.Request) bool 
 
 func HandleManage(w http.ResponseWriter, r *types.Request) {
 	p, st, desc, pageSize := r.GetPagingArgs()
-	q := r.URL.Query().Get("q")
+	q := types.CleanTitle(r.URL.Query().Get("q"))
 	pidStr := r.URL.Query().Get("pid")
 	if pidStr == "0" {
 		pidStr = ""

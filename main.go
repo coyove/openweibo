@@ -19,11 +19,12 @@ import (
 )
 
 var (
-	debugRebuild = flag.Int("debug-rebuild", 0, "")
-	compactDB    = flag.Bool("compact", false, "")
-	listen       = flag.String("l", ":8888", "")
-	reqMaxSize   = flag.Int64("rms", 15*1024*1024, "")
-	serverStart  time.Time
+	rebuildFromWiki = flag.Int("rebuild-init", 0, "")
+	rebuildFromDB   = flag.Bool("rebuild", false, "")
+	compactDB       = flag.Bool("compact", false, "")
+	listen          = flag.String("l", ":8888", "")
+	reqMaxSize      = flag.Int64("rms", 15*1024*1024, "")
+	serverStart     time.Time
 )
 
 func main() {
@@ -69,8 +70,13 @@ func main() {
 		logrus.Infof("[compactor] shutdown: %v", srv.Shutdown(context.TODO()))
 	}
 
-	if *debugRebuild > 0 {
-		rebuildData(*debugRebuild)
+	if *rebuildFromWiki > 0 {
+		rebuildDataFromWiki(*rebuildFromWiki)
+	}
+
+	if *rebuildFromDB {
+		rebuildDataFromDB()
+		return
 	}
 
 	serve("/", HandleIndex)
@@ -88,11 +94,18 @@ func main() {
 	http.NotFoundHandler()
 
 	root := types.UUIDStr()
-	http.HandleFunc("/ns:"+root, func(w http.ResponseWriter, r *http.Request) { generateSession(root, "root", w, r) })
+	http.HandleFunc("/ns:"+root, func(w http.ResponseWriter, r *http.Request) {
+		generateSession(root, "root", w, r)
+	})
+	http.HandleFunc("/ns:"+root+"/dump", func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		fmt.Fprintf(w, "%v in %v", dump(), time.Since(start))
+	})
 	http.Handle("/ns:"+root+"/debug/pprof/", http.StripPrefix("/"+root, http.HandlerFunc(pprof.Index)))
 
 	logrus.Info("root token page:  /ns:", root)
 	logrus.Info("debug pprof page: /ns:", root, "/debug/pprof/")
+	logrus.Info("dumper:           /ns:", root, "/dump")
 
 	http.HandleFunc("/ns:static/", HandleAssets)
 	http.HandleFunc("/ns:image/", HandleImage)

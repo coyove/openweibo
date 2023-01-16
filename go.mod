@@ -8,6 +8,7 @@ require (
 	github.com/coyove/sdss v1.0.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/pierrec/lz4 v2.6.1+incompatible
+	github.com/pierrec/lz4/v4 v4.1.17
 	github.com/sirupsen/logrus v1.8.1
 	github.com/tidwall/gjson v1.14.4
 	go.etcd.io/bbolt v1.3.6

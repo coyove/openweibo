@@ -7,7 +7,7 @@
         <tr style='background:#ffe0b2'>
             <td colspan=2>
                 <div class=display>
-                    <b style='word-break:break-all;white-space:pre-wrap;margin-right:0.5em'>{{.T.note.HTMLTitleDisplay}}</b>
+                    <b class=wrapall>{{.T.note.HTMLTitleDisplay}}</b>&nbsp;
                     <span>{{formatUnixMilli .T.recordUnix}} 的历史记录</span>
                 </div>
             </td>
@@ -20,7 +20,7 @@
             <td class=small>待审核</td>
             <td>
                 <div class=display>
-                    <div style='flex-grow:1'>{{safeHTML .ReviewTitle}}</div>
+                    <div class=wrapall style='flex-grow:1'>{{safeHTML .ReviewTitle}}</div>
                     {{if not $.T.readonly}}
                     <div class='tag-box button' onclick='ajaxBtn(this,"approve",{"id":{{.Id}}})'><span>通过</span></div>
                     <div class='tag-box button' onclick='ajaxBtn(this,"reject",{"id":{{.Id}}})'><span>驳回</span></div>
@@ -35,16 +35,15 @@
             <td>
                 <div class=display>
                     <span>{{.Id}}&nbsp;</span>
-                    <a class='tag-edit-button li_eye' href='/{{.EscapedTitle}}'></a>
+                    <a class='tag-edit-button icon-eye' href='/{{.EscapedTitle}}'></a>
                 </div>
             </td>
         </tr>
         <tr>
-            <td class=small>标题</td>
-            <td>
+            <td colspan=2>
                 <div class=display>
                     <script type="text/plain" id=title{{.Id}}>{{.Title}}</script>
-                    <input id="title" maxlength={{$.GetTitleMaxLen}} class=tag-edit-name {{if $.T.readonly}}readonly{{end}}/>
+                    <input placeholder='标题' id="title" maxlength={{$.GetTitleMaxLen}} class=tag-edit-name {{if $.T.readonly}}readonly{{end}}/>
                     {{if not $.T.readonly}}
                     <div class='tag-box button' onclick='updateNote(this)' id=update style='display:none'><span>更新</span></div>
                     {{end}}
@@ -53,16 +52,14 @@
         </tr>
         {{if and (not $.User.IsMod) (ne $.UserDisplay .Creator) (not $.T.readonly)}}
         <tr>
-            <td class=small></td>
-            <td>
-                <div class=display style='font-size:90%;    word-break: break-all; white-space: pre-wrap;'
+            <td colspan=2>
+                <div class=display style='font-size:90%;color:#e91e63;word-break: break-all; white-space: pre-wrap;'
                     >修改将会由创建者或管理员审核后生效，在此之前你可以驳回自己的修改或进一步编辑。</div>
             </td>
         </tr>
         {{end}}
         <tr>
-            <td class=small>图片</td>
-            <td>
+            <td colspan=2>
                 <div class=display>
                     <input id="image" type=file class='image-selector' {{if .PendingReview}}title='现图片'{{end}} accept="image/*">
                     <input readonly id="review-image" type=file class='image-selector' style='display:none' title='新图片'>
@@ -71,8 +68,7 @@
         </tr>
         {{if .PendingReview}}
         <tr>
-            <td class=small></td>
-            <td>
+            <td colspan=2>
                 <div class=display>
                     <label><input onclick='switchDiffView(this)' type=radio name=diff value=current checked> 原内容&emsp;</label>
                     <label><input onclick='switchDiffView(this)' type=radio name=diff value=review> 新内容&emsp;</label>
@@ -82,8 +78,7 @@
         </tr>
         {{end}}
         <tr id='tr-content-current'>
-            <td class=small>内容</td>
-            <td>
+            <td colspan=2>
                 <div class=display>
                     <textarea id="content"
                         {{if $.T.readonly}}readonly{{end}}
@@ -95,8 +90,7 @@
         </tr>
         {{if .PendingReview}}
         <tr id='tr-content-review' style='display:none'>
-            <td class=small>新内容</td>
-            <td>
+            <td colspan=2>
                 <div class=display>
                     <textarea id="review-content" readonly class=tag-edit-desc style='height:10em'
                         >{{safeHTML .ReviewContent}}</textarea>
@@ -104,11 +98,13 @@
             </td>
         </tr>
         <tr id='tr-content-diff' style='display:none'>
-            <td class=small>Diff</td><td><div class=display><div id=diff style='width: 100%'></div></div></td>
+            <td colspan=2>
+                <div class=display><div id=diff style='width: 100%'></div></div>
+            </td>
         </tr>
         {{end}}
 
-        <tr><td class=small>父记事</td><td><div class=display id=parents-container><div class=lds-dual-ring></div></div></td></tr>
+        <tr><td colspan=2><div class=display id=parents-container><div class=lds-dual-ring></div></div></td></tr>
         <tr><td class=small>变更历史</td><td><div class=display><a href='/ns:history?note={{.Id}}&desc=1'>查看</a></div></td></tr>
         <tr>
             <td class=small>状态</td>
@@ -151,14 +147,18 @@
 
         <script>
             $.get('/ns:search?n=100&ids={{.JoinParentIds}}', function(data) {
-                const ps = $("<div max-tags={{$.GetParentsMax}} class='tag-search-input-container border1' style='width:100%'></div>").get(0);
+                const ps = $("<div max-tags={{$.GetParentsMax}} class='tag-search-input-container' style='width:100%'></div>");
+                {{if $.T.readonly}}
+                    ps.attr('readonly', 'readonly');
+                    data.notes.length == 0 && $('#parents-container').closest('tr').remove();
+                {{end}}
                 $('#parents-container').html('').append(ps);
-                ps.onclicktag = function(id) { location.href='/ns:edit?id='+id; }
-                data.notes.forEach(function(t, i) { $(ps).attr('tag-data' + i, t[0] + ',' + t[1]) });
-                wrapTagSearchInput(ps);
-                window.ps = ps;
+                data.notes.forEach(function(t, i) { ps.attr('tag-data' + i, t[0] + ',' + t[1]) });
+                wrapTagSearchInput(ps.get(0));
+                window.ps = ps.get(0);
                 $('#update').show();
             });
+
             $('#title').val($('#title{{.Id}}').text());
             $('#image').imageSelector("{{imageURL "thumb" .Image}}");
             $('#content').linedtextarea();

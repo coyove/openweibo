@@ -61,7 +61,7 @@ func InitDB() {
 		}
 	}
 
-	Store.Manager, err = bitmap.NewManager("bitmap_cache/tags", 1024000, 1*1024*1024*1024)
+	Store.Manager, err = bitmap.NewManager("bitmap_cache/index", 1024000, 1*1024*1024*1024)
 	if err != nil {
 		logrus.Fatal("init bitmap manager: ", err)
 	}
