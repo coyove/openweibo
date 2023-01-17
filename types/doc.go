@@ -27,6 +27,7 @@ type Note struct {
 	UpdateUnix    int64    `protobuf:"fixed64,13,opt" json:"u"`
 	Image         string   `protobuf:"bytes,14,opt" json:"img,omitempty"`
 	ReviewImage   string   `protobuf:"bytes,15,opt" json:"pimg,omitempty"`
+	ChildrenCount int64    `protobuf:"varint,16,opt" json:"cn,omitempty"`
 }
 
 func (t *Note) Reset() { *t = Note{} }
@@ -118,6 +119,15 @@ func UnmarshalNoteBinary(p []byte) *Note {
 		panic(err)
 	}
 	return t
+}
+
+func IncrNoteChildrenCountBinary(p []byte, d int64) []byte {
+	t := &Note{}
+	if err := proto.Unmarshal(p, t); err != nil {
+		panic(err)
+	}
+	t.ChildrenCount += d
+	return t.MarshalBinary()
 }
 
 type NoteRecord struct {

@@ -187,7 +187,7 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 		}
 		if r.User.IsMod() || r.UserDisplay == target.Creator {
 			if len(ad.hash) > 0 {
-				shouldIndex = ad.title != target.Title || !types.EqualUint64s(ad.parentIds, target.ParentIds)
+				shouldIndex = ad.title != target.Title || !types.EqualUint64(ad.parentIds, target.ParentIds)
 			}
 			target.Title = ad.title
 			target.Content = ad.content
@@ -393,7 +393,7 @@ func HandleTagSearch(w http.ResponseWriter, r *types.Request) {
 		if tt == "" {
 			tt = "ns:id:" + strconv.FormatUint(t.Id, 10)
 		}
-		results = append(results, [3]interface{}{t.Id, tt, t.ParentIds})
+		results = append(results, [3]interface{}{t.Id, tt, t.ChildrenCount})
 		return len(results) < n
 	})
 	diff := time.Since(start)

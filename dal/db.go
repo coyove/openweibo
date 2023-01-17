@@ -143,8 +143,10 @@ func KSVUpsert(tx *bbolt.Tx, bkPrefix string, ksv KeySortValue) error {
 		if err := sortKey.Put(ksv.sort0Key(), nil); err != nil {
 			return err
 		}
-		if err := sort1Key.Put(ksv.sort1Key(), nil); err != nil {
-			return err
+		if len(ksv.Sort1) > 0 {
+			if err := sort1Key.Put(ksv.sort1Key(), nil); err != nil {
+				return err
+			}
 		}
 		if err := keySortSort2.Put(ksv.Key, append(types.Uint64Bytes(ksv.Sort0), ksv.Sort1...)); err != nil {
 			return err

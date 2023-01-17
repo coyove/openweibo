@@ -240,6 +240,8 @@ function wrapTagSearchInput(container) {
 
     const selected = {};
 
+    function abbr(s) { return s.length < 16 ? s : s.substr(0, 16) + '...'; }
+
     function updateInfo() {
         const sz = Object.keys(selected).length;
         info.innerText = sz + '/' + maxTags;
@@ -247,14 +249,13 @@ function wrapTagSearchInput(container) {
     }
 
     function select(src, fromHistory) {
-        const tagID = parseInt(src.attr('tag-id'));
+        const tagID = parseInt(src.attr('tag-id')), tagText = src.attr('tag-text');
         if (!(tagID in selected) && Object.keys(selected).length < maxTags) {
-            selected[tagID] = {'tag': src.text()};
+            selected[tagID] = {'tag': tagText};
             const t = $("<div>").addClass('tag-box normal user-selected').attr('tag-id', tagID);
-            const txt = src.text();
-            t.append($("<span>").css('cursor', 'pointer').
-                text(txt.length < 20 ? txt : txt.substr(0, 20) + '...').
-                click(function() { window.open('/ns:id:' + tagID) }));
+            t.append($("<span>").css('cursor', 'pointer').text(abbr(tagText)).click(function() {
+                window.open('/ns:id:' + tagID);
+            }));
             if (!readonly) {
                 t.append($(window.CONST_closeSVG).click(function(ev) {
                     delete selected[tagID];
@@ -272,7 +273,7 @@ function wrapTagSearchInput(container) {
             }
 
             const history = JSON.parse(window.localStorage.getItem('tags-history') || '{}');
-            history[tagID] = {'tag': src.text(), 'ts': new Date().getTime()};
+            history[tagID] = {'tag': tagText, 'ts': new Date().getTime()};
             if (Object.keys(history).length > 10) {
                 var min = Number.MAX_VALUE, minID = 0;
                 for (const k in history) {
@@ -318,7 +319,9 @@ function wrapTagSearchInput(container) {
                     const t = $("<div>").
                         addClass('candidate tag-box ' + (i == 0 ? 'selected' : '')).
                         attr('tag-id', tag[0]).
-                        append($("<span>").text(tag[1]));
+                        attr('tag-text', tag[1]).
+                        append(tag[1]);
+                    tag[2] > 0 && t.append($("<span class=children-count>").text(tag[2]));
                     $(div).append(t.click(function(ev) {
                         select(t);
                         ev.stopPropagation();
@@ -379,7 +382,8 @@ function wrapTagSearchInput(container) {
             const t = $("<div>").
                 addClass('candidate tag-box').
                 attr('tag-id', k).
-                append($("<span>").text(history[k].tag));
+                attr('tag-text', history[k].tag).
+                append(abbr(history[k].tag));
             t.click(function(ev) {
                 select(t, true);
                 ev.stopPropagation();
@@ -391,7 +395,7 @@ function wrapTagSearchInput(container) {
     for (var i = 0; ; i++) {
         const data = $(container).attr('tag-data' + i);
         if (!data) break;
-        select($("<div>").attr('tag-id', data.split(',')[0]).text(data.split(',')[1]));
+        select($("<div>").attr('tag-id', data.split(',')[0]).attr('tag-text', data.split(',')[1]));
         el.blur();
     }
 

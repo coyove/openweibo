@@ -188,6 +188,7 @@ td { white-space: nowrap; padding: 0.1em 0.5em; }
 td.small { font-size:80%; width: 1px }
 td .display { display: flex; padding: 0.25em; min-height: 2.5em; align-items:center; flex-wrap: wrap }
 td.tag-edit .tag-edit-name { text-decoration:none;color:#233;word-break: break-all; white-space: pre-wrap;flex-grow:1}
+.children-count { margin-left: 0.5em; font-size: 90%; color: #aaa }
 td .tag-edit-desc {
     outline: none;
     background: transparent;

@@ -155,14 +155,37 @@ func GetNote(id uint64) (*types.Note, error) {
 
 func ProcessParentChanges(tx *bbolt.Tx, tag *types.Note, old, new []uint64) error {
 	k := types.Uint64Bytes(tag.Id)
+	bk := tx.Bucket([]byte(NoteBK + "_kv"))
+	if bk == nil {
+		return nil
+	}
+
 	for _, o := range old {
-		if err := KSVDelete(tx, fmt.Sprintf("children_%d", o), k[:]); err != nil {
+		if types.ContainsUint64(new, o) {
+			continue
+		}
+		ok := types.Uint64Bytes(o)
+		ob := bk.Get(ok)
+		if len(ob) > 0 {
+			bk.Put(ok, types.IncrNoteChildrenCountBinary(ob, -1))
+		}
+		if err := KSVDelete(tx, fmt.Sprintf("children_%d", o), k); err != nil {
 			return err
 		}
 	}
+
 	now := clock.UnixMilli()
 	tt := []byte(tag.Title)
 	for _, n := range new {
+		if types.ContainsUint64(old, n) {
+			// No need to incr 1
+		} else {
+			nk := types.Uint64Bytes(n)
+			nb := bk.Get(nk)
+			if len(nb) > 0 {
+				bk.Put(nk, types.IncrNoteChildrenCountBinary(nb, 1))
+			}
+		}
 		if err := KSVUpsert(tx, fmt.Sprintf("children_%d", n), KeySortValue{
 			Key:   k[:],
 			Sort0: uint64(now),
@@ -203,32 +226,4 @@ func IsLike(tx *bbolt.Tx, user string, id uint64) bool {
 		return false
 	}
 	return len(bk.Get(types.Uint64Bytes(id))) > 0
-}
-
-type int64Heap struct {
-	data []int64
-}
-
-func (h *int64Heap) Len() int {
-	return len(h.data)
-}
-
-func (h *int64Heap) Less(i, j int) bool {
-	return h.data[i] < h.data[j]
-}
-
-func (h *int64Heap) Swap(i, j int) {
-	h.data[i], h.data[j] = h.data[j], h.data[i]
-}
-
-func (h *int64Heap) Push(x interface{}) {
-	h.data = append(h.data, x.(int64))
-}
-
-func (h *int64Heap) Pop() interface{} {
-	old := h.data
-	n := len(old)
-	x := old[n-1]
-	h.data = old[:n-1]
-	return x
 }

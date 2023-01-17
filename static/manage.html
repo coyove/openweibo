@@ -52,9 +52,10 @@
             <td tag-id={{.Id}} class='tag-edit' colspan=2>
                 <div class=display >
                     {{imageBox .Image}}
-                    <a href='/{{.EscapedTitle}}' class=tag-edit-name>{{.HTMLTitleDisplay}}</a>
+                    <a href='/{{.EscapedTitle}}' class=tag-edit-name
+                        >{{.HTMLTitleDisplay}}{{if .ChildrenCount}}<span class=children-count>({{.ChildrenCount}})</span>{{end}}</a>
                     <div class=status>
-                        {{if .ParentIds}}<div class='tag-edit-button li_data' disabled title='子记事'></div>{{end}}
+                        {{if .ChildrenCount}}<div class='tag-edit-button li_data' disabled title='子记事'></div>{{end}}
                         {{if .Lock}}<div class='tag-edit-button li_lock' disabled></div>{{end}}
                         {{if .PendingReview}}<div class='tag-edit-button li_stack' disabled title='审核中'></div>{{end}}
                         <span class=time>{{formatUnixMilliBR .UpdateUnix}}</span>
