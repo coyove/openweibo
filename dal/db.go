@@ -254,11 +254,44 @@ func KSVPaging(tx *bbolt.Tx, bkPrefix string, bySort int, desc bool, page, pageS
 	}
 
 	total = keyValue.Stats().KeyN
-	pages = total / pageSize
-	if pages*pageSize != total {
-		pages++
-	}
+	pages = idivceil(total, pageSize)
 	return
+}
+
+func KSVPagingFindLexPrefix(tx *bbolt.Tx, bkPrefix string, prefix []byte, desc bool, pageSize int) (page int) {
+	sort1Key := tx.Bucket([]byte(bkPrefix + "_s1k"))
+	if sort1Key == nil {
+		return
+	}
+	c := sort1Key.Cursor()
+
+	i := 0
+	a, _ := c.First()
+	if desc {
+		a, _ = c.Last()
+	}
+
+	for len(a) > 0 {
+		ln := int(a[len(a)-1])
+		sort1 := a[:len(a)-1-ln]
+		if desc {
+			if bytes.Compare(sort1, prefix) <= 0 {
+				break
+			}
+		} else {
+			if bytes.Compare(sort1, prefix) >= 0 {
+				break
+			}
+		}
+		i++
+		if desc {
+			a, _ = c.Prev()
+		} else {
+			a, _ = c.Next()
+		}
+	}
+
+	return i/pageSize + 1
 }
 
 func KSVFirstKeyOfSort1(tx *bbolt.Tx, bkPrefix string, sort1 []byte) (key []byte, found bool) {
@@ -286,4 +319,12 @@ func LockKey(key interface{}) {
 func UnlockKey(key interface{}) {
 	k := fmt.Sprint(key)
 	Store.locks[ngram.StrHash(k)%uint64(len(Store.locks))].Unlock()
+}
+
+func idivceil(a, b int) int {
+	c := a / b
+	if c*b != a {
+		c++
+	}
+	return c
 }

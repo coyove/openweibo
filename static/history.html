@@ -127,13 +127,11 @@
         {{if eq . 0}}
         <span>...</span>
         {{else}}
-        <div class='tag-box nav-page button {{if eq . $.T.page}}selected{{end}}'>
             {{if eq . $.T.page}}
-            <span><b>{{.}}</b></span>
+            <div class='tag-box nav-page button selected'><span><b>{{.}}</b></span></div>
             {{else}}
-            <a href='?{{$.BuildPageLink .}}&{{$.T.viewType}}={{$.T.id}}'>{{.}}</a>
+            <a class=nav-page href='?{{$.BuildPageLink .}}&{{$.T.viewType}}={{$.T.id}}'><div class='tag-box nav-page button'>{{.}}</div></a>
             {{end}}
-        </div>
         {{end}}
     {{end}}
 </div>

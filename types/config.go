@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -66,6 +67,7 @@ type Request struct {
 		desc     bool
 		pageSize int
 		sort     int
+		uq       url.Values
 	}
 
 	ServeUUID   string
@@ -129,45 +131,43 @@ func (r *Request) Elapsed() int64 {
 	return int64(time.Since(r.Start).Milliseconds())
 }
 
-func (r *Request) GetPagingArgs() (int, int, bool, int) {
+func (r *Request) GetPagingArgs() (int, int, bool, int, url.Values) {
 	if r.paging.built {
-		return r.paging.current, r.paging.sort, r.paging.desc, r.paging.pageSize
+		return r.paging.current, r.paging.sort, r.paging.desc, r.paging.pageSize, r.paging.uq
 	}
 
-	p, _ := strconv.Atoi(r.URL.Query().Get("p"))
+	uq := r.URL.Query()
+	p, _ := strconv.Atoi(uq.Get("p"))
 	if p < 1 {
 		p = 1
 	}
-	sort, _ := strconv.Atoi(r.URL.Query().Get("sort"))
+	sort, _ := strconv.Atoi(uq.Get("sort"))
 	if sort < -1 || sort > 1 {
 		sort = 0
 	}
-	desc := r.URL.Query().Get("desc") == "1"
-	pageSize, _ := strconv.Atoi(r.URL.Query().Get("pagesize"))
+	desc := uq.Get("desc") == "1" || uq.Get("desc") == "true"
+	pageSize, _ := strconv.Atoi(uq.Get("pagesize"))
 	if pageSize <= 0 {
 		pageSize = 30
 	}
-	if pageSize > 30 {
-		pageSize = 30
+	if pageSize > 50 {
+		pageSize = 50
 	}
 
 	r.paging.current, r.paging.sort, r.paging.desc, r.paging.pageSize = p, sort, desc, pageSize
+	r.paging.uq = uq
 	r.paging.built = true
 
 	r.AddTemplateValue("page", p)
 	r.AddTemplateValue("sort", sort)
 	r.AddTemplateValue("desc", desc)
 	r.AddTemplateValue("pageSize", pageSize)
-	return p, sort, desc, pageSize
+	return p, sort, desc, pageSize, uq
 }
 
 func (r *Request) BuildPageLink(p int) string {
-	_, sort, desc, pageSize := r.GetPagingArgs()
-	d := "1"
-	if !desc {
-		d = ""
-	}
-	return fmt.Sprintf("p=%d&sort=%d&desc=%v&pagesize=%d", p, sort, d, pageSize)
+	_, sort, desc, pageSize, _ := r.GetPagingArgs()
+	return fmt.Sprintf("p=%d&sort=%d&desc=%v&pagesize=%d", p, sort, desc, pageSize)
 }
 
 func (r *Request) RemoteIPv4Masked() net.IP {

@@ -43,11 +43,11 @@
                         {{if .T.view}}
                         <a class='tag-edit-button icon-paper-plane' href='/ns:new?pt={{.T.note.Id}},{{.T.note.QueryTitle}}'></a>
                         {{end}}
-                        {{$qy := fullEscape .T.query}}
-                        <a class='tag-edit-button icon-sort-name-up {{if and (eq .T.sort 1) (not .T.desc)}}selected{{end}}' href='?sort=1&pid={{.T.pid}}&q={{$qy}}'></a>
-                        <a class='tag-edit-button icon-sort-name-down {{if and (eq .T.sort 1) (.T.desc)}}selected{{end}}' href='?sort=1&desc=1&pid={{.T.pid}}&q={{$qy}}'></a>
-                        <a class='tag-edit-button icon-sort-number-up {{if and (eq .T.sort 0) (not .T.desc)}}selected{{end}}' href='?sort=0&pid={{.T.pid}}&q={{$qy}}'></a>
-                        <a class='tag-edit-button icon-sort-number-down {{if and (eq .T.sort 0) (.T.desc)}}selected{{end}}' href='?sort=0&desc=1&pid={{.T.pid}}&q={{$qy}}'></a>
+                        {{$qy := printf "pid=%s&pids=%s&q=%s" .T.pid .T.pids (fullEscape .T.query)}}
+                        <a class='tag-edit-button icon-sort-name-up {{if and (eq .T.sort 1) (not .T.desc)}}selected{{end}}' href='?sort=1&{{$qy}}'></a>
+                        <a class='tag-edit-button icon-sort-name-down {{if and (eq .T.sort 1) (.T.desc)}}selected{{end}}' href='?sort=1&desc=1&{{$qy}}'></a>
+                        <a class='tag-edit-button icon-sort-number-up {{if and (eq .T.sort 0) (not .T.desc)}}selected{{end}}' href='?sort=0&{{$qy}}'></a>
+                        <a class='tag-edit-button icon-sort-number-down {{if and (eq .T.sort 0) (.T.desc)}}selected{{end}}' href='?sort=0&desc=1&{{$qy}}'></a>
                     </div>
                 </div>
             </td>
@@ -72,19 +72,24 @@
     </table>
 </div>
 
-<div id=page style='text-align:center'>
+<div id=page style='display:flex;align-items:center;justify-content:center'>
     {{range (generatePages .T.page .T.pages)}}
         {{if eq . 0}}
-        <span>...</span>
+            <svg width=24 height=16 viewBox="0 0 24 16">
+                <circle cx=6 cy=8 r=2 fill='#607d8b'/>
+                <circle cx=12 cy=8 r=2 fill='#607d8b'/>
+                <circle cx=18 cy=8 r=2 fill='#607d8b'/>
+            </svg>
         {{else}}
-        <div class='tag-box nav-page button {{if eq . $.T.page}}selected{{end}}'>
             {{if eq . $.T.page}}
-            <span><b>{{.}}</b></span>
+            <div class='tag-box button selected'><span><b>{{.}}</b></span></div>
             {{else}}
-            <a href='?{{$.BuildPageLink .}}&pid={{$.T.pid}}'>{{.}}</a>
+            <a class=nav-page href='?{{$.BuildPageLink .}}&pid={{$.T.pid}}'><div class='tag-box button'>{{.}}</div></a>
             {{end}}
-        </div>
         {{end}}
+    {{end}}
+    {{if and (eq .T.sort 1) (not .T.query)}}
+        <a href='javascript:findLexPrefix()'><div style='margin-left: 0.2em' class='tag-edit-button icon-map-o'></div></a>
     {{end}}
 </div>
 
@@ -106,6 +111,12 @@
     });
     if (window.localStorage.getItem('large-image') == '1')
         $('#switch-image-size').click();
+
+    function findLexPrefix() {
+        const prefix = prompt('跳转到前缀');
+        if (!prefix) return;
+        location.href = '?sort=1&desc={{.T.desc}}&prefix=' + encodeURIComponent(prefix);
+    }
 </script>
 
 {{template "footer.html" .}}

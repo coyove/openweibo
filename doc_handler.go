@@ -302,18 +302,33 @@ func doReject(target *types.Note, w http.ResponseWriter, r *types.Request) bool 
 }
 
 func HandleManage(w http.ResponseWriter, r *types.Request) {
-	p, st, desc, pageSize := r.GetPagingArgs()
-	q := types.CleanTitle(r.URL.Query().Get("q"))
-	pidStr := r.URL.Query().Get("pid")
+	p, st, desc, pageSize, uq := r.GetPagingArgs()
+	pidStr := uq.Get("pid")
 	if pidStr == "0" {
 		pidStr = ""
+	}
+
+	if p := uq.Get("prefix"); p != "" {
+		var page int
+		dal.Store.View(func(tx *bbolt.Tx) error {
+			if pidStr != "" {
+				page = dal.KSVPagingFindLexPrefix(tx, "creator_"+pidStr, []byte(p), desc, pageSize)
+			} else {
+				page = dal.KSVPagingFindLexPrefix(tx, dal.NoteBK, []byte(p), desc, pageSize)
+			}
+			return nil
+		})
+		http.Redirect(w, r.Request, fmt.Sprintf("/ns:manage?sort=1&desc=%v&p=%d&pid=%s", desc, page, pidStr), 302)
+		return
 	}
 
 	var notes []*types.Note
 	var pids []uint64
 	var total, pages int
+
+	q := types.CleanTitle(uq.Get("q"))
 	if q != "" {
-		pids = types.SplitUint64List(r.URL.Query().Get("pids"))
+		pids = types.SplitUint64List(uq.Get("pids"))
 		ids, _ := collectSimple(q, pids, pidStr)
 		var tmp []uint64
 		for _, id := range ids {
@@ -350,14 +365,14 @@ func HandleManage(w http.ResponseWriter, r *types.Request) {
 }
 
 func HandleHistory(w http.ResponseWriter, r *types.Request) {
-	p, _, desc, pageSize := r.GetPagingArgs()
+	p, _, desc, pageSize, uq := r.GetPagingArgs()
 
 	view := "all"
-	idStr := r.URL.Query().Get("note")
+	idStr := uq.Get("note")
 	if idStr != "" {
 		view = "note"
 	} else {
-		idStr = r.URL.Query().Get("user")
+		idStr = uq.Get("user")
 		if idStr != "" {
 			view = "user"
 		}
@@ -506,13 +521,24 @@ func HandleView(t string, w http.ResponseWriter, r *types.Request) {
 		notes, _ = dal.BatchGetNotes(note.ParentIds)
 	}
 
-	p, st, desc, pageSize := r.GetPagingArgs()
+	p, st, desc, pageSize, uq := r.GetPagingArgs()
+
+	if p := uq.Get("prefix"); p != "" {
+		var page int
+		dal.Store.View(func(tx *bbolt.Tx) error {
+			page = dal.KSVPagingFindLexPrefix(tx, fmt.Sprintf("children_%d", note.Id), []byte(p), desc, pageSize)
+			return nil
+		})
+		http.Redirect(w, r.Request, fmt.Sprintf("/ns:id:%d?sort=1&desc=%v&p=%d", note.Id, desc, page), 302)
+		return
+	}
 
 	results, total, pages := dal.KSVPaging(nil, fmt.Sprintf("children_%d", note.Id), st, desc, p-1, pageSize)
 	tags, _ := dal.BatchGetNotes(results)
 
 	r.AddTemplateValue("query", "")
 	r.AddTemplateValue("pid", "")
+	r.AddTemplateValue("pids", "")
 	r.AddTemplateValue("view", true)
 	r.AddTemplateValue("note", note)
 	r.AddTemplateValue("parents", notes)

@@ -99,7 +99,7 @@ input.border1, textarea.border1 { padding: 0.2em 0.5em; font-size: 90% }
 
 .tag-box.button:not(.selected):not(.alert):hover { background: #cfd8dc; }
 .tag-edit-button.selected, .tag-box.button.selected { background: #607d8b; color: white }
-.tag-box.button a { text-decoration: none; color: #233; }
+.tag-box.button a, .nav-page { text-decoration: none; color: #233; }
 .tag-box.button.selected a { color: white }
 
 .tag-search-input-container {

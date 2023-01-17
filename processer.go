@@ -52,13 +52,13 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 	"generatePages": func(p int, pages int) (a []int) {
 		if pages > 0 {
 			a = append(a, 1)
-			i := p - 5
+			i := p - 2
 			if i < 2 {
 				i = 2
 			} else if i > 2 {
 				a = append(a, 0)
 			}
-			for ; i < pages && len(a) < 10; i++ {
+			for ; i < pages && len(a) < 6; i++ {
 				a = append(a, i)
 			}
 			if a[len(a)-1] != pages {
