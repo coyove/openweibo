@@ -1,6 +1,7 @@
 package types
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
@@ -228,5 +229,27 @@ func CleanTitle(v string) string {
 	v = strings.Replace(v, "\n", "", -1)
 	v = strings.Replace(v, "\r", "", -1)
 	v = strings.Trim(v, "/")
+	v = UTF16Trunc(v, 1000) // hard limit
 	return v
+}
+
+func UnescapeSpace(v string) string {
+	if !strings.Contains(v, "\\") {
+		return v
+	}
+	buf := &bytes.Buffer{}
+	for i := 0; i < len(v); i++ {
+		if v[i] == '\\' {
+			if i == len(v)-1 {
+				buf.WriteByte('\\')
+				break
+			} else {
+				buf.WriteByte(v[i+1])
+				i++
+			}
+			continue
+		}
+		buf.WriteByte(v[i])
+	}
+	return buf.String()
 }

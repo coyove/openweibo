@@ -1,15 +1,13 @@
 {{template "header.html" .}}
 
 {{if .T.view}}
-    {{if eq .T.page 1}}
+    {{if eq .P.Page 1}}
         {{template "view.html" .}}
     {{end}}
-{{else}}
-    <title>记事管理</title>
 {{end}}
 
 <div id='search-bar' style='display:none'>
-    <input id=search class='border1' style='width:100%' placeholder='搜索{{if or .T.view .T.pids}}子{{end}}{{if .T.pid}}{{.T.pid}}的{{end}}记事'>
+    <input id=search class='border1' style='width:100%' placeholder='搜索'>
 </div>
 
 <div>
@@ -17,43 +15,39 @@
         <tr class=title>
             <td colspan=2>
                 <div class=display>
-        
                     <span style='flex-grow:1'>
                     {{if .T.query}}
+                        <title>搜索 {{safeHTML .T.query}}</title>
                         <span>
-                            搜索{{if .T.pids}}子记事{{end}}{{if .T.pid}} {{.T.pid}} 的记事{{end}}：<b class=wrapall>{{safeHTML .T.query}}</b> ({{.T.total}})
+                            搜索：<b class=wrapall>{{safeHTML .T.query}}</b> ({{.T.total}})
                         </span>
                     {{else}}
-                    {{if .T.pid}}
-                        <a class=tag-edit-button href='/ns:history?user={{.T.pid}}&desc=1'><span class=li_vynil></span></a>
-                        {{if eq .UserDisplay .T.pid}}我{{else}}{{.T.pid}} {{end}}创建的记事 ({{.T.total}})
-                    {{else}}
                         {{if .T.view}}
-                            {{if ne .T.page 1}}<b class=wrapall>{{.T.note.HTMLTitleDisplay}} </b>{{end}}子记事
+                            {{if ne .P.Page 1}}<b class=wrapall>{{.T.note.HTMLTitleDisplay}} </b>{{end}}子记事
                         {{else}}
+                            <title>全部记事</title>
                             全部记事
                         {{end}} ({{.T.total}})
-                    {{end}}
                     {{end}}
                     </span>
 
                     <div>
-                        <a class='tag-edit-button icon-search' href='javascript:$("#search-bar").toggle().find("input").focus()'></a>
-                        <a class='tag-edit-button icon-resize-full' href='javascript:void(0)' id=switch-image-size></a>
                         {{if .T.view}}
                         <a class='tag-edit-button icon-paper-plane' href='/ns:new?pt={{.T.note.Id}},{{.T.note.QueryTitle}}'></a>
                         {{end}}
-                        {{$qy := printf "pid=%s&pids=%s&q=%s" .T.pid .T.pids (fullEscape .T.query)}}
-                        <a class='tag-edit-button icon-sort-name-up {{if and (eq .T.sort 1) (not .T.desc)}}selected{{end}}' href='?sort=1&{{$qy}}'></a>
-                        <a class='tag-edit-button icon-sort-name-down {{if and (eq .T.sort 1) (.T.desc)}}selected{{end}}' href='?sort=1&desc=1&{{$qy}}'></a>
-                        <a class='tag-edit-button icon-sort-number-up {{if and (eq .T.sort 0) (not .T.desc)}}selected{{end}}' href='?sort=0&{{$qy}}'></a>
-                        <a class='tag-edit-button icon-sort-number-down {{if and (eq .T.sort 0) (.T.desc)}}selected{{end}}' href='?sort=0&desc=1&{{$qy}}'></a>
+                        <a class='tag-edit-button icon-search' href='javascript:$("#search-bar").toggle().find("input").focus()'></a>
+                        <a class='tag-edit-button icon-resize-full' href='javascript:void(0)' id=switch-image-size></a>
+                        {{$qy := printf "q=%s" (fullEscape .T.query)}}
+                        <a class='tag-edit-button icon-sort-name-up {{if and (eq .P.Sort 1) (not .P.Desc)}}selected{{end}}' href='?sort=1&{{$qy}}'></a>
+                        <a class='tag-edit-button icon-sort-name-down {{if and (eq .P.Sort 1) (.P.Desc)}}selected{{end}}' href='?sort=1&desc=1&{{$qy}}'></a>
+                        <a class='tag-edit-button icon-sort-number-up {{if and (eq .P.Sort 0) (not .P.Desc)}}selected{{end}}' href='?sort=0&{{$qy}}'></a>
+                        <a class='tag-edit-button icon-sort-number-down {{if and (eq .P.Sort 0) (.P.Desc)}}selected{{end}}' href='?sort=0&desc=1&{{$qy}}'></a>
                     </div>
                 </div>
             </td>
         </tr>
 
-        {{range .T.tags}}
+        {{range .T.notes}}
         <tr id='tag{{.Id}}'>
             <td tag-id={{.Id}} class='tag-edit' colspan=2>
                 <div class=display >
@@ -72,31 +66,35 @@
     </table>
 </div>
 
-<div id=page style='display:flex;align-items:center;justify-content:center'>
-    {{range (generatePages .T.page .T.pages)}}
+<div id=page>
+    {{$gp := generatePages .P.Page .T.pages}}
+    {{range $gp}}
         {{if eq . 0}}
-            <svg width=24 height=16 viewBox="0 0 24 16">
-                <circle cx=6 cy=8 r=2 fill='#607d8b'/>
-                <circle cx=12 cy=8 r=2 fill='#607d8b'/>
-                <circle cx=18 cy=8 r=2 fill='#607d8b'/>
-            </svg>
+            <div style='width:2em;text-align:center'>&middot;&middot;&middot;</div>
         {{else}}
-            {{if eq . $.T.page}}
+            {{if eq . $.P.Page}}
             <div class='tag-box button selected'><span><b>{{.}}</b></span></div>
             {{else}}
-            <a class=nav-page href='?{{$.BuildPageLink .}}&pid={{$.T.pid}}'><div class='tag-box button'>{{.}}</div></a>
+            <a class=nav-page href='?{{$.BuildPageLink .}}&q={{fullEscape $.T.query}}'><div class='tag-box button'>{{.}}</div></a>
             {{end}}
         {{end}}
     {{end}}
-    {{if and (eq .T.sort 1) (not .T.query)}}
+    {{if and (eq .P.Sort 1) $gp}}
         <a href='javascript:findLexPrefix()'><div style='margin-left: 0.2em' class='tag-edit-button icon-map-o'></div></a>
     {{end}}
 </div>
 
 <script>
     $('#search').on('keyup', function(ev) {
-        if (ev.keyCode == 13)
-            location.href="/ns:manage?pids={{if .T.view}}{{.T.note.Id}}{{end}}{{if .T.pids}}{{.T.pids}}{{end}}&pid={{.T.pid}}&q="+encodeURIComponent($("#search").val())
+        if (ev.keyCode == 13) {
+            {{if .T.view}}
+            const title = decodeURIComponent('{{fullEscape .T.note.Title}}').replaceAll('\\', '\\\\'). replaceAll(' ', '\\ ')
+            const filter = "ns:title:" + title + ' ';
+            {{else}}
+            const filter = "";
+            {{end}}
+            location.href="/ns:manage?q="+encodeURIComponent(filter + $("#search").val());
+        }
     }).val(decodeURIComponent('{{fullEscape .T.query}}'))
     $('#switch-image-size').on('click', function(ev) {
         if ($(this).hasClass('icon-resize-full')) {
@@ -115,7 +113,7 @@
     function findLexPrefix() {
         const prefix = prompt('跳转到前缀');
         if (!prefix) return;
-        location.href = '?sort=1&desc={{.T.desc}}&prefix=' + encodeURIComponent(prefix);
+        location.href = '?sort=1&desc={{.T.desc}}&q={{fullEscape .T.query}}&prefix=' + encodeURIComponent(prefix);
     }
 </script>
 

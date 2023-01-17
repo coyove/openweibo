@@ -9,12 +9,12 @@
 
 <div style='font-size: 90%'>
     <div>
-        <a href='/ns:manage?pid={{.Creator}}'>{{.Creator}}</a> 创建于 {{formatUnixMilli .CreateUnix}}
+        <a href='/ns:manage?q=ns:user:{{.Creator}}'>{{.Creator}}</a> 创建于 {{formatUnixMilli .CreateUnix}}
         <a class=tag-edit-button href='/ns:edit?id={{.Id}}'><span class=li_pen></span></a>
     </div>
     {{if .Modifier}}
     <div>
-        <a href='/ns:manage?pid={{.Modifier}}'>{{.Modifier}}</a> 修改于 {{formatUnixMilli .UpdateUnix}}
+        <a href='/ns:manage?q=ns:user:{{.Modifier}}'>{{.Modifier}}</a> 修改于 {{formatUnixMilli .UpdateUnix}}
         <a class=tag-edit-button href='/ns:history?note={{.Id}}&desc=1'><span class=li_calendar></span></a>
     </div>
     {{end}}

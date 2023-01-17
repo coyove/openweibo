@@ -112,7 +112,7 @@ func (t *Note) MarshalBinary() []byte {
 	return buf
 }
 
-func UnmarshalTagBinary(p []byte) *Note {
+func UnmarshalNoteBinary(p []byte) *Note {
 	t := &Note{}
 	if err := proto.Unmarshal(p, t); err != nil {
 		panic(err)
@@ -147,7 +147,7 @@ func (t *NoteRecord) SetNote(n *Note) {
 func (t *NoteRecord) Note() *Note {
 	rd := lz4.NewReader(bytes.NewReader(t.NoteBytes))
 	buf, _ := ioutil.ReadAll(rd)
-	return UnmarshalTagBinary(buf)
+	return UnmarshalNoteBinary(buf)
 }
 
 func (t *NoteRecord) MarshalBinary() []byte {

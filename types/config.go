@@ -61,12 +61,12 @@ type Request struct {
 	ServerStart time.Time
 	T           map[string]interface{}
 
-	paging struct {
+	P struct {
 		built    bool
-		current  int
-		desc     bool
-		pageSize int
-		sort     int
+		Page     int
+		Desc     bool
+		PageSize int
+		Sort     int
 		uq       url.Values
 	}
 
@@ -131,9 +131,9 @@ func (r *Request) Elapsed() int64 {
 	return int64(time.Since(r.Start).Milliseconds())
 }
 
-func (r *Request) GetPagingArgs() (int, int, bool, int, url.Values) {
-	if r.paging.built {
-		return r.paging.current, r.paging.sort, r.paging.desc, r.paging.pageSize, r.paging.uq
+func (r *Request) ParsePaging() url.Values {
+	if r.P.built {
+		return r.P.uq
 	}
 
 	uq := r.URL.Query()
@@ -154,20 +154,15 @@ func (r *Request) GetPagingArgs() (int, int, bool, int, url.Values) {
 		pageSize = 50
 	}
 
-	r.paging.current, r.paging.sort, r.paging.desc, r.paging.pageSize = p, sort, desc, pageSize
-	r.paging.uq = uq
-	r.paging.built = true
-
-	r.AddTemplateValue("page", p)
-	r.AddTemplateValue("sort", sort)
-	r.AddTemplateValue("desc", desc)
-	r.AddTemplateValue("pageSize", pageSize)
-	return p, sort, desc, pageSize, uq
+	r.P.Page, r.P.Sort, r.P.Desc, r.P.PageSize = p, sort, desc, pageSize
+	r.P.uq = uq
+	r.P.built = true
+	return uq
 }
 
 func (r *Request) BuildPageLink(p int) string {
-	_, sort, desc, pageSize, _ := r.GetPagingArgs()
-	return fmt.Sprintf("p=%d&sort=%d&desc=%v&pagesize=%d", p, sort, desc, pageSize)
+	return fmt.Sprintf("p=%d&sort=%d&desc=%v&pagesize=%d", p,
+		r.P.Sort, r.P.Desc, r.P.PageSize)
 }
 
 func (r *Request) RemoteIPv4Masked() net.IP {

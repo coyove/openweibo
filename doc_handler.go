@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -74,7 +75,7 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 			}
 			if err := dal.Store.Update(func(tx *bbolt.Tx) error {
 				if action == "delete" {
-					dal.ProcessTagParentChanges(tx, target, target.ParentIds, nil)
+					dal.ProcessParentChanges(tx, target, target.ParentIds, nil)
 					return dal.KSVDelete(tx, dal.NoteBK, types.Uint64Bytes(target.Id))
 				}
 				target.Lock = action == "Lock"
@@ -180,7 +181,7 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 				return nil
 			}
 		}
-		dal.ProcessTagParentChanges(tx, target, target.ParentIds, ad.parentIds)
+		dal.ProcessParentChanges(tx, target, target.ParentIds, ad.parentIds)
 		if target.Creator == "bulk" {
 			target.Creator = r.UserDisplay
 		}
@@ -301,71 +302,8 @@ func doReject(target *types.Note, w http.ResponseWriter, r *types.Request) bool 
 	return true
 }
 
-func HandleManage(w http.ResponseWriter, r *types.Request) {
-	p, st, desc, pageSize, uq := r.GetPagingArgs()
-	pidStr := uq.Get("pid")
-	if pidStr == "0" {
-		pidStr = ""
-	}
-
-	if p := uq.Get("prefix"); p != "" {
-		var page int
-		dal.Store.View(func(tx *bbolt.Tx) error {
-			if pidStr != "" {
-				page = dal.KSVPagingFindLexPrefix(tx, "creator_"+pidStr, []byte(p), desc, pageSize)
-			} else {
-				page = dal.KSVPagingFindLexPrefix(tx, dal.NoteBK, []byte(p), desc, pageSize)
-			}
-			return nil
-		})
-		http.Redirect(w, r.Request, fmt.Sprintf("/ns:manage?sort=1&desc=%v&p=%d&pid=%s", desc, page, pidStr), 302)
-		return
-	}
-
-	var notes []*types.Note
-	var pids []uint64
-	var total, pages int
-
-	q := types.CleanTitle(uq.Get("q"))
-	if q != "" {
-		pids = types.SplitUint64List(uq.Get("pids"))
-		ids, _ := collectSimple(q, pids, pidStr)
-		var tmp []uint64
-		for _, id := range ids {
-			tmp = append(tmp, id.LowUint64())
-		}
-		res, _ := dal.BatchGetNotes(tmp)
-		total = len(res)
-		res = sortNotes(res, st, desc)
-		doubleCheckFilterResults(q, pids, res, func(t *types.Note) bool {
-			notes = append(notes, t)
-			return len(notes) < 500
-		})
-	} else {
-		var results []dal.KeySortValue
-		if pidStr == "" {
-			results, total, pages = dal.KSVPaging(nil, dal.NoteBK, st, desc, p-1, pageSize)
-			notes = make([]*types.Note, len(results))
-			for i := range notes {
-				notes[i] = types.UnmarshalTagBinary(results[i].Value)
-			}
-		} else {
-			results, total, pages = dal.KSVPaging(nil, "creator_"+pidStr, st, desc, p-1, pageSize)
-			notes, _ = dal.BatchGetNotes(results)
-		}
-	}
-
-	r.AddTemplateValue("query", q)
-	r.AddTemplateValue("pid", pidStr)
-	r.AddTemplateValue("pids", types.JoinUint64List(pids))
-	r.AddTemplateValue("tags", notes)
-	r.AddTemplateValue("total", total)
-	r.AddTemplateValue("pages", pages)
-	httpTemplates.ExecuteTemplate(w, "manage.html", r)
-}
-
 func HandleHistory(w http.ResponseWriter, r *types.Request) {
-	p, _, desc, pageSize, uq := r.GetPagingArgs()
+	uq := r.ParsePaging()
 
 	view := "all"
 	idStr := uq.Get("note")
@@ -385,18 +323,18 @@ func HandleHistory(w http.ResponseWriter, r *types.Request) {
 
 	switch view {
 	default:
-		results, total, pages = dal.KSVPaging(nil, "history", -1, desc, p-1, pageSize)
+		results, total, pages = dal.KSVPaging(nil, "history", -1, r.P.Desc, r.P.Page-1, r.P.PageSize)
 		view, idStr = "all", ""
 	case "note":
 		id, _ := strconv.ParseUint(idStr, 10, 64)
 		if note, _ = dal.GetNote(id); note.Valid() {
-			results, total, pages = dal.KSVPaging(nil, fmt.Sprintf("history_%d", note.Id), -1, desc, p-1, pageSize)
+			results, total, pages = dal.KSVPaging(nil, fmt.Sprintf("history_%d", note.Id), -1, r.P.Desc, r.P.Page-1, r.P.PageSize)
 		} else {
 			http.Redirect(w, r.Request, "/ns:notfound", 302)
 			return
 		}
 	case "user":
-		results, total, pages = dal.KSVPaging(nil, "history_"+idStr, -1, desc, p-1, pageSize)
+		results, total, pages = dal.KSVPaging(nil, "history_"+idStr, -1, r.P.Desc, r.P.Page-1, r.P.PageSize)
 	}
 
 	for i := range results {
@@ -413,10 +351,11 @@ func HandleHistory(w http.ResponseWriter, r *types.Request) {
 	}
 
 	r.AddTemplateValue("id", idStr)
+	r.AddTemplateValue("query", "")
 	r.AddTemplateValue("viewType", view)
 	r.AddTemplateValue("note", note)
-	r.AddTemplateValue("total", total)
 	r.AddTemplateValue("records", records)
+	r.AddTemplateValue("total", total)
 	r.AddTemplateValue("pages", pages)
 	httpTemplates.ExecuteTemplate(w, "history.html", r)
 }
@@ -442,11 +381,7 @@ func HandleTagSearch(w http.ResponseWriter, r *types.Request) {
 			ids = append(ids, note.Id)
 		}
 	} else {
-		var tmp []bitmap.Key
-		tmp, jms = collectSimple(q, nil, "")
-		for _, id := range tmp {
-			ids = append(ids, id.LowUint64())
-		}
+		ids, jms = collectSimple(expandQuery(q))
 	}
 
 	tags, _ := dal.BatchGetNotes(ids)
@@ -521,30 +456,79 @@ func HandleView(t string, w http.ResponseWriter, r *types.Request) {
 		notes, _ = dal.BatchGetNotes(note.ParentIds)
 	}
 
-	p, st, desc, pageSize, uq := r.GetPagingArgs()
+	uq := r.ParsePaging()
 
 	if p := uq.Get("prefix"); p != "" {
-		var page int
-		dal.Store.View(func(tx *bbolt.Tx) error {
-			page = dal.KSVPagingFindLexPrefix(tx, fmt.Sprintf("children_%d", note.Id), []byte(p), desc, pageSize)
-			return nil
-		})
-		http.Redirect(w, r.Request, fmt.Sprintf("/ns:id:%d?sort=1&desc=%v&p=%d", note.Id, desc, page), 302)
+		page := dal.KSVPagingFindLexPrefix(fmt.Sprintf("children_%d", note.Id), []byte(p), r.P.Desc, r.P.PageSize)
+		http.Redirect(w, r.Request, fmt.Sprintf("/ns:id:%d?sort=1&desc=%v&p=%d", note.Id, r.P.Desc, page), 302)
 		return
 	}
 
-	results, total, pages := dal.KSVPaging(nil, fmt.Sprintf("children_%d", note.Id), st, desc, p-1, pageSize)
-	tags, _ := dal.BatchGetNotes(results)
+	results, total, pages := dal.KSVPaging(nil, fmt.Sprintf("children_%d", note.Id), r.P.Sort, r.P.Desc, r.P.Page-1, r.P.PageSize)
+	children, _ := dal.BatchGetNotes(results)
 
-	r.AddTemplateValue("query", "")
-	r.AddTemplateValue("pid", "")
-	r.AddTemplateValue("pids", "")
 	r.AddTemplateValue("view", true)
-	r.AddTemplateValue("note", note)
-	r.AddTemplateValue("parents", notes)
-	r.AddTemplateValue("tags", tags)
+	r.AddTemplateValue("query", "")
+	r.AddTemplateValue("notes", children)
 	r.AddTemplateValue("total", total)
 	r.AddTemplateValue("pages", pages)
 
+	r.AddTemplateValue("note", note)
+	r.AddTemplateValue("parents", notes)
+
+	httpTemplates.ExecuteTemplate(w, "manage.html", r)
+}
+
+func HandleManage(w http.ResponseWriter, r *types.Request) {
+	uq := r.ParsePaging()
+	q := types.CleanTitle(uq.Get("q"))
+	r.AddTemplateValue("query", q)
+
+	var notes []*types.Note
+	var results []dal.KeySortValue
+	var total, pages int
+
+	if q != "" {
+		query, pids, uid := expandQuery(q)
+		if len(pids) == 0 && query == "" && uid != "" {
+			if p := uq.Get("prefix"); p != "" {
+				page := dal.KSVPagingFindLexPrefix("creator_"+uid, []byte(p), r.P.Desc, r.P.PageSize)
+				http.Redirect(w, r.Request, fmt.Sprintf("/ns:manage?sort=1&desc=%v&p=%d&q=%s", r.P.Desc, page, url.QueryEscape(q)), 302)
+				return
+			}
+
+			results, total, pages = dal.KSVPaging(nil, "creator_"+uid, r.P.Sort, r.P.Desc, r.P.Page-1, r.P.PageSize)
+			notes, _ = dal.BatchGetNotes(results)
+		} else if len(pids) == 1 && pids[0] > 0 && uid == "" && query == "" {
+			http.Redirect(w, r.Request, "/ns:id:"+strconv.FormatUint(pids[0], 10), 302)
+			return
+		} else {
+			ids, _ := collectSimple(query, pids, uid)
+			res, _ := dal.BatchGetNotes(ids)
+			total = len(res)
+			res = sortNotes(res, r.P.Sort, r.P.Desc)
+			doubleCheckFilterResults(query, pids, res, func(t *types.Note) bool {
+				notes = append(notes, t)
+				return len(notes) < 500
+			})
+		}
+	} else {
+		if p := uq.Get("prefix"); p != "" {
+			page := dal.KSVPagingFindLexPrefix(dal.NoteBK, []byte(p), r.P.Desc, r.P.PageSize)
+			http.Redirect(w, r.Request, fmt.Sprintf("/ns:manage?sort=1&desc=%v&p=%d", r.P.Desc, page), 302)
+			return
+		}
+
+		results, total, pages = dal.KSVPaging(nil, dal.NoteBK, r.P.Sort, r.P.Desc, r.P.Page-1, r.P.PageSize)
+		notes = make([]*types.Note, len(results))
+		for i := range notes {
+			notes[i] = types.UnmarshalNoteBinary(results[i].Value)
+		}
+	}
+
+	r.AddTemplateValue("view", false)
+	r.AddTemplateValue("notes", notes)
+	r.AddTemplateValue("total", total)
+	r.AddTemplateValue("pages", pages)
 	httpTemplates.ExecuteTemplate(w, "manage.html", r)
 }

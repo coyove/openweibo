@@ -175,7 +175,7 @@ func rebuildDataFromDB() {
 		c := bk.Cursor()
 		i, tot := 0, bk.Stats().KeyN
 		for k, v := c.First(); len(k) > 0; k, v = c.Next() {
-			note := types.UnmarshalTagBinary(v)
+			note := types.UnmarshalNoteBinary(v)
 			h := buildBitmapHashes(note.Title, note.Creator, note.ParentIds)
 			mgr.Saver().AddAsync(bitmap.Uint64Key(note.Id), h)
 			if i++; i%10000 == 0 {

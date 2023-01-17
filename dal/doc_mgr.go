@@ -1,11 +1,8 @@
 package dal
 
 import (
-	"encoding/binary"
 	"fmt"
-	"math/rand"
 	"net"
-	"unicode/utf8"
 
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/clock"
@@ -25,7 +22,7 @@ func CreateNote(name string, tag *types.Note) (existed bool, err error) {
 		tag.CreateUnix = now
 		tag.UpdateUnix = now
 
-		ProcessTagParentChanges(tx, tag, nil, tag.ParentIds)
+		ProcessParentChanges(tx, tag, nil, tag.ParentIds)
 		UpdateCreator(tx, tag)
 		return KSVUpsert(tx, NoteBK, KSVFromTag(tag))
 	})
@@ -36,7 +33,7 @@ func UpdateCreator(tx *bbolt.Tx, tag *types.Note) error {
 	return KSVUpsert(tx, "creator_"+tag.Creator, KeySortValue{
 		Key:   types.Uint64Bytes(tag.Id),
 		Sort0: uint64(clock.UnixMilli()),
-		Sort1: titleOrRandomForSort(tag.Title),
+		Sort1: []byte(tag.Title),
 	})
 }
 
@@ -81,7 +78,7 @@ func BatchGetNotes(v interface{}) (tags []*types.Note, err error) {
 			return nil
 		}
 		for _, kis := range ids {
-			tag := types.UnmarshalTagBinary(bk.Get(kis[:]))
+			tag := types.UnmarshalNoteBinary(bk.Get(kis[:]))
 			if tag.Valid() {
 				tags = append(tags, tag)
 			}
@@ -136,7 +133,7 @@ func GetNoteByName(name string) (*types.Note, error) {
 	err := Store.View(func(tx *bbolt.Tx) error {
 		k, found := KSVFirstKeyOfSort1(tx, NoteBK, []byte(name))
 		if found {
-			t = types.UnmarshalTagBinary(tx.Bucket([]byte(NoteBK + "_kv")).Get(k[:]))
+			t = types.UnmarshalNoteBinary(tx.Bucket([]byte(NoteBK + "_kv")).Get(k[:]))
 		}
 		return nil
 	})
@@ -150,13 +147,13 @@ func GetNote(id uint64) (*types.Note, error) {
 		if bk == nil {
 			return nil
 		}
-		t = types.UnmarshalTagBinary(bk.Get(types.Uint64Bytes(id)))
+		t = types.UnmarshalNoteBinary(bk.Get(types.Uint64Bytes(id)))
 		return nil
 	})
 	return t, err
 }
 
-func ProcessTagParentChanges(tx *bbolt.Tx, tag *types.Note, old, new []uint64) error {
+func ProcessParentChanges(tx *bbolt.Tx, tag *types.Note, old, new []uint64) error {
 	k := types.Uint64Bytes(tag.Id)
 	for _, o := range old {
 		if err := KSVDelete(tx, fmt.Sprintf("children_%d", o), k[:]); err != nil {
@@ -164,7 +161,7 @@ func ProcessTagParentChanges(tx *bbolt.Tx, tag *types.Note, old, new []uint64) e
 		}
 	}
 	now := clock.UnixMilli()
-	tt := titleOrRandomForSort(tag.Title)
+	tt := []byte(tag.Title)
 	for _, n := range new {
 		if err := KSVUpsert(tx, fmt.Sprintf("children_%d", n), KeySortValue{
 			Key:   k[:],
@@ -233,16 +230,5 @@ func (h *int64Heap) Pop() interface{} {
 	n := len(old)
 	x := old[n-1]
 	h.data = old[:n-1]
-	return x
-}
-
-func titleOrRandomForSort(v string) []byte {
-	x := []byte(v)
-	if len(x) == 0 {
-		x = append(x, 0, 0, 0, 0, 0, 0, 0, 0)
-		n := utf8.EncodeRune(x, rune(rand.Uint32()&0xffff))
-		x = append(x[:n], 0, 0, 0, 0, 0, 0, 0, 0)
-		binary.BigEndian.PutUint64(x[len(x)-8:], rand.Uint64())
-	}
 	return x
 }

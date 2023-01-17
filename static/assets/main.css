@@ -57,6 +57,8 @@ a { color: #1565c0 }
 #header .header-entry:hover { background-color: rgba(0, 0, 0, 0.2) }
 #header .header-entry:active { background-color: rgba(0, 0, 0, 0.3) }
 
+#page { display:flex;align-items:center;justify-content:center }
+
 .border1 {
     border-radius: 1.2em;
     border: solid 2px #607d8b;

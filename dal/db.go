@@ -96,7 +96,7 @@ func KSVFromTag(tag *types.Note) KeySortValue {
 	return KeySortValue{
 		Key:   types.Uint64Bytes(tag.Id),
 		Sort0: uint64(tag.UpdateUnix),
-		Sort1: titleOrRandomForSort(tag.Title),
+		Sort1: []byte(tag.Title),
 		Value: tag.MarshalBinary(),
 	}
 }
@@ -206,16 +206,19 @@ func KSVPaging(tx *bbolt.Tx, bkPrefix string, bySort int, desc bool, page, pageS
 			return
 		}
 		c = sort0Key.Cursor()
+		total = sort0Key.Stats().KeyN
 	case 1:
 		if keyValue == nil || sort1Key == nil {
 			return
 		}
 		c = sort1Key.Cursor()
+		total = sort1Key.Stats().KeyN
 	default:
 		if keyValue == nil {
 			return
 		}
 		c = keyValue.Cursor()
+		total = keyValue.Stats().KeyN
 	}
 
 	i := 0
@@ -253,44 +256,45 @@ func KSVPaging(tx *bbolt.Tx, bkPrefix string, bySort int, desc bool, page, pageS
 		}
 	}
 
-	total = keyValue.Stats().KeyN
 	pages = idivceil(total, pageSize)
 	return
 }
 
-func KSVPagingFindLexPrefix(tx *bbolt.Tx, bkPrefix string, prefix []byte, desc bool, pageSize int) (page int) {
-	sort1Key := tx.Bucket([]byte(bkPrefix + "_s1k"))
-	if sort1Key == nil {
-		return
-	}
-	c := sort1Key.Cursor()
-
+func KSVPagingFindLexPrefix(bkPrefix string, prefix []byte, desc bool, pageSize int) (page int) {
 	i := 0
-	a, _ := c.First()
-	if desc {
-		a, _ = c.Last()
-	}
+	Store.View(func(tx *bbolt.Tx) error {
+		sort1Key := tx.Bucket([]byte(bkPrefix + "_s1k"))
+		if sort1Key == nil {
+			return nil
+		}
+		c := sort1Key.Cursor()
 
-	for len(a) > 0 {
-		ln := int(a[len(a)-1])
-		sort1 := a[:len(a)-1-ln]
+		a, _ := c.First()
 		if desc {
-			if bytes.Compare(sort1, prefix) <= 0 {
-				break
+			a, _ = c.Last()
+		}
+
+		for len(a) > 0 {
+			ln := int(a[len(a)-1])
+			sort1 := a[:len(a)-1-ln]
+			if desc {
+				if bytes.Compare(sort1, prefix) <= 0 {
+					break
+				}
+			} else {
+				if bytes.Compare(sort1, prefix) >= 0 {
+					break
+				}
 			}
-		} else {
-			if bytes.Compare(sort1, prefix) >= 0 {
-				break
+			i++
+			if desc {
+				a, _ = c.Prev()
+			} else {
+				a, _ = c.Next()
 			}
 		}
-		i++
-		if desc {
-			a, _ = c.Prev()
-		} else {
-			a, _ = c.Next()
-		}
-	}
-
+		return nil
+	})
 	return i/pageSize + 1
 }
 

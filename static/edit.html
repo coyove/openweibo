@@ -61,7 +61,12 @@
         <tr>
             <td colspan=2>
                 <div class=display>
-                    <input id="image" type=file class='image-selector' {{if .PendingReview}}title='现图片'{{end}} accept="image/*">
+                    <input id="image"
+                        {{if $.T.readonly}}readonly{{end}}
+                        type=file
+                        class='image-selector'
+                        {{if .PendingReview}}title='现图片'{{end}}
+                        accept="image/*">
                     <input readonly id="review-image" type=file class='image-selector' style='display:none' title='新图片'>
                 </div>
             </td>
@@ -105,7 +110,7 @@
         {{end}}
 
         <tr><td colspan=2><div class=display id=parents-container><div class=lds-dual-ring></div></div></td></tr>
-        <tr><td class=small>变更历史</td><td><div class=display><a href='/ns:history?note={{.Id}}&desc=1'>查看</a></div></td></tr>
+        <tr><td class=small>编辑历史</td><td><div class=display><a href='/ns:history?note={{.Id}}&desc=1'>查看</a></div></td></tr>
         <tr>
             <td class=small>状态</td>
             <td>

@@ -42,12 +42,13 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 		return time.Unix(0, v*1e6).Format("2006-01-02 15:04:05")
 	},
 	"formatUnixMilliBR": func(v int64) string {
-		t := time.Unix(0, v*1e6).Format("15:04:05")
-		d := (clock.UnixMilli() - v) / 1e3 / 86400
-		if d < 1 {
-			return t
+		now := clock.Now()
+		t := time.Unix(0, v*1e6)
+		if now.YearDay() == t.YearDay() && now.Year() == t.Year() {
+			return t.Format("15:04:05")
 		}
-		return "<b>" + strconv.Itoa(int(d)) + "d.</b> " + t
+		d := (now.Unix()-t.Unix())/86400 + 1
+		return "<b>" + strconv.Itoa(int(d)) + "d.</b> " + t.Format("15:04:05")
 	},
 	"generatePages": func(p int, pages int) (a []int) {
 		if pages > 0 {
@@ -85,6 +86,10 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 	"renderClip": types.RenderClip,
 	"safeHTML":   types.SafeHTML,
 	"fullEscape": types.FullEscape,
+	"isQuerySingleTag": func(v string) bool {
+		q, pids, uid := expandQuery(v)
+		return q == "" && uid == "" && len(pids) == 1
+	},
 }).ParseFS(httpStaticPages, "static/*.html"))
 
 var serveUUID = types.UUIDStr()
@@ -328,7 +333,60 @@ func buildBitmapHashes(line string, uid string, parentIds []uint64) []uint64 {
 	return tmp
 }
 
-func collectSimple(q string, parentIds []uint64, uid string) ([]bitmap.Key, []bitmap.JoinMetrics) {
+func expandQuery(query string) (q string, parentIds []uint64, uid string) {
+	for len(query) > 0 {
+		idx := strings.IndexByte(query, ' ')
+		for idx > 0 && (query)[idx-1] == '\\' {
+			idx2 := strings.IndexByte((query)[idx+1:], ' ')
+			if idx2 == -1 {
+				idx = -1
+			} else {
+				idx = idx + 1 + idx2
+			}
+		}
+
+		if strings.HasPrefix(query, "ns:id:") {
+			if idx > 0 {
+				id, _ := strconv.ParseUint((query)[6:idx], 10, 64)
+				parentIds = append(parentIds, id)
+				query = strings.TrimSpace((query)[idx+1:])
+			} else {
+				id, _ := strconv.ParseUint((query)[6:], 10, 64)
+				parentIds = append(parentIds, id)
+				query = ""
+				break
+			}
+		} else if strings.HasPrefix(query, "ns:title:") {
+			if idx > 0 {
+				if note, _ := dal.GetNoteByName(types.UnescapeSpace((query)[9:idx])); note.Valid() {
+					parentIds = append(parentIds, note.Id)
+				}
+				query = strings.TrimSpace((query)[idx+1:])
+			} else {
+				if note, _ := dal.GetNoteByName(types.UnescapeSpace((query)[9:])); note.Valid() {
+					parentIds = append(parentIds, note.Id)
+				}
+				query = ""
+				break
+			}
+		} else if strings.HasPrefix(query, "ns:user:") {
+			if idx > 0 {
+				uid = (query)[8:idx]
+				query = strings.TrimSpace((query)[idx+1:])
+			} else {
+				uid = (query)[8:]
+				query = ""
+				break
+			}
+		} else {
+			break
+		}
+	}
+	q = query
+	return
+}
+
+func collectSimple(q string, parentIds []uint64, uid string) ([]uint64, []bitmap.JoinMetrics) {
 	h := ngram.SplitMore(q).Hashes()
 
 	var h2 []uint64
@@ -354,11 +412,11 @@ func collectSimple(q string, parentIds []uint64, uid string) ([]bitmap.Key, []bi
 	}
 
 	res, jms := dal.Store.CollectSimple(cursor.New(), bitmap.Values{Major: h2, Exact: h}, 2000)
-	var tags []bitmap.Key
+	var ids []uint64
 	for _, kis := range res {
-		tags = append(tags, kis.Key)
+		ids = append(ids, kis.Key.LowUint64())
 	}
-	return tags, jms
+	return ids, jms
 }
 
 func imax(a, b int) int {
