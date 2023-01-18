@@ -12,7 +12,7 @@
                                 maxlength={{.GetTitleMaxLen}}
                                 class='tag-edit-title tag-edit-desc'
                                 placeholder='标题：{{.GetTitleMaxLen}}字符'></textarea>
-                        <div>
+                        <div style='display: flex;flex-wrap:nowrap'>
                             <div id=dup style='display:none'><b>重名</b><a class='tag-edit-button icon-eye' style='margin-left:0.5em'></a></div>
                             <div id=submit class='tag-edit-button icon-paper-plane'></div>
                         </div>
@@ -32,7 +32,6 @@
     <tr>
         <td>
             <div class=display style='min-height: 2em'>
-                <span style='font-size:90%;flex-grow:1'>父记事</span>
                 <span style='font-size:90%;color:#ccc'>关于高级语法，请阅读该篇<a href='/ns:edit_syntax'>记事</a></span>
             </div>
         </td>
@@ -71,6 +70,7 @@
 
             $('#parents').append(ps);
             wrapTagSearchInput(ps.get(0));
+            ps.find('input').attr('placeholder', '选择父标签')
 
             function checkTitle() {
                 function reset() {

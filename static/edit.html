@@ -8,7 +8,7 @@
             <td colspan=2>
                 <div class=display>
                     <b class=wrapall>{{.T.note.HTMLTitleDisplay}}</b>&nbsp;
-                    <span>{{formatUnixMilli .T.recordUnix}} 的历史记录</span>
+                    <span>{{formatUnixMilli .T.recordUnix}} 的历史版本</span>
                 </div>
             </td>
         </tr>
@@ -103,8 +103,8 @@
             </td>
         </tr>
         <tr id='tr-content-diff' style='display:none'>
-            <td colspan=2>
-                <div class=display><div id=diff style='width: 100%'></div></div>
+            <td colspan=2 style='padding: 0'>
+                <div id=diff style='width: 100%'></div>
             </td>
         </tr>
         {{end}}
@@ -139,7 +139,7 @@
         <tr><td class=small>最近审核人</td><td><div class=display>{{.Reviewer}}</div></td></tr>
         <tr><td class=small>修改时间</td><td><div class=display>{{formatUnixMilli .UpdateUnix}}</div></td></tr>
 
-        {{if not $.T.readonly}}
+        {{if and (not $.T.readonly) $.User.IsMod}}
         <tr>
             <td class=small></td>
             <td>

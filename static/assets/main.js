@@ -226,13 +226,13 @@ function wrapTagSearchInput(container) {
     const div = document.createElement('div');
     div.className = 'tag-search-input';
 
-    const el = document.createElement('div');
-    el.setAttribute('contenteditable', !readonly);
+    const el = document.createElement('input');
+    el.readOnly = readonly;
     el.className = 'tag-box tag-search-box';
     el.style.outline = 'none';
+    el.style.padding = '0 0.25em';
     el.style.minWidth = '2em';
     el.style.flexGrow = '1';
-    el.style.justifyContent = 'left';
 
     const loader = $("<div class=tag-box style='min-width:2em;padding:0'>" + window.CONST_loaderHTML + "</div>").get(0);
 
@@ -245,7 +245,7 @@ function wrapTagSearchInput(container) {
     function updateInfo() {
         const sz = Object.keys(selected).length;
         info.innerText = sz + '/' + maxTags;
-        el.setAttribute('contenteditable', sz < maxTags && !readonly);
+        el.readOnly = sz > maxTags || readonly;
     }
 
     function select(src, fromHistory) {
@@ -289,7 +289,7 @@ function wrapTagSearchInput(container) {
         }
 
         if (fromHistory !== true) reset();
-        el.innerText = '';
+        el.value = '';
         el.focus();
     }
 
@@ -301,7 +301,7 @@ function wrapTagSearchInput(container) {
     }
 
     el.oninput = function(e){
-        const val = this.textContent;
+        const val = this.value;
         const that = this;
         if (val.length < 1) {
             $(div).find('.candidate').remove();
@@ -309,10 +309,10 @@ function wrapTagSearchInput(container) {
         }
         if (this.timer) clearTimeout(this.timer);
         this.timer = setTimeout(function(){
-            if (that.textContent != val) return;
+            if (that.value != val) return;
             loader.style.display = '';
             $.get('/ns:search?n=100&q=' + encodeURIComponent(val), function(data) {
-                if (that.textContent != val) return;
+                if (that.value != val) return;
 
                 reset();
                 data.notes.forEach(function(tag, i) {
@@ -345,12 +345,12 @@ function wrapTagSearchInput(container) {
             div.candidates.length && select(div.candidates[div.selector]);
             e.preventDefault();
         }
-        if (e.keyCode == 8 && el.textContent.length == 0) {
+        if (e.keyCode == 8 && el.value.length == 0) {
             $(div).find('.user-selected:last .closer').click();
             e.preventDefault();
         }
         if (e.keyCode == 27) {
-            el.innerHTML = '';
+            el.value = '';
             reset();
             e.preventDefault();
         }
@@ -358,7 +358,7 @@ function wrapTagSearchInput(container) {
     el.onblur = function() {
         this.blurtimer && clearTimeout(this.blurtimer);
         this.blurtimer = setTimeout(function() {
-            el.innerHTML = '';
+            el.value = '';
             reset();
         }, 1000);
     }
