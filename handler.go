@@ -93,7 +93,7 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 		}
 	}
 	if ok {
-		go dal.ProcessTagHistory(target.Id, r.UserDisplay, action, r.RemoteIPv4Masked(), target)
+		go dal.AppendHistory(target.Id, r.UserDisplay, action, r.RemoteIPv4Masked(), target)
 		writeJSON(w, "success", true, "note", target)
 		limiter.AddIP(r)
 	}
@@ -132,7 +132,8 @@ func doCreate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 	}
 
 	if len(ad.hash) > 0 {
-		dal.Store.Saver().AddAsync(bitmap.Uint64Key(id), append(ad.hash, ngram.StrHash(r.UserDisplay)))
+		dal.Store.Saver().AddAsync(bitmap.Uint64Key(id),
+			types.DedupUint64(append(ad.hash, ngram.StrHash(r.UserDisplay))))
 	}
 	return target, true
 }
@@ -222,7 +223,8 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 		return nil, false
 	}
 	if shouldIndex {
-		dal.Store.Saver().AddAsync(bitmap.Uint64Key(id), append(ad.hash, ngram.StrHash(target.Creator)))
+		dal.Store.Saver().AddAsync(bitmap.Uint64Key(id),
+			types.DedupUint64(append(ad.hash, ngram.StrHash(target.Creator))))
 	}
 	return target, true
 }
@@ -271,9 +273,8 @@ func doApprove(target *types.Note, w http.ResponseWriter, r *types.Request) bool
 		writeJSON(w, "success", false, "code", "DUPLICATED_TITLE")
 		return false
 	}
-	if h := buildBitmapHashes(target.Title, target.Creator, target.ParentIds); len(h) > 0 {
-		dal.Store.Saver().AddAsync(bitmap.Uint64Key(target.Id), h)
-	}
+	h := buildBitmapHashes(target.Title, target.Creator, target.ParentIds)
+	dal.Store.Saver().AddAsync(bitmap.Uint64Key(target.Id), types.DedupUint64(h))
 	return true
 }
 
@@ -317,7 +318,7 @@ func HandleHistory(w http.ResponseWriter, r *types.Request) {
 	}
 
 	var results []dal.KeySortValue
-	var records []*types.NoteRecord
+	var records []*types.Record
 	var note = &types.Note{}
 	var total, pages int
 
@@ -338,9 +339,9 @@ func HandleHistory(w http.ResponseWriter, r *types.Request) {
 	}
 
 	for i := range results {
-		var t *types.NoteRecord
+		var t *types.Record
 		if view == "all" {
-			t = types.UnmarshalTagRecordBinary(results[i].Value)
+			t = types.UnmarshalRecordBinary(results[i].Value)
 		} else {
 			t, _ = dal.GetTagRecord(types.BytesUint64(results[i].Key))
 			if t == nil || t.Note() == nil {

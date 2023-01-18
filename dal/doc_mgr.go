@@ -88,14 +88,22 @@ func BatchGetNotes(v interface{}) (tags []*types.Note, err error) {
 	return
 }
 
-func GetTagRecord(id uint64) (*types.NoteRecord, error) {
-	var t *types.NoteRecord
+func LoadParentTitles(ids []uint64) (res []string) {
+	notes, _ := BatchGetNotes(ids)
+	for _, t := range notes {
+		res = append(res, t.Title)
+	}
+	return res
+}
+
+func GetTagRecord(id uint64) (*types.Record, error) {
+	var t *types.Record
 	err := Store.View(func(tx *bbolt.Tx) error {
 		bk := tx.Bucket([]byte("history_kv"))
 		if bk == nil {
 			return nil
 		}
-		t = types.UnmarshalTagRecordBinary(bk.Get(types.Uint64Bytes(id)))
+		t = types.UnmarshalRecordBinary(bk.Get(types.Uint64Bytes(id)))
 		return nil
 	})
 	return t, err
@@ -198,10 +206,10 @@ func ProcessParentChanges(tx *bbolt.Tx, tag *types.Note, old, new []uint64) erro
 	return nil
 }
 
-func ProcessTagHistory(tagId uint64, user, action string, ip net.IP, old *types.Note) error {
+func AppendHistory(tagId uint64, user, action string, ip net.IP, old *types.Note) error {
 	return Store.Update(func(tx *bbolt.Tx) error {
 		id := clock.Id()
-		tr := (&types.NoteRecord{
+		tr := (&types.Record{
 			Id:         id,
 			Action:     int64(action[0]),
 			CreateUnix: clock.UnixMilli(),
@@ -218,12 +226,4 @@ func ProcessTagHistory(tagId uint64, user, action string, ip net.IP, old *types.
 		KSVUpsert(tx, fmt.Sprintf("history_%s", user), KeySortValue{Key: k[:], NoSort: true})
 		return KSVUpsert(tx, fmt.Sprintf("history_%d", tagId), KeySortValue{Key: k[:], NoSort: true})
 	})
-}
-
-func IsLike(tx *bbolt.Tx, user string, id uint64) bool {
-	bk := tx.Bucket([]byte("like_" + user + "_kss"))
-	if bk == nil {
-		return false
-	}
-	return len(bk.Get(types.Uint64Bytes(id))) > 0
 }

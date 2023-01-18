@@ -13,7 +13,7 @@
 <div>
     <table id=list>
         <tr class=title>
-            <td colspan=2>
+            <td>
                 <div class=display>
                     <span style='flex-grow:1'>
                     {{if .T.query}}
@@ -36,7 +36,6 @@
                         <a class='tag-edit-button icon-paper-plane' href='/ns:new?pt={{.T.note.Id}},{{.T.note.QueryTitle}}'></a>
                         {{end}}
                         <a class='tag-edit-button icon-search' href='javascript:$("#search-bar").toggle().find("input").focus()'></a>
-                        <a class='tag-edit-button icon-resize-full' href='javascript:void(0)' id=switch-image-size></a>
                         {{$qy := printf "q=%s" (fullEscape .T.query)}}
                         <a class='tag-edit-button icon-sort-name-up {{if and (eq .P.Sort 1) (not .P.Desc)}}selected{{end}}' href='?sort=1&{{$qy}}'></a>
                         <a class='tag-edit-button icon-sort-name-down {{if and (eq .P.Sort 1) (.P.Desc)}}selected{{end}}' href='?sort=1&desc=1&{{$qy}}'></a>
@@ -47,23 +46,45 @@
             </td>
         </tr>
 
-        {{range .T.notes}}
-        <tr id='tag{{.Id}}'>
-            <td tag-id={{.Id}} class='tag-edit' colspan=2>
-                <div class=display >
-                    {{imageBox .Image}}
-                    <a href='/{{.EscapedTitle}}' class=tag-edit-name
-                        >{{.HTMLTitleDisplay}}{{if .ChildrenCount}}<span class=children-count>({{.ChildrenCount}})</span>{{end}}</a>
-                    <div class=status>
-                        {{if .ChildrenCount}}<div class='tag-edit-button li_data' disabled title='子记事'></div>{{end}}
-                        {{if .Lock}}<div class='tag-edit-button li_lock' disabled></div>{{end}}
-                        {{if .PendingReview}}<div class='tag-edit-button li_stack' disabled title='审核中'></div>{{end}}
-                        <span class=time>{{formatUnixMilliBR .UpdateUnix}}</span>
+        <tr>
+            <td style='padding:0;background:transparent'>
+            <div style='display: grid;justify-items: center; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));'>
+            {{range .T.notes}}
+                <div class=image-display>
+                    {{if .Image}}
+                        <div
+                            class='image-display-container image'
+                            data-src='{{imageURL "image" .Image}}'
+                            style='background: center / cover no-repeat url({{imageURL "thumb" .Image}})'
+                            onclick='openImage("{{imageURL "image" .Image}}")'></div>
+                    {{else}}
+                        <div class='image-display-container' style='background:rgba(0,0,0,0.03)' onclick='location.href="/{{.EscapedTitle}}"'>
+                            {{if .Content}}
+                            <div class='wrapall content100'>{{safeHTML (trunc .Content 100)}}</div>
+                            {{else}}
+                            <div class='wrapall content100'>{{joinParentTitles .}}</div>
+                            {{end}}
+                        </div>
+                    {{end}}
+                    <div class=image-display-info>
+                        <div style='flex-grow:1'>
+                            <a href='/{{.EscapedTitle}}' class=tag-edit-name>{{.HTMLTitleDisplay}}</a>
+                        </div>
+                        <div style='margin-top:0.25em' >
+                            {{if .Lock}}<span class='li_lock'></span>{{end}}
+                            {{if .PendingReview}}<span class='li_stack' title='审核中'></span>{{end}}
+                        </div>
+                        <div class=image-display-bar onclick='location.href="/{{.EscapedTitle}}"'>
+                            <div class=image-display-bar-l title='父记事'>{{if .ParentIds}}{{len .ParentIds}}{{end}}</div>
+                            <div class=image-display-bar-m>{{formatUnixMilliBR .UpdateUnix}}</div>
+                            <div class=image-display-bar-r title='子记事'>{{if .ChildrenCount}}{{.ChildrenCount}}{{end}}</div>
+                        </div>
                     </div>
                 </div>
+            {{end}}
+            </div>
             </td>
         </tr>
-        {{end}}
     </table>
 </div>
 
@@ -97,19 +118,17 @@
             location.href="/ns:manage?q="+encodeURIComponent(filter + $("#search").val());
         }
     }).val(decodeURIComponent('{{fullEscape .T.query}}'))
-    $('#switch-image-size').on('click', function(ev) {
-        if ($(this).hasClass('icon-resize-full')) {
-            $(this).removeClass('icon-resize-full').addClass('icon-resize-small');
-            $('.thumb').removeClass('small').addClass('medium');
-            window.localStorage.setItem('large-image', '1');
-        } else {
-            $(this).addClass('icon-resize-full').removeClass('icon-resize-small');
-            $('.thumb').addClass('small').removeClass('medium');
-            window.localStorage.removeItem('large-image');
-        }
-    });
-    if (window.localStorage.getItem('large-image') == '1')
-        $('#switch-image-size').click();
+    $(window).on('resize', function() {
+        var current = -1, color = ['white', '#f7f8f9'], colorIdx = 0, colorIdx2 = 0;
+        $('.image-display').each(function(_, id) {
+            if ($(id).position().top != current || current == -1) {
+                current = $(id).position().top;
+                colorIdx = (colorIdx2++, colorIdx2 % 2);
+            }
+            colorIdx ++;
+            $(id).css('background', color[colorIdx % 2]);
+        })
+    }).resize();
 
     function findLexPrefix() {
         const prefix = prompt('跳转到前缀');

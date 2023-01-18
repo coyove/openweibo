@@ -53,7 +53,7 @@
         {{if and (not $.User.IsMod) (ne $.UserDisplay .Creator) (not $.T.readonly)}}
         <tr>
             <td colspan=2>
-                <div class=display style='font-size:90%;color:#e91e63;word-break: break-all; white-space: pre-wrap;'
+                <div class='display wrapall' style='font-size:90%;color:#e91e63'
                     >修改将会由创建者或管理员审核后生效，在此之前你可以驳回自己的修改或进一步编辑。</div>
             </td>
         </tr>
@@ -130,12 +130,20 @@
             <td>
                 <div class=display>
                     {{.Creator}}&nbsp;
-                    <a class='tag-edit-button' href='/ns:manage?pid={{.Creator}}'><span class=li_user></span></a>
+                    <a class='tag-edit-button' href='/ns:manage?q=ns:user:{{.Creator}}'><span class=li_user></span></a>
                 </div>
             </td>
         </tr>
         <tr><td class=small>创建时间</td><td><div class=display>{{formatUnixMilli .CreateUnix}}</div></td></tr>
-        <tr><td class=small>最近修改人</td><td><div class=display>{{.Modifier}}</div></td></tr>
+        <tr>
+            <td class=small>最近修改人</td>
+            <td>
+                <div class=display>
+                    {{.Modifier}}&nbsp;
+                    <a class='tag-edit-button' href='/ns:history?user={{.Modifier}}'><span class=li_user></span></a>
+                </div>
+            </td>
+        </tr>
         <tr><td class=small>最近审核人</td><td><div class=display>{{.Reviewer}}</div></td></tr>
         <tr><td class=small>修改时间</td><td><div class=display>{{formatUnixMilli .UpdateUnix}}</div></td></tr>
 
@@ -203,6 +211,7 @@
                     'image': $('#image').get(0).files[0],
                     'thumb': $('#image').get(0).thumb,
                     'image_changed': $('#image').attr('changed'),
+                    'image_small': $('#image').attr('small'),
                     'parents': JSON.stringify(window.ps.getTags()),
                 });
             }

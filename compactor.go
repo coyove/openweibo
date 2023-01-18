@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/coyove/iis/dal"
-	"github.com/pierrec/lz4"
+	"github.com/pierrec/lz4/v4"
 	"github.com/sirupsen/logrus"
 	"go.etcd.io/bbolt"
 )

@@ -71,25 +71,20 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 		}
 		return
 	},
-	"add":      func(a, b int) int { return a + b },
-	"uuid":     func() string { return types.UUIDStr() },
-	"imageURL": imageURL,
-	"imageBox": func(a string) string {
-		if a == "" {
-			return "" //"<div class='icon-doc-text-inv' style='margin-right: 0.5em'></div>"
+	"joinParentTitles": func(t *types.Note) (res string) {
+		tmp := dal.LoadParentTitles(t.ParentIds)
+		for i := range tmp {
+			tmp[i] = types.SafeHTML(tmp[i])
 		}
-		return fmt.Sprintf("<a href='javascript:openImage(\"%s\")'>"+
-			"<div class='image-selector-container thumb small'>"+
-			"<img class=image src='%s' data-src='%s'></div></a>",
-			imageURL("image", a), imageURL("thumb", a), imageURL("image", a))
+		return strings.Join(tmp, " ")
 	},
+	"add":        func(a, b int) int { return a + b },
+	"uuid":       func() string { return types.UUIDStr() },
+	"imageURL":   imageURL,
+	"trunc":      types.UTF16Trunc,
 	"renderClip": types.RenderClip,
 	"safeHTML":   types.SafeHTML,
 	"fullEscape": types.FullEscape,
-	"isQuerySingleTag": func(v string) bool {
-		q, pids, uid := expandQuery(v)
-		return q == "" && uid == "" && len(pids) == 1
-	},
 }).ParseFS(httpStaticPages, "static/*.html"))
 
 var serveUUID = types.UUIDStr()
@@ -259,10 +254,6 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 
 	img, hdr, _ := r.Request.FormFile("image")
 	if img != nil {
-		thumb, thhdr, _ := r.Request.FormFile("thumb")
-		if thumb == nil || thhdr == nil {
-			return ad, "INVALID_IMAGE"
-		}
 		ext := filepath.Ext(filepath.Base(hdr.Filename))
 		if ext == "" {
 			return ad, "INVALID_IMAGE_NAME"
@@ -270,13 +261,25 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 
 		seed := int(rand.Uint32() & 65535)
 		ad.imageChanged = q.Get("image_changed") == "true"
-		ad.image, msg = saveImage(r, id, seed, ext, img, hdr)
-		if msg != "" {
-			return ad, msg
-		}
-		_, msg = saveImage(r, id, seed, ".thumb.jpg", thumb, thhdr)
-		if msg != "" {
-			return ad, msg
+
+		if q.Get("image_small") == "true" {
+			ad.image, msg = saveImage(r, id, seed, ".s"+ext, img, hdr)
+			if msg != "" {
+				return ad, msg
+			}
+		} else {
+			thumb, thhdr, _ := r.Request.FormFile("thumb")
+			if thumb == nil || thhdr == nil {
+				return ad, "INVALID_IMAGE"
+			}
+			ad.image, msg = saveImage(r, id, seed, ".f"+ext, img, hdr)
+			if msg != "" {
+				return ad, msg
+			}
+			_, msg = saveImage(r, id, seed, ".f.thumb.jpg", thumb, thhdr)
+			if msg != "" {
+				return ad, msg
+			}
 		}
 	}
 
@@ -327,7 +330,7 @@ func buildBitmapHashes(line string, uid string, parentIds []uint64) []uint64 {
 	for _, id := range parentIds {
 		tmp = append(tmp, types.Uint64Hash(id))
 	}
-	if len(tmp) > 0 && uid != "" {
+	if uid != "" {
 		tmp = append(tmp, ngram.StrHash(uid))
 	}
 	return tmp

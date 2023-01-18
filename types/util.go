@@ -48,13 +48,12 @@ func DedupUint64(v []uint64) []uint64 {
 		}
 		return v
 	}
-	m := make(map[uint64]bool, len(v))
-	for i := len(v) - 1; i >= 0; i-- {
-		if m[v[i]] {
+	s := uint64Sort{v}
+	sort.Sort(s)
+	for i := len(v) - 1; i > 0; i-- {
+		if v[i] == v[i-1] {
 			v = append(v[:i], v[i+1:]...)
-			continue
 		}
-		m[v[i]] = true
 	}
 	return v
 }

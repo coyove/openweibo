@@ -8,26 +8,26 @@ import (
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/pierrec/lz4"
+	"github.com/pierrec/lz4/v4"
 )
 
 type Note struct {
-	Id            uint64   `protobuf:"fixed64,1,opt" json:"I"`
-	Title         string   `protobuf:"bytes,2,opt" json:"O"`
-	ReviewTitle   string   `protobuf:"bytes,3,opt" json:"pn,omitempty"`
-	Content       string   `protobuf:"bytes,4,opt" json:"D,omitempty"`
-	ReviewContent string   `protobuf:"bytes,5,opt" json:"pd,omitempty"`
-	ParentIds     []uint64 `protobuf:"fixed64,6,rep" json:"P,omitempty"`
-	Creator       string   `protobuf:"bytes,7,opt" json:"U"`
-	Modifier      string   `protobuf:"bytes,8,opt" json:"M,omitempty"`
-	Reviewer      string   `protobuf:"bytes,9,opt" json:"R,omitempty"`
-	PendingReview bool     `protobuf:"varint,10,opt" json:"pr,omitempty"`
-	Lock          bool     `protobuf:"varint,11,opt" json:"L,omitempty"`
-	CreateUnix    int64    `protobuf:"fixed64,12,opt" json:"C"`
-	UpdateUnix    int64    `protobuf:"fixed64,13,opt" json:"u"`
-	Image         string   `protobuf:"bytes,14,opt" json:"img,omitempty"`
-	ReviewImage   string   `protobuf:"bytes,15,opt" json:"pimg,omitempty"`
-	ChildrenCount int64    `protobuf:"varint,16,opt" json:"cn,omitempty"`
+	Id            uint64   `protobuf:"fixed64,1,opt"`
+	Title         string   `protobuf:"bytes,2,opt"`
+	ReviewTitle   string   `protobuf:"bytes,3,opt"`
+	Content       string   `protobuf:"bytes,4,opt"`
+	ReviewContent string   `protobuf:"bytes,5,opt"`
+	ParentIds     []uint64 `protobuf:"fixed64,6,rep"`
+	Creator       string   `protobuf:"bytes,7,opt"`
+	Modifier      string   `protobuf:"bytes,8,opt"`
+	Reviewer      string   `protobuf:"bytes,9,opt"`
+	PendingReview bool     `protobuf:"varint,10,opt"`
+	Lock          bool     `protobuf:"varint,11,opt"`
+	CreateUnix    int64    `protobuf:"fixed64,12,opt"`
+	UpdateUnix    int64    `protobuf:"fixed64,13,opt"`
+	Image         string   `protobuf:"bytes,14,opt"`
+	ReviewImage   string   `protobuf:"bytes,15,opt"`
+	ChildrenCount int64    `protobuf:"varint,16,opt"`
 }
 
 func (t *Note) Reset() { *t = Note{} }
@@ -130,7 +130,7 @@ func IncrNoteChildrenCountBinary(p []byte, d int64) []byte {
 	return t.MarshalBinary()
 }
 
-type NoteRecord struct {
+type Record struct {
 	Id         uint64 `protobuf:"fixed64,1,opt"`
 	Action     int64  `protobuf:"varint,2,opt"`
 	NoteBytes  []byte `protobuf:"bytes,3,opt"`
@@ -139,13 +139,13 @@ type NoteRecord struct {
 	CreateUnix int64  `protobuf:"fixed64,6,opt"`
 }
 
-func (t *NoteRecord) Reset() { *t = NoteRecord{} }
+func (t *Record) Reset() { *t = Record{} }
 
-func (t *NoteRecord) ProtoMessage() {}
+func (t *Record) ProtoMessage() {}
 
-func (t *NoteRecord) String() string { return proto.CompactTextString(t) }
+func (t *Record) String() string { return proto.CompactTextString(t) }
 
-func (t *NoteRecord) SetNote(n *Note) {
+func (t *Record) SetNote(n *Note) {
 	out := &bytes.Buffer{}
 	x := n.MarshalBinary()
 	w := lz4.NewWriter(out)
@@ -154,18 +154,18 @@ func (t *NoteRecord) SetNote(n *Note) {
 	t.NoteBytes = out.Bytes()
 }
 
-func (t *NoteRecord) Note() *Note {
+func (t *Record) Note() *Note {
 	rd := lz4.NewReader(bytes.NewReader(t.NoteBytes))
 	buf, _ := ioutil.ReadAll(rd)
 	return UnmarshalNoteBinary(buf)
 }
 
-func (t *NoteRecord) MarshalBinary() []byte {
+func (t *Record) MarshalBinary() []byte {
 	buf, _ := proto.Marshal(t)
 	return buf
 }
 
-func (t *NoteRecord) ActionName() string {
+func (t *Record) ActionName() string {
 	switch t.Action {
 	case 'c':
 		return "create"
@@ -185,8 +185,8 @@ func (t *NoteRecord) ActionName() string {
 	return "unknown"
 }
 
-func UnmarshalTagRecordBinary(p []byte) *NoteRecord {
-	t := &NoteRecord{}
+func UnmarshalRecordBinary(p []byte) *Record {
+	t := &Record{}
 	proto.Unmarshal(p, t)
 	return t
 }

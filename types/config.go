@@ -148,7 +148,7 @@ func (r *Request) ParsePaging() url.Values {
 	desc := uq.Get("desc") == "1" || uq.Get("desc") == "true"
 	pageSize, _ := strconv.Atoi(uq.Get("pagesize"))
 	if pageSize <= 0 {
-		pageSize = 30
+		pageSize = 28
 	}
 	if pageSize > 50 {
 		pageSize = 50
@@ -190,7 +190,7 @@ func (r *Request) GetContentMaxLen() int {
 func (r *Request) GetParentsMax() int {
 	v := r.Config().Get("parents_max").Int()
 	if v <= 0 {
-		return 8
+		return 32
 	}
 	return int(v)
 }

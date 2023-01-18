@@ -6,6 +6,7 @@ import (
 	"mime/multipart"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/clock"
@@ -40,6 +41,14 @@ func saveImage(r *types.Request, id uint64, seed int, ext string,
 func imageURL(p, a string) string {
 	if a == "" {
 		return ""
+	}
+	ext := filepath.Ext(a)
+	if ext != "" {
+		if strings.HasSuffix(a[:len(a)-len(ext)], ".s") {
+			if p == "thumb" {
+				return "/ns:image/" + a
+			}
+		}
 	}
 	return "/ns:" + p + "/" + a
 }

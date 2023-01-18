@@ -78,7 +78,7 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
         const that = this;
         const readonly = !!this.attr('readonly');
         const title = this.attr('title');
-        const div = $('<div class=image-selector-container>').
+        const div = $('<div class="image-strip image-selector-container">').
             css('cursor', readonly ? 'inherit' : 'pointer').
             append($("<div>").append($("<img>"))).
             click(function() { !readonly && that.click() });
@@ -91,6 +91,11 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
             if (!file) {
                 div.find('img').get(0).src = '';
                 that.attr('changed', '');
+                return;
+            }
+            if (file.size < 102400) {
+                div.find('img').get(0).src = URL.createObjectURL(file);
+                that.attr('changed', 'true').attr('small', 'true');
                 return;
             }
             const reader = new FileReader();
@@ -125,7 +130,7 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
 })(jQuery);
 
 function openImage(src) {
-    const images = $('img.image');
+    const images = $('.image');
     function move(offset) {
         var idx = 0, current = dialog.find('div.image-container').attr('current');
         images.each(function(i, img) {
@@ -320,7 +325,7 @@ function wrapTagSearchInput(container) {
                         addClass('candidate tag-box ' + (i == 0 ? 'selected' : '')).
                         attr('tag-id', tag[0]).
                         attr('tag-text', tag[1]).
-                        append(tag[1]);
+                        append($("<span>").text(tag[1]));
                     tag[2] > 0 && t.append($("<span class=children-count>").text(tag[2]));
                     $(div).append(t.click(function(ev) {
                         select(t);
@@ -383,7 +388,7 @@ function wrapTagSearchInput(container) {
                 addClass('candidate tag-box').
                 attr('tag-id', k).
                 attr('tag-text', history[k].tag).
-                append(abbr(history[k].tag));
+                append($('<span>').text(abbr(history[k].tag)))
             t.click(function(ev) {
                 select(t, true);
                 ev.stopPropagation();
@@ -392,10 +397,14 @@ function wrapTagSearchInput(container) {
         }
     }
 
+    container.select = function(id, text) {
+        select($("<div>").attr('tag-id', id).attr('tag-text', text));
+    }
+
     for (var i = 0; ; i++) {
         const data = $(container).attr('tag-data' + i);
         if (!data) break;
-        select($("<div>").attr('tag-id', data.split(',')[0]).attr('tag-text', data.split(',')[1]));
+        container.select(data.split(',')[0], data.split(',')[1]);
         el.blur();
     }
 

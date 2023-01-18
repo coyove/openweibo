@@ -17,7 +17,7 @@
                             <div id=submit class='tag-edit-button icon-paper-plane'></div>
                         </div>
                     </div>
-                    <div style='color:#ccc;font-size:80%;white-space:pre-wrap;word-break:break-all'>标题为空时，请选择至少一个父记事。</div>
+                    <div class=wrapall style='color:#ccc;font-size:80%'>标题为空时，请选择至少一个父记事。</div>
                 </div>
             </div>
         </td>
@@ -49,6 +49,7 @@
                     'image': $('#image').get(0).files[0],
                     'thumb': $('#image').get(0).thumb,
                     'image_changed': $('#image').attr('changed'),
+                    'image_small': $('#image').attr('small'),
                     'parents': JSON.stringify(ps.get(0).getTags()),
                 }, function(data) {
                     pTitle ? 
@@ -81,7 +82,10 @@
                 if (input && input != last) {
                     $.get('/ns:search?n=1&title=' + encodeURIComponent(input), function(data) {
                         if (data.notes.length > 0 && $('#name').val() == input) {
-                            $('#dup').show().find('a').attr('href', '/ns:id:' + data.notes[0][0]).closest('tr').css('background', '#fce4ec')
+                            const res = data.notes[0];
+                            $('#dup').show().find('a').attr('href', '/ns:id:' + res[0]).closest('tr').css('background', '#fce4ec')
+                            ps.get(0).select(res[0], res[1]);
+                            $('#name').focus();
                         } else {
                             reset();
                         }
