@@ -165,6 +165,14 @@ func (t *Record) MarshalBinary() []byte {
 	return buf
 }
 
+func (t *Record) IsPlainAction() bool {
+	switch t.Action {
+	case 'a', 'r', 'L', 'U':
+		return true
+	}
+	return false
+}
+
 func (t *Record) ActionName() string {
 	switch t.Action {
 	case 'c':

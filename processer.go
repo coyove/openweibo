@@ -44,11 +44,14 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 	"formatUnixMilliBR": func(v int64) string {
 		now := clock.Now()
 		t := time.Unix(0, v*1e6)
-		if now.YearDay() == t.YearDay() && now.Year() == t.Year() {
-			return t.Format("15:04:05")
+		if now.Year() == t.Year() {
+			if now.YearDay() == t.YearDay() {
+				return t.Format("15:04")
+			}
+			return t.Format("01-02")
 		}
 		d := (now.Unix()-t.Unix())/86400 + 1
-		return "<b>" + strconv.Itoa(int(d)) + "d.</b> " + t.Format("15:04:05")
+		return "<span class=days-ago>" + strconv.Itoa(int(d)) + "</span>"
 	},
 	"generatePages": func(p int, pages int) (a []int) {
 		if pages > 0 {
@@ -78,13 +81,14 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 		}
 		return strings.Join(tmp, " ")
 	},
-	"add":        func(a, b int) int { return a + b },
-	"uuid":       func() string { return types.UUIDStr() },
-	"imageURL":   imageURL,
-	"trunc":      types.UTF16Trunc,
-	"renderClip": types.RenderClip,
-	"safeHTML":   types.SafeHTML,
-	"fullEscape": types.FullEscape,
+	"add":               func(a, b int) int { return a + b },
+	"uuid":              func() string { return types.UUIDStr() },
+	"imageURL":          imageURL,
+	"parseImageURLSize": parseImageURLSize,
+	"trunc":             types.UTF16Trunc,
+	"renderClip":        types.RenderClip,
+	"safeHTML":          types.SafeHTML,
+	"fullEscape":        types.FullEscape,
 }).ParseFS(httpStaticPages, "static/*.html"))
 
 var serveUUID = types.UUIDStr()
@@ -263,7 +267,7 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 		ad.imageChanged = q.Get("image_changed") == "true"
 
 		if q.Get("image_small") == "true" {
-			ad.image, msg = saveImage(r, id, seed, ".s"+ext, img, hdr)
+			ad.image, msg = saveImage(r, id, seed, "s"+ext, img, hdr)
 			if msg != "" {
 				return ad, msg
 			}
@@ -272,11 +276,11 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 			if thumb == nil || thhdr == nil {
 				return ad, "INVALID_IMAGE"
 			}
-			ad.image, msg = saveImage(r, id, seed, ".f"+ext, img, hdr)
+			ad.image, msg = saveImage(r, id, seed, "f"+ext, img, hdr)
 			if msg != "" {
 				return ad, msg
 			}
-			_, msg = saveImage(r, id, seed, ".f.thumb.jpg", thumb, thhdr)
+			_, msg = saveImage(r, id, seed, "f.thumb.jpg", thumb, thhdr)
 			if msg != "" {
 				return ad, msg
 			}

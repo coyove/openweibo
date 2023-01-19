@@ -216,7 +216,15 @@ func AppendHistory(tagId uint64, user, action string, ip net.IP, old *types.Note
 			Modifier:   user,
 			ModifierIP: ip.String(),
 		})
-		tr.SetNote(old)
+		switch action {
+		case "approve", "reject", "Lock", "Unlock":
+			tmp := *old
+			tmp.Content = ""
+			tmp.ReviewContent = ""
+			tr.SetNote(&tmp)
+		default:
+			tr.SetNote(old)
+		}
 		k := types.Uint64Bytes(tr.Id)
 		KSVUpsert(tx, "history", KeySortValue{
 			Key:    k[:],

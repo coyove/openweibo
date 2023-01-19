@@ -75,10 +75,11 @@
                             {{if .PendingReview}}<span class='li_stack' title='审核中'></span>{{end}}
                         </div>
                         <div class=image-display-bar onclick='location.href="/{{.EscapedTitle}}"'>
-                            <div class=image-display-bar-l title='父记事'>{{if .ParentIds}}{{len .ParentIds}}{{end}}</div>
-                            <div class=image-display-bar-m>{{formatUnixMilliBR .UpdateUnix}}</div>
-                            <div class=image-display-bar-r title='子记事'>{{if .ChildrenCount}}{{.ChildrenCount}}{{end}}</div>
+                            {{formatUnixMilliBR .UpdateUnix}}
                         </div>
+                        {{if .ChildrenCount}}
+                        <div class=image-display-count>{{.ChildrenCount}}</div>
+                        {{end}}
                     </div>
                 </div>
             {{end}}

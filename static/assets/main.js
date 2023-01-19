@@ -93,7 +93,7 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
                 that.attr('changed', '');
                 return;
             }
-            if (file.size < 102400) {
+            if (file.size < 1024) {
                 div.find('img').get(0).src = URL.createObjectURL(file);
                 that.attr('changed', 'true').attr('small', 'true');
                 return;
@@ -104,18 +104,34 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
                 var img = document.createElement("img");
                 img.onload = function (event) {
                     const canvas = document.createElement("canvas");
+                    canvas.width = size; canvas.height = size;
                     const ctx = canvas.getContext("2d");
-                    if (img.width > img.height) {
-                        var w = size, h = size / img.width * img.height;
+                    
+                    if (img.width >= img.height * 3 || img.height >= img.width * 3) {
+                        if (img.width > img.height) {
+                            var w = size, h = size / img.width * img.height, x = 0, y = size - h, xs = 0, ys = y + 1;
+                            var h0 = size - h, w0 = h0 / img.height * img.width, y0 = 0, x0 = (w0 - size) / 2;
+                        } else {
+                            var h = size, w = size / img.height * img.width, x = size - w, y = 0, xs = x + 1, ys = 0;
+                            var w0 = size - w, h0 = w0 / img.width * img.height, x0 = 0, y0 = (h0 - size) / 2;
+                        }
+                        ctx.drawImage(img, -x0, -y0, w0, h0);
+                        ctx.shadowColor = 'black';
+                        ctx.shadowBlur = 10;
+                        ctx.strokeRect(xs, ys, w, h);
+                        ctx.shadowColor='rgba(0,0,0,0)';
+                        ctx.drawImage(img, x, y, w, h);
                     } else {
-                        var h = size, w = size / img.height * img.width;
+                        if (img.width > img.height) {
+                            var h = size, w = size / img.height * img.width, x = (w - size) / 2, y = 0;
+                        } else {
+                            var w = size, h = size / img.width * img.height, x = 0, y = (h - size) / 2;
+                        }
+                        ctx.drawImage(img, -x, -y, w, h);
                     }
-                    canvas.width = w;
-                    canvas.height = h;
-                    ctx.drawImage(img, 0, 0, w, h);
                     canvas.toBlob(function(blob)  {
                         const thumb = new File([blob], "thumb.jpg", { type: "image/jpeg" })
-                        div.find('img').get(0).src = URL.createObjectURL(file);
+                        div.find('img').get(0).src = canvas.toDataURL('image/jpeg'); // URL.createObjectURL(file);
                         that.attr('changed', 'true');
                         that.get(0).thumb = thumb;
                     }, 'image/jpeg');

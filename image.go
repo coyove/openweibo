@@ -44,11 +44,24 @@ func imageURL(p, a string) string {
 	}
 	ext := filepath.Ext(a)
 	if ext != "" {
-		if strings.HasSuffix(a[:len(a)-len(ext)], ".s") {
+		if strings.HasSuffix(a[:len(a)-len(ext)], "s") {
 			if p == "thumb" {
 				return "/ns:image/" + a
 			}
 		}
 	}
 	return "/ns:" + p + "/" + a
+}
+
+func parseImageURLSize(in string) (wh [2]int) {
+	ext := filepath.Ext(in)
+	in = in[:len(in)-len(ext)]
+	idx := strings.LastIndexByte(in, '_')
+	if idx <= 0 {
+		return wh
+	}
+
+	var flag byte
+	fmt.Sscanf(in[idx+1:], "%dx%d%c", &wh[0], &wh[1], &flag)
+	return
 }

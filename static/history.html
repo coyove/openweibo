@@ -14,46 +14,6 @@
 }
 </style>
 
-<script>
-    function diff() {
-        const left = $('input[type=radio][name=diff-left]:checked').val();
-        const right = $('input[type=radio][name=diff-right]:checked').val();
-        if (!left || !right) return;
-        const diff = JsDiff.diffLines(
-            $('#record' + left).find('.content').text(),
-            $('#record' + right).find('.content').text(),
-        );
-        var fragment = document.createDocumentFragment();
-        for (var i=0; i < diff.length; i++) {
-            if (diff[i].added && diff[i + 1] && diff[i + 1].removed) {
-                var swap = diff[i];
-                diff[i] = diff[i + 1];
-                diff[i + 1] = swap;
-            }
-
-            var node = document.createElement('div');
-            if (diff[i].removed) {
-                node.className = 'diff-row del';
-            } else if (diff[i].added) {
-                node.className = 'diff-row ins';
-            } else {
-                node.className = 'diff-row';
-            }
-            node.appendChild(document.createTextNode(diff[i].value || ' '));
-            fragment.appendChild(node);
-        }
-        const dialog = $("<div class=dialog>").
-            append($("<div class=display style='padding:0.5em;background:#f1f2f3'><div class='button tag-edit-button'>" + window.CONST_closeSVG + "</div></div>")).
-            append(fragment);
-        dialog.find('.button').click(function() {
-            dialog.remove();
-            document.body.style.overflow = '';
-        });
-        document.body.appendChild(dialog.get(0));
-        document.body.style.overflow = 'hidden';
-    }
-</script>
-
 <div>
     <table id=list>
         <tr class=title>
@@ -89,13 +49,8 @@
             </td>
         </tr>
         {{range .T.records}}
-        {{$tagid := .Note.Id}}
         <tr>
             <td>
-                {{if eq $.T.viewType "note"}}
-                <input onclick='diff()' name=diff-left value={{.Id}} type=radio>
-                <input onclick='diff()' name=diff-right value={{.Id}} type=radio>
-                {{end}}
                 <b>{{.ActionName}}</b>
             </td>
             <td>
@@ -109,13 +64,20 @@
             </td>
         </tr>
         <tr id='record{{.Id}}'>
-            <td class='small'><div>{{formatUnixMilliBR .CreateUnix}}</div></td>
+            <td class='small'><div>{{formatUnixMilli .CreateUnix}}</div></td>
             {{$rid := .Id}}
+            {{$ipa := .IsPlainAction}}
             {{with .Note}}
-            <td tag-id={{.Id}} class='tag-edit'>
-                <textarea style='display:none' class=content>{{safeHTML .Content}}</textarea>
+            <td class='tag-edit'>
                 <div class=display>
-                    <div style='flex-grow:1;white-space:pre-wrap'><a href='/ns:edit?hid={{$rid}}'>{{.HTMLTitleDisplay}}</a></div>
+                    <div style='flex-grow:1'>
+                        {{if $ipa}}
+                            <span class=wrapall>{{.HTMLTitleDisplay}}</span>
+                        {{else}}
+                            {{if ne .Image .ReviewImage}}<span class=li_photo></span>{{end}}
+                            <a class=wrapall href='/ns:edit?hid={{$rid}}'>{{.HTMLTitleDisplay}}</a>
+                        {{end}}
+                    </div>
                 </div>
             </td>
             {{end}}

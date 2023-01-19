@@ -32,7 +32,7 @@ var (
 	NoteBK = "notes"
 )
 
-func InitDB() {
+func InitDB(bcs int64) {
 	var err error
 	if false {
 		ddb := types.Config.DynamoDB
@@ -60,7 +60,7 @@ func InitDB() {
 		}
 	}
 
-	Store.Manager, err = bitmap.NewManager("bitmap_cache/index", 1024000, 1*1024*1024*1024)
+	Store.Manager, err = bitmap.NewManager("bitmap_cache/index", 1024000, bcs)
 	if err != nil {
 		logrus.Fatal("init bitmap manager: ", err)
 	}
@@ -112,7 +112,7 @@ func KSVUpsert(tx *bbolt.Tx, bkPrefix string, ksv KeySortValue) error {
 	if err != nil {
 		return err
 	}
-	sortKey, err := tx.CreateBucketIfNotExists([]byte(bkPrefix + "_s0k"))
+	sort0Key, err := tx.CreateBucketIfNotExists([]byte(bkPrefix + "_s0k"))
 	if err != nil {
 		return err
 	}
@@ -127,24 +127,24 @@ func KSVUpsert(tx *bbolt.Tx, bkPrefix string, ksv KeySortValue) error {
 	if !ksv.NoSort {
 		oldSort := keySortSort2.Get(ksv.Key)
 		if len(oldSort) >= 8 {
-			old := KeySortValue{
+			deleteKSS(sort0Key, sort1Key, KeySortValue{
 				Key:   ksv.Key,
 				Sort0: types.BytesUint64(oldSort[:8]),
 				Sort1: oldSort[8:],
-			}
-			if err := sortKey.Delete(old.sort0Key()); err != nil {
-				return err
-			}
-			if err := sort1Key.Delete(old.sort1Key()); err != nil {
-				return err
-			}
+			})
 		}
-		if err := sortKey.Put(ksv.sort0Key(), nil); err != nil {
+
+		if added, err := sort0Key.TestPut(ksv.sort0Key(), nil); err != nil {
 			return err
+		} else if added {
+			sort0Key.SetSequence(sort0Key.Sequence() + 1)
 		}
+
 		if len(ksv.Sort1) > 0 {
-			if err := sort1Key.Put(ksv.sort1Key(), nil); err != nil {
+			if added, err := sort1Key.TestPut(ksv.sort1Key(), nil); err != nil {
 				return err
+			} else if added {
+				sort1Key.SetSequence(sort1Key.Sequence() + 1)
 			}
 		}
 		if err := keySortSort2.Put(ksv.Key, append(types.Uint64Bytes(ksv.Sort0), ksv.Sort1...)); err != nil {
@@ -153,37 +153,53 @@ func KSVUpsert(tx *bbolt.Tx, bkPrefix string, ksv KeySortValue) error {
 	} else {
 		keyValue.FillPercent = 0.9
 	}
-	return keyValue.Put(ksv.Key, ksv.Value)
+
+	if added, err := keyValue.TestPut(ksv.Key, ksv.Value); err != nil {
+		return err
+	} else if added {
+		keyValue.SetSequence(keyValue.Sequence() + 1)
+	}
+	return nil
+}
+
+func deleteKSS(sort0Key, sort1Key *bbolt.Bucket, old KeySortValue) error {
+	if deleted, err := sort0Key.TestDelete(old.sort0Key()); err != nil {
+		return err
+	} else if deleted {
+		sort0Key.SetSequence(sort0Key.Sequence() - 1)
+	}
+	if deleted, err := sort1Key.TestDelete(old.sort1Key()); err != nil {
+		return err
+	} else if deleted {
+		sort1Key.SetSequence(sort1Key.Sequence() - 1)
+	}
+	return nil
 }
 
 func KSVDelete(tx *bbolt.Tx, bkPrefix string, key []byte) error {
 	keyValue := tx.Bucket([]byte(bkPrefix + "_kv"))
-	sortKey := tx.Bucket([]byte(bkPrefix + "_s0k"))
+	sort0Key := tx.Bucket([]byte(bkPrefix + "_s0k"))
 	sort1Key := tx.Bucket([]byte(bkPrefix + "_s1k"))
 	keySortSort2 := tx.Bucket([]byte(bkPrefix + "_kss"))
-	if keyValue == nil || sortKey == nil || sort1Key == nil || keySortSort2 == nil {
+	if keyValue == nil || sort0Key == nil || sort1Key == nil || keySortSort2 == nil {
 		return nil
 	}
 
 	oldSort := keySortSort2.Get(key)
 	if len(oldSort) >= 8 {
-		old := KeySortValue{
+		deleteKSS(sort0Key, sort1Key, KeySortValue{
 			Key:   key,
 			Sort0: types.BytesUint64(oldSort[:8]),
 			Sort1: oldSort[8:],
-		}
-		if err := sortKey.Delete(old.sort0Key()); err != nil {
-			return err
-		}
-		if err := sort1Key.Delete(old.sort1Key()); err != nil {
-			return err
-		}
+		})
 	}
 	if err := keySortSort2.Delete(key); err != nil {
 		return err
 	}
-	if err := keyValue.Delete(key); err != nil {
+	if deleted, err := keyValue.TestDelete(key); err != nil {
 		return err
+	} else if deleted {
+		keyValue.SetSequence(keyValue.Sequence() - 1)
 	}
 	return nil
 }
@@ -207,19 +223,19 @@ func KSVPaging(tx *bbolt.Tx, bkPrefix string, bySort int, desc bool, page, pageS
 			return
 		}
 		c = sort0Key.Cursor()
-		total = sort0Key.Stats().KeyN
+		total = int(sort0Key.Sequence())
 	case 1:
 		if keyValue == nil || sort1Key == nil {
 			return
 		}
 		c = sort1Key.Cursor()
-		total = sort1Key.Stats().KeyN
+		total = int(sort1Key.Sequence())
 	default:
 		if keyValue == nil {
 			return
 		}
 		c = keyValue.Cursor()
-		total = keyValue.Stats().KeyN
+		total = int(keyValue.Sequence())
 	}
 
 	i := 0

@@ -16,3 +16,4 @@ require (
 )
 
 replace github.com/coyove/sdss v1.0.0 => ../sdss
+replace go.etcd.io/bbolt v1.3.6 => ./bbolt

@@ -93,75 +93,60 @@ func downloadData() {
 }
 
 func rebuildDataFromWiki(count int) {
-	data := map[uint64]string{}
-	mgr := dal.Store.Manager
 	f, _ := os.Open("out.gz")
 	gr, _ := gzip.NewReader(f)
 	rd := bufio.NewReader(gr)
+
+	lines := []string{}
 	for i := 0; count <= 0 || i < count; i++ {
 		line, err := rd.ReadString('\n')
 		if err != nil {
 			break
 		}
 		line = html.UnescapeString(strings.TrimSpace(line))
-		h := buildBitmapHashes(line, "bulk", nil)
-		if len(h) == 0 {
-			continue
-		}
-		id := clock.Id()
-		data[id] = line
-		k := bitmap.Uint64Key(id)
-		mgr.Saver().AddAsync(k, h)
-		if i%100000 == 0 {
-			log.Println(i)
-		}
-	}
-	mgr.Saver().Close()
+		lines = append(lines, line)
 
-	for len(data) > 0 {
-		dal.Store.DB.Update(func(tx *bbolt.Tx) error {
-			c := 0
-			for i, line := range data {
-				k := types.Uint64Bytes(uint64(i))
-				now := clock.UnixMilli()
-				ksv := dal.KeySortValue{
-					Key:   k[:],
-					Sort0: uint64(now),
-					Sort1: []byte(line),
-					Value: (&types.Note{
-						Id:         uint64(i),
-						Title:      line,
-						Creator:    "bulk",
-						CreateUnix: now,
-						UpdateUnix: now,
-					}).MarshalBinary(),
+		if len(lines) > 1000 {
+			err := dal.Store.DB.Update(func(tx *bbolt.Tx) error {
+				for _, line := range lines {
+					i := clock.Id()
+					k := types.Uint64Bytes(i)
+					now := clock.UnixMilli() - 86400*1000*30
+					ksv := dal.KeySortValue{
+						Key:   k[:],
+						Sort0: uint64(now),
+						Sort1: []byte(line),
+						Value: (&types.Note{
+							Id:         uint64(i),
+							Title:      line,
+							Creator:    "bulk",
+							CreateUnix: now,
+							UpdateUnix: now,
+						}).MarshalBinary(),
+					}
+					dal.KSVUpsert(tx, "notes", ksv)
+					dal.KSVUpsert(tx, "creator_bulk", dal.KeySortValue{
+						Key:   k[:],
+						Sort0: uint64(now),
+						Sort1: []byte(line),
+					})
 				}
-				dal.KSVUpsert(tx, "notes", ksv)
-				dal.KSVUpsert(tx, "creator_bulk", dal.KeySortValue{
-					Key:   k[:],
-					Sort0: uint64(now),
-					Sort1: []byte(line),
-				})
+				return nil
+			})
 
-				delete(data, i)
-				c++
-				if c > 1000 {
-					break
-				}
-			}
-			return nil
-		})
-		fmt.Println(len(data))
+			lines = lines[:0]
+			log.Println(i, err)
+		}
 	}
 }
 
-func rebuildDataFromDB() {
+func rebuildIndexFromDB() {
 	dal.Store.Saver().Close()
 
 	out := "bitmap_cache/rebuilt"
 	os.RemoveAll(out)
 
-	mgr, err := bitmap.NewManager(out, 1024000, 1*1024*1024*1024)
+	mgr, err := bitmap.NewManager(out, 1024000, *bitmapCacheSize)
 	if err != nil {
 		logrus.Fatal("init bitmap manager: ", err)
 	}
@@ -173,7 +158,7 @@ func rebuildDataFromDB() {
 		}
 
 		c := bk.Cursor()
-		i, tot := 0, bk.Stats().KeyN
+		i, tot := 0, bk.KeyN()
 		for k, v := c.First(); len(k) > 0; k, v = c.Next() {
 			note := types.UnmarshalNoteBinary(v)
 			h := buildBitmapHashes(note.Title, note.Creator, note.ParentIds)

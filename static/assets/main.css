@@ -14,7 +14,7 @@ html, body {
 a { color: #1565c0 }
 .highlight {background:wheat;white-space:pre-wrap}
 .untitled:before {content: '无标题';font-style:italic}
-.time { font-size:80%;margin-left:0.5em;display:flex;align-items:center;flex-grow: 1; justify-content: flex-end; }
+.days-ago:after {content: '天前'}
 .wrapall{word-break:break-all;white-space:pre-wrap}
 
 #container {
@@ -41,6 +41,7 @@ a { color: #1565c0 }
     table { margin: 0.25em 0 }
     #container { padding: 0.25em }
     #footer { padding-left: 0.5em }
+    .image-view { max-width:250px !important;max-height:250px !important }
 }
 
 #header .header-entry {
@@ -179,7 +180,7 @@ a { color: #1565c0 }
 
 .svg16 {
     width: 16px;
-    htight: 16px;
+    height: 16px;
 }
 
 table { border-collapse: collapse; width: 100%; border-radius: 0.5em; box-shadow: 0 0 2px #666; margin: 0.5em 0; overflow: hidden }
@@ -308,8 +309,24 @@ div.diff-row.ins{background:#ccffd8}
     width: 100%;
 }
 
-.image-display-bar { width: 100%; font-size: 80%; margin-top: 0.25em; display: flex; align-items: center; }
-.image-display-bar-m { flex-basis: 50%; text-align:center; color: #666 }
-.image-display-bar-l, .image-display-bar-r {flex-basis: 25%; font-weight: bold; color: #aaa }
-.image-display-bar-r {text-align:right; color: #f90}
-.content100 {padding:0.25em;opacity:0.3;position:absolute;left:0;top:0;bottom:0;right:0;display:flex;align-items:center;justify-content:center}
+.image-display-bar { width: 100%; font-size: 80%; margin-top: 0.25em; display: flex; align-items: center; justify-content: center; color:#666 }
+.image-display-count {
+    position: absolute; right: 1em; top: 1em;
+    color: white; background: rgba(0,0,0,0.25);
+    min-width:1.6em; height: 1.6em; line-height: 1.6em; font-size: 80%;
+    padding: 0 0.5em; border-radius: 0.8em;
+}
+.content100 {
+    -webkit-mask-image: linear-gradient(transparent 0, black 25%, black 75%, transparent 100%);
+    mask-image: linear-gradient(transparent 0, black 25%, black 75%, transparent 100%);
+    padding:0.25em;opacity:0.3;position:absolute;left:0;top:0;bottom:0;right:0;display:flex;align-items:center;justify-content:center;
+}
+
+.image-view {
+    border-radius:0.5em;
+    width:100%;
+    max-width:320px;max-height:320px;
+    float:left;margin:0 1em 1em 0;
+    overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+}

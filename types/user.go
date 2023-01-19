@@ -9,29 +9,29 @@ import (
 )
 
 func (r *Request) newUserHash(name byte) (UserHash, []byte) {
-	tmp := make([]byte, 12+16)
-	enc := tmp[12:]
-	tmp = tmp[:12]
+	tmp := make([]byte, 9+12)
+	enc := tmp[9:]
+	tmp = tmp[:9]
 
 	ip := r.RemoteIPv4
 	copy(tmp[:2], ip)
 	ua := r.UserAgent()
 
-	var uaHash uint64
+	var uaHash uint32
 	var uaBytes []byte
-	for i := len(ua) - 1; i >= 0 && uaHash <= 0x000f_ffff_ffff_ffff; i-- {
+	for i := len(ua) - 1; i >= 0 && uaHash <= 0x0fffffff; i-- {
 		ch := ua[i]
-		if ch >= '1' && ch <= '9' {
-			uaHash = uaHash*11 + uint64(ch-'0')
+		if ch >= '1' && ch <= '7' {
+			uaHash = uaHash*9 + uint32(ch-'0')
 			uaBytes = append(uaBytes, ch)
 		} else if ch == '0' {
-			if x := uaHash % 11; x != 0 && x != 10 {
-				uaHash = uaHash * 11
+			if x := uaHash % 9; x != 0 && x != 8 {
+				uaHash = uaHash * 9
 				uaBytes = append(uaBytes, ch)
 			}
 		} else {
-			if x := uaHash % 11; x != 10 {
-				uaHash = uaHash*11 + 10
+			if x := uaHash % 9; x != 8 {
+				uaHash = uaHash*9 + 8
 				uaBytes = append(uaBytes, '.')
 			}
 		}
@@ -41,16 +41,19 @@ func (r *Request) newUserHash(name byte) (UserHash, []byte) {
 		uaBytes[i], uaBytes[len(uaBytes)-i-1] = uaBytes[len(uaBytes)-i-1], uaBytes[i]
 	}
 
-	binary.LittleEndian.PutUint64(tmp[2:], uaHash)
+	binary.LittleEndian.PutUint32(tmp[2:], uaHash)
 
-	tmp[9] = byte(rand.Int())
-	tmp[10] = byte(rand.Int())
-	tmp[11] = name
+	tmp[6] = byte(rand.Int())
+	tmp[7] = byte(rand.Int())
+	tmp[8] = name
 
-	Config.Runtime.XTEA.Encrypt(tmp[4:], tmp[4:])
 	Config.Runtime.XTEA.Encrypt(tmp[:8], tmp[:8])
 
 	base64.URLEncoding.Encode(enc, tmp)
+	if enc[11] == 'A' {
+		enc = enc[:11]
+	}
+
 	return UserHash{
 		IP:     ip,
 		UA:     string(uaBytes),
@@ -85,27 +88,26 @@ func (uh UserHash) Display() string {
 }
 
 func ParseUserHash(v []byte) UserHash {
-	tmp := make([]byte, 12)
-	if len(v) > 16 {
-		v = v[:16]
+	tmp := make([]byte, 9)
+	if len(v) >= 12 {
+		base64.URLEncoding.Decode(tmp, v[:12])
+	} else if len(v) == 11 {
+		base64.URLEncoding.Decode(tmp, append(v, 'A'))
 	}
-	base64.URLEncoding.Decode(tmp, []byte(v))
 
 	Config.Runtime.XTEA.Decrypt(tmp[:8], tmp[:8])
-	Config.Runtime.XTEA.Decrypt(tmp[4:], tmp[4:])
 
-	uaHash := binary.LittleEndian.Uint64(tmp[2:])
-	uaHash &= 0x00ff_ffff_ffff_ffff
+	uaHash := binary.LittleEndian.Uint32(tmp[2:])
 
 	ip := net.IP(tmp[:4])
 	ip[2], ip[3] = 0, 0
-	name := tmp[11]
+	name := tmp[8]
 
 	tmp = tmp[4:4]
 	for i := 0; uaHash > 0; i++ {
-		m := byte(uaHash % 11)
-		uaHash /= 11
-		if m == 10 {
+		m := byte(uaHash % 9)
+		uaHash /= 9
+		if m == 8 {
 			tmp = append(tmp, '.')
 		} else {
 			tmp = append(tmp, m+'0')
