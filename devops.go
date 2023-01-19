@@ -146,7 +146,7 @@ func rebuildIndexFromDB() {
 	out := "bitmap_cache/rebuilt"
 	os.RemoveAll(out)
 
-	mgr, err := bitmap.NewManager(out, 1024000, *bitmapCacheSize)
+	mgr, err := bitmap.NewManager(out, 1024000, *bitmapCacheSize*1e6)
 	if err != nil {
 		logrus.Fatal("init bitmap manager: ", err)
 	}
@@ -158,7 +158,7 @@ func rebuildIndexFromDB() {
 		}
 
 		c := bk.Cursor()
-		i, tot := 0, bk.KeyN()
+		i, tot := 0, bk.Sequence()
 		for k, v := c.First(); len(k) > 0; k, v = c.Next() {
 			note := types.UnmarshalNoteBinary(v)
 			h := buildBitmapHashes(note.Title, note.Creator, note.ParentIds)

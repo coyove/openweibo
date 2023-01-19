@@ -2,6 +2,7 @@ package dal
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"net/http"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/bitmap"
+	"github.com/coyove/sdss/contrib/clock"
 	"github.com/sirupsen/logrus"
 	"go.etcd.io/bbolt"
 	//sync "github.com/sasha-s/go-deadlock"
@@ -30,6 +32,8 @@ var (
 	BBoltOptions = &bbolt.Options{FreelistType: bbolt.FreelistMapType}
 
 	NoteBK = "notes"
+
+	pagingTimeout = flag.Duration("paging-timeout", time.Second*5, "")
 )
 
 func InitDB(bcs int64) {
@@ -244,8 +248,12 @@ func KSVPaging(tx *bbolt.Tx, bkPrefix string, bySort int, desc bool, page, pageS
 		a, b = c.Last()
 	}
 
-	for len(a) > 0 {
+	for start := clock.UnixNano(); len(a) > 0; {
 		if i >= (page+1)*pageSize {
+			break
+		}
+		if clock.UnixNano()-start > pagingTimeout.Nanoseconds() {
+			res = res[:0]
 			break
 		}
 		if i/pageSize == page {

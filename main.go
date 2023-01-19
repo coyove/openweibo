@@ -24,7 +24,7 @@ var (
 	compactDB       = flag.Bool("compact", false, "")
 	listen          = flag.String("l", ":8888", "")
 	reqMaxSize      = flag.Int64("rms", 15*1024*1024, "")
-	bitmapCacheSize = flag.Int64("bcs", 1024*1024*1024, "")
+	bitmapCacheSize = flag.Int64("bcs", 1024, "")
 	serverStart     time.Time
 )
 
@@ -44,7 +44,7 @@ func main() {
 	logrus.SetReportCaller(true)
 
 	types.LoadConfig("config.json")
-	dal.InitDB(*bitmapCacheSize)
+	dal.InitDB(*bitmapCacheSize * 1e6)
 
 	if *compactDB {
 		start := time.Now()
