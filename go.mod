@@ -12,8 +12,10 @@ require (
 	github.com/tidwall/gjson v1.14.4
 	go.etcd.io/bbolt v1.3.6
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
+	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 )
 
 replace github.com/coyove/sdss v1.0.0 => ../sdss
+
 replace go.etcd.io/bbolt v1.3.6 => ./bbolt

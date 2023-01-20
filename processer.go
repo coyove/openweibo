@@ -1,12 +1,9 @@
 package main
 
 import (
-	"bufio"
 	"embed"
 	"encoding/json"
 	"fmt"
-	"io"
-	"math/rand"
 	"net/http"
 	"os"
 	"os/exec"
@@ -81,14 +78,13 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 		}
 		return strings.Join(tmp, " ")
 	},
-	"add":               func(a, b int) int { return a + b },
-	"uuid":              func() string { return types.UUIDStr() },
-	"imageURL":          imageURL,
-	"parseImageURLSize": parseImageURLSize,
-	"trunc":             types.UTF16Trunc,
-	"renderClip":        types.RenderClip,
-	"safeHTML":          types.SafeHTML,
-	"fullEscape":        types.FullEscape,
+	"add":        func(a, b int) int { return a + b },
+	"uuid":       func() string { return types.UUIDStr() },
+	"imageURL":   imageURL,
+	"trunc":      types.UTF16Trunc,
+	"renderClip": types.RenderClip,
+	"safeHTML":   types.SafeHTML,
+	"fullEscape": types.FullEscape,
 }).ParseFS(httpStaticPages, "static/*.html"))
 
 var serveUUID = types.UUIDStr()
@@ -137,33 +133,6 @@ func HandleAssets(w http.ResponseWriter, r *http.Request) {
 
 	buf, _ := httpStaticAssets.ReadFile(p)
 	w.Write(buf)
-}
-
-func HandleImage(w http.ResponseWriter, r *http.Request) {
-	var p string
-	if strings.HasPrefix(r.URL.Path, "/ns:image/") {
-		p = strings.TrimPrefix(r.URL.Path, "/ns:image/")
-	} else {
-		p = strings.TrimPrefix(r.URL.Path, "/ns:thumb/")
-		ext := filepath.Ext(p)
-		p = p[:len(p)-len(ext)] + ".thumb.jpg"
-	}
-	f, err := os.Open("image_cache/" + p)
-	if err != nil {
-		if os.IsNotExist(err) {
-			w.WriteHeader(404)
-		} else {
-			logrus.Errorf("image server error %q: %v", p, err)
-			w.WriteHeader(500)
-		}
-		return
-	}
-	defer f.Close()
-	rd := bufio.NewReader(f)
-	buf, _ := rd.Peek(512)
-	w.Header().Add("Cache-Control", "public, max-age=8640000")
-	w.Header().Add("Content-Type", http.DetectContentType(buf))
-	io.Copy(w, rd)
 }
 
 func HandlePublicStatus(w http.ResponseWriter, r *types.Request) {
@@ -263,7 +232,7 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 			return ad, "INVALID_IMAGE_NAME"
 		}
 
-		seed := int(rand.Uint32() & 65535)
+		seed := clock.UnixNano()
 		ad.imageChanged = q.Get("image_changed") == "true"
 
 		if q.Get("image_small") == "true" {

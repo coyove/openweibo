@@ -20,8 +20,10 @@ import (
 )
 
 var Config struct {
-	Key      string
-	DynamoDB struct {
+	Key            string
+	ImageCacheSize int
+	S3             struct {
+		Endpoint  string
 		Region    string
 		AccessKey string
 		SecretKey string

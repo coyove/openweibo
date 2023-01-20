@@ -135,6 +135,7 @@ func doCreate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 		dal.Store.Saver().AddAsync(bitmap.Uint64Key(id),
 			types.DedupUint64(append(ad.hash, ngram.StrHash(r.UserDisplay))))
 	}
+	go dal.UploadS3(target.Image, imageThumbName(target.Image))
 	return target, true
 }
 
@@ -226,6 +227,7 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 		dal.Store.Saver().AddAsync(bitmap.Uint64Key(id),
 			types.DedupUint64(append(ad.hash, ngram.StrHash(target.Creator))))
 	}
+	go dal.UploadS3(target.ReviewImage, imageThumbName(target.ReviewImage))
 	return target, true
 }
 

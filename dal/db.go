@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -13,6 +12,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/coyove/iis/disklru"
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/bitmap"
 	"github.com/coyove/sdss/contrib/clock"
@@ -27,7 +28,9 @@ var (
 	Store    struct {
 		*bbolt.DB
 		*bitmap.Manager
-		locks [256]sync.Mutex
+		S3         *s3manager.Uploader
+		ImageCache *disklru.DiskLRU
+		locks      [256]sync.Mutex
 	}
 	BBoltOptions = &bbolt.Options{FreelistType: bbolt.FreelistMapType}
 
@@ -38,31 +41,22 @@ var (
 
 func InitDB(bcs int64) {
 	var err error
-	if false {
-		ddb := types.Config.DynamoDB
-		sess, err := session.NewSession(&aws.Config{
-			Region:      aws.String(ddb.Region),
-			Credentials: credentials.NewStaticCredentials(ddb.AccessKey, ddb.SecretKey, ""),
-			HTTPClient: &http.Client{
-				Timeout: time.Second,
-				Transport: &http.Transport{
-					MaxConnsPerHost: 200,
-				},
+	s3 := types.Config.S3
+	sess, err := session.NewSession(&aws.Config{
+		Endpoint:    &s3.Endpoint,
+		Region:      &s3.Region,
+		Credentials: credentials.NewStaticCredentials(s3.AccessKey, s3.SecretKey, ""),
+		HTTPClient: &http.Client{
+			Timeout: time.Second * 10,
+			Transport: &http.Transport{
+				MaxConnsPerHost: 200,
 			},
-		})
-		if err != nil {
-			logrus.Fatal("init DB: ", err)
-		}
-
-		db = dynamodb.New(sess)
-		info, err := db.DescribeEndpoints(&dynamodb.DescribeEndpointsInput{})
-		if err != nil {
-			logrus.Fatal("init DB, describe: ", err)
-		}
-		for _, ep := range info.Endpoints {
-			logrus.Info("dynamodb endpoint: ", strings.Replace(ep.String(), "\n", " ", -1))
-		}
+		},
+	})
+	if err != nil {
+		logrus.Fatal("init s3 manager: ", err)
 	}
+	Store.S3 = s3manager.NewUploader(sess)
 
 	Store.Manager, err = bitmap.NewManager("bitmap_cache/index", 1024000, bcs)
 	if err != nil {
@@ -72,6 +66,11 @@ func InitDB(bcs int64) {
 	Store.DB, err = bbolt.Open("bitmap_cache/tags.db", 0777, BBoltOptions)
 	if err != nil {
 		logrus.Fatal("init tags db: ", err)
+	}
+
+	Store.ImageCache, err = disklru.New("lru_cache", types.Config.ImageCacheSize, time.Second*10, imageS3Loader)
+	if err != nil {
+		logrus.Fatal("init image DiskLRU: ", err)
 	}
 }
 
@@ -298,7 +297,12 @@ func KSVPagingFindLexPrefix(bkPrefix string, prefix []byte, desc bool, pageSize 
 			a, _ = c.Last()
 		}
 
-		for len(a) > 0 {
+		for start := clock.UnixNano(); len(a) > 0; {
+			if clock.UnixNano()-start > pagingTimeout.Nanoseconds() {
+				i = 0
+				return nil
+			}
+
 			ln := int(a[len(a)-1])
 			sort1 := a[:len(a)-1-ln]
 			if desc {

@@ -93,7 +93,7 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
                 that.attr('changed', '');
                 return;
             }
-            if (file.size < 1024) {
+            if (file.size < 1024 * 100) {
                 div.find('img').get(0).src = URL.createObjectURL(file);
                 that.attr('changed', 'true').attr('small', 'true');
                 return;

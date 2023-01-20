@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"io"
@@ -15,6 +16,7 @@ import (
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/clock"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/acme/autocert"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -24,7 +26,8 @@ var (
 	rebuildIndex    = flag.Bool("rebuild-index", false, "")
 	compactDB       = flag.Bool("compact", false, "")
 	reqMaxSize      = flag.Int64("request-max-size", 15, "")
-	bitmapCacheSize = flag.Int64("bitmap-cache-size", 1024, "")
+	bitmapCacheSize = flag.Int64("bitmap-cache-size", 512, "")
+	autocertDomain  = flag.String("autocert", "", "")
 	serverStart     time.Time
 )
 
@@ -92,7 +95,6 @@ func main() {
 		w.WriteHeader(404)
 		httpTemplates.ExecuteTemplate(w, "404.html", r)
 	})
-	http.NotFoundHandler()
 
 	root := types.UUIDStr()
 	http.HandleFunc("/ns:"+root, func(w http.ResponseWriter, r *http.Request) {
@@ -112,23 +114,39 @@ func main() {
 	http.HandleFunc("/ns:image/", HandleImage)
 	http.HandleFunc("/ns:thumb/", HandleImage)
 
-	logrus.Infof("start serving %s, pid=%d, ServeUUID=%s", *listen, os.Getpid(), serveUUID)
+	if *autocertDomain != "" {
+		autocertManager := autocert.Manager{
+			Prompt:     autocert.AcceptTOS,
+			HostPolicy: autocert.HostWhitelist(*autocertDomain),
+			Cache:      autocert.DirCache("autocert_cache"),
+		}
+		go func() {
+			srv := &http.Server{
+				Addr:         ":80",
+				Handler:      autocertManager.HTTPHandler(nil),
+				ReadTimeout:  time.Second,
+				WriteTimeout: time.Second,
+			}
+			logrus.Fatal(srv.ListenAndServe())
+		}()
 
-	// go func() {
-	// 	time.Sleep(time.Second)
-	// 	var wg sync.WaitGroup
-	// 	start := time.Now()
-	// 	for i := 0; i < 2000; i++ {
-	// 		wg.Add(1)
-	// 		go func() {
-	// 			defer wg.Done()
-	// 			http.Get("http://127.0.0.1:8888/ns:manage?desc=1&pid=Qawqwr71dxgSlZx_")
-	// 		}()
-	// 	}
-	// 	wg.Wait()
-	// 	fmt.Println(time.Since(start))
-	// }()
-	http.ListenAndServe(*listen, nil)
+		srv := &http.Server{
+			Addr: ":443",
+			TLSConfig: &tls.Config{
+				GetCertificate:           autocertManager.GetCertificate,
+				PreferServerCipherSuites: true,
+				CurvePreferences:         []tls.CurveID{tls.X25519, tls.CurveP256},
+			},
+			ReadHeaderTimeout: 5 * time.Second,
+			WriteTimeout:      10 * time.Second,
+		}
+
+		logrus.Infof("start serving HTTPS, pid=%d, ServeUUID=%s", os.Getpid(), serveUUID)
+		logrus.Fatal(srv.ListenAndServeTLS("", ""))
+	} else {
+		logrus.Infof("start serving HTTP %s, pid=%d, ServeUUID=%s", *listen, os.Getpid(), serveUUID)
+		logrus.Fatal(http.ListenAndServe(*listen, nil))
+	}
 }
 
 func generateSession(tag, name string, w http.ResponseWriter, r *http.Request) {
