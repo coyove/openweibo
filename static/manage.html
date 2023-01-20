@@ -46,6 +46,12 @@
             </td>
         </tr>
 
+        {{if eq .T.total -1}}
+        <tr>
+            <td><div class=display>服务器忙，请稍后重试</div></td>
+        </tr>
+        {{end}}
+
         <tr>
             <td style='padding:0;background:transparent'>
             <div style='display: grid;justify-items: center; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));'>

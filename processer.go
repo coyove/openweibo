@@ -205,7 +205,7 @@ func serve(pattern string, f func(http.ResponseWriter, *types.Request)) {
 		}()
 
 		req := &types.Request{
-			Request:     limiter.LimitRequestSize(r, *reqMaxSize),
+			Request:     limiter.LimitRequestSize(r, *reqMaxSize*1e6),
 			ServerStart: serverStart,
 			Start:       now,
 			Config:      dal.GetJsonizedNoteCache("ns:config"),

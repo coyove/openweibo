@@ -30,7 +30,7 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 		return
 	}
 
-	if err := r.ParseMultipartForm(int64(*reqMaxSize)); err != nil {
+	if err := r.ParseMultipartForm(int64(*reqMaxSize) * 1e6); err != nil {
 		if err == limiter.ErrRequestTooLarge {
 			writeJSON(w, "success", false, "code", "CONTENT_TOO_LARGE")
 		} else {

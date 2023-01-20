@@ -33,7 +33,7 @@ var (
 
 	NoteBK = "notes"
 
-	pagingTimeout = flag.Duration("paging-timeout", time.Second*5, "")
+	pagingTimeout = flag.Duration("paging-timeout", time.Second*2, "")
 )
 
 func InitDB(bcs int64) {
@@ -253,8 +253,7 @@ func KSVPaging(tx *bbolt.Tx, bkPrefix string, bySort int, desc bool, page, pageS
 			break
 		}
 		if clock.UnixNano()-start > pagingTimeout.Nanoseconds() {
-			res = res[:0]
-			break
+			return nil, -1, -1
 		}
 		if i/pageSize == page {
 			var ksv KeySortValue

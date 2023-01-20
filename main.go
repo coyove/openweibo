@@ -19,12 +19,12 @@ import (
 )
 
 var (
+	listen          = flag.String("l", ":8888", "")
 	rebuildFromWiki = flag.Int("rebuild-db", 0, "")
 	rebuildIndex    = flag.Bool("rebuild-index", false, "")
 	compactDB       = flag.Bool("compact", false, "")
-	listen          = flag.String("l", ":8888", "")
-	reqMaxSize      = flag.Int64("rms", 15*1024*1024, "")
-	bitmapCacheSize = flag.Int64("bcs", 1024, "")
+	reqMaxSize      = flag.Int64("request-max-size", 15, "")
+	bitmapCacheSize = flag.Int64("bitmap-cache-size", 1024, "")
 	serverStart     time.Time
 )
 
