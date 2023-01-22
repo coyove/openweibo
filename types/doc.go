@@ -198,3 +198,27 @@ func UnmarshalRecordBinary(p []byte) *Record {
 	proto.Unmarshal(p, t)
 	return t
 }
+
+type Image struct {
+	Id         uint64 `protobuf:"fixed64,1,opt"`
+	NoteId     uint64 `protobuf:"fixed64,2,opt"`
+	UploadUnix uint64 `protobuf:"fixed64,3,opt"`
+	CreateUnix int64  `protobuf:"fixed64,4,opt"`
+}
+
+func (t *Image) Reset() { *t = Image{} }
+
+func (t *Image) ProtoMessage() {}
+
+func (t *Image) String() string { return proto.CompactTextString(t) }
+
+func UnmarshalImageBinary(p []byte) *Image {
+	t := &Image{}
+	proto.Unmarshal(p, t)
+	return t
+}
+
+func (t *Image) MarshalBinary() []byte {
+	buf, _ := proto.Marshal(t)
+	return buf
+}

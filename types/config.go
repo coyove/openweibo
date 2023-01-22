@@ -31,7 +31,7 @@ var Config struct {
 	Runtime struct {
 		AESBlock cipher.Block
 		XTEA     *xtea.Cipher
-	}
+	} `json:"-"`
 }
 
 func LoadConfig(path string) {
@@ -54,6 +54,11 @@ func LoadConfig(path string) {
 	Config.Runtime.XTEA, err = xtea.NewCipher([]byte(Config.Key[:16]))
 	if err != nil {
 		logrus.Fatal("load config xtea cipher key: ", err)
+	}
+
+	{
+		tmp, _ := json.Marshal(Config)
+		logrus.Infof("load config: %v", string(tmp))
 	}
 }
 

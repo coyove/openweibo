@@ -12,7 +12,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/coyove/iis/types"
+	"github.com/coyove/sdss/contrib/clock"
 	"github.com/sirupsen/logrus"
+	"go.etcd.io/bbolt"
 )
 
 type S3Error int
@@ -81,4 +83,16 @@ func UploadS3(files ...string) {
 		}
 		logrus.Infof("upload %s to S3: %v", file, err)
 	}
+}
+
+func StoreImageMetadata(tx *bbolt.Tx, id, noteId uint64) error {
+	bk, err := tx.CreateBucketIfNotExists([]byte("images"))
+	if err != nil {
+		return err
+	}
+	return bk.Put(types.Uint64Bytes(id), (&types.Image{
+		Id:         id,
+		NoteId:     id,
+		CreateUnix: clock.UnixMilli(),
+	}).MarshalBinary())
 }

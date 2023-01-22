@@ -64,7 +64,7 @@ func deleteImage(id string) {
 func saveImage(r *types.Request, id uint64, ts int64, ext string,
 	img multipart.File, hdr *multipart.FileHeader) (string, string) {
 	fn := fmt.Sprintf("%s-%x%s", time.Unix(0, ts).Format("2006-01-02-15-04-05.000"), id, ext)
-	path := "image_cache/" + fn
+	path := dal.ImageCacheDir + fn
 	os.MkdirAll(filepath.Dir(path), 0777)
 	out, err := os.Create(path)
 	if err != nil {
