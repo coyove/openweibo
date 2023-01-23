@@ -11,7 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/coyove/iis/disklru"
 	"github.com/coyove/iis/types"
@@ -23,9 +22,7 @@ import (
 )
 
 var (
-	db       *dynamodb.DynamoDB
-	tableFTS = "fts"
-	Store    struct {
+	Store struct {
 		*bbolt.DB
 		*bitmap.Manager
 		S3         *s3manager.Uploader
@@ -65,7 +62,7 @@ func InitDB(bcs int64) {
 
 	Store.DB, err = bbolt.Open("bitmap_cache/tags.db", 0777, BBoltOptions)
 	if err != nil {
-		logrus.Fatal("init tags db: ", err)
+		logrus.Fatal("init doc database: ", err)
 	}
 
 	Store.ImageCache, err = disklru.New("lru_cache", types.Config.ImageCacheSize, time.Second*10, imageS3Loader)

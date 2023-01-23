@@ -227,7 +227,7 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 		dal.Store.Saver().AddAsync(bitmap.Uint64Key(id),
 			types.DedupUint64(append(ad.hash, ngram.StrHash(target.Creator))))
 	}
-	go dal.UploadS3(target.ReviewImage, imageThumbName(target.ReviewImage))
+	go dal.UploadS3(ad.image, imageThumbName(ad.image))
 	return target, true
 }
 
