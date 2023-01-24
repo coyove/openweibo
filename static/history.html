@@ -23,15 +23,15 @@
                         {{if eq .T.viewType "note"}}
                             <title>{{.T.note.HTMLTitleDisplay}} 编辑历史</title>
                             <b class=wrapall>{{.T.note.HTMLTitleDisplay}}</b>
-                            <a class=tag-edit-button href='/{{.T.note.EscapedTitle}}'><span class=li_eye></span></a>
-                            <a class=tag-edit-button href='/ns:edit?id={{.T.note.Id}}'><span class=li_pen></span></a>
+                            <a class=tag-edit-button href='/{{.T.note.EscapedTitle}}'><span class=icon-eye></span></a>
+                            <a class=tag-edit-button href='/ns:edit?id={{.T.note.Id}}'><span class=icon-pencil></span></a>
                             修改历史
                         {{end}}
 
                         {{if eq .T.viewType "user"}}
                             <title>{{.T.id}} 编辑历史</title>
                             {{.T.id}}
-                            <a class=tag-edit-button href='/ns:manage?sort=0&q=ns:user:{{.T.id}}'><span class=li_search></span></a>
+                            <a class=tag-edit-button href='/ns:manage?sort=0&q=ns:user:{{.T.id}}'><span class=icon-search></span></a>
                             编辑历史
                         {{end}}
 
@@ -57,7 +57,7 @@
                 <div class=diff>
                     <div class='diff-header'>
                         {{.Modifier}}&nbsp;
-                        <a href='/ns:history?user={{.Modifier}}&desc=1' class='tag-edit-button li_user'></a>&nbsp;
+                        <a href='/ns:history?user={{.Modifier}}&desc=1' class='tag-edit-button icon-user'></a>&nbsp;
                     </div>
                     <div class=diff-header-ip>{{.ModifierIP}}</div>
                 </div>
@@ -74,7 +74,7 @@
                         {{if $ipa}}
                             <span class=wrapall>{{.HTMLTitleDisplay}}</span>
                         {{else}}
-                            {{if ne .Image .ReviewImage}}<span class=li_photo></span>{{end}}
+                            {{if ne .Image .ReviewImage}}<span class=icon-photo></span>{{end}}
                             <a class=wrapall href='/ns:edit?hid={{$rid}}'>{{.HTMLTitleDisplay}}</a>
                         {{end}}
                     </div>

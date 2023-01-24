@@ -10,17 +10,17 @@
 <div style='font-size: 90%'>
     <div>
         <a href='/ns:manage?q=ns:user:{{.Creator}}'>{{.Creator}}</a> 创建于 {{formatUnixMilli .CreateUnix}}
-        <a class=tag-edit-button href='/ns:edit?id={{.Id}}'><span class=li_pen></span></a>
+        <a class=tag-edit-button href='/ns:edit?id={{.Id}}'><span class=icon-pencil></span></a>
     </div>
     {{if .Modifier}}
     <div>
         <a href='/ns:manage?q=ns:user:{{.Modifier}}'>{{.Modifier}}</a> 修改于 {{formatUnixMilli .UpdateUnix}}
-        <a class=tag-edit-button href='/ns:history?note={{.Id}}&desc=1'><span class=li_calendar></span></a>
+        <a class=tag-edit-button href='/ns:history?note={{.Id}}&desc=1'><span class=icon-calendar></span></a>
     </div>
     {{end}}
     {{if .PendingReview}}
     <div>
-        <span class=li_stack></span> 该记事有新版本等待审核
+        <span class=icon-inbox></span> 该记事有新版本等待审核
     </div>
     {{end}}
 </div>
@@ -39,7 +39,7 @@
     {{end}}
     {{if $.T.parents}}
     <div>
-        <b>父记事 <span class=li_clip></span></b>
+        <b>父记事 <span class=icon-attach></span></b>
         <div style='font-size: 90%;line-height:1.5em;padding:0.5em 0'>
             {{range $.T.parents}}
             <a href='/{{.EscapedTitle}}'>{{.HTMLTitleDisplay}}</a>&emsp;

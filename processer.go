@@ -270,12 +270,7 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 		if len(ad.parentIds) > r.GetParentsMax() {
 			return ad, "TOO_MANY_PARENTS"
 		}
-		res, _ := dal.BatchCheckNoteExistences(ad.parentIds)
-		for _, ok := range res {
-			if !ok {
-				return ad, "INVALID_PARENT"
-			}
-		}
+		ad.parentIds, _ = dal.FilterInvalidParentIds(ad.parentIds)
 	}
 
 	ad.hash = buildBitmapHashes(ad.title, "", ad.parentIds)

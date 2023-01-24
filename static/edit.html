@@ -1,5 +1,6 @@
 {{template "header.html" .}}
 <title>记事编辑</title>
+<script src="/ns:static/assets/diff.js"></script>
 
 <div>
     <table id=edit>
@@ -60,14 +61,15 @@
         {{end}}
         <tr>
             <td colspan=2>
+                <style>.image-selector-container { margin: 0.5em } </style>
                 <div class=display>
                     <input id="image"
                         {{if $.T.readonly}}readonly{{end}}
                         type=file
                         class='image-selector'
-                        {{if .PendingReview}}title='现图片'{{end}}
                         accept="image/*">
-                    <input readonly id="review-image" type=file class='image-selector' style='display:none' title='新图片'>
+                    <div class=icon-right-big style='display:none'></div>
+                    <input readonly id="review-image" type=file class='image-selector' style='display:none'>
                 </div>
             </td>
         </tr>
@@ -119,7 +121,7 @@
                     {{if not $.T.readonly}}
                     <div class='tag-edit-button button' action=''
                          onclick='ajaxBtn(this,{{if .Lock}}"Unlock"{{else}}"Lock"{{end}}, {"id": {{.Id}}})'>
-                        <span class=li_lock></span>
+                        <span class=icon-lock></span>
                     </div>
                     {{end}}
                 </div>
@@ -130,7 +132,7 @@
             <td>
                 <div class=display>
                     {{.Creator}}&nbsp;
-                    <a class='tag-edit-button' href='/ns:manage?q=ns:user:{{.Creator}}'><span class=li_user></span></a>
+                    <a class='tag-edit-button' href='/ns:manage?q=ns:user:{{.Creator}}'><span class=icon-user></span></a>
                 </div>
             </td>
         </tr>
@@ -140,7 +142,7 @@
             <td>
                 <div class=display>
                     {{.Modifier}}&nbsp;
-                    <a class='tag-edit-button' href='/ns:history?user={{.Modifier}}'><span class=li_user></span></a>
+                    <a class='tag-edit-button' href='/ns:history?user={{.Modifier}}'><span class=icon-user></span></a>
                 </div>
             </td>
         </tr>
@@ -177,6 +179,7 @@
             $('#content').linedtextarea();
             {{if .PendingReview}}
             {{if ne .Image .ReviewImage}}
+            $('#review-image').prev().show();
             $('#review-image').imageSelector("{{imageURL "thumb" .ReviewImage}}");
             {{end}}
             $('#review-content').linedtextarea();
@@ -208,7 +211,7 @@
                     'id': {{.Id}},
                     'title': $("#title").val(),
                     'content': $("#content").val(),
-                    'image': $('#image').get(0).files[0],
+                    'image': $('#image').get(0).image,
                     'thumb': $('#image').get(0).thumb,
                     'image_changed': $('#image').attr('changed'),
                     'image_small': $('#image').attr('small'),

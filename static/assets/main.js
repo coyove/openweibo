@@ -77,27 +77,33 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
 	$.fn.imageSelector = function(img) {
         const that = this;
         const readonly = !!this.attr('readonly');
-        const title = this.attr('title');
-        const div = $('<div class="image-strip image-selector-container">').
+        const processing = $("<div class='title'>").text('处理中').hide();
+        const div = $('<div class="image-selector-container">').
             css('cursor', readonly ? 'inherit' : 'pointer').
+            attr('readonly', readonly).
             append($("<div>").append($("<img>"))).
+            append(processing).
             click(function() { !readonly && that.click() });
-        title && div.append($("<div class=title>").text(title));
-        !readonly && div.append($("<div class='title hover'>").append('<span class=li_camera></span>'));
-        this.parent().prepend(div);
-        this.hide();
-        this.change(function() {
-            const file = that.get(0).files[0];
+        div.insertBefore(this.hide());
+
+        function finish(display, image, thumb) {
+            div.find('img').get(0).src = display;
+            that.get(0).thumb = thumb, that.get(0).image = image;
+            processing.hide();
+        }
+
+        function onChange(file) {
             if (!file) {
-                div.find('img').get(0).src = '';
                 that.attr('changed', '');
+                finish('', null, null);
                 return;
             }
             if (file.size < 1024 * 100) {
-                div.find('img').get(0).src = URL.createObjectURL(file);
                 that.attr('changed', 'true').attr('small', 'true');
+                finish(URL.createObjectURL(file), file, null);
                 return;
             }
+            processing.show();
             const reader = new FileReader();
             const size = 300;
             reader.onload = function (e) {
@@ -130,17 +136,19 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
                         ctx.drawImage(img, -x, -y, w, h);
                     }
                     canvas.toBlob(function(blob)  {
-                        const thumb = new File([blob], "thumb.jpg", { type: "image/jpeg" })
-                        div.find('img').get(0).src = canvas.toDataURL('image/jpeg'); // URL.createObjectURL(file);
                         that.attr('changed', 'true');
-                        that.get(0).thumb = thumb;
+                        finish(canvas.toDataURL('image/jpeg'), file, new File([blob], "thumb.jpg", { type: "image/jpeg" }));
                     }, 'image/jpeg');
                 }
                 img.src = e.target.result;
             }
             reader.readAsDataURL(file);
-        });
+        }
+        this.change(function() { onChange(that.get(0).files[0]) });
         img && (div.find('img').get(0).src = img);
+        if (!readonly) {
+            window.lastChangeImage = onChange;
+        }
         return this;
     }
 })(jQuery);
@@ -429,3 +437,13 @@ function wrapTagSearchInput(container) {
     container.wrapped = true;
 }
 
+document.onpaste = function (event) {
+    var items = (event.clipboardData || event.originalEvent.clipboardData).items;
+    for (var index in items) {
+        var item = items[index];
+        if (item.kind === 'file' && window.lastChangeImage) {
+            window.lastChangeImage(item.getAsFile());
+            break;
+        }
+    }
+};

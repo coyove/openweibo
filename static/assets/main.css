@@ -227,7 +227,6 @@ div.diff-row.del{background:#ffebe9}
 div.diff-row.ins{background:#ccffd8}
 
 .image-selector-container {
-    margin-right: 0.5em;
     height: 160px;
     width: 160px;
     box-shadow: 0 0 1px #666;
@@ -236,8 +235,11 @@ div.diff-row.ins{background:#ccffd8}
     align-items: center;
     justify-content: center;
     position: relative;
-    background: repeating-linear-gradient(45deg, rgba(0,0,0,0.02), rgba(0,0,0,0.02) 16px, rgba(0,0,0,0.04) 16px, rgba(0,0,0,0.04) 32px);
     border-radius: 0.5em;
+    background: center / contain no-repeat url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='60px' width='120px'><text x='60' y='30' font-size='12' alignment-baseline='central' text-anchor='middle'>选择图片</text></svg>");
+}
+.image-selector-container[readonly="readonly"] {
+    background: none;
 }
 .image-selector-container img {
     display: block;
@@ -263,8 +265,6 @@ div.diff-row.ins{background:#ccffd8}
     align-items: center;
     justify-content: center;
 }
-.image-selector-container .title.hover { font-size:2em; height:100%; display:none; background:rgba(0,0,0,0.1) }
-.image-selector-container:hover .title.hover { display: flex; }
 
 .dialog { position:fixed;left:0;right:0;top:0;bottom:0;overflow:auto;background:white;padding-bottom:0.5em }
 .image-container { height: 100%; display: flex; align-items: center; justify-content: center; }

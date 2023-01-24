@@ -77,8 +77,8 @@
                             <a href='/{{.EscapedTitle}}' class=tag-edit-name>{{.HTMLTitleDisplay}}</a>
                         </div>
                         <div style='margin-top:0.25em' >
-                            {{if .Lock}}<span class='li_lock'></span>{{end}}
-                            {{if .PendingReview}}<span class='li_stack' title='审核中'></span>{{end}}
+                            {{if .Lock}}<span class='icon-lock'></span>{{end}}
+                            {{if .PendingReview}}<span class='icon-inbox' title='审核中'></span>{{end}}
                         </div>
                         <div class=image-display-bar onclick='location.href="/{{.EscapedTitle}}"'>
                             {{formatUnixMilliBR .UpdateUnix}}

@@ -37,6 +37,19 @@ func UpdateCreator(tx *bbolt.Tx, tag *types.Note) error {
 	})
 }
 
+func FilterInvalidParentIds(ids []uint64) (res []uint64, err error) {
+	oks, err := BatchCheckNoteExistences(ids)
+	if err != nil {
+		return nil, err
+	}
+	for i := len(res) - 1; i >= 0; i-- {
+		if !oks[i] {
+			res = append(res[:i], res[i+1:]...)
+		}
+	}
+	return
+}
+
 func BatchCheckNoteExistences(v interface{}) (res []bool, err error) {
 	ids := convertToBkIDs(v)
 	err = Store.View(func(tx *bbolt.Tx) error {

@@ -4,7 +4,9 @@
     <tr>
         <td>
             <div class=display style='flex-wrap:nowrap;align-items:stretch;padding:0.5em 0'>
-                <input id="image" type=file class='image-selector' accept="image/*">
+                <div style='margin-right: 0.5em'>
+                    <input id="image" type=file class='image-selector' accept="image/*">
+                </div>
                 <div style='display: flex;flex-grow:1;flex-direction:column'>
                     <div style='display: flex;flex-grow:1'>
                         <textarea
@@ -46,7 +48,7 @@
                 ajaxBtn(this, 'create', {
                     'title': $('#name').val(),
                     'content': $('#desc').val(),
-                    'image': $('#image').get(0).files[0],
+                    'image': $('#image').get(0).image,
                     'thumb': $('#image').get(0).thumb,
                     'image_changed': $('#image').attr('changed'),
                     'image_small': $('#image').attr('small'),
