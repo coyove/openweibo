@@ -24,6 +24,7 @@
                     {{else}}
                         {{if .T.view}}
                             {{if ne .P.Page 1}}<b class=wrapall>{{.T.note.HTMLTitleDisplay}} </b>{{end}}子记事
+                        <a class='tag-edit-button icon-paper-plane' href='/ns:new?pt={{.T.note.Id}},{{.T.note.QueryTitle}}'></a>
                         {{else}}
                             <title>全部记事</title>
                             全部记事
@@ -33,7 +34,6 @@
 
                     <div>
                         {{if .T.view}}
-                        <a class='tag-edit-button icon-paper-plane' href='/ns:new?pt={{.T.note.Id}},{{.T.note.QueryTitle}}'></a>
                         {{end}}
                         <a class='tag-edit-button icon-search' href='javascript:$("#search-bar").toggle().find("input").focus()'></a>
                         {{$qy := printf "q=%s" (fullEscape .T.query)}}
@@ -68,13 +68,13 @@
                             {{if .Content}}
                             <div class='wrapall content100'>{{safeHTML (trunc .Content 100)}}</div>
                             {{else}}
-                            <div class='wrapall content100'>{{joinParentTitles .}}</div>
+                            <div class='wrapall content100'>{{makeTitle . 100 false}}</div>
                             {{end}}
                         </div>
                     {{end}}
                     <div class=image-display-info>
                         <div style='flex-grow:1'>
-                            <a href='/{{.EscapedTitle}}' class=tag-edit-name>{{.HTMLTitleDisplay}}</a>
+                            <a href='/{{.EscapedTitle}}' class=tag-edit-name>{{makeTitle . 32 true}}</a>
                         </div>
                         <div style='margin-top:0.25em' >
                             {{if .Lock}}<span class='icon-lock'></span>{{end}}

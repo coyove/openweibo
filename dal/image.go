@@ -24,7 +24,11 @@ func (e S3Error) Error() string {
 const ImageCacheDir = "image_cache/"
 
 func imageS3Loader(key, saveTo string) error {
-	if buf, err := ioutil.ReadFile(ImageCacheDir + key); err == nil && len(buf) > 0 {
+	file := ImageCacheDir + key
+	LockKey(file)
+	defer UnlockKey(file)
+
+	if buf, err := ioutil.ReadFile(file); err == nil && len(buf) > 0 {
 		return ioutil.WriteFile(saveTo, buf, 0777)
 	}
 
@@ -55,30 +59,36 @@ func imageS3Loader(key, saveTo string) error {
 	return err
 }
 
-func UploadS3(files ...string) {
+func UploadS3(files ...string) (lastErr error) {
 	for _, file := range files {
 		if file == "" {
 			continue
 		}
 		file = ImageCacheDir + file
 		err := func() error {
+			LockKey(file)
+			defer UnlockKey(file)
 			in, err := os.Open(file)
 			if err != nil {
 				return err
 			}
-			defer in.Close()
 			key := filepath.Base(file)
 			_, err = Store.S3.Upload(&s3manager.UploadInput{
 				Bucket: aws.String("nsimages"),
 				Key:    aws.String(key),
 				Body:   in,
 			})
+			in.Close()
+			if err == nil {
+				err = os.Remove(file)
+			}
 			return err
 		}()
 
-		if err == nil {
-			err = os.Remove(file)
-		}
 		logrus.Infof("upload %s to S3: %v", file, err)
+		if err != nil {
+			lastErr = fmt.Errorf("failed to upload %s to S3: %v", file, err)
+		}
 	}
+	return
 }

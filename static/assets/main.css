@@ -100,6 +100,11 @@ a { color: #1565c0 }
     cursor: pointer;
 }
 
+.tag-box .children-count {
+    color: #aaa;
+    margin-left: 0.5em;
+}
+
 .tag-box.button:not(.selected):not(.alert):hover { background: #cfd8dc; }
 .tag-edit-button.selected, .tag-box.button.selected { background: #607d8b; color: white }
 .tag-box.button a, .nav-page { text-decoration: none; color: #233; }
@@ -220,12 +225,7 @@ td .display .button .closer { cursor: pointer }
 td .tag-box { font-size: 90%; }
 tr:nth-child(even) { background: #f7f8f9; }
 tr:nth-child(odd) { background: white; }
-.page {display:inline-block; min-width: 2em; text-align:center}
-
-div.diff-row {white-space:pre-wrap;padding:0 0.5em;line-height: 1.5em}
-div.diff-row.del{background:#ffebe9}
-div.diff-row.ins{background:#ccffd8}
-
+.page {display:inline-block; min-width: 2em; text-align:center}</script>
 .image-selector-container {
     height: 160px;
     width: 160px;
@@ -236,7 +236,7 @@ div.diff-row.ins{background:#ccffd8}
     justify-content: center;
     position: relative;
     border-radius: 0.5em;
-    background: center / contain no-repeat url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='60px' width='120px'><text x='60' y='30' font-size='12' alignment-baseline='central' text-anchor='middle'>选择图片</text></svg>");
+    background: center / contain no-repeat url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='60px' width='120px'><text x='60' y='20' font-size='12' text-anchor='middle' fill='rgba(0,0,0,0.7)'>选择图片</text><text x='60' y='40' font-size='12' text-anchor='middle' fill='rgba(0,0,0,0.4)'>或粘贴</text></svg>");
 }
 .image-selector-container[readonly="readonly"] {
     background: none;
@@ -320,6 +320,7 @@ div.diff-row.ins{background:#ccffd8}
     -webkit-mask-image: linear-gradient(transparent 0, black 25%, black 75%, transparent 100%);
     mask-image: linear-gradient(transparent 0, black 25%, black 75%, transparent 100%);
     padding:0.25em;opacity:0.3;position:absolute;left:0;top:0;bottom:0;right:0;display:flex;align-items:center;justify-content:center;
+    flex-wrap: wrap;
 }
 
 .image-view {

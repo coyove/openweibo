@@ -107,3 +107,22 @@ func imageURL(p, a string) string {
 	}
 	return "/ns:" + p + "/" + a
 }
+
+func checkImageCache(n *types.Note) (found, uploaded int) {
+	check := func(id string) {
+		if id == "" {
+			return
+		}
+		if _, err := os.Stat(dal.ImageCacheDir + id); err == nil {
+			found++
+			if err := dal.UploadS3(id); err == nil {
+				uploaded++
+			}
+		}
+	}
+	check(n.Image)
+	check(imageThumbName(n.Image))
+	check(n.ReviewImage)
+	check(imageThumbName(n.ReviewImage))
+	return
+}

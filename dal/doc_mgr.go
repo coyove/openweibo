@@ -42,12 +42,12 @@ func FilterInvalidParentIds(ids []uint64) (res []uint64, err error) {
 	if err != nil {
 		return nil, err
 	}
-	for i := len(res) - 1; i >= 0; i-- {
+	for i := len(ids) - 1; i >= 0; i-- {
 		if !oks[i] {
-			res = append(res[:i], res[i+1:]...)
+			ids = append(ids[:i], ids[i+1:]...)
 		}
 	}
-	return
+	return ids, nil
 }
 
 func BatchCheckNoteExistences(v interface{}) (res []bool, err error) {
@@ -99,14 +99,6 @@ func BatchGetNotes(v interface{}) (tags []*types.Note, err error) {
 		return nil
 	})
 	return
-}
-
-func LoadParentTitles(ids []uint64) (res []string) {
-	notes, _ := BatchGetNotes(ids)
-	for _, t := range notes {
-		res = append(res, t.Title)
-	}
-	return res
 }
 
 func GetTagRecord(id uint64) (*types.Record, error) {

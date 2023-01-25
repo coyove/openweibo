@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"embed"
 	"encoding/json"
 	"fmt"
@@ -71,12 +72,45 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 		}
 		return
 	},
-	"joinParentTitles": func(t *types.Note) (res string) {
-		tmp := dal.LoadParentTitles(t.ParentIds)
-		for i := range tmp {
-			tmp[i] = types.SafeHTML(tmp[i])
+	"getFullParents": func(t *types.Note) (res []string) {
+		notes, _ := dal.BatchGetNotes(t.ParentIds)
+		for _, n := range notes {
+			if n.Title != "" {
+				res = append(res, fmt.Sprintf("%d,%s", n.Id, n.Title))
+			} else {
+				res = append(res, fmt.Sprintf("%d,ns:id:%d", n.Id, n.Id))
+			}
 		}
-		return strings.Join(tmp, " ")
+		return
+	},
+	"makeTitle": func(t *types.Note, max int, hl bool) string {
+		var tt string
+		if t.PendingReview {
+			tt = types.SafeHTML(t.ReviewTitle)
+		} else {
+			tt = types.SafeHTML(t.Title)
+		}
+		if tt == "" {
+			notes, _ := dal.BatchGetNotes(t.ParentIds)
+			if len(notes) > 0 {
+				sort.Slice(notes, func(i, j int) bool { return notes[i].ChildrenCount > notes[j].ChildrenCount })
+				buf := &bytes.Buffer{}
+				for _, n := range notes {
+					if hl {
+						buf.WriteString("<b>#</b>")
+					} else {
+						buf.WriteString("#")
+					}
+					buf.WriteString(n.HTMLTitleDisplay())
+					buf.WriteString(" ")
+					if buf.Len() > max {
+						break
+					}
+				}
+				return buf.String()
+			}
+		}
+		return tt
 	},
 	"add":        func(a, b int) int { return a + b },
 	"uuid":       func() string { return types.UUIDStr() },
