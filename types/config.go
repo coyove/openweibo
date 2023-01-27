@@ -14,9 +14,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/coyove/sdss/contrib/skip32"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
-	"golang.org/x/crypto/xtea"
 )
 
 var Config struct {
@@ -28,9 +28,10 @@ var Config struct {
 		AccessKey string
 		SecretKey string
 	}
-	Runtime struct {
+	RootPassword string
+	Runtime      struct {
 		AESBlock cipher.Block
-		XTEA     *xtea.Cipher
+		Skip32   skip32.Skip32
 	} `json:"-"`
 }
 
@@ -51,10 +52,7 @@ func LoadConfig(path string) {
 		logrus.Fatal("load config cipher key: ", err)
 	}
 
-	Config.Runtime.XTEA, err = xtea.NewCipher([]byte(Config.Key[:16]))
-	if err != nil {
-		logrus.Fatal("load config xtea cipher key: ", err)
-	}
+	Config.Runtime.Skip32 = skip32.ReadSkip32Key(Config.Key[:10])
 
 	{
 		tmp, _ := json.Marshal(Config)

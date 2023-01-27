@@ -77,7 +77,7 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
 	$.fn.imageSelector = function(img) {
         const that = this;
         const readonly = !!this.attr('readonly');
-        const processing = $("<div class='title'>").text('处理中').hide();
+        const processing = $("<div class='title'>").hide();
         const div = $('<div class="image-selector-container">').
             css('cursor', readonly ? 'inherit' : 'pointer').
             attr('readonly', readonly).
@@ -85,6 +85,7 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
             append(processing).
             click(function() { !readonly && that.click() });
         div.insertBefore(this.hide());
+        !readonly && processing.text('选择/粘贴图片').show();
 
         function finish(display, image, thumb) {
             div.find('img').get(0).src = display;
@@ -93,6 +94,7 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
         }
 
         function onChange(file) {
+            processing.text('处理中')
             if (!file) {
                 that.attr('changed', '');
                 finish('', null, null);

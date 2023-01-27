@@ -5,6 +5,7 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -122,6 +123,7 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 }).ParseFS(httpStaticPages, "static/*.html"))
 
 var serveUUID = types.UUIDStr()
+var rootUUID = types.UUIDStr()
 
 var errorMessages = map[string]string{
 	"INTERNAL_ERROR":     "服务器错误",
@@ -163,38 +165,74 @@ func HandleAssets(w http.ResponseWriter, r *http.Request) {
 	case strings.HasSuffix(p, ".css"):
 		w.Header().Add("Content-Type", "text/css")
 	}
-	w.Header().Add("Cache-Control", "public, max-age=604800")
+	w.Header().Add("Cache-Control", "public, max-age=8640000")
 
 	buf, _ := httpStaticAssets.ReadFile(p)
 	w.Write(buf)
 }
 
-func HandlePublicStatus(w http.ResponseWriter, r *types.Request) {
-	fmt.Fprintf(w, "Your cookie: %s (Display: %s)\n\n", r.UserSession, r.UserDisplay)
-	fmt.Fprintf(w, "Server started at %v\n", serverStart)
-	fmt.Fprintf(w, "Request max size: %v\n", *reqMaxSize)
-
-	df, _ := exec.Command("df", "-h").Output()
-	fmt.Fprintf(w, "Disk:\n%s\n", df)
-
-	stats := dal.Store.DB.Stats()
-	enc := json.NewEncoder(w)
-	enc.SetIndent("", "  ")
-	enc.Encode(stats)
-	w.Write([]byte("\n"))
-
-	fi, err := os.Stat(dal.Store.DB.Path())
-	if err != nil {
-		fmt.Fprintf(w, "<failed to read data on disk>\n\n")
-	} else {
-		sz := fi.Size()
-		fmt.Fprintf(w, "data on disk: %d (%.2f)\n\n", sz, float64(sz)/1024/1024)
+func HandleRoot(w http.ResponseWriter, r *types.Request) {
+	if ok, _ := limiter.CheckIP(r); !ok {
+		w.WriteHeader(400)
+		return
+	}
+	if rpwd := r.URL.Query().Get("rpwd"); rpwd == types.Config.RootPassword {
+		_, v := r.GenerateSession('r')
+		http.SetCookie(w, &http.Cookie{
+			Name:   "session",
+			Value:  v,
+			Path:   "/",
+			MaxAge: 365 * 86400,
+		})
+		logrus.Info("generate root session: ", v, " remote: ", r.RemoteIPv4)
+		http.Redirect(w, r.Request, "/ns:root", 302)
+		return
+	} else if rpwd != "" {
+		limiter.AddIP(r)
+		http.Redirect(w, r.Request, "/ns:root", 302)
+		return
 	}
 
-	dal.Store.WalkDesc(clock.UnixMilli(), func(b *bitmap.Range) bool {
-		fmt.Fprint(w, b.String())
-		return true
-	})
+	httpTemplates.ExecuteTemplate(w, "header.html", r)
+	fmt.Fprintf(w, "<title>ns:root</title>")
+	if r.User.IsRoot() {
+		fmt.Fprintf(w, "<pre class=wrapall>")
+		fmt.Fprintf(w, "<a href='/ns:%v/debug/pprof/'>Go pprof</a>\n", rootUUID)
+		fmt.Fprintf(w, "Dumper: /ns:%v/dump\n\n", rootUUID)
+		fmt.Fprintf(w, "Your cookie: %s&emsp;", r.UserSession)
+		fmt.Fprintf(w, "<button onclick=\"document.cookie='session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';location.reload()\">Clear</button>\n\n")
+		fmt.Fprintf(w, "Server started at %v\n", serverStart)
+		fmt.Fprintf(w, "Request max size: %vMB\n", *reqMaxSize)
+
+		df, _ := exec.Command("df", "-h").Output()
+		fmt.Fprintf(w, "Disk:\n%s\n", df)
+
+		ic, _ := ioutil.ReadDir("image_cache")
+		fmt.Fprintf(w, "Image cache: %d\n", len(ic))
+
+		stats := dal.Store.DB.Stats()
+		enc := json.NewEncoder(w)
+		enc.SetIndent("", "  ")
+		enc.Encode(stats)
+		w.Write([]byte("\n"))
+
+		fi, err := os.Stat(dal.Store.DB.Path())
+		if err != nil {
+			fmt.Fprintf(w, "<failed to read data on disk>\n\n")
+		} else {
+			sz := fi.Size()
+			fmt.Fprintf(w, "Data on disk: %db (%.2fMB)\n\n", sz, float64(sz)/1024/1024)
+		}
+
+		dal.Store.WalkDesc(clock.UnixMilli(), func(b *bitmap.Range) bool {
+			fmt.Fprint(w, b.String())
+			return true
+		})
+		fmt.Fprintf(w, "</pre>")
+	} else {
+		fmt.Fprintf(w, `这里是后台登入页面，普通用户无需登入<br><br><form><input name=rpwd type=password> <input type=submit value="Root login"/></form>`)
+	}
+	httpTemplates.ExecuteTemplate(w, "footer.html", r)
 }
 
 func serve(pattern string, f func(http.ResponseWriter, *types.Request)) {

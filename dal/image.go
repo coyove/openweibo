@@ -70,6 +70,9 @@ func UploadS3(files ...string) (lastErr error) {
 			defer UnlockKey(file)
 			in, err := os.Open(file)
 			if err != nil {
+				if os.IsNotExist(err) {
+					return nil
+				}
 				return err
 			}
 			key := filepath.Base(file)

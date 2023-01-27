@@ -225,7 +225,7 @@ td .display .button .closer { cursor: pointer }
 td .tag-box { font-size: 90%; }
 tr:nth-child(even) { background: #f7f8f9; }
 tr:nth-child(odd) { background: white; }
-.page {display:inline-block; min-width: 2em; text-align:center}</script>
+.page {display:inline-block; min-width: 2em; text-align:center}
 .image-selector-container {
     height: 160px;
     width: 160px;
@@ -236,7 +236,6 @@ tr:nth-child(odd) { background: white; }
     justify-content: center;
     position: relative;
     border-radius: 0.5em;
-    background: center / contain no-repeat url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='60px' width='120px'><text x='60' y='20' font-size='12' text-anchor='middle' fill='rgba(0,0,0,0.7)'>选择图片</text><text x='60' y='40' font-size='12' text-anchor='middle' fill='rgba(0,0,0,0.4)'>或粘贴</text></svg>");
 }
 .image-selector-container[readonly="readonly"] {
     background: none;
@@ -260,7 +259,7 @@ tr:nth-child(odd) { background: white; }
     height: 1.8em;
     color: white;
     font-size: 80%;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0,0,0,0.33);
     display: flex;
     align-items: center;
     justify-content: center;

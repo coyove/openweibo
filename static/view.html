@@ -23,6 +23,11 @@
         <span class=icon-inbox></span> 该记事有新版本等待审核
     </div>
     {{end}}
+    {{if $.User.IsRoot}}
+    <div>
+        Check images: found={{$.T.checkImagesFound}}, uploaded={{$.T.checkImagesUploaded}}
+    </div>
+    {{end}}
 </div>
 <hr style='border:dotted 1px #ccc'>
 

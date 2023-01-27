@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/coyove/iis/dal"
@@ -442,13 +441,7 @@ func HandleEdit(w http.ResponseWriter, r *types.Request) {
 }
 
 func HandleView(t string, w http.ResponseWriter, r *types.Request) {
-	var note *types.Note
-	if strings.HasPrefix(t, "ns:id:") {
-		id, _ := strconv.ParseUint(t[6:], 10, 64)
-		note, _ = dal.GetNote(id)
-	} else {
-		note, _ = dal.GetNoteByName(t)
-	}
+	note, _ := dal.GetNoteByName(t)
 	if !note.Valid() {
 		http.Redirect(w, r.Request, "/ns:manage?q="+types.FullEscape(t), 302)
 		return
@@ -478,6 +471,12 @@ func HandleView(t string, w http.ResponseWriter, r *types.Request) {
 
 	r.AddTemplateValue("note", note)
 	r.AddTemplateValue("parents", notes)
+
+	if r.User.IsRoot() {
+		a, b := checkImageCache(note)
+		r.AddTemplateValue("checkImagesFound", a)
+		r.AddTemplateValue("checkImagesUploaded", b)
+	}
 
 	httpTemplates.ExecuteTemplate(w, "manage.html", r)
 }

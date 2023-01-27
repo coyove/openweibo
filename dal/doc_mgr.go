@@ -3,6 +3,8 @@ package dal
 import (
 	"fmt"
 	"net"
+	"strconv"
+	"strings"
 
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/clock"
@@ -142,6 +144,11 @@ func GetJsonizedNote(name string) (gjson.Result, error) {
 }
 
 func GetNoteByName(name string) (*types.Note, error) {
+	if strings.HasPrefix(name, "ns:id:") {
+		id, _ := strconv.ParseUint(name[6:], 10, 64)
+		return GetNote(id)
+	}
+
 	var t *types.Note
 	err := Store.View(func(tx *bbolt.Tx) error {
 		k, found := KSVFirstKeyOfSort1(tx, NoteBK, []byte(name))

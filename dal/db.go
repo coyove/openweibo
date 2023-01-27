@@ -55,12 +55,12 @@ func InitDB(bcs int64) {
 	}
 	Store.S3 = s3manager.NewUploader(sess)
 
-	Store.Manager, err = bitmap.NewManager("bitmap_cache/index", 1024000, bcs)
+	Store.Manager, err = bitmap.NewManager("data/index", 1024000, bcs)
 	if err != nil {
 		logrus.Fatal("init bitmap manager: ", err)
 	}
 
-	Store.DB, err = bbolt.Open("bitmap_cache/tags.db", 0777, BBoltOptions)
+	Store.DB, err = bbolt.Open("data/tags.db", 0777, BBoltOptions)
 	if err != nil {
 		logrus.Fatal("init doc database: ", err)
 	}

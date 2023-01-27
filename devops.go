@@ -143,7 +143,7 @@ func rebuildDataFromWiki(count int) {
 func rebuildIndexFromDB() {
 	dal.Store.Saver().Close()
 
-	out := "bitmap_cache/rebuilt"
+	out := "data/rebuilt"
 	os.RemoveAll(out)
 
 	mgr, err := bitmap.NewManager(out, 1024000, *bitmapCacheSize*1e6)
@@ -173,6 +173,6 @@ func rebuildIndexFromDB() {
 	logrus.Infof("rebuild bitmap progress: done, wait for closing...")
 	mgr.Saver().Close()
 
-	logrus.Infof("remove current bitmaps: %v", os.RemoveAll("bitmap_cache/index"))
-	logrus.Infof("rename rebuilt bitmaps: %v", os.Rename("bitmap_cache/rebuilt", "bitmap_cache/index"))
+	logrus.Infof("remove current bitmaps: %v", os.RemoveAll("data/index"))
+	logrus.Infof("rename rebuilt bitmaps: %v", os.Rename("data/rebuilt", "bitmap_cache/index"))
 }
