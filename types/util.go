@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"html"
+	"math"
 	"net"
 	"net/http"
 	"net/url"
@@ -29,6 +30,19 @@ func BytesUint64(p []byte) uint64 {
 		return 0
 	}
 	return binary.BigEndian.Uint64(p)
+}
+
+func Float64Bytes(v float64) []byte {
+	var p [8]byte
+	binary.BigEndian.PutUint64(p[:], math.Float64bits(v))
+	return p[:]
+}
+
+func BytesFloat64(p []byte) float64 {
+	if len(p) == 0 {
+		return 0
+	}
+	return math.Float64frombits(binary.BigEndian.Uint64(p))
 }
 
 func UUIDStr() string {

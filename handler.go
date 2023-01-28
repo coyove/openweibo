@@ -469,15 +469,17 @@ func HandleView(t string, w http.ResponseWriter, r *types.Request) {
 	r.AddTemplateValue("total", total)
 	r.AddTemplateValue("pages", pages)
 
-	r.AddTemplateValue("note", note)
-	r.AddTemplateValue("parents", notes)
-
 	if r.User.IsRoot() {
 		a, b := checkImageCache(note)
 		r.AddTemplateValue("checkImagesFound", a)
 		r.AddTemplateValue("checkImagesUploaded", b)
 	}
 
+	views, _ := dal.MetricsSetAdd(strconv.FormatUint(note.Id, 10), string(r.RemoteIPv4))
+
+	r.AddTemplateValue("note", note)
+	r.AddTemplateValue("noteViews", views)
+	r.AddTemplateValue("parents", notes)
 	httpTemplates.ExecuteTemplate(w, "manage.html", r)
 }
 

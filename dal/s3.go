@@ -55,7 +55,7 @@ func imageS3Loader(key, saveTo string) error {
 		defer out.Close()
 
 		n, err := io.Copy(out, resp.Body)
-		go KVIncr(nil, fmt.Sprintf("daily_s3_download_%d", clock.Unix()/86400), int64(n))
+		MetricsIncr("s3download", clock.Unix()/86400, []MetricsKeyValue{{key, float64(n)}})
 		return err
 	}()
 	logrus.Infof("load S3 image: %s: %v in %v", key, err, time.Since(start))
@@ -86,6 +86,7 @@ func UploadS3(files ...string) (lastErr error) {
 			})
 			in.Close()
 			if err == nil {
+				MetricsIncr("s3upload", clock.Unix()/86400, []MetricsKeyValue{{key, 1}})
 				err = os.Remove(file)
 			}
 			return err

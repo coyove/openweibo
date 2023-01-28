@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -66,10 +67,16 @@ func InitDB(bcs int64) {
 		logrus.Fatal("init store database: ", err)
 	}
 
-	metrics.DB, err = bbolt.Open("data/metrics.db", 0777, metricsDBOptions)
+	p := "data/metrics.db"
+	if _, err := os.Stat(p + ".bak"); err == nil {
+		logrus.Infof("[Metrics] remove old metrics database: %v", os.Remove(p))
+		logrus.Infof("[Metrics] rename backup: %v", os.Rename(p+".bak", p))
+	}
+	Metrics.DB, err = bbolt.Open(p, 0777, metricsDBOptions)
 	if err != nil {
 		logrus.Fatal("init metrics database: ", err)
 	}
+	startMetricsBackup()
 
 	Store.ImageCache, err = disklru.New("lru_cache", types.Config.ImageCacheSize, time.Second*10, imageS3Loader)
 	if err != nil {

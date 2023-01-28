@@ -9,8 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/coyove/iis/dal"
@@ -18,24 +16,6 @@ import (
 	"github.com/coyove/sdss/contrib/clock"
 	"github.com/sirupsen/logrus"
 )
-
-var imageTrafficMap struct {
-	hits int64
-	atomic.Value
-}
-
-func init() {
-	imageTrafficMap.Store(new(sync.Map))
-}
-
-func sumImageOutboundTraffic() (tot, count int64) {
-	imageTrafficMap.Load().(*sync.Map).Range(func(k, v interface{}) bool {
-		tot += *v.(*int64)
-		count++
-		return true
-	})
-	return
-}
 
 func HandleImage(w http.ResponseWriter, r *http.Request) {
 	var p string
@@ -64,24 +44,7 @@ func HandleImage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", http.DetectContentType(buf))
 	n, _ := io.Copy(w, rd)
 
-	ctr, _ := imageTrafficMap.Load().(*sync.Map).LoadOrStore(p, new(int64)) // basically working
-	atomic.AddInt64(ctr.(*int64), int64(n))
-
-	if atomic.AddInt64(&imageTrafficMap.hits, 1)%100 == 0 {
-		tot, count := sumImageOutboundTraffic()
-		imageTrafficMap.Store(new(sync.Map))
-		go func() {
-			dal.KVIncr(nil, fmt.Sprintf("daily_image_outbound_traffic_req_%d", clock.Unix()/86400), count)
-			dal.KVIncr(nil, fmt.Sprintf("daily_image_outbound_traffic_%d", clock.Unix()/86400), tot)
-		}()
-	}
-}
-
-func deleteImage(id string) {
-	if id == "" {
-		return
-	}
-	os.Remove("image_cache/" + id)
+	dal.MetricsIncr("image", clock.Unix()/86400, []dal.MetricsKeyValue{{p, float64(n)}})
 }
 
 func saveImage(r *types.Request, id uint64, ts int64, ext string,
@@ -95,11 +58,14 @@ func saveImage(r *types.Request, id uint64, ts int64, ext string,
 		return "", "INTERNAL_ERROR"
 	}
 	defer out.Close()
-	if _, err := io.Copy(out, img); err != nil {
+
+	n, err := io.Copy(out, img)
+	if err != nil {
 		logrus.Errorf("copy image to local %s err: %v", path, err)
 		return "", "INTERNAL_ERROR"
 	}
-	dal.KVIncr(nil, fmt.Sprintf("daily_upload_%v", clock.Unix()/86400), 1)
+
+	dal.MetricsIncr("upload", clock.Unix()/86400, []dal.MetricsKeyValue{{fn, float64(n)}})
 	return fn, ""
 }
 

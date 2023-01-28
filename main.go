@@ -16,7 +16,6 @@ import (
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/clock"
 	"github.com/sirupsen/logrus"
-	"go.etcd.io/bbolt"
 	"golang.org/x/crypto/acme/autocert"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -50,17 +49,17 @@ func main() {
 	types.LoadConfig("config.json")
 	dal.InitDB(*bitmapCacheSize * 1e6)
 
-	start := time.Now()
-	rand.Seed(start.UnixNano())
-	for i := 0; i < 1e5; i++ {
-		dal.MetricsUpdate(func(tx *bbolt.Tx) error {
-			bk, _ := tx.CreateBucketIfNotExists([]byte("test"))
-			bk.Put(types.Uint64Bytes(rand.Uint64()), nil)
-			return nil
-		})
-	}
-	fmt.Println(time.Since(start))
-	return
+	// start := time.Now()
+	// rand.Seed(start.UnixNano())
+	// for i := 0; i < 1e5; i++ {
+	// 	dal.MetricsUpdate(func(tx *bbolt.Tx) error {
+	// 		bk, _ := tx.CreateBucketIfNotExists([]byte("test"))
+	// 		bk.Put(types.Uint64Bytes(rand.Uint64()), nil)
+	// 		return nil
+	// 	})
+	// }
+	// fmt.Println(time.Since(start))
+	// return
 
 	if *compactDB {
 		start := time.Now()

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"compress/bzip2"
 	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"html"
 	"io"
@@ -11,10 +12,13 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/coyove/iis/dal"
+	"github.com/coyove/iis/limiter"
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/bitmap"
 	"github.com/coyove/sdss/contrib/clock"
@@ -177,20 +181,75 @@ func rebuildIndexFromDB() {
 	logrus.Infof("rename rebuilt bitmaps: %v", os.Rename("data/rebuilt", "bitmap_cache/index"))
 }
 
-func getWeeklyData() ([]int64, []int64, []int64, []int64, []int64) {
-	var a, b, ib, ic, s3 []string
-	for i := int64(0); i < 7; i++ {
-		d := clock.Unix()/86400 - i
-		a = append(a, fmt.Sprintf("daily_create_%d", d))
-		b = append(b, fmt.Sprintf("daily_upload_%d", d))
-		ic = append(ic, fmt.Sprintf("daily_image_outbound_traffic_req_%d", d))
-		ib = append(ib, fmt.Sprintf("daily_image_outbound_traffic_%d", d))
-		s3 = append(s3, fmt.Sprintf("daily_s3_download_%d", d))
+func HandleRoot(w http.ResponseWriter, r *types.Request) {
+	if ok, _ := limiter.CheckIP(r); !ok {
+		w.WriteHeader(400)
+		return
 	}
-	av, _ := dal.KVGetInt64s(nil, a)
-	bv, _ := dal.KVGetInt64s(nil, b)
-	ibv, _ := dal.KVGetInt64s(nil, ib)
-	icv, _ := dal.KVGetInt64s(nil, ic)
-	s3v, _ := dal.KVGetInt64s(nil, s3)
-	return av, bv, ibv, icv, s3v
+	if rpwd := r.URL.Query().Get("rpwd"); rpwd == types.Config.RootPassword {
+		_, v := r.GenerateSession('r')
+		http.SetCookie(w, &http.Cookie{
+			Name:   "session",
+			Value:  v,
+			Path:   "/",
+			MaxAge: 365 * 86400,
+		})
+		logrus.Info("generate root session: ", v, " remote: ", r.RemoteIPv4)
+		http.Redirect(w, r.Request, "/ns:root", 302)
+		return
+	} else if rpwd != "" {
+		limiter.AddIP(r)
+		http.Redirect(w, r.Request, "/ns:root", 302)
+		return
+	}
+
+	httpTemplates.ExecuteTemplate(w, "header.html", r)
+	fmt.Fprintf(w, "<title>ns:root</title>")
+	if r.User.IsRoot() {
+		fmt.Fprintf(w, "<pre class=wrapall>")
+		fmt.Fprintf(w, "<a href='/ns:%v/debug/pprof/'>Go pprof</a>\n", rootUUID)
+		fmt.Fprintf(w, "Dumper: /ns:%v/dump\n\n", rootUUID)
+		fmt.Fprintf(w, "Your cookie: %s&emsp;", r.UserSession)
+		fmt.Fprintf(w, "<button onclick=\"document.cookie='session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';location.reload()\">Clear</button>\n\n")
+		fmt.Fprintf(w, "Server started at %v\n", serverStart)
+		fmt.Fprintf(w, "Request max size: %vMB\n", *reqMaxSize)
+
+		fmt.Fprintf(w, "\n\n")
+		for _, ns := range []string{"image", "upload", "create", "s3download", "s3upload"} {
+			for d, i := clock.Unix()/86400, int64(0); i < 7; i++ {
+				fmt.Fprintf(w, "%s_%v: %d\n", ns,
+					time.Unix((d-i)*86400, 0).Format("2006-01-02"), int64(dal.MetricsSum(ns, d-i)))
+			}
+		}
+		fmt.Fprintf(w, "\n\n")
+
+		df, _ := exec.Command("df", "-h").Output()
+		fmt.Fprintf(w, "Disk:\n%s\n", df)
+
+		ic, _ := ioutil.ReadDir("image_cache")
+		fmt.Fprintf(w, "Image cache: %d\n", len(ic))
+
+		stats := dal.Store.DB.Stats()
+		enc := json.NewEncoder(w)
+		enc.SetIndent("", "  ")
+		enc.Encode(stats)
+		w.Write([]byte("\n"))
+
+		fi, err := os.Stat(dal.Store.DB.Path())
+		if err != nil {
+			fmt.Fprintf(w, "<failed to read data on disk>\n\n")
+		} else {
+			sz := fi.Size()
+			fmt.Fprintf(w, "Data on disk: %db (%.2fMB)\n\n", sz, float64(sz)/1024/1024)
+		}
+
+		dal.Store.WalkDesc(clock.UnixMilli(), func(b *bitmap.Range) bool {
+			fmt.Fprint(w, b.String())
+			return true
+		})
+		fmt.Fprintf(w, "</pre>")
+	} else {
+		fmt.Fprintf(w, `这里是后台登入页面，普通用户无需登入<br><br><form><input name=rpwd type=password> <input type=submit value="Root login"/></form>`)
+	}
+	httpTemplates.ExecuteTemplate(w, "footer.html", r)
 }
