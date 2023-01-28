@@ -204,6 +204,11 @@ func HandleRoot(w http.ResponseWriter, r *types.Request) {
 		fmt.Fprintf(w, "Server started at %v\n", serverStart)
 		fmt.Fprintf(w, "Request max size: %vMB\n", *reqMaxSize)
 
+		wc, wu, wImageBytes, wImageCount, s3Down := getWeeklyData()
+		fmt.Fprintf(w, "\n\nWeekly data: today: %v, %v notes, %v images\n", clock.Unix()/86400, wc, wu)
+		fmt.Fprintf(w, "Image outbound: %vb, %v\n", wImageBytes, wImageCount)
+		fmt.Fprintf(w, "S3 download: %vb\n\n", s3Down)
+
 		df, _ := exec.Command("df", "-h").Output()
 		fmt.Fprintf(w, "Disk:\n%s\n", df)
 

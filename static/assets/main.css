@@ -254,9 +254,10 @@ tr:nth-child(odd) { background: white; }
 .image-selector-container .title {
     position: absolute;
     left: 0;
-    top: 0;
+    top: 50%;
     width: 100%;
-    height: 1.8em;
+    height: 2em;
+    margin-top: -1em;
     color: white;
     font-size: 80%;
     background: rgba(0,0,0,0.33);

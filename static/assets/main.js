@@ -85,7 +85,7 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
             append(processing).
             click(function() { !readonly && that.click() });
         div.insertBefore(this.hide());
-        !readonly && processing.text('选择/粘贴图片').show();
+        !readonly && processing.text('选择或粘贴图片').show();
 
         function finish(display, image, thumb) {
             div.find('img').get(0).src = display;

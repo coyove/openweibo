@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/coyove/iis/types"
+	"github.com/coyove/sdss/contrib/clock"
 	"github.com/sirupsen/logrus"
 )
 
@@ -52,7 +53,9 @@ func imageS3Loader(key, saveTo string) error {
 			return err
 		}
 		defer out.Close()
-		_, err = io.Copy(out, resp.Body)
+
+		n, err := io.Copy(out, resp.Body)
+		go KVIncr(nil, fmt.Sprintf("daily_s3_download_%d", clock.Unix()/86400), int64(n))
 		return err
 	}()
 	logrus.Infof("load S3 image: %s: %v in %v", key, err, time.Since(start))

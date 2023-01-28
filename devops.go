@@ -176,3 +176,21 @@ func rebuildIndexFromDB() {
 	logrus.Infof("remove current bitmaps: %v", os.RemoveAll("data/index"))
 	logrus.Infof("rename rebuilt bitmaps: %v", os.Rename("data/rebuilt", "bitmap_cache/index"))
 }
+
+func getWeeklyData() ([]int64, []int64, []int64, []int64, []int64) {
+	var a, b, ib, ic, s3 []string
+	for i := int64(0); i < 7; i++ {
+		d := clock.Unix()/86400 - i
+		a = append(a, fmt.Sprintf("daily_create_%d", d))
+		b = append(b, fmt.Sprintf("daily_upload_%d", d))
+		ic = append(ic, fmt.Sprintf("daily_image_outbound_traffic_req_%d", d))
+		ib = append(ib, fmt.Sprintf("daily_image_outbound_traffic_%d", d))
+		s3 = append(s3, fmt.Sprintf("daily_s3_download_%d", d))
+	}
+	av, _ := dal.KVGetInt64s(nil, a)
+	bv, _ := dal.KVGetInt64s(nil, b)
+	ibv, _ := dal.KVGetInt64s(nil, ib)
+	icv, _ := dal.KVGetInt64s(nil, ic)
+	s3v, _ := dal.KVGetInt64s(nil, s3)
+	return av, bv, ibv, icv, s3v
+}

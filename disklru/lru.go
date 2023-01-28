@@ -11,25 +11,6 @@ import (
 	"golang.org/x/sync/singleflight"
 )
 
-type File struct {
-	*os.File
-
-	closed   bool
-	closeMu  sync.Mutex
-	closeErr error
-}
-
-func (f *File) Close() error {
-	f.closeMu.Lock()
-	defer f.closeMu.Unlock()
-	if f.closed {
-		return f.closeErr
-	}
-	f.closed = true
-	f.closeErr = f.File.Close()
-	return f.closeErr
-}
-
 type DiskLRU struct {
 	dir     string
 	ptr     int
@@ -134,14 +115,14 @@ func (d *DiskLRU) hotCold() (int, int) {
 	return d.ptr % 2, (d.ptr + 1) % 2
 }
 
-func (d *DiskLRU) Open(key string) (*File, error) {
+func (d *DiskLRU) Open(key string) (*os.File, error) {
 	ps := d.makePath(key)
 	hot, cold := d.hotCold()
 
 	res, err, _ := d.open.Do(key, func() (interface{}, error) {
-		f, err := os.Open(ps[hot])
+		_, err := os.Stat(ps[hot])
 		if err == nil {
-			return f, nil
+			return ps[hot], nil
 		}
 		if !os.IsNotExist(err) {
 			return nil, err
@@ -157,11 +138,11 @@ func (d *DiskLRU) Open(key string) (*File, error) {
 				return nil, err
 			}
 		}
-		return os.Open(ps[hot])
+		return ps[hot], nil
 	})
 
 	if err != nil {
 		return nil, err
 	}
-	return &File{File: res.(*os.File)}, nil
+	return os.Open(res.(string))
 }

@@ -29,6 +29,7 @@ var (
 		ImageCache *disklru.DiskLRU
 		locks      [256]sync.Mutex
 	}
+
 	BBoltOptions = &bbolt.Options{FreelistType: bbolt.FreelistMapType}
 
 	NoteBK = "notes"
@@ -62,7 +63,12 @@ func InitDB(bcs int64) {
 
 	Store.DB, err = bbolt.Open("data/tags.db", 0777, BBoltOptions)
 	if err != nil {
-		logrus.Fatal("init doc database: ", err)
+		logrus.Fatal("init store database: ", err)
+	}
+
+	metrics.DB, err = bbolt.Open("data/metrics.db", 0777, metricsDBOptions)
+	if err != nil {
+		logrus.Fatal("init metrics database: ", err)
 	}
 
 	Store.ImageCache, err = disklru.New("lru_cache", types.Config.ImageCacheSize, time.Second*10, imageS3Loader)

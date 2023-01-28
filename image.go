@@ -9,12 +9,33 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/types"
+	"github.com/coyove/sdss/contrib/clock"
 	"github.com/sirupsen/logrus"
 )
+
+var imageTrafficMap struct {
+	hits int64
+	atomic.Value
+}
+
+func init() {
+	imageTrafficMap.Store(new(sync.Map))
+}
+
+func sumImageOutboundTraffic() (tot, count int64) {
+	imageTrafficMap.Load().(*sync.Map).Range(func(k, v interface{}) bool {
+		tot += *v.(*int64)
+		count++
+		return true
+	})
+	return
+}
 
 func HandleImage(w http.ResponseWriter, r *http.Request) {
 	var p string
@@ -25,16 +46,6 @@ func HandleImage(w http.ResponseWriter, r *http.Request) {
 		ext := filepath.Ext(p)
 		p = p[:len(p)-len(ext)] + ".thumb.jpg"
 	}
-	// f, err := os.Open("image_cache/" + p)
-	// if err != nil {
-	// 	if os.IsNotExist(err) {
-	// 		w.WriteHeader(404)
-	// 	} else {
-	// 		logrus.Errorf("image server error %q: %v", p, err)
-	// 		w.WriteHeader(500)
-	// 	}
-	// 	return
-	// }
 	f, err := dal.Store.ImageCache.Open(p)
 	if err != nil {
 		if e, ok := err.(dal.S3Error); ok {
@@ -51,7 +62,19 @@ func HandleImage(w http.ResponseWriter, r *http.Request) {
 	buf, _ := rd.Peek(512)
 	w.Header().Add("Cache-Control", "public, max-age=8640000")
 	w.Header().Add("Content-Type", http.DetectContentType(buf))
-	io.Copy(w, rd)
+	n, _ := io.Copy(w, rd)
+
+	ctr, _ := imageTrafficMap.Load().(*sync.Map).LoadOrStore(p, new(int64)) // basically working
+	atomic.AddInt64(ctr.(*int64), int64(n))
+
+	if atomic.AddInt64(&imageTrafficMap.hits, 1)%100 == 0 {
+		tot, count := sumImageOutboundTraffic()
+		imageTrafficMap.Store(new(sync.Map))
+		go func() {
+			dal.KVIncr(nil, fmt.Sprintf("daily_image_outbound_traffic_req_%d", clock.Unix()/86400), count)
+			dal.KVIncr(nil, fmt.Sprintf("daily_image_outbound_traffic_%d", clock.Unix()/86400), tot)
+		}()
+	}
 }
 
 func deleteImage(id string) {
@@ -76,6 +99,7 @@ func saveImage(r *types.Request, id uint64, ts int64, ext string,
 		logrus.Errorf("copy image to local %s err: %v", path, err)
 		return "", "INTERNAL_ERROR"
 	}
+	dal.KVIncr(nil, fmt.Sprintf("daily_upload_%v", clock.Unix()/86400), 1)
 	return fn, ""
 }
 
