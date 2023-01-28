@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"math/rand"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -19,6 +20,7 @@ import (
 
 func HandleImage(w http.ResponseWriter, r *http.Request) {
 	if d := types.Config.Domain; d != "" && !strings.Contains(r.Referer(), d) {
+		time.Sleep(time.Duration(rand.Intn(500)+500) * time.Millisecond)
 		w.WriteHeader(400)
 		return
 	}

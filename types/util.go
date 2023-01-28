@@ -218,6 +218,12 @@ func RenderClip(v string) string {
 			return fmt.Sprintf("<%c>%s</%c>", rest[0], unq(rest[2:]), rest[0])
 		case strings.HasPrefix(rest, "hl:"):
 			return "<b class=highlight>" + unq(rest[3:]) + "</b>"
+		case rest == "ul", rest == "ol", rest == "ul:start", rest == "ol:start":
+			return "<" + rest[:2] + "><li>"
+		case rest == "li":
+			return "<li>"
+		case rest == "ul:end", rest == "ol:end":
+			return "</" + rest[:2] + ">"
 		case strings.HasPrefix(rest, "title:"):
 			if idx := strings.IndexByte(rest, '/'); idx >= 0 {
 				title := unq(rest[6:idx])

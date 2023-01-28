@@ -27,7 +27,7 @@
     <tr>
         <td>
             <div class=display>
-                <textarea id=desc maxlength={{.GetContentMaxLen}} class=tag-edit-desc placeholder='内容：0-{{.GetContentMaxLen}}字符' rows=20></textarea>
+                <textarea id=content maxlength={{.GetContentMaxLen}} class=tag-edit-desc placeholder='内容：0-{{.GetContentMaxLen}}字符' rows=20></textarea>
             </div>
         </td>
     </tr>
@@ -43,66 +43,70 @@
     </tr>
 </table>
 
-        <script>
-            $('#submit').click(function() {
-                ajaxBtn(this, 'create', {
-                    'title': $('#name').val(),
-                    'content': $('#desc').val(),
-                    'image': $('#image').get(0).image,
-                    'thumb': $('#image').get(0).thumb,
-                    'image_changed': $('#image').attr('changed'),
-                    'image_small': $('#image').attr('small'),
-                    'image_width': $('#image').attr('width'),
-                    'image_height': $('#image').attr('height'),
-                    'parents': JSON.stringify(ps.get(0).getTags()),
-                }, function(data) {
-                    pTitle ? 
-                        (location.href = '/' + encodeURIComponent(pTitle) + '?sort=0&desc=1') :
-                        (location.href = '/ns:manage?sort=0&desc=1')
-                });
-            })
-            $('#desc').linedtextarea();
-            $('#image').imageSelector();
+<script>
+    $('#submit').click(function() {
+        ajaxBtn(this, 'create', {
+            'title': $('#name').val(),
+            'content': $('#content').val(),
+            'image': $('#image').get(0).image,
+            'thumb': $('#image').get(0).thumb,
+            'image_changed': $('#image').attr('changed'),
+            'image_small': $('#image').attr('small'),
+            'parents': JSON.stringify(ps.get(0).getTags()),
+        }, function(data) {
+            window.localStorage.removeItem('draft:new');
+            pTitle ? 
+                (location.href = '/' + encodeURIComponent(pTitle) + '?sort=0&desc=1') :
+                (location.href = '/ns:manage?sort=0&desc=1')
+        });
+    })
+    $('#content').linedtextarea();
+    $('#image').imageSelector();
 
-            const searchParams = new URLSearchParams(window.location.search)
-            const pre = searchParams.get('pt');
-            const title = searchParams.get('title');
-            const ps = $("<div max-tags={{.GetParentsMax}} id=parents class='tag-search-input-container' style='width:100%'></div>");
+    const searchParams = new URLSearchParams(window.location.search)
+    const pre = searchParams.get('pt');
+    const title = searchParams.get('title');
+    const ps = $("<div max-tags={{.GetParentsMax}} id=parents class='tag-search-input-container' style='width:100%'></div>");
 
-            pre && ps.attr('tag-data0', pre);
-            title && $('#name').val(title.substr(0, {{.GetTitleMaxLen}}));
-            const pTitle = pre ? pre.substr(pre.indexOf(',') + 1) : '';
+    pre && ps.attr('tag-data0', pre);
+    title && $('#name').val(title.substr(0, {{.GetTitleMaxLen}}));
+    const pTitle = pre ? pre.substr(pre.indexOf(',') + 1) : '';
 
-            $('#parents').append(ps);
-            wrapTagSearchInput(ps.get(0));
-            ps.find('input').attr('placeholder', '选择父标签')
+    $('#parents').append(ps);
+    wrapTagSearchInput(ps.get(0));
+    ps.find('input').attr('placeholder', '选择父标签')
 
-            function checkTitle() {
-                function reset() {
-                    $('#dup').hide().closest('tr').css('background', '');
-                }
-                const that = this, last = this.last || '', input = $('#name').val();
-                if (!input) reset();
-                if (input && input != last) {
-                    $.get('/ns:search?n=1&title=' + encodeURIComponent(input), function(data) {
-                        if (data.notes.length > 0 && $('#name').val() == input) {
-                            const res = data.notes[0];
-                            $('#dup').show().find('a').attr('href', '/ns:id:' + res[0]).closest('tr').css('background', '#fce4ec')
-                            ps.get(0).select(res[0], res[1]);
-                            $('#name').focus();
-                        } else {
-                            reset();
-                        }
-                    }).always(function() {
-                        that.last = input;
-                        setTimeout(checkTitle, 200);
-                    })
+    function checkTitle() {
+        function reset() {
+            $('#dup').hide().closest('tr').css('background', '');
+        }
+        const that = this, last = this.last || '', input = $('#name').val();
+        if (!input) reset();
+        if (input && input != last) {
+            $.get('/ns:search?n=1&title=' + encodeURIComponent(input), function(data) {
+                if (data.notes.length > 0 && $('#name').val() == input) {
+                    const res = data.notes[0];
+                    $('#dup').show().find('a').attr('href', '/ns:id:' + res[0]).closest('tr').css('background', '#fce4ec')
+                    ps.get(0).select(res[0], res[1]);
+                    $('#name').focus();
                 } else {
-                    this.last = input;
-                    setTimeout(checkTitle, 200);
+                    reset();
                 }
-            }
-            checkTitle();
-        </script>
+            }).always(function() {
+                that.last = input;
+                setTimeout(checkTitle, 200);
+            })
+        } else {
+            this.last = input;
+            setTimeout(checkTitle, 200);
+        }
+    }
+    checkTitle();
+
+    $('#content').val(window.localStorage.getItem('draft:new') || '');
+    setInterval(function() {
+        window.localStorage.setItem('draft:new', $('#content').val());
+    }, 5000)
+</script>
 
 {{template "footer.html" .}}

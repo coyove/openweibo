@@ -102,10 +102,6 @@ func main() {
 	serve("/ns:action", HandleTagAction)
 	serve("/ns:history", HandleHistory)
 	serve("/ns:root", HandleRoot)
-	serve("/ns:notfound", func(w http.ResponseWriter, r *types.Request) {
-		w.WriteHeader(404)
-		httpTemplates.ExecuteTemplate(w, "404.html", r)
-	})
 
 	http.HandleFunc("/ns:"+rootUUID+"/dump", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()

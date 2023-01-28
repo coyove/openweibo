@@ -230,7 +230,7 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 			types.DedupUint64(append(ad.hash, ngram.StrHash(target.Creator))))
 	}
 	time.AfterFunc(time.Second*10, func() { dal.UploadS3(ad.image, imageThumbName(ad.image)) })
-	if directUpdate {
+	if directUpdate && oldContent != target.Content {
 		target.ShowDiff = true
 		target.ReviewContent = target.Content
 		target.Content = oldContent
@@ -340,7 +340,7 @@ func HandleHistory(w http.ResponseWriter, r *types.Request) {
 		if note, _ = dal.GetNote(id); note.Valid() {
 			results, total, pages = dal.KSVPaging(nil, fmt.Sprintf("history_%d", note.Id), -1, r.P.Desc, r.P.Page-1, r.P.PageSize)
 		} else {
-			http.Redirect(w, r.Request, "/ns:notfound", 302)
+			http.Redirect(w, r.Request, "/ns:not_found", 302)
 			return
 		}
 	case "user":
@@ -439,7 +439,7 @@ func HandleEdit(w http.ResponseWriter, r *types.Request) {
 		}
 	}
 	if !note.Valid() {
-		http.Redirect(w, r.Request, "/ns:notfound", 302)
+		http.Redirect(w, r.Request, "/ns:not_found", 302)
 		return
 	}
 	r.AddTemplateValue("note", note)

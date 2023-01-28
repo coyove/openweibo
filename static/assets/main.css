@@ -33,6 +33,7 @@ a { color: #1565c0 }
 }
 
 @media (max-width:960px) {
+    body { font-size: 120%; }
     #header {
         display: flex;
         position: relative;

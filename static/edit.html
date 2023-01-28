@@ -5,6 +5,7 @@
 <style>
 .image-selector-container { margin: 0.5em } 
 div.diff-row {white-space:pre-wrap;padding:0 0.5em;line-height: 1.5em}
+div.diff-line {color:#ccc;width:4em;display:inline-block;padding-right: 0.5em;line-height: 1.5em}
 div.diff-row.del{background:#ffebe9}
 div.diff-row.ins{background:#ccffd8}
 </style>
@@ -199,7 +200,7 @@ div.diff-row.ins{background:#ccffd8}
             {{if or .ShowDiff .PendingReview}}
             $('#review-content').linedtextarea();
             const diff = JsDiff.diffLines($('#content').val(), $('#review-content').val());
-            var fragment = document.createDocumentFragment();
+            var fragment = document.createDocumentFragment(), ln = 0;
             for (var i=0; i < diff.length; i++) {
                 if (diff[i].added && diff[i + 1] && diff[i + 1].removed) {
                     var swap = diff[i];
@@ -207,16 +208,26 @@ div.diff-row.ins{background:#ccffd8}
                     diff[i + 1] = swap;
                 }
 
-                var node = document.createElement('div');
-                if (diff[i].removed) {
-                    node.className = 'diff-row del';
-                } else if (diff[i].added) {
-                    node.className = 'diff-row ins';
-                } else {
-                    node.className = 'diff-row';
-                }
-                node.appendChild(document.createTextNode(diff[i].value || ' '));
-                fragment.appendChild(node);
+                const removed = diff[i].removed, added = diff[i].added;
+                var lines = (diff[i].value || ' ').split('\n');
+                lines.length > 0 && lines[lines.length - 1] == '' && (lines = lines.slice(0, lines.length - 1));
+                lines.forEach(function(text) {
+                    const node = document.createElement('div');
+                    const line = document.createElement('div');
+                    if (removed) {
+                        node.className = 'diff-row del';
+                    } else if (added) {
+                        node.className = 'diff-row ins';
+                    } else {
+                        node.className = 'diff-row';
+                    }
+                                ln ++;
+                                line.className = 'diff-line';
+                                line.innerText = ln;
+                    node.appendChild(line);
+                    node.appendChild(document.createTextNode(text));
+                    fragment.appendChild(node);
+                })
             }
             $('#diff').append(fragment);
             {{end}}

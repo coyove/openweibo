@@ -25,9 +25,9 @@ var metricsDBOptions = &bbolt.Options{
 
 func startMetricsBackup() {
 	sleep := time.Hour * 6
-	if os.Getenv("DEBUG") == "1" {
-		sleep = time.Second * 5
-	}
+	// if os.Getenv("DEBUG") == "1" {
+	// 	sleep = time.Second * 5
+	// }
 
 	var do func()
 	do = func() {
