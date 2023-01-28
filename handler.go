@@ -175,7 +175,8 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 		return nil, false
 	}
 
-	var exist, shouldIndex bool
+	var exist, shouldIndex, directUpdate bool
+	var oldContent string
 	err = dal.Store.Update(func(tx *bbolt.Tx) error {
 		if ad.title != "" && ad.title != target.Title {
 			if _, exist = dal.KSVFirstKeyOfSort1(tx, dal.NoteBK, []byte(ad.title)); exist {
@@ -190,6 +191,7 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 			if len(ad.hash) > 0 {
 				shouldIndex = ad.title != target.Title || !types.EqualUint64(ad.parentIds, target.ParentIds)
 			}
+			oldContent = target.Content
 			target.Title = ad.title
 			target.Content = ad.content
 			target.ParentIds = ad.parentIds
@@ -197,6 +199,7 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 				target.Image = ad.image
 			}
 			target.ClearReviewStatus()
+			directUpdate = true
 		} else {
 			target.PendingReview = true
 			target.ReviewTitle = ad.title
@@ -227,6 +230,11 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 			types.DedupUint64(append(ad.hash, ngram.StrHash(target.Creator))))
 	}
 	time.AfterFunc(time.Second*10, func() { dal.UploadS3(ad.image, imageThumbName(ad.image)) })
+	if directUpdate {
+		target.ShowDiff = true
+		target.ReviewContent = target.Content
+		target.Content = oldContent
+	}
 	return target, true
 }
 
@@ -475,10 +483,12 @@ func HandleView(t string, w http.ResponseWriter, r *types.Request) {
 		r.AddTemplateValue("checkImagesUploaded", b)
 	}
 
-	views, _ := dal.MetricsSetAdd(strconv.FormatUint(note.Id, 10), string(r.RemoteIPv4))
+	if note.Image != "" || note.Content != "" {
+		views, _ := dal.MetricsSetAdd(strconv.FormatUint(note.Id, 10), r.UserDisplay)
+		r.AddTemplateValue("noteViews", views)
+	}
 
 	r.AddTemplateValue("note", note)
-	r.AddTemplateValue("noteViews", views)
 	r.AddTemplateValue("parents", notes)
 	httpTemplates.ExecuteTemplate(w, "manage.html", r)
 }

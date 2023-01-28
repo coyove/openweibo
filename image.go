@@ -18,6 +18,11 @@ import (
 )
 
 func HandleImage(w http.ResponseWriter, r *http.Request) {
+	if d := types.Config.Domain; d != "" && !strings.Contains(r.Referer(), d) {
+		w.WriteHeader(400)
+		return
+	}
+
 	var p string
 	if strings.HasPrefix(r.URL.Path, "/ns:image/") {
 		p = strings.TrimPrefix(r.URL.Path, "/ns:image/")

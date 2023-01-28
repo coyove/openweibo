@@ -259,6 +259,7 @@ function wrapTagSearchInput(container) {
 
     const el = document.createElement('input');
     el.readOnly = readonly;
+    el.placeholder = '选择父记事';
     el.className = 'tag-box tag-search-box';
     el.style.outline = 'none';
     el.style.padding = '0 0.25em';

@@ -18,7 +18,7 @@ import (
 
 const (
 	hlltwo32     = 1 << 32
-	hllPrecision = 10
+	hllPrecision = 12
 	HLLSize      = 1 << hllPrecision
 )
 

@@ -80,7 +80,7 @@ div.diff-row.ins{background:#ccffd8}
                 </div>
             </td>
         </tr>
-        {{if .PendingReview}}
+        {{if or .ShowDiff .PendingReview}}
         <tr>
             <td colspan=2>
                 <div class=display>
@@ -102,7 +102,7 @@ div.diff-row.ins{background:#ccffd8}
                 </div>
             </td>
         </tr>
-        {{if .PendingReview}}
+        {{if or .ShowDiff .PendingReview}}
         <tr id='tr-content-review' style='display:none'>
             <td colspan=2>
                 <div class=display>
@@ -165,7 +165,9 @@ div.diff-row.ins{background:#ccffd8}
             <td>
                 <div class=display>
                     {{.Modifier}}&nbsp;
+                    {{if .Modifier}}
                     <a class='tag-edit-button' href='/ns:history?user={{.Modifier}}'><span class=icon-user></span></a>
+                    {{end}}
                 </div>
             </td>
         </tr>
@@ -194,7 +196,7 @@ div.diff-row.ins{background:#ccffd8}
             $('#image').imageSelector("{{imageURL "thumb" .Image}}");
             {{end}}
 
-            {{if .PendingReview}}
+            {{if or .ShowDiff .PendingReview}}
             $('#review-content').linedtextarea();
             const diff = JsDiff.diffLines($('#content').val(), $('#review-content').val());
             var fragment = document.createDocumentFragment();

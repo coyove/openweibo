@@ -1,6 +1,7 @@
 package dal
 
 import (
+	"encoding/binary"
 	"os"
 	"strconv"
 	"sync"
@@ -23,37 +24,39 @@ var metricsDBOptions = &bbolt.Options{
 }
 
 func startMetricsBackup() {
-	sleep := time.Hour
+	sleep := time.Hour * 6
 	if os.Getenv("DEBUG") == "1" {
 		sleep = time.Second * 5
 	}
 
-	go func() {
-		for db := Metrics.DB; ; time.Sleep(sleep) {
-			start := time.Now()
-			func() {
-				p := db.Path() + ".bak"
-				os.Remove(p)
+	var do func()
+	do = func() {
+		defer func() {
+			time.AfterFunc(sleep, do)
+		}()
 
-				bak, err := os.Create(p)
-				if err != nil {
-					logrus.Errorf("[Metrics] failed to open backup database: %v", err)
-					return
-				}
-				defer bak.Close()
+		start := time.Now()
+		p := Metrics.Path() + ".bak"
+		os.Remove(p)
 
-				err = db.View(func(tx *bbolt.Tx) error {
-					_, err := tx.WriteTo(bak)
-					return err
-				})
-				if err != nil {
-					logrus.Errorf("[Metrics] failed to write metrics database: %v", err)
-					return
-				}
-			}()
-			logrus.Infof("[Metrics] backup metrics data in %v", time.Since(start))
+		bak, err := os.Create(p)
+		if err != nil {
+			logrus.Errorf("[Metrics] failed to open backup database: %v", err)
+			return
 		}
-	}()
+		defer bak.Close()
+
+		err = Metrics.View(func(tx *bbolt.Tx) error {
+			_, err := tx.WriteTo(bak)
+			return err
+		})
+		if err != nil {
+			logrus.Errorf("[Metrics] failed to write metrics database: %v", err)
+			return
+		}
+		logrus.Infof("[Metrics] backup metrics data in %v", time.Since(start))
+	}
+	time.AfterFunc(sleep, do)
 }
 
 type MetricsKeyValue struct {
@@ -61,24 +64,45 @@ type MetricsKeyValue struct {
 	Value float64
 }
 
-func MetricsSetAdd(set string, keys ...string) (count int64, err error) {
+func MetricsSetAdd(set string, key string) (count int64, err error) {
 	err = Metrics.Update(func(tx *bbolt.Tx) error {
 		bk, err := tx.CreateBucketIfNotExists([]byte("set"))
 		if err != nil {
 			return err
 		}
 
+		h := uint32(ngram.StrHash(key))
+
 		hll := types.HyperLogLog(bk.Get([]byte(set)))
-		if len(hll) != types.HLLSize {
-			hll = types.NewHyperLogLog()
-		} else {
+		if len(hll) == types.HLLSize {
 			hll = append([]uint8{}, hll...)
+		} else if len(hll) < types.HLLSize {
+			count = int64(len(hll) / 4)
+			for i := 0; i < len(hll); i += 4 {
+				if h == binary.BigEndian.Uint32(hll[i:]) {
+					return nil
+				}
+			}
+
+			if count >= 128 {
+				tmp := types.NewHyperLogLog()
+				for i := 0; i < len(hll); i += 4 {
+					tmp.Add(binary.BigEndian.Uint32(hll[i:]))
+				}
+				hll = tmp
+				goto ADD
+			}
+
+			hll = append(hll, 0, 0, 0, 0)
+			binary.BigEndian.PutUint32(hll[len(hll)-4:], h)
+			count++
+			return bk.Put([]byte(set), hll)
+		} else {
+			hll = types.NewHyperLogLog()
 		}
 
-		for _, k := range keys {
-			hll.Add(uint32(ngram.StrHash(k)))
-		}
-
+	ADD:
+		hll.Add(h)
 		count = int64(hll.Count())
 		return bk.Put([]byte(set), hll)
 	})
@@ -95,6 +119,8 @@ func MetricsSetCount(set string) (count int64) {
 		hll := types.HyperLogLog(bk.Get([]byte(set)))
 		if len(hll) == types.HLLSize {
 			count = int64(hll.Count())
+		} else {
+			count = int64(len(hll) / 4)
 		}
 		return nil
 	})

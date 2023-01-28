@@ -20,22 +20,42 @@ import (
 )
 
 var Config struct {
-	Key            string
-	ImageCacheSize int
-	S3             struct {
+	Key           string
+	Domain        string
+	PagingTimeout int64
+	RootPassword  string
+
+	ImageCache struct {
+		MaxFiles       int64
+		PurgerInterval int64
+	}
+
+	Index struct {
+		SwitchThreshold int64
+		CacheSize       int64
+	}
+
+	S3 struct {
 		Endpoint  string
 		Region    string
 		AccessKey string
 		SecretKey string
 	}
-	RootPassword string
-	Runtime      struct {
+
+	Runtime struct {
 		AESBlock cipher.Block
 		Skip32   skip32.Skip32
 	} `json:"-"`
 }
 
 func LoadConfig(path string) {
+	ifZero := func(v *int64, d, scale int64) {
+		if *v <= 0 {
+			*v = d
+		}
+		*v *= scale
+	}
+
 	buf, err := ioutil.ReadFile(path)
 	if err != nil {
 		logrus.Fatal("load config: ", err)
@@ -43,6 +63,12 @@ func LoadConfig(path string) {
 	if err := json.Unmarshal(buf, &Config); err != nil {
 		logrus.Fatal("load config unmarshal: ", err)
 	}
+
+	ifZero(&Config.ImageCache.MaxFiles, 1000, 1)
+	ifZero(&Config.ImageCache.PurgerInterval, 10, 1e9)
+	ifZero(&Config.Index.CacheSize, 1024, 1024*1024)
+	ifZero(&Config.Index.SwitchThreshold, 1024000, 1)
+	ifZero(&Config.PagingTimeout, 2000, 1e6)
 
 	for ; len(Config.Key) < 48; Config.Key += "0123456789abcdef" {
 	}

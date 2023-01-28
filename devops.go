@@ -150,7 +150,7 @@ func rebuildIndexFromDB() {
 	out := "data/rebuilt"
 	os.RemoveAll(out)
 
-	mgr, err := bitmap.NewManager(out, 1024000, *bitmapCacheSize*1e6)
+	mgr, err := bitmap.NewManager(out, types.Config.Index.SwitchThreshold, types.Config.Index.CacheSize)
 	if err != nil {
 		logrus.Fatal("init bitmap manager: ", err)
 	}
@@ -204,6 +204,7 @@ func HandleRoot(w http.ResponseWriter, r *types.Request) {
 	}
 
 	httpTemplates.ExecuteTemplate(w, "header.html", r)
+	start := time.Now()
 	fmt.Fprintf(w, "<title>ns:root</title>")
 	if r.User.IsRoot() {
 		fmt.Fprintf(w, "<pre class=wrapall>")
@@ -220,8 +221,8 @@ func HandleRoot(w http.ResponseWriter, r *types.Request) {
 				fmt.Fprintf(w, "%s_%v: %d\n", ns,
 					time.Unix((d-i)*86400, 0).Format("2006-01-02"), int64(dal.MetricsSum(ns, d-i)))
 			}
+			fmt.Fprintf(w, "\n")
 		}
-		fmt.Fprintf(w, "\n\n")
 
 		df, _ := exec.Command("df", "-h").Output()
 		fmt.Fprintf(w, "Disk:\n%s\n", df)
@@ -247,6 +248,7 @@ func HandleRoot(w http.ResponseWriter, r *types.Request) {
 			fmt.Fprint(w, b.String())
 			return true
 		})
+		fmt.Fprintf(w, "\n\n(Rendered in %v)\n", time.Since(start))
 		fmt.Fprintf(w, "</pre>")
 	} else {
 		fmt.Fprintf(w, `这里是后台登入页面，普通用户无需登入<br><br><form><input name=rpwd type=password> <input type=submit value="Root login"/></form>`)

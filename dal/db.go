@@ -2,10 +2,8 @@ package dal
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
@@ -34,11 +32,9 @@ var (
 	BBoltOptions = &bbolt.Options{FreelistType: bbolt.FreelistMapType}
 
 	NoteBK = "notes"
-
-	pagingTimeout = flag.Duration("paging-timeout", time.Second*2, "")
 )
 
-func InitDB(bcs int64) {
+func InitDB() {
 	var err error
 	s3 := types.Config.S3
 	sess, err := session.NewSession(&aws.Config{
@@ -57,7 +53,8 @@ func InitDB(bcs int64) {
 	}
 	Store.S3 = s3manager.NewUploader(sess)
 
-	Store.Manager, err = bitmap.NewManager("data/index", 1024000, bcs)
+	Store.Manager, err = bitmap.NewManager("data/index",
+		types.Config.Index.SwitchThreshold, types.Config.Index.CacheSize)
 	if err != nil {
 		logrus.Fatal("init bitmap manager: ", err)
 	}
@@ -67,18 +64,15 @@ func InitDB(bcs int64) {
 		logrus.Fatal("init store database: ", err)
 	}
 
-	p := "data/metrics.db"
-	if _, err := os.Stat(p + ".bak"); err == nil {
-		logrus.Infof("[Metrics] remove old metrics database: %v", os.Remove(p))
-		logrus.Infof("[Metrics] rename backup: %v", os.Rename(p+".bak", p))
-	}
-	Metrics.DB, err = bbolt.Open(p, 0777, metricsDBOptions)
+	Metrics.DB, err = bbolt.Open("data/metrics.db", 0777, metricsDBOptions)
 	if err != nil {
 		logrus.Fatal("init metrics database: ", err)
 	}
 	startMetricsBackup()
 
-	Store.ImageCache, err = disklru.New("lru_cache", types.Config.ImageCacheSize, time.Second*10, imageS3Loader)
+	Store.ImageCache, err = disklru.New("lru_cache",
+		int(types.Config.ImageCache.MaxFiles), time.Duration(types.Config.ImageCache.PurgerInterval),
+		imageS3Loader)
 	if err != nil {
 		logrus.Fatal("init image DiskLRU: ", err)
 	}
@@ -261,7 +255,7 @@ func KSVPaging(tx *bbolt.Tx, bkPrefix string, bySort int, desc bool, page, pageS
 		if i >= (page+1)*pageSize {
 			break
 		}
-		if clock.UnixNano()-start > pagingTimeout.Nanoseconds() {
+		if clock.UnixNano()-start > types.Config.PagingTimeout {
 			return nil, -1, -1
 		}
 		if i/pageSize == page {
@@ -308,7 +302,7 @@ func KSVPagingFindLexPrefix(bkPrefix string, prefix []byte, desc bool, pageSize 
 		}
 
 		for start := clock.UnixNano(); len(a) > 0; {
-			if clock.UnixNano()-start > pagingTimeout.Nanoseconds() {
+			if clock.UnixNano()-start > types.Config.PagingTimeout {
 				i = 0
 				return nil
 			}

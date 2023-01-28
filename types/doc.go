@@ -23,6 +23,7 @@ type Note struct {
 	Reviewer      string   `protobuf:"bytes,9,opt"`
 	PendingReview bool     `protobuf:"varint,10,opt"`
 	Lock          bool     `protobuf:"varint,11,opt"`
+	ShowDiff      bool     `protobuf:"varint,17,opt"`
 	CreateUnix    int64    `protobuf:"fixed64,12,opt"`
 	UpdateUnix    int64    `protobuf:"fixed64,13,opt"`
 	Image         string   `protobuf:"bytes,14,opt"`

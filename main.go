@@ -26,7 +26,6 @@ var (
 	rebuildIndex    = flag.Bool("rebuild-index", false, "")
 	compactDB       = flag.Bool("compact", false, "")
 	reqMaxSize      = flag.Int64("request-max-size", 15, "")
-	bitmapCacheSize = flag.Int64("bitmap-cache-size", 512, "")
 	autocertDomain  = flag.String("autocert", "", "")
 	serverStart     time.Time
 )
@@ -47,7 +46,7 @@ func main() {
 	logrus.SetReportCaller(true)
 
 	types.LoadConfig("config.json")
-	dal.InitDB(*bitmapCacheSize * 1e6)
+	dal.InitDB()
 
 	// start := time.Now()
 	// rand.Seed(start.UnixNano())
