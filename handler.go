@@ -300,7 +300,6 @@ func doReject(target *types.Note, w http.ResponseWriter, r *types.Request) bool 
 	target.ClearReviewStatus()
 
 	if err := dal.Store.Update(func(tx *bbolt.Tx) error {
-		dal.UpdateCreator(tx, target.Creator, target)
 		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
 	}); err != nil {
 		logrus.Errorf("reject %d: %v", target.Id, err)

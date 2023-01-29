@@ -28,7 +28,7 @@ a { color: #1565c0 }
     box-shadow: 1px 0 1px #ccc;
 }
 
-#footer { padding:0.5em;text-align:center;font-size:80%;color:#aaa;line-height:1.5em }
+#footer { padding:0.5em 0.5em 0.5em 3.5em;text-align:center;font-size:80%;color:#aaa;line-height:1.5em }
 #footer a { text-decoration:none; color: #aaa }
 
 @media (max-width:960px) {
@@ -38,6 +38,7 @@ a { color: #1565c0 }
         position: relative;
         height: 2.5em; width: 100%;
     }
+    #footer {padding-left: 0.5em}
     table { margin: 0.25em 0 }
     #container { padding: 0.25em }
     .image-view { max-width:250px !important;max-height:250px !important }

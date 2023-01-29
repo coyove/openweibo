@@ -53,7 +53,7 @@ func HandleImage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", http.DetectContentType(buf))
 	n, _ := io.Copy(w, rd)
 
-	dal.MetricsIncr("image", clock.Unix()/86400, []dal.MetricsKeyValue{{p, float64(n)}})
+	dal.MetricsIncr("image", clock.Unix()/300, float64(n))
 }
 
 func saveImage(r *types.Request, id uint64, ts int64, ext string,
@@ -74,7 +74,7 @@ func saveImage(r *types.Request, id uint64, ts int64, ext string,
 		return "", "INTERNAL_ERROR"
 	}
 
-	dal.MetricsIncr("upload", clock.Unix()/86400, []dal.MetricsKeyValue{{fn, float64(n)}})
+	dal.MetricsIncr("upload", clock.Unix()/300, float64(n))
 	return fn, ""
 }
 

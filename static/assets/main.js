@@ -433,7 +433,7 @@ function wrapTagSearchInput(container) {
     }
 
     for (var i = 0; ; i++) {
-        const data = $(container).attr('tag-data' + i);
+        const data = $(container).attr('data' + i);
         if (!data) break;
         container.select(data.split(',')[0], data.split(',')[1]);
         el.blur();

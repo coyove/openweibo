@@ -100,6 +100,7 @@ func main() {
 	serve("/ns:action", HandleTagAction)
 	serve("/ns:history", HandleHistory)
 	serve("/ns:root", HandleRoot)
+	serve("/ns:metrics", HandleMetrics)
 
 	http.HandleFunc("/ns:"+rootUUID+"/dump", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
@@ -113,6 +114,9 @@ func main() {
 	http.HandleFunc("/ns:static/", HandleAssets)
 	http.HandleFunc("/ns:image/", HandleImage)
 	http.HandleFunc("/ns:thumb/", HandleImage)
+	http.HandleFunc("/loaderio-9a0a63b98532fb7e58f548512801933c.txt", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("loaderio-9a0a63b98532fb7e58f548512801933c"))
+	})
 
 	if types.Config.Domain != "" {
 		autocertManager := autocert.Manager{

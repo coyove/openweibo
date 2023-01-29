@@ -1,6 +1,7 @@
 package dal
 
 import (
+	"bytes"
 	"encoding/binary"
 	"os"
 	"strconv"
@@ -57,11 +58,6 @@ func startMetricsBackup() {
 		logrus.Infof("[Metrics] backup metrics data in %v", time.Since(start))
 	}
 	time.AfterFunc(sleep, do)
-}
-
-type MetricsKeyValue struct {
-	Key   string
-	Value float64
 }
 
 func MetricsSetAdd(set string, key string) (count int64, err error) {
@@ -127,60 +123,111 @@ func MetricsSetCount(set string) (count int64) {
 	return
 }
 
-func MetricsIncr(ns string, delta int64, data []MetricsKeyValue) error {
-	return Metrics.Update(func(tx *bbolt.Tx) error {
-		bk, err := tx.CreateBucketIfNotExists(strconv.AppendInt([]byte(ns), delta, 10))
+func MetricsIncr(ns string, delta int64, value float64) (new float64, err error) {
+	err = Metrics.Update(func(tx *bbolt.Tx) error {
+		bk, err := tx.CreateBucketIfNotExists([]byte("metrics"))
+		if err != nil {
+			return err
+		}
+
+		kb := strconv.AppendInt(append([]byte(ns), "_acc_"...), delta, 10)
+		old := types.BytesFloat64(bk.Get(kb))
+
+		added, err := bk.TestPut(kb, types.Float64Bytes(old+value))
 		if err != nil {
 			return err
 		}
 
 		a := 0
-		for i, d := range data {
-			kb := []byte(d.Key)
-			old := types.BytesFloat64(bk.Get(kb))
+		if added {
+			a = 1
+		}
 
-			added, err := bk.TestPut(kb, types.Float64Bytes(old+d.Value))
-			if err != nil {
+		{
+			kb := strconv.AppendInt(append([]byte(ns), "_ctr_"...), delta, 10)
+			oldCtr := types.BytesUint64(bk.Get(kb))
+			if err := bk.Put(kb, types.Uint64Bytes(oldCtr+1)); err != nil {
 				return err
 			}
-
-			if added {
-				a++
-			}
-
-			data[i].Value = old + d.Value
 		}
+
+		{
+			kb := strconv.AppendInt(append([]byte(ns), "_max_"...), delta, 10)
+			old := bk.Get(kb)
+			if value > types.BytesFloat64(old) || len(old) == 0 {
+				if err := bk.Put(kb, types.Float64Bytes(value)); err != nil {
+					return err
+				}
+			}
+		}
+
+		new = old + value
 		return bk.SetSequence(bk.Sequence() + uint64(a))
 	})
+	return
 }
 
-func MetricsView(ns string, delta int64, keys []string) (data []MetricsKeyValue) {
+type MetricsIndex struct {
+	Index int64
+	Sum   float64
+	Max   float64
+	Avg   float64
+	Count uint64
+}
+
+func MetricsRange(ns string, start, end int64) (res []MetricsIndex) {
 	Metrics.View(func(tx *bbolt.Tx) error {
-		bk := tx.Bucket(strconv.AppendInt([]byte(ns), delta, 10))
+		bk := tx.Bucket([]byte("metrics"))
 		if bk == nil {
 			return nil
 		}
 
-		for _, k := range keys {
-			kb := []byte(k)
-			old := types.BytesFloat64(bk.Get(kb))
-			data = append(data, MetricsKeyValue{k, old})
+		for i := start; i <= end; i++ {
+			k := append([]byte(ns), "_acc_"...)
+			total := types.BytesFloat64(bk.Get(strconv.AppendInt(k, i, 10)))
+
+			c := append([]byte(ns), "_ctr_"...)
+			num := types.BytesUint64(bk.Get(strconv.AppendInt(c, i, 10)))
+
+			m := append([]byte(ns), "_max_"...)
+			mx := types.BytesFloat64(bk.Get(strconv.AppendInt(m, i, 10)))
+
+			avg := total / float64(num)
+			if num == 0 {
+				avg = 0
+			}
+			res = append(res, MetricsIndex{
+				Index: i,
+				Sum:   total,
+				Avg:   avg,
+				Max:   mx,
+				Count: num,
+			})
 		}
 		return nil
 	})
 	return
 }
 
-func MetricsSum(ns string, delta int64) (total float64) {
+func MetricsListNamespaces() (ns []string) {
 	Metrics.View(func(tx *bbolt.Tx) error {
-		bk := tx.Bucket(strconv.AppendInt([]byte(ns), delta, 10))
+		bk := tx.Bucket([]byte("metrics"))
 		if bk == nil {
 			return nil
 		}
 
 		c := bk.Cursor()
-		for k, v := c.First(); len(k) > 0; k, v = c.Next() {
-			total += types.BytesFloat64(v)
+		k, _ := c.First()
+
+		for len(k) > 0 {
+			idx := bytes.LastIndexByte(k, '_')
+			k = k[:idx]
+			idx = bytes.LastIndexByte(k, '_')
+			k = k[:idx]
+
+			ns = append(ns, string(k))
+
+			k, _ = c.Seek(append(append([]byte{}, k...), 0xff))
 		}
 		return nil
 	})

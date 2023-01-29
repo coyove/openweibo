@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unsafe"
 
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/limiter"
@@ -217,8 +218,8 @@ func HandleRoot(w http.ResponseWriter, r *types.Request) {
 		fmt.Fprintf(w, "\n\n")
 		for _, ns := range []string{"image", "upload", "create", "s3download", "s3upload"} {
 			for d, i := clock.Unix()/86400, int64(0); i < 7; i++ {
-				s := dal.MetricsSum(ns, d-i)
-				fmt.Fprintf(w, "%s_%v: %d (%dM)\n", ns, time.Unix((d-i)*86400, 0).Format("2006-01-02"), int64(s), int64(s)/1024/1024)
+				s := dal.MetricsRange(ns, d-i, d-i)[0].Sum
+				fmt.Fprintf(w, "%s_%v: %d (%dM)\n", ns, time.Unix((d-i)*86400, 0).Format("2006-01-02"), int64(s), int64(s)/1e6)
 			}
 			fmt.Fprintf(w, "\n")
 		}
@@ -255,4 +256,29 @@ func HandleRoot(w http.ResponseWriter, r *types.Request) {
 		fmt.Fprintf(w, `这里是后台登入页面，普通用户无需登入<br><br><form><input name=rpwd type=password> <input type=submit value="Root login"/></form>`)
 	}
 	httpTemplates.ExecuteTemplate(w, "footer.html", r)
+}
+
+func HandleMetrics(w http.ResponseWriter, r *types.Request) {
+	nss := dal.MetricsListNamespaces()
+	m := map[string][]dal.MetricsIndex{}
+	now := clock.Unix() / 300
+	start := now - 10*86400/300
+
+	for _, ns := range nss {
+		data := dal.MetricsRange(ns, start, now)
+		for i := range data {
+			data[i].Index *= 300
+		}
+		m[ns] = data
+	}
+
+	r.AddTemplateValue("namespaces", nss)
+
+	buf, _ := json.Marshal(m)
+	r.AddTemplateValue("nss", nss)
+	r.AddTemplateValue("metrics", *(*string)(unsafe.Pointer(&buf)))
+	r.AddTemplateValue("start", start)
+	r.AddTemplateValue("end", now)
+
+	httpTemplates.ExecuteTemplate(w, "metrics.html", r)
 }

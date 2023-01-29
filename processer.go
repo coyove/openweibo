@@ -106,6 +106,7 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 		return tt
 	},
 	"add":        func(a, b int) int { return a + b },
+	"mul":        func(a, b int) int { return a * b },
 	"uuid":       func() string { return types.UUIDStr() },
 	"imageURL":   imageURL,
 	"equ64s":     types.EqualUint64,
@@ -169,7 +170,7 @@ func HandleAssets(w http.ResponseWriter, r *http.Request) {
 func serve(pattern string, f func(http.ResponseWriter, *types.Request)) {
 	h := gziphandler.GzipHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		url := r.URL
-		now := time.Now()
+		now := clock.UnixNano()
 		defer func() {
 			if r := recover(); r != nil {
 				logrus.Errorf("fatal serving %v: %v, trace: %s", url, r, debug.Stack())
@@ -194,8 +195,13 @@ func serve(pattern string, f func(http.ResponseWriter, *types.Request)) {
 			})
 		}
 
-		// time.Sleep(time.Second)
 		f(w, req)
+
+		if el := (clock.UnixNano() - now) / 1e3; strings.HasPrefix(r.URL.Path, "/ns:") {
+			dal.MetricsIncr(r.URL.Path[1:], clock.Unix()/300, float64(el))
+		} else {
+			dal.MetricsIncr("ns:view", clock.Unix()/300, float64(el))
+		}
 	}))
 	http.Handle(pattern, h)
 }

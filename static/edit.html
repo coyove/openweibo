@@ -1,7 +1,7 @@
 {{template "header.html" .}}
 
 {{if .T.readonly}}
-<title>记事快照</title>
+<title>快照 {{formatUnixMilli .T.recordUnix}} {{safeHTML .T.note.Title}}</title>
 {{else}}
 <title>编辑 {{.T.note.Id}} {{safeHTML .T.note.Title}}</title>
 {{end}}
@@ -38,7 +38,7 @@ div.diff-row.ins{background:#ccffd8}
                     <div class=wrapall style='flex-grow:1'>{{safeHTML .ReviewTitle}}</div>
                     {{if not $.T.readonly}}
                     <div class='tag-box button' onclick='ajaxBtn(this,"approve",{"id":"{{.Id}}"})'><span>通过</span></div>
-                    <div class='tag-box button' onclick='ajaxBtn(this,"reject",{"id":"{{.Id}}","reject_msg":prompt("驳回理由")||""})'><span>驳回</span></div>
+                    <div class='tag-box button' onclick='ajaxBtn(this,"reject",{"id":"{{.Id}}","reject_msg":prompt("驳回理由（默认无）")||""})'><span>驳回</span></div>
                     {{end}}
                 </div>
             </td>
@@ -50,7 +50,7 @@ div.diff-row.ins{background:#ccffd8}
             <td>
                 <div class=display>
                     <span>{{.Id}}&nbsp;</span>
-                    <a class='tag-edit-button icon-eye' href='/{{.EscapedTitle}}'></a>
+                    <a class='tag-edit-button icon-eye' href='/ns:id:{{.Id}}'></a>
                 </div>
             </td>
         </tr>
@@ -65,6 +65,7 @@ div.diff-row.ins{background:#ccffd8}
                 </div>
             </td>
         </tr>
+
         {{if and (not $.User.IsMod) (ne $.UserDisplay .Creator) (not $.T.readonly)}}
         <tr>
             <td colspan=2>
@@ -73,6 +74,7 @@ div.diff-row.ins{background:#ccffd8}
             </td>
         </tr>
         {{end}}
+
         {{$showImageDiff := and .PendingReview (ne .Image .ReviewImage)}}
         <tr>
             <td colspan=2>
@@ -87,6 +89,7 @@ div.diff-row.ins{background:#ccffd8}
                 </div>
             </td>
         </tr>
+
         {{if .PendingReview}}
         <tr>
             <td colspan=2>
@@ -98,6 +101,7 @@ div.diff-row.ins{background:#ccffd8}
             </td>
         </tr>
         {{end}}
+
         <tr id='tr-content-current'>
             <td colspan=2>
                 <div class=display>
@@ -109,6 +113,7 @@ div.diff-row.ins{background:#ccffd8}
                 </div>
             </td>
         </tr>
+
         {{if .PendingReview}}
         <tr id='tr-content-review' style='display:none'>
             <td colspan=2>
@@ -134,8 +139,8 @@ div.diff-row.ins{background:#ccffd8}
                 <td class=small>父记事</td>
                 <td>
                     <div class=display>
-                        <div id=current-parents class='tag-search-input-container' readonly=readonly max-tags={{$.GetParentsMax}}
-                             {{range $i, $t := $parents}}tag-data{{$i}}={{$t}} {{end}}></div>
+                        <div id=current-parents class='tag-search-input-container' readonly max-tags={{$.GetParentsMax}}
+                             {{range $i, $t := $parents}}data{{$i}}={{$t}} {{end}}></div>
                         <script>wrapTagSearchInput($('#current-parents').get(0))</script>
                     </div>
                 </td>
@@ -144,12 +149,9 @@ div.diff-row.ins{background:#ccffd8}
                 <td class=small><div class=icon-right-big></div></td>
                 <td>
                     <div class=display>
-                        <div id=parents class='tag-search-input-container'
-                             {{if $.T.readonly}}readonly=readonly{{end}}
-                             max-tags={{$.GetParentsMax}}
-                             {{range $i, $t := $reviewParents}}tag-data{{$i}}={{$t}} {{end}}
+                        <div id=parents class='tag-search-input-container' {{if $.T.readonly}}readonly{{end}}
+                             max-tags={{$.GetParentsMax}} {{range $i, $t := $reviewParents}}data{{$i}}={{$t}} {{end}}
                         ></div>
-                        <script>wrapTagSearchInput($('#parents').get(0))</script>
                     </div>
                 </td>
             </tr>
@@ -157,16 +159,14 @@ div.diff-row.ins{background:#ccffd8}
             <tr>
                 <td colspan=2>
                     <div class=display>
-                        <div id=parents class='tag-search-input-container'
-                             {{if $.T.readonly}}readonly=readonly{{end}}
-                             max-tags={{$.GetParentsMax}}
-                             {{range $i, $t := $parents}}tag-data{{$i}}={{$t}} {{end}}
+                        <div id=parents class='tag-search-input-container' {{if $.T.readonly}}readonly{{end}}
+                             max-tags={{$.GetParentsMax}} {{range $i, $t := $parents}}data{{$i}}={{$t}} {{end}}
                         ></div>
-                        <script>wrapTagSearchInput($('#parents').get(0))</script>
                     </div>
                 </td>
             </tr>
             {{end}}
+            <script>wrapTagSearchInput($('#parents').get(0))</script>
         {{end}}
 
         <tr><td class=small>编辑历史</td><td><div class=display><a href='/ns:history?note={{.Id}}&desc=1'>查看</a></div></td></tr>

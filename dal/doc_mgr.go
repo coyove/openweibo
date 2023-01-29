@@ -26,7 +26,7 @@ func CreateNote(name string, tag *types.Note) (existed bool, err error) {
 
 		ProcessParentChanges(tx, tag, nil, tag.ParentIds)
 		UpdateCreator(tx, tag.Creator, tag)
-		MetricsIncr("create", clock.Unix()/86400, []MetricsKeyValue{{tag.Creator, 1}})
+		MetricsIncr("create", clock.Unix()/300, 1)
 		return KSVUpsert(tx, NoteBK, KSVFromTag(tag))
 	})
 	return

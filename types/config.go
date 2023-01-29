@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/coyove/sdss/contrib/clock"
 	"github.com/coyove/sdss/contrib/skip32"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
@@ -108,7 +109,7 @@ func LoadConfig(path string) {
 
 type Request struct {
 	*http.Request
-	Start       time.Time
+	Start       int64
 	ServerStart time.Time
 	T           map[string]interface{}
 
@@ -179,7 +180,7 @@ func (r *Request) AddTemplateValue(k string, v interface{}) {
 }
 
 func (r *Request) Elapsed() int64 {
-	return int64(time.Since(r.Start).Milliseconds())
+	return (clock.UnixNano() - r.Start) / 1e6
 }
 
 func (r *Request) ParsePaging() url.Values {
