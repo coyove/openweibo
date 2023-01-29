@@ -183,6 +183,30 @@ func deleteKSS(sort0Key, sort1Key *bbolt.Bucket, old KeySortValue) error {
 	return nil
 }
 
+func KSVGet(tx *bbolt.Tx, bkPrefix string, key []byte) (value []byte, err error) {
+	keyValue := tx.Bucket([]byte(bkPrefix + "_kv"))
+	if keyValue == nil {
+		return nil, nil
+	}
+	return append([]byte{}, keyValue.Get(key)...), nil
+}
+
+func KSVExist(tx *bbolt.Tx, bkPrefix string, key []byte) (ok bool, err error) {
+	if tx == nil {
+		err = Store.View(func(tx *bbolt.Tx) error {
+			ok, err = KSVExist(tx, bkPrefix, key)
+			return err
+		})
+		return
+	}
+	keyValue := tx.Bucket([]byte(bkPrefix + "_kv"))
+	if keyValue == nil {
+		return false, nil
+	}
+	k, _ := keyValue.Cursor().Seek(key)
+	return bytes.Equal(k, key), nil
+}
+
 func KSVDelete(tx *bbolt.Tx, bkPrefix string, key []byte) error {
 	keyValue := tx.Bucket([]byte(bkPrefix + "_kv"))
 	sort0Key := tx.Bucket([]byte(bkPrefix + "_s0k"))

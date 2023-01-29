@@ -5,7 +5,7 @@
 <style>
 .image-selector-container { margin: 0.5em } 
 div.diff-row {white-space:pre-wrap;padding:0 0.5em;line-height: 1.5em}
-div.diff-line {color:#ccc;width:4em;display:inline-block;padding-right: 0.5em;line-height: 1.5em}
+div.diff-line {color:#aaa;width:3em;display:inline-block;margin-right: 0.5em;line-height: 1.5em}
 div.diff-row.del{background:#ffebe9}
 div.diff-row.ins{background:#ccffd8}
 </style>
@@ -31,8 +31,8 @@ div.diff-row.ins{background:#ccffd8}
                 <div class=display>
                     <div class=wrapall style='flex-grow:1'>{{safeHTML .ReviewTitle}}</div>
                     {{if not $.T.readonly}}
-                    <div class='tag-box button' onclick='ajaxBtn(this,"approve",{"id":{{.Id}}})'><span>通过</span></div>
-                    <div class='tag-box button' onclick='ajaxBtn(this,"reject",{"id":{{.Id}}})'><span>驳回</span></div>
+                    <div class='tag-box button' onclick='ajaxBtn(this,"approve",{"id":"{{.Id}}"})'><span>通过</span></div>
+                    <div class='tag-box button' onclick='ajaxBtn(this,"reject",{"id":"{{.Id}}"})'><span>驳回</span></div>
                     {{end}}
                 </div>
             </td>
@@ -67,7 +67,7 @@ div.diff-row.ins{background:#ccffd8}
             </td>
         </tr>
         {{end}}
-        {{$showImageDiff := and .PendingReview (ne .Image .ReviewImage)}}
+        {{$showImageDiff := and (or .PendingReview .ShowDiff) (ne .Image .ReviewImage)}}
         <tr>
             <td colspan=2>
                 <div class=display>
@@ -144,7 +144,7 @@ div.diff-row.ins{background:#ccffd8}
                     <span>{{if .Lock}}<b>锁定中</b>{{else}}正常{{end}}&nbsp;</span>
                     {{if not $.T.readonly}}
                     <div class='tag-edit-button button' action=''
-                         onclick='ajaxBtn(this,{{if .Lock}}"Unlock"{{else}}"Lock"{{end}}, {"id": {{.Id}}})'>
+                         onclick='ajaxBtn(this,{{if .Lock}}"Unlock"{{else}}"Lock"{{end}}, {"id": "{{.Id}}"})'>
                         <span class=icon-lock></span>
                     </div>
                     {{end}}
@@ -200,7 +200,7 @@ div.diff-row.ins{background:#ccffd8}
             {{if or .ShowDiff .PendingReview}}
             $('#review-content').linedtextarea();
             const diff = JsDiff.diffLines($('#content').val(), $('#review-content').val());
-            var fragment = document.createDocumentFragment(), ln = 0;
+            var fragment = document.createDocumentFragment(), lnL = 0, lnR = 0;
             for (var i=0; i < diff.length; i++) {
                 if (diff[i].added && diff[i + 1] && diff[i + 1].removed) {
                     var swap = diff[i];
@@ -209,22 +209,25 @@ div.diff-row.ins{background:#ccffd8}
                 }
 
                 const removed = diff[i].removed, added = diff[i].added;
-                var lines = (diff[i].value || ' ').split('\n');
-                lines.length > 0 && lines[lines.length - 1] == '' && (lines = lines.slice(0, lines.length - 1));
-                lines.forEach(function(text) {
+                (diff[i].value || ' ').replace(/\n$/, '').split('\n').forEach(function(text) {
                     const node = document.createElement('div');
-                    const line = document.createElement('div');
+                    const left = document.createElement('div');
+                    const right = document.createElement('div');
+                    left.className = 'diff-line';
+                    right.className = 'diff-line';
+
                     if (removed) {
+                        (lnL++), (left.innerText = lnL);
                         node.className = 'diff-row del';
                     } else if (added) {
+                        (lnR++), (right.innerText = lnR);
                         node.className = 'diff-row ins';
                     } else {
+                        (lnL++), (lnR++), (left.innerText = lnL), (right.innerText = lnR);
                         node.className = 'diff-row';
                     }
-                                ln ++;
-                                line.className = 'diff-line';
-                                line.innerText = ln;
-                    node.appendChild(line);
+                    node.appendChild(left);
+                    node.appendChild(right);
                     node.appendChild(document.createTextNode(text));
                     fragment.appendChild(node);
                 })
@@ -234,7 +237,7 @@ div.diff-row.ins{background:#ccffd8}
 
             function updateNote(btn) {
                 ajaxBtn(btn, "update", {
-                    'id': {{.Id}},
+                    'id': "{{.Id}}",
                     'title': $("#title").val(),
                     'content': $("#content").val(),
                     'image': $('#image').get(0).image,
@@ -247,7 +250,7 @@ div.diff-row.ins{background:#ccffd8}
 
             function deleteNote(btn) {
                 if (!confirm("确认删除该记事?")) return;
-                ajaxBtn(btn, 'delete', {'id': {{.Id}}}, function(data) {
+                ajaxBtn(btn, 'delete', {'id': '{{.Id}}'}, function(data) {
                     location.href = '/ns:manage?desc=1';
                 });
             }

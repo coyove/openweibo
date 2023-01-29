@@ -217,6 +217,8 @@ function openImage(src) {
 }
 
 function ajaxBtn(el, action, args, f) {
+    if (!el)
+        el = document.createElement("div");
     const fd = new FormData();    
     for (const k in args) fd.append(k, args[k]);
     const that = $(el);
@@ -259,7 +261,7 @@ function wrapTagSearchInput(container) {
 
     const el = document.createElement('input');
     el.readOnly = readonly;
-    el.placeholder = '选择父记事';
+    !readonly && (el.placeholder = '选择父记事');
     el.className = 'tag-box tag-search-box';
     el.style.outline = 'none';
     el.style.padding = '0 0.25em';

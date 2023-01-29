@@ -218,8 +218,8 @@ func HandleRoot(w http.ResponseWriter, r *types.Request) {
 		fmt.Fprintf(w, "\n\n")
 		for _, ns := range []string{"image", "upload", "create", "s3download", "s3upload"} {
 			for d, i := clock.Unix()/86400, int64(0); i < 7; i++ {
-				fmt.Fprintf(w, "%s_%v: %d\n", ns,
-					time.Unix((d-i)*86400, 0).Format("2006-01-02"), int64(dal.MetricsSum(ns, d-i)))
+				s := dal.MetricsSum(ns, d-i)
+				fmt.Fprintf(w, "%s_%v: %d %d\n", ns, time.Unix((d-i)*86400, 0).Format("2006-01-02"), int64(s), int64(s)/1024/1024)
 			}
 			fmt.Fprintf(w, "\n")
 		}
@@ -236,12 +236,11 @@ func HandleRoot(w http.ResponseWriter, r *types.Request) {
 		enc.Encode(stats)
 		w.Write([]byte("\n"))
 
-		fi, err := os.Stat(dal.Store.DB.Path())
-		if err != nil {
-			fmt.Fprintf(w, "<failed to read data on disk>\n\n")
-		} else {
-			sz := fi.Size()
+		{
+			sz := dal.Store.Size()
 			fmt.Fprintf(w, "Data on disk: %db (%.2fMB)\n\n", sz, float64(sz)/1024/1024)
+			sz2 := dal.Metrics.Size()
+			fmt.Fprintf(w, "Metrics on disk: %db (%.2fMB)\n\n", sz2, float64(sz2)/1024/1024)
 		}
 
 		dal.Store.WalkDesc(clock.UnixMilli(), func(b *bitmap.Range) bool {

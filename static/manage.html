@@ -74,7 +74,8 @@
                     {{end}}
                     <div class=image-display-info>
                         <div style='flex-grow:1'>
-                            <a href='/{{.EscapedTitle}}' class=tag-edit-name>{{makeTitle . 32 true}}</a>
+                            {{$touched := and $.T.isUserPage (ne $.UserDisplay .Creator)}}
+                            <a href='/{{.EscapedTitle}}' {{if $touched}}zzz{{end}} class=tag-edit-name>{{makeTitle . 32 true}}</a>
                         </div>
                         <div style='margin-top:0.25em' >
                             {{if .Lock}}<span class='icon-lock'></span>{{end}}

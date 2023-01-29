@@ -25,19 +25,29 @@ func CreateNote(name string, tag *types.Note) (existed bool, err error) {
 		tag.UpdateUnix = now
 
 		ProcessParentChanges(tx, tag, nil, tag.ParentIds)
-		UpdateCreator(tx, tag)
+		UpdateCreator(tx, tag.Creator, tag)
 		MetricsIncr("create", clock.Unix()/86400, []MetricsKeyValue{{tag.Creator, 1}})
 		return KSVUpsert(tx, NoteBK, KSVFromTag(tag))
 	})
 	return
 }
 
-func UpdateCreator(tx *bbolt.Tx, tag *types.Note) error {
-	return KSVUpsert(tx, "creator_"+tag.Creator, KeySortValue{
+func UpdateCreator(tx *bbolt.Tx, who string, tag *types.Note) error {
+	if tx == nil {
+		return Store.Update(func(tx *bbolt.Tx) error { return UpdateCreator(tx, who, tag) })
+	}
+	return KSVUpsert(tx, "creator_"+who, KeySortValue{
 		Key:   types.Uint64Bytes(tag.Id),
 		Sort0: uint64(clock.UnixMilli()),
 		Sort1: []byte(tag.Title),
 	})
+}
+
+func DeleteCreator(tx *bbolt.Tx, who string, tag *types.Note) error {
+	if tx == nil {
+		return Store.Update(func(tx *bbolt.Tx) error { return DeleteCreator(tx, who, tag) })
+	}
+	return KSVDelete(tx, "creator_"+who, types.Uint64Bytes(tag.Id))
 }
 
 func FilterInvalidParentIds(ids []uint64) (res []uint64, err error) {
