@@ -82,7 +82,7 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 			}
 			ok = true
 		} else if action == "approve" {
-			ok = doApprove(target, w, r)
+			ok = doApprove(target, false, w, r)
 		} else if action == "reject" {
 			ok = doReject(target, w, r)
 		} else if action == "delete" || action == "Lock" || action == "Unlock" {
@@ -112,7 +112,9 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 	}
 	if ok {
 		if action != "touch" {
-			go dal.AppendHistory(target.Id, r.UserDisplay, action, r.RemoteIPv4Masked(), target)
+			go dal.AppendHistory(target.Id, r.UserDisplay, action,
+				types.UTF16Trunc(r.Form.Get("reject_msg"), 100),
+				r.RemoteIPv4Masked(), target)
 			limiter.AddIP(r, 1)
 		} else {
 			limiter.AddIP(r, 5)
@@ -194,81 +196,51 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 		return nil, false
 	}
 
-	var exist, shouldIndex, directUpdate bool
-	var oldContent, oldImage string
-	var oldParentIds []uint64
-	err = dal.Store.Update(func(tx *bbolt.Tx) error {
-		if ad.title != "" && ad.title != target.Title {
-			if _, exist = dal.KSVFirstKeyOfSort1(tx, dal.NoteBK, []byte(ad.title)); exist {
-				return nil
-			}
-		}
-		if target.Creator == "bulk" {
-			target.Creator = r.UserDisplay
-		}
-		if r.User.IsMod() || r.UserDisplay == target.Creator {
-			dal.ProcessParentChanges(tx, target, target.ParentIds, ad.parentIds)
-			if len(ad.hash) > 0 {
-				shouldIndex = ad.title != target.Title || !types.EqualUint64(ad.parentIds, target.ParentIds)
-			}
-			oldContent, oldImage, oldParentIds = target.Content, target.Image, target.ParentIds
-			target.Title = ad.title
-			target.Content = ad.content
-			target.ParentIds = ad.parentIds
-			if ad.imageChanged {
-				target.Image = ad.image
-			}
-			target.ClearReviewStatus()
-			directUpdate = true
-		} else {
-			target.PendingReview = true
-			target.ReviewTitle = ad.title
-			target.ReviewContent = ad.content
-			target.ReviewParentIds = ad.parentIds
-			if ad.imageChanged {
-				target.ReviewImage = ad.image
-			} else {
-				target.ReviewImage = target.Image
-			}
-		}
-		target.Modifier = r.UserDisplay
-		target.UpdateUnix = clock.UnixMilli()
+	if target.Creator == "bulk" {
+		target.Creator = r.UserDisplay
+	}
+	target.PendingReview = true
+	target.ReviewTitle = ad.title
+	target.ReviewContent = ad.content
+	target.ReviewParentIds = ad.parentIds
+	if ad.imageChanged {
+		target.ReviewImage = ad.image
+	} else {
+		target.ReviewImage = target.Image
+	}
+	target.Modifier = r.UserDisplay
+	target.UpdateUnix = clock.UnixMilli()
+
+	if target.ReviewDataNotChanged() {
+		writeJSON(w, "success", false, "code", "DATA_NO_CHANGE")
+		return nil, false
+	}
+
+	if err := dal.Store.Update(func(tx *bbolt.Tx) error {
 		dal.UpdateCreator(tx, target.Creator, target)
 		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
-	})
-	if err != nil {
+	}); err != nil {
 		logrus.Errorf("update %d: %v", id, err)
 		writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
 		return nil, false
 	}
 
-	if exist {
-		writeJSON(w, "success", false, "code", "DUPLICATED_TITLE")
-		return nil, false
-	}
-
-	if shouldIndex {
-		dal.Store.Saver().AddAsync(bitmap.Uint64Key(id),
-			types.DedupUint64(append(ad.hash, ngram.StrHash(target.Creator))))
-	}
-
-	if directUpdate && (oldContent != target.Content ||
-		oldImage != target.Image || !types.EqualUint64(oldParentIds, target.ParentIds)) {
-		target.ShowDiff = true
-		target.ReviewContent, target.Content = target.Content, oldContent
-		target.ReviewImage, target.Image = target.Image, oldImage
-		target.ReviewParentIds, target.ParentIds = target.ParentIds, oldParentIds
+	if r.User.IsMod() || r.UserDisplay == target.Creator {
+		// We don't want to alter 'target', so pass a copy into doApprove.
+		if !doApprove(target.Clone(), true, w, r) {
+			return nil, false
+		}
 	}
 
 	time.AfterFunc(time.Second*10, func() { dal.UploadS3(ad.image, imageThumbName(ad.image)) })
 	return target, true
 }
 
-func doApprove(target *types.Note, w http.ResponseWriter, r *types.Request) bool {
+func doApprove(target *types.Note, direct bool, w http.ResponseWriter, r *types.Request) bool {
 	idKey := types.Uint64Bytes(target.Id)
 
 	defer func(start time.Time) {
-		logrus.Infof("approve %d in %v", target.Id, time.Since(start))
+		logrus.Infof("approve %d in %v, direct update: %v", target.Id, time.Since(start), direct)
 	}(time.Now())
 
 	if !target.PendingReview {

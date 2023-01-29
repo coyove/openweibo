@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"net/url"
 	"strconv"
-	"strings"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/pierrec/lz4/v4"
@@ -24,7 +23,6 @@ type Note struct {
 	Reviewer        string   `protobuf:"bytes,9,opt"`
 	PendingReview   bool     `protobuf:"varint,10,opt"`
 	Lock            bool     `protobuf:"varint,11,opt"`
-	ShowDiff        bool     `protobuf:"varint,17,opt"`
 	CreateUnix      int64    `protobuf:"fixed64,12,opt"`
 	UpdateUnix      int64    `protobuf:"fixed64,13,opt"`
 	Image           string   `protobuf:"bytes,14,opt"`
@@ -39,13 +37,7 @@ func (t *Note) ProtoMessage() {}
 
 func (t *Note) String() string { return proto.CompactTextString(t) }
 
-func (t *Note) JoinParentIds() string {
-	var tmp []string
-	for _, id := range t.ParentIds {
-		tmp = append(tmp, strconv.FormatUint(id, 10))
-	}
-	return strings.Join(tmp, ",")
-}
+func (t *Note) Clone() *Note { return UnmarshalNoteBinary(t.MarshalBinary()) }
 
 func (t *Note) ContainsParents(ids []uint64) bool {
 	s := 0
@@ -99,6 +91,13 @@ func (t *Note) ClearReviewStatus() {
 	t.ReviewTitle, t.ReviewContent, t.ReviewImage, t.ReviewParentIds = "", "", "", nil
 }
 
+func (t *Note) ReviewDataNotChanged() bool {
+	return t.ReviewTitle == t.Title &&
+		t.ReviewContent == t.Content &&
+		t.ReviewImage == t.Image &&
+		EqualUint64(t.ReviewParentIds, t.ParentIds)
+}
+
 func (t *Note) Valid() bool {
 	return t != nil && t.Id > 0
 }
@@ -135,6 +134,7 @@ type Record struct {
 	Modifier   string `protobuf:"bytes,4,opt"`
 	ModifierIP string `protobuf:"bytes,5,opt"`
 	CreateUnix int64  `protobuf:"fixed64,6,opt"`
+	RejectMsg  string `protobuf:"bytes,7,opt"`
 }
 
 func (t *Record) Reset() { *t = Record{} }

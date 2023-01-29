@@ -439,6 +439,7 @@ function wrapTagSearchInput(container) {
         el.blur();
     }
 
+    readonly && Object.keys(selected).length == 0 && (el.placeholder = '空');
     updateInfo();
     container.getTags = function() { return selected; }
     container.wrapped = true;

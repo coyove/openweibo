@@ -38,7 +38,7 @@ div.diff-row.ins{background:#ccffd8}
                     <div class=wrapall style='flex-grow:1'>{{safeHTML .ReviewTitle}}</div>
                     {{if not $.T.readonly}}
                     <div class='tag-box button' onclick='ajaxBtn(this,"approve",{"id":"{{.Id}}"})'><span>通过</span></div>
-                    <div class='tag-box button' onclick='ajaxBtn(this,"reject",{"id":"{{.Id}}"})'><span>驳回</span></div>
+                    <div class='tag-box button' onclick='ajaxBtn(this,"reject",{"id":"{{.Id}}","reject_msg":prompt("驳回理由")||""})'><span>驳回</span></div>
                     {{end}}
                 </div>
             </td>
@@ -59,7 +59,7 @@ div.diff-row.ins{background:#ccffd8}
                 <div class=display>
                     <script type="text/plain" id=title{{.Id}}>{{.Title}}</script>
                     <input placeholder='标题' id="title" maxlength={{$.GetTitleMaxLen}} class=tag-edit-name {{if $.T.readonly}}readonly{{end}}/>
-                    {{if not $.T.readonly}}
+                    {{if and (not $.T.readonly) (not .PendingReview)}}
                     <div class='tag-box button' onclick='updateNote(this)' id=update {{if $.T.readonly}}style='display:none'{{end}}>更新</div>
                     {{end}}
                 </div>
@@ -73,7 +73,7 @@ div.diff-row.ins{background:#ccffd8}
             </td>
         </tr>
         {{end}}
-        {{$showImageDiff := and (or .PendingReview .ShowDiff) (ne .Image .ReviewImage)}}
+        {{$showImageDiff := and .PendingReview (ne .Image .ReviewImage)}}
         <tr>
             <td colspan=2>
                 <div class=display>
@@ -87,7 +87,7 @@ div.diff-row.ins{background:#ccffd8}
                 </div>
             </td>
         </tr>
-        {{if or .ShowDiff .PendingReview}}
+        {{if .PendingReview}}
         <tr>
             <td colspan=2>
                 <div class=display>
@@ -109,7 +109,7 @@ div.diff-row.ins{background:#ccffd8}
                 </div>
             </td>
         </tr>
-        {{if or .ShowDiff .PendingReview}}
+        {{if .PendingReview}}
         <tr id='tr-content-review' style='display:none'>
             <td colspan=2>
                 <div class=display>
@@ -127,7 +127,7 @@ div.diff-row.ins{background:#ccffd8}
 
         {{$parents := getFullParents .ParentIds}}
         {{$reviewParents := getFullParents .ReviewParentIds}}
-        {{$showParentsDiff := and (or .PendingReview .ShowDiff) (not (equ64s .ParentIds .ReviewParentIds))}}
+        {{$showParentsDiff := and .PendingReview (not (equ64s .ParentIds .ReviewParentIds))}}
         {{if or $parents $showParentsDiff (not $.T.readonly)}}
             {{if $showParentsDiff}}
             <tr>
@@ -230,7 +230,7 @@ div.diff-row.ins{background:#ccffd8}
             $('#image').imageSelector("{{imageURL "thumb" .Image}}");
             {{end}}
 
-            {{if or .ShowDiff .PendingReview}}
+            {{if .PendingReview}}
             $('#review-content').linedtextarea();
             const diff = JsDiff.diffLines($('#content').val(), $('#review-content').val());
             var fragment = document.createDocumentFragment(), lnL = 0, lnR = 0;

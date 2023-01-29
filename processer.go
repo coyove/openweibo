@@ -138,6 +138,7 @@ var errorMessages = map[string]string{
 	"CONTENT_TOO_LARGE":  "图片过大",
 	"COOLDOWN":           "请稍后重试",
 	"CANT_TOUCH_SELF":    "无法收藏自己的记事",
+	"DATA_NO_CHANGE":     "请编辑记事",
 }
 
 func HandleIndex(w http.ResponseWriter, r *types.Request) {

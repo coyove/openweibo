@@ -67,12 +67,13 @@
             <td class='small'><div>{{formatUnixMilli .CreateUnix}}</div></td>
             {{$rid := .Id}}
             {{$ipa := .IsPlainAction}}
+            {{$msg := .RejectMsg}}
             {{with .Note}}
             <td class='tag-edit'>
                 <div class=display>
                     <div style='flex-grow:1'>
                         {{if $ipa}}
-                            <span class=wrapall>{{.HTMLTitleDisplay}}</span>
+                        <span class=wrapall>{{.HTMLTitleDisplay}}{{if $msg}}&emsp;<i>留言：{{safeHTML $msg}}</i>{{end}}</span>
                         {{else}}
                             {{if ne .Image .ReviewImage}}<span class=icon-photo></span>{{end}}
                             <a class=wrapall href='/ns:edit?hid={{$rid}}'>{{.HTMLTitleDisplay}}</a>

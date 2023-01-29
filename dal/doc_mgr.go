@@ -229,7 +229,7 @@ func ProcessParentChanges(tx *bbolt.Tx, tag *types.Note, old, new []uint64) erro
 	return nil
 }
 
-func AppendHistory(tagId uint64, user, action string, ip net.IP, old *types.Note) error {
+func AppendHistory(tagId uint64, user, action string, rejectMsg string, ip net.IP, old *types.Note) error {
 	return Store.Update(func(tx *bbolt.Tx) error {
 		id := clock.Id()
 		tr := (&types.Record{
@@ -238,6 +238,7 @@ func AppendHistory(tagId uint64, user, action string, ip net.IP, old *types.Note
 			CreateUnix: clock.UnixMilli(),
 			Modifier:   user,
 			ModifierIP: ip.String(),
+			RejectMsg:  rejectMsg,
 		})
 		switch action {
 		case "approve", "reject", "Lock", "Unlock":
