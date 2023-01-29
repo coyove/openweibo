@@ -44,7 +44,7 @@ func CheckIP(r *types.Request) (ok bool, remains int64) {
 	return true, 0
 }
 
-func AddIP(r *types.Request) {
+func AddIP(r *types.Request, factor int64) {
 	if r.User.IsMod() {
 		return
 	}
@@ -52,6 +52,12 @@ func AddIP(r *types.Request) {
 	if sec <= 0 {
 		sec = 30
 	}
+
+	sec /= factor
+	if sec <= 0 {
+		sec = 1
+	}
+
 	ipStr := r.RemoteIPv4Masked().String()
 	cdMap.Store(ipStr, clock.Unix()+sec)
 	time.AfterFunc(time.Second*time.Duration(sec), func() {

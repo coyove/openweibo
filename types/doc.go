@@ -12,23 +12,25 @@ import (
 )
 
 type Note struct {
-	Id            uint64   `protobuf:"fixed64,1,opt"`
-	Title         string   `protobuf:"bytes,2,opt"`
-	ReviewTitle   string   `protobuf:"bytes,3,opt"`
-	Content       string   `protobuf:"bytes,4,opt"`
-	ReviewContent string   `protobuf:"bytes,5,opt"`
-	ParentIds     []uint64 `protobuf:"fixed64,6,rep"`
-	Creator       string   `protobuf:"bytes,7,opt"`
-	Modifier      string   `protobuf:"bytes,8,opt"`
-	Reviewer      string   `protobuf:"bytes,9,opt"`
-	PendingReview bool     `protobuf:"varint,10,opt"`
-	Lock          bool     `protobuf:"varint,11,opt"`
-	ShowDiff      bool     `protobuf:"varint,17,opt"`
-	CreateUnix    int64    `protobuf:"fixed64,12,opt"`
-	UpdateUnix    int64    `protobuf:"fixed64,13,opt"`
-	Image         string   `protobuf:"bytes,14,opt"`
-	ReviewImage   string   `protobuf:"bytes,15,opt"`
-	ChildrenCount int64    `protobuf:"varint,16,opt"`
+	Id              uint64   `protobuf:"fixed64,1,opt"`
+	Title           string   `protobuf:"bytes,2,opt"`
+	ReviewTitle     string   `protobuf:"bytes,3,opt"`
+	Content         string   `protobuf:"bytes,4,opt"`
+	ReviewContent   string   `protobuf:"bytes,5,opt"`
+	ParentIds       []uint64 `protobuf:"fixed64,6,rep"`
+	ReviewParentIds []uint64 `protobuf:"fixed64,19,rep"`
+	Creator         string   `protobuf:"bytes,7,opt"`
+	Modifier        string   `protobuf:"bytes,8,opt"`
+	Reviewer        string   `protobuf:"bytes,9,opt"`
+	PendingReview   bool     `protobuf:"varint,10,opt"`
+	Lock            bool     `protobuf:"varint,11,opt"`
+	ShowDiff        bool     `protobuf:"varint,17,opt"`
+	CreateUnix      int64    `protobuf:"fixed64,12,opt"`
+	UpdateUnix      int64    `protobuf:"fixed64,13,opt"`
+	Image           string   `protobuf:"bytes,14,opt"`
+	ReviewImage     string   `protobuf:"bytes,15,opt"`
+	ChildrenCount   int64    `protobuf:"varint,16,opt"`
+	TouchCount      int64    `protobuf:"varint,18,opt"`
 }
 
 func (t *Note) Reset() { *t = Note{} }
@@ -85,12 +87,7 @@ func (t *Note) QueryTitle() string {
 }
 
 func (t *Note) HTMLTitleDisplay() string {
-	var tt string
-	if t.PendingReview {
-		tt = SafeHTML(t.ReviewTitle)
-	} else {
-		tt = SafeHTML(t.Title)
-	}
+	tt := SafeHTML(t.Title)
 	if tt == "" {
 		return "<span class=untitled></span>"
 	}
@@ -99,7 +96,7 @@ func (t *Note) HTMLTitleDisplay() string {
 
 func (t *Note) ClearReviewStatus() {
 	t.PendingReview = false
-	t.ReviewTitle, t.ReviewContent, t.ReviewImage = "", "", ""
+	t.ReviewTitle, t.ReviewContent, t.ReviewImage, t.ReviewParentIds = "", "", "", nil
 }
 
 func (t *Note) Valid() bool {
@@ -122,12 +119,12 @@ func UnmarshalNoteBinary(p []byte) *Note {
 	return t
 }
 
-func IncrNoteChildrenCountBinary(p []byte, d int64) []byte {
+func UpdateNoteBytes(p []byte, f func(n *Note)) []byte {
 	t := &Note{}
 	if err := proto.Unmarshal(p, t); err != nil {
 		panic(err)
 	}
-	t.ChildrenCount += d
+	f(t)
 	return t.MarshalBinary()
 }
 

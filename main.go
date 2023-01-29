@@ -25,8 +25,6 @@ var (
 	rebuildFromWiki = flag.Int("rebuild-db", 0, "")
 	rebuildIndex    = flag.Bool("rebuild-index", false, "")
 	compactDB       = flag.Bool("compact", false, "")
-	reqMaxSize      = flag.Int64("request-max-size", 15, "")
-	autocertDomain  = flag.String("autocert", "", "")
 	serverStart     time.Time
 )
 
@@ -116,16 +114,20 @@ func main() {
 	http.HandleFunc("/ns:image/", HandleImage)
 	http.HandleFunc("/ns:thumb/", HandleImage)
 
-	if *autocertDomain != "" {
+	if types.Config.Domain != "" {
 		autocertManager := autocert.Manager{
 			Prompt:     autocert.AcceptTOS,
-			HostPolicy: autocert.HostWhitelist(*autocertDomain),
+			HostPolicy: autocert.HostWhitelist(types.Config.Domain),
 			Cache:      autocert.DirCache("autocert_cache"),
 		}
 		go func() {
+			mux := http.NewServeMux()
+			mux.Handle("/", autocertManager.HTTPHandler(nil))
+			mux.HandleFunc("/ns:image/", HandleImage)
+			mux.HandleFunc("/ns:thumb/", HandleImage)
 			srv := &http.Server{
 				Addr:         ":80",
-				Handler:      autocertManager.HTTPHandler(nil),
+				Handler:      mux,
 				ReadTimeout:  time.Second,
 				WriteTimeout: time.Second,
 			}
@@ -143,7 +145,7 @@ func main() {
 			WriteTimeout:      10 * time.Second,
 		}
 
-		logrus.Infof("start serving HTTPS, pid=%d, ServeUUID=%s", os.Getpid(), serveUUID)
+		logrus.Infof("start serving HTTPS + HTTP redirector, pid=%d, ServeUUID=%s", os.Getpid(), serveUUID)
 		logrus.Fatal(srv.ListenAndServeTLS("", ""))
 	} else {
 		logrus.Infof("start serving HTTP %s, pid=%d, ServeUUID=%s", *listen, os.Getpid(), serveUUID)

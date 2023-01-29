@@ -70,8 +70,8 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 		}
 		return
 	},
-	"getFullParents": func(t *types.Note) (res []string) {
-		notes, _ := dal.BatchGetNotes(t.ParentIds)
+	"getFullParents": func(ids []uint64) (res []string) {
+		notes, _ := dal.BatchGetNotes(ids)
 		for _, n := range notes {
 			if n.Title != "" {
 				res = append(res, fmt.Sprintf("%d,%s", n.Id, n.Title))
@@ -82,12 +82,7 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 		return
 	},
 	"makeTitle": func(t *types.Note, max int, hl bool) string {
-		var tt string
-		if t.PendingReview {
-			tt = types.SafeHTML(t.ReviewTitle)
-		} else {
-			tt = types.SafeHTML(t.Title)
-		}
+		tt := types.SafeHTML(t.Title)
 		if tt == "" {
 			notes, _ := dal.BatchGetNotes(t.ParentIds)
 			if len(notes) > 0 {
@@ -113,6 +108,7 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 	"add":        func(a, b int) int { return a + b },
 	"uuid":       func() string { return types.UUIDStr() },
 	"imageURL":   imageURL,
+	"equ64s":     types.EqualUint64,
 	"trunc":      types.UTF16Trunc,
 	"renderClip": types.RenderClip,
 	"safeHTML":   types.SafeHTML,
@@ -141,6 +137,7 @@ var errorMessages = map[string]string{
 	"INVALID_PARENT":     "无效父记事",
 	"CONTENT_TOO_LARGE":  "图片过大",
 	"COOLDOWN":           "请稍后重试",
+	"CANT_TOUCH_SELF":    "无法收藏自己的记事",
 }
 
 func HandleIndex(w http.ResponseWriter, r *types.Request) {
@@ -179,7 +176,7 @@ func serve(pattern string, f func(http.ResponseWriter, *types.Request)) {
 		}()
 
 		req := &types.Request{
-			Request:     limiter.LimitRequestSize(r, *reqMaxSize*1e6),
+			Request:     limiter.LimitRequestSize(r, types.Config.RequestMaxSize),
 			ServerStart: serverStart,
 			Start:       now,
 			Config:      dal.GetJsonizedNoteCache("ns:config"),

@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strconv"
 	"time"
 
@@ -20,10 +21,11 @@ import (
 )
 
 var Config struct {
-	Key           string
-	Domain        string
-	PagingTimeout int64
-	RootPassword  string
+	Key            string
+	Domain         string
+	PagingTimeout  int64
+	RootPassword   string
+	RequestMaxSize int64
 
 	ImageCache struct {
 		MaxFiles       int64
@@ -45,7 +47,7 @@ var Config struct {
 	Runtime struct {
 		AESBlock cipher.Block
 		Skip32   skip32.Skip32
-	} `json:"-"`
+	}
 }
 
 func LoadConfig(path string) {
@@ -64,6 +66,11 @@ func LoadConfig(path string) {
 		logrus.Fatal("load config unmarshal: ", err)
 	}
 
+	if Config.RootPassword == "" {
+		logrus.Fatal("load config: missing RootPassword")
+	}
+
+	ifZero(&Config.RequestMaxSize, 15, 1024*1024)
 	ifZero(&Config.ImageCache.MaxFiles, 1000, 1)
 	ifZero(&Config.ImageCache.PurgerInterval, 10, 1e9)
 	ifZero(&Config.Index.CacheSize, 1024, 1024*1024)
@@ -80,9 +87,22 @@ func LoadConfig(path string) {
 
 	Config.Runtime.Skip32 = skip32.ReadSkip32Key(Config.Key[:10])
 
-	{
-		tmp, _ := json.Marshal(Config)
-		logrus.Infof("load config: %v", string(tmp))
+	rv := reflect.ValueOf(Config)
+	for i := 0; i < rv.NumField(); i++ {
+		n := rv.Type().Field(i).Name
+		if n == "Runtime" {
+			break
+		}
+		f := rv.Field(i)
+		if f.Kind() == reflect.Struct {
+			for i := 0; i < f.NumField(); i++ {
+				tmp, _ := json.Marshal(f.Field(i).Interface())
+				logrus.Infof("[Config] %s.%s=%s", n, f.Type().Field(i).Name, tmp)
+			}
+		} else {
+			tmp, _ := json.Marshal(f.Interface())
+			logrus.Infof("[Config] %s=%s", n, tmp)
+		}
 	}
 }
 

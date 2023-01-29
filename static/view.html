@@ -10,12 +10,12 @@
 <div style='font-size: 90%'>
     <div>
         <a href='/ns:manage?q=ns:user:{{.Creator}}'>{{.Creator}}</a> 创建于 {{formatUnixMilli .CreateUnix}}
-        <a class=tag-edit-button href='/ns:edit?id={{.Id}}'><span class=icon-pencil></span></a>
-        {{if $.T.noteTouched}}
-        <div class=tag-edit-button onclick="ajaxBtn(null,'untouch',{'id':'{{.Id}}'})"><span class=icon-heart></span></div>
-        {{else}}
-        <div class=tag-edit-button onclick="ajaxBtn(null,'touch',{'id':'{{.Id}}'})"><span class=icon-heart-empty></span></div>
+        {{if ne $.UserDisplay .Creator}}
+        <div class=tag-edit-button onclick="ajaxBtn(null,'touch',{'id':'{{.Id}}'})">
+            <span class={{if $.T.noteTouched}}icon-heart{{else}}icon-heart-empty{{end}}></span>
+        </div>
         {{end}}
+        <a class=tag-edit-button href='/ns:edit?id={{.Id}}'><span class=icon-pencil></span></a>
     </div>
     {{if .Modifier}}
     <div>
@@ -34,8 +34,8 @@
     </div>
     {{end}}
 
-    {{if $.T.noteViews}}
-    <div style='font-size: 80%; color: #666'>{{$.T.noteViews}} 次浏览</div<>
+    {{if or .TouchCount $.T.noteViews}}
+    <div style='font-size: 80%; color: #666'>{{$.T.noteViews}} 浏览&emsp;{{.TouchCount}} 收藏</div<>
     {{end}}
 </div>
 <hr style='border:dotted 1px #ccc'>
@@ -63,11 +63,5 @@
     {{end}}
     <pre class=wrapall style='font:inherit'>{{renderClip (safeHTML .Content)}}</pre>
 </div>
-
-<script>
-function touchNote(btn) {
-    
-}
-</script>
 
 {{end}}

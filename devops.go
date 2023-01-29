@@ -198,7 +198,7 @@ func HandleRoot(w http.ResponseWriter, r *types.Request) {
 		http.Redirect(w, r.Request, "/ns:root", 302)
 		return
 	} else if rpwd != "" {
-		limiter.AddIP(r)
+		limiter.AddIP(r, 1)
 		http.Redirect(w, r.Request, "/ns:root", 302)
 		return
 	}
@@ -213,19 +213,21 @@ func HandleRoot(w http.ResponseWriter, r *types.Request) {
 		fmt.Fprintf(w, "Your cookie: %s&emsp;", r.UserSession)
 		fmt.Fprintf(w, "<button onclick=\"document.cookie='session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';location.reload()\">Clear</button>\n\n")
 		fmt.Fprintf(w, "Server started at %v\n", serverStart)
-		fmt.Fprintf(w, "Request max size: %vMB\n", *reqMaxSize)
 
 		fmt.Fprintf(w, "\n\n")
 		for _, ns := range []string{"image", "upload", "create", "s3download", "s3upload"} {
 			for d, i := clock.Unix()/86400, int64(0); i < 7; i++ {
 				s := dal.MetricsSum(ns, d-i)
-				fmt.Fprintf(w, "%s_%v: %d %d\n", ns, time.Unix((d-i)*86400, 0).Format("2006-01-02"), int64(s), int64(s)/1024/1024)
+				fmt.Fprintf(w, "%s_%v: %d (%dM)\n", ns, time.Unix((d-i)*86400, 0).Format("2006-01-02"), int64(s), int64(s)/1024/1024)
 			}
 			fmt.Fprintf(w, "\n")
 		}
 
 		df, _ := exec.Command("df", "-h").Output()
 		fmt.Fprintf(w, "Disk:\n%s\n", df)
+
+		uptime, _ := exec.Command("uptime").Output()
+		fmt.Fprintf(w, "Uptime: %s\n", uptime)
 
 		ic, _ := ioutil.ReadDir("image_cache")
 		fmt.Fprintf(w, "Image cache: %d\n", len(ic))
@@ -238,9 +240,9 @@ func HandleRoot(w http.ResponseWriter, r *types.Request) {
 
 		{
 			sz := dal.Store.Size()
-			fmt.Fprintf(w, "Data on disk: %db (%.2fMB)\n\n", sz, float64(sz)/1024/1024)
+			fmt.Fprintf(w, "Data on disk: %db (%.2fM)\n\n", sz, float64(sz)/1024/1024)
 			sz2 := dal.Metrics.Size()
-			fmt.Fprintf(w, "Metrics on disk: %db (%.2fMB)\n\n", sz2, float64(sz2)/1024/1024)
+			fmt.Fprintf(w, "Metrics on disk: %db (%.2fM)\n\n", sz2, float64(sz2)/1024/1024)
 		}
 
 		dal.Store.WalkDesc(clock.UnixMilli(), func(b *bitmap.Range) bool {

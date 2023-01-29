@@ -33,6 +33,8 @@ func HandleImage(w http.ResponseWriter, r *http.Request) {
 		ext := filepath.Ext(p)
 		p = p[:len(p)-len(ext)] + ".thumb.jpg"
 	}
+	p = strings.Replace(p, "/", "", -1)
+
 	f, err := dal.Store.ImageCache.Open(p)
 	if err != nil {
 		if e, ok := err.(dal.S3Error); ok {

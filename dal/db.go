@@ -191,20 +191,20 @@ func KSVGet(tx *bbolt.Tx, bkPrefix string, key []byte) (value []byte, err error)
 	return append([]byte{}, keyValue.Get(key)...), nil
 }
 
-func KSVExist(tx *bbolt.Tx, bkPrefix string, key []byte) (ok bool, err error) {
+func KSVExist(tx *bbolt.Tx, bkPrefix string, key []byte) (ok bool) {
 	if tx == nil {
-		err = Store.View(func(tx *bbolt.Tx) error {
-			ok, err = KSVExist(tx, bkPrefix, key)
-			return err
+		Store.View(func(tx *bbolt.Tx) error {
+			ok = KSVExist(tx, bkPrefix, key)
+			return nil
 		})
 		return
 	}
 	keyValue := tx.Bucket([]byte(bkPrefix + "_kv"))
 	if keyValue == nil {
-		return false, nil
+		return false
 	}
 	k, _ := keyValue.Cursor().Seek(key)
-	return bytes.Equal(k, key), nil
+	return bytes.Equal(k, key)
 }
 
 func KSVDelete(tx *bbolt.Tx, bkPrefix string, key []byte) error {

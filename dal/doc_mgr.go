@@ -198,7 +198,7 @@ func ProcessParentChanges(tx *bbolt.Tx, tag *types.Note, old, new []uint64) erro
 		ok := types.Uint64Bytes(o)
 		ob := bk.Get(ok)
 		if len(ob) > 0 {
-			bk.Put(ok, types.IncrNoteChildrenCountBinary(ob, -1))
+			bk.Put(ok, types.UpdateNoteBytes(ob, func(b *types.Note) { b.ChildrenCount-- }))
 		}
 		if err := KSVDelete(tx, fmt.Sprintf("children_%d", o), k); err != nil {
 			return err
@@ -214,7 +214,7 @@ func ProcessParentChanges(tx *bbolt.Tx, tag *types.Note, old, new []uint64) erro
 			nk := types.Uint64Bytes(n)
 			nb := bk.Get(nk)
 			if len(nb) > 0 {
-				bk.Put(nk, types.IncrNoteChildrenCountBinary(nb, 1))
+				bk.Put(nk, types.UpdateNoteBytes(nb, func(b *types.Note) { b.ChildrenCount++ }))
 			}
 		}
 		if err := KSVUpsert(tx, fmt.Sprintf("children_%d", n), KeySortValue{

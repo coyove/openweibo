@@ -28,9 +28,8 @@ a { color: #1565c0 }
     box-shadow: 1px 0 1px #ccc;
 }
 
-#footer {
-    padding:0.5em 0.5em 0.5em 2.5em;text-align:center;font-size:75%;color:#aaa;
-}
+#footer { padding:0.5em;text-align:center;font-size:80%;color:#aaa;line-height:1.5em }
+#footer a { text-decoration:none; color: #aaa }
 
 @media (max-width:960px) {
     body { font-size: 120%; }
@@ -41,7 +40,6 @@ a { color: #1565c0 }
     }
     table { margin: 0.25em 0 }
     #container { padding: 0.25em }
-    #footer { padding-left: 0.5em }
     .image-view { max-width:250px !important;max-height:250px !important }
 }
 
@@ -112,6 +110,7 @@ a { color: #1565c0 }
 .tag-box.button.selected a { color: white }
 
 .tag-search-input-container {
+    width: 100%;
     padding: 0.1em;
     position: relative;
     overflow: hidden;

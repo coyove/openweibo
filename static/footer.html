@@ -1,7 +1,19 @@
         </div>
     </div>
     <div id=footer>
-        NoteServer {{.UserDisplay}} {{.Elapsed}}ms <a href='/ns:root'>dashboard</a>
+        <a href='/ns:root'>NoteServer</a>
+        {{.Elapsed}}ms<br>
+        <a href='javascript:setSession()'>{{.UserDisplay}}</a>
+        <a href='javascript:setSession()'><span class=icon-pencil></span></a>
     </div>
+    <script>
+        function setSession() {
+            const cookie = prompt('请输入Cookie', '{{.UserSession}}');
+            if (cookie) {
+                document.cookie='session=' + cookie + '; Path=/; Expires=Thu, 01 Jan 2100 00:00:01 GMT;';
+                location.reload();
+            }
+        }
+    </script>
 </body>
 </html>

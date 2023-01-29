@@ -1,5 +1,11 @@
 {{template "header.html" .}}
-<title>记事编辑</title>
+
+{{if .T.readonly}}
+<title>记事快照</title>
+{{else}}
+<title>编辑 {{.T.note.Id}} {{safeHTML .T.note.Title}}</title>
+{{end}}
+
 <script src="/ns:static/assets/diff.js"></script>
 
 <style>
@@ -63,7 +69,7 @@ div.diff-row.ins{background:#ccffd8}
         <tr>
             <td colspan=2>
                 <div class='display wrapall' style='font-size:90%;color:#e91e63'
-                    >修改将会由创建者或管理员审核后生效，在此之前你可以驳回自己的修改或进一步编辑。</div>
+                    >修改将会由创建者或管理员审核后生效，在此之前你可以驳回自己的修改。</div>
             </td>
         </tr>
         {{end}}
@@ -119,21 +125,48 @@ div.diff-row.ins{background:#ccffd8}
         </tr>
         {{end}}
 
-        {{$parents := getFullParents .}}
-        {{if or $parents (not $.T.readonly)}}
-        <tr>
-            <td colspan=2>
-                <div class=display>
-                    <div id=parents
-                         {{if $.T.readonly}}readonly=readonly{{end}}
-                         max-tags={{$.GetParentsMax}}
-                         {{range $i, $t := $parents}}tag-data{{$i}}={{$t}} {{end}}
-                         class='tag-search-input-container'
-                         style='width:100%'></div>
-                </div>
-                <script>wrapTagSearchInput($('#parents').get(0))</script>
-            </td>
-        </tr>
+        {{$parents := getFullParents .ParentIds}}
+        {{$reviewParents := getFullParents .ReviewParentIds}}
+        {{$showParentsDiff := and (or .PendingReview .ShowDiff) (not (equ64s .ParentIds .ReviewParentIds))}}
+        {{if or $parents $showParentsDiff (not $.T.readonly)}}
+            {{if $showParentsDiff}}
+            <tr>
+                <td class=small>父记事</td>
+                <td>
+                    <div class=display>
+                        <div id=current-parents class='tag-search-input-container' readonly=readonly max-tags={{$.GetParentsMax}}
+                             {{range $i, $t := $parents}}tag-data{{$i}}={{$t}} {{end}}></div>
+                        <script>wrapTagSearchInput($('#current-parents').get(0))</script>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class=small><div class=icon-right-big></div></td>
+                <td>
+                    <div class=display>
+                        <div id=parents class='tag-search-input-container'
+                             {{if $.T.readonly}}readonly=readonly{{end}}
+                             max-tags={{$.GetParentsMax}}
+                             {{range $i, $t := $reviewParents}}tag-data{{$i}}={{$t}} {{end}}
+                        ></div>
+                        <script>wrapTagSearchInput($('#parents').get(0))</script>
+                    </div>
+                </td>
+            </tr>
+            {{else}}
+            <tr>
+                <td colspan=2>
+                    <div class=display>
+                        <div id=parents class='tag-search-input-container'
+                             {{if $.T.readonly}}readonly=readonly{{end}}
+                             max-tags={{$.GetParentsMax}}
+                             {{range $i, $t := $parents}}tag-data{{$i}}={{$t}} {{end}}
+                        ></div>
+                        <script>wrapTagSearchInput($('#parents').get(0))</script>
+                    </div>
+                </td>
+            </tr>
+            {{end}}
         {{end}}
 
         <tr><td class=small>编辑历史</td><td><div class=display><a href='/ns:history?note={{.Id}}&desc=1'>查看</a></div></td></tr>

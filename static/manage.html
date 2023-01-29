@@ -17,14 +17,17 @@
                 <div class=display>
                     <span style='flex-grow:1'>
                     {{if .T.query}}
+                        {{if .T.isUserPage}}
+                        <title>{{.T.viewUser}} 的记事</title>
+                        <span>{{.T.viewUser}} 的记事 ({{.T.total}})</span>
+                        {{else}}
                         <title>搜索 {{safeHTML .T.query}}</title>
-                        <span>
-                            搜索：<b class=wrapall>{{safeHTML .T.query}}</b> ({{.T.total}})
-                        </span>
+                        <span>搜索：<b class=wrapall>{{safeHTML .T.query}}</b> ({{.T.total}})</span>
+                        {{end}}
                     {{else}}
                         {{if .T.view}}
                             {{if ne .P.Page 1}}<b class=wrapall>{{.T.note.HTMLTitleDisplay}} </b>{{end}}子记事
-                        <a class='tag-edit-button icon-paper-plane' href='/ns:new?pt={{.T.note.Id}},{{.T.note.QueryTitle}}'></a>
+                            <a class='tag-edit-button icon-paper-plane' href='/ns:new?pt={{.T.note.Id}},{{.T.note.QueryTitle}}'></a>
                         {{else}}
                             <title>全部记事</title>
                             全部记事
@@ -73,13 +76,14 @@
                         </div>
                     {{end}}
                     <div class=image-display-info>
+                        {{$touched := and $.T.isUserPage (ne $.UserDisplay .Creator)}}
                         <div style='flex-grow:1'>
-                            {{$touched := and $.T.isUserPage (ne $.UserDisplay .Creator)}}
-                            <a href='/{{.EscapedTitle}}' {{if $touched}}zzz{{end}} class=tag-edit-name>{{makeTitle . 32 true}}</a>
+                            <a href='/{{.EscapedTitle}}' class=tag-edit-name>{{makeTitle . 32 true}}</a>
                         </div>
                         <div style='margin-top:0.25em' >
                             {{if .Lock}}<span class='icon-lock'></span>{{end}}
                             {{if .PendingReview}}<span class='icon-inbox' title='审核中'></span>{{end}}
+                            {{if $touched}}<span class='icon-heart' title='收藏的记事'></span>{{end}} 
                         </div>
                         <div class=image-display-bar onclick='location.href="/{{.EscapedTitle}}"'>
                             {{formatUnixMilliBR .UpdateUnix}}
@@ -109,9 +113,9 @@
             {{end}}
         {{end}}
     {{end}}
-    {{if and (eq .P.Sort 1) $gp}}
+    <!--{{if and (eq .P.Sort 1) $gp}}
         <a href='javascript:findLexPrefix()'><div style='margin-left: 0.2em' class='tag-edit-button icon-map-o'></div></a>
-    {{end}}
+    {{end}}-->
 </div>
 
 <script>
@@ -125,7 +129,7 @@
             {{end}}
             location.href="/ns:manage?q="+encodeURIComponent(filter + $("#search").val());
         }
-    }).val(decodeURIComponent('{{fullEscape .T.query}}'))
+    }).val(decodeURIComponent('{{fullEscape .T.query}}') + ' ')
     $(window).on('resize', function() {
         var current = -1, color = ['white', '#f7f8f9'], colorIdx = 0, colorIdx2 = 0;
         $('.image-display').each(function(_, id) {

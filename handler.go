@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
-	"net/url"
 	"sort"
 	"strconv"
 	"time"
@@ -29,7 +28,7 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 		return
 	}
 
-	if err := r.ParseMultipartForm(int64(*reqMaxSize) * 1e6); err != nil {
+	if err := r.ParseMultipartForm(types.Config.RequestMaxSize); err != nil {
 		if err == limiter.ErrRequestTooLarge {
 			writeJSON(w, "success", false, "code", "CONTENT_TOO_LARGE")
 		} else {
@@ -64,10 +63,23 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 		}
 
 		if action == "touch" {
-			dal.UpdateCreator(nil, r.UserDisplay, target)
-			ok = true
-		} else if action == "untouch" {
-			dal.DeleteCreator(nil, r.UserDisplay, target)
+			if r.UserDisplay == target.Creator {
+				writeJSON(w, "success", false, "code", "CANT_TOUCH_SELF")
+				return
+			}
+			if err := dal.Store.Update(func(tx *bbolt.Tx) error {
+				if dal.KSVExist(tx, "creator_"+r.UserDisplay, types.Uint64Bytes(target.Id)) {
+					dal.DeleteCreator(tx, r.UserDisplay, target)
+					target.TouchCount--
+				} else {
+					dal.UpdateCreator(tx, r.UserDisplay, target)
+					target.TouchCount++
+				}
+				return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
+			}); err != nil {
+				writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
+				return
+			}
 			ok = true
 		} else if action == "approve" {
 			ok = doApprove(target, w, r)
@@ -99,11 +111,13 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 		}
 	}
 	if ok {
-		if action != "touch" && action != "untouch" {
+		if action != "touch" {
 			go dal.AppendHistory(target.Id, r.UserDisplay, action, r.RemoteIPv4Masked(), target)
+			limiter.AddIP(r, 1)
+		} else {
+			limiter.AddIP(r, 5)
 		}
 		writeJSON(w, "success", true, "note", target)
-		limiter.AddIP(r)
 	}
 }
 
@@ -171,12 +185,8 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 	}
 
 	if target.PendingReview {
-		if target.Modifier == r.UserDisplay || target.Creator == r.UserDisplay || r.User.IsMod() {
-			// Creator, modifier and moderators can still update the content.
-		} else {
-			writeJSON(w, "success", false, "code", "PENDING_REVIEW")
-			return nil, false
-		}
+		writeJSON(w, "success", false, "code", "PENDING_REVIEW")
+		return nil, false
 	}
 
 	if target.Lock && !r.User.IsMod() {
@@ -186,21 +196,22 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 
 	var exist, shouldIndex, directUpdate bool
 	var oldContent, oldImage string
+	var oldParentIds []uint64
 	err = dal.Store.Update(func(tx *bbolt.Tx) error {
 		if ad.title != "" && ad.title != target.Title {
 			if _, exist = dal.KSVFirstKeyOfSort1(tx, dal.NoteBK, []byte(ad.title)); exist {
 				return nil
 			}
 		}
-		dal.ProcessParentChanges(tx, target, target.ParentIds, ad.parentIds)
 		if target.Creator == "bulk" {
 			target.Creator = r.UserDisplay
 		}
 		if r.User.IsMod() || r.UserDisplay == target.Creator {
+			dal.ProcessParentChanges(tx, target, target.ParentIds, ad.parentIds)
 			if len(ad.hash) > 0 {
 				shouldIndex = ad.title != target.Title || !types.EqualUint64(ad.parentIds, target.ParentIds)
 			}
-			oldContent, oldImage = target.Content, target.Image
+			oldContent, oldImage, oldParentIds = target.Content, target.Image, target.ParentIds
 			target.Title = ad.title
 			target.Content = ad.content
 			target.ParentIds = ad.parentIds
@@ -213,7 +224,7 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 			target.PendingReview = true
 			target.ReviewTitle = ad.title
 			target.ReviewContent = ad.content
-			target.ParentIds = ad.parentIds
+			target.ReviewParentIds = ad.parentIds
 			if ad.imageChanged {
 				target.ReviewImage = ad.image
 			} else {
@@ -230,20 +241,26 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 		writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
 		return nil, false
 	}
+
 	if exist {
 		writeJSON(w, "success", false, "code", "DUPLICATED_TITLE")
 		return nil, false
 	}
+
 	if shouldIndex {
 		dal.Store.Saver().AddAsync(bitmap.Uint64Key(id),
 			types.DedupUint64(append(ad.hash, ngram.StrHash(target.Creator))))
 	}
-	time.AfterFunc(time.Second*10, func() { dal.UploadS3(ad.image, imageThumbName(ad.image)) })
-	if directUpdate && (oldContent != target.Content || oldImage != target.Image) {
+
+	if directUpdate && (oldContent != target.Content ||
+		oldImage != target.Image || !types.EqualUint64(oldParentIds, target.ParentIds)) {
 		target.ShowDiff = true
 		target.ReviewContent, target.Content = target.Content, oldContent
 		target.ReviewImage, target.Image = target.Image, oldImage
+		target.ReviewParentIds, target.ParentIds = target.ParentIds, oldParentIds
 	}
+
+	time.AfterFunc(time.Second*10, func() { dal.UploadS3(ad.image, imageThumbName(ad.image)) })
 	return target, true
 }
 
@@ -264,22 +281,25 @@ func doApprove(target *types.Note, w http.ResponseWriter, r *types.Request) bool
 		return false
 	}
 
-	target.Title = target.ReviewTitle
-	target.Content = target.ReviewContent
-	target.Image = target.ReviewImage
-	target.Reviewer = r.UserDisplay
-	target.ClearReviewStatus()
-
 	var exist bool
 	if err := dal.Store.Update(func(tx *bbolt.Tx) error {
-		if target.Title != "" {
-			if key, found := dal.KSVFirstKeyOfSort1(tx, dal.NoteBK, []byte(target.Title)); found {
+		if tt := target.ReviewTitle; tt != "" {
+			if key, found := dal.KSVFirstKeyOfSort1(tx, dal.NoteBK, []byte(tt)); found {
 				if !bytes.Equal(key, idKey[:]) {
 					exist = true
 					return nil
 				}
 			}
 		}
+
+		dal.ProcessParentChanges(tx, target, target.ParentIds, target.ReviewParentIds)
+
+		target.Title = target.ReviewTitle
+		target.Content = target.ReviewContent
+		target.Image = target.ReviewImage
+		target.ParentIds = target.ReviewParentIds
+		target.Reviewer = r.UserDisplay
+		target.ClearReviewStatus()
 		dal.UpdateCreator(tx, target.Creator, target)
 		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
 	}); err != nil {
@@ -308,9 +328,6 @@ func doReject(target *types.Note, w http.ResponseWriter, r *types.Request) bool 
 	target.ClearReviewStatus()
 
 	if err := dal.Store.Update(func(tx *bbolt.Tx) error {
-		if target.Title == "" {
-			return dal.KSVDelete(tx, dal.NoteBK, types.Uint64Bytes(target.Id))
-		}
 		dal.UpdateCreator(tx, target.Creator, target)
 		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
 	}); err != nil {
@@ -470,12 +487,12 @@ func HandleView(t string, w http.ResponseWriter, r *types.Request) {
 	}
 
 	uq := r.ParsePaging()
-
-	if p := uq.Get("prefix"); p != "" {
-		page := dal.KSVPagingFindLexPrefix(fmt.Sprintf("children_%d", note.Id), []byte(p), r.P.Desc, r.P.PageSize)
-		http.Redirect(w, r.Request, fmt.Sprintf("/ns:id:%d?sort=1&desc=%v&p=%d", note.Id, r.P.Desc, page), 302)
-		return
-	}
+	_ = uq
+	// if p := uq.Get("prefix"); p != "" {
+	// 	page := dal.KSVPagingFindLexPrefix(fmt.Sprintf("children_%d", note.Id), []byte(p), r.P.Desc, r.P.PageSize)
+	// 	http.Redirect(w, r.Request, fmt.Sprintf("/ns:id:%d?sort=1&desc=%v&p=%d", note.Id, r.P.Desc, page), 302)
+	// 	return
+	// }
 
 	results, total, pages := dal.KSVPaging(nil, fmt.Sprintf("children_%d", note.Id), r.P.Sort, r.P.Desc, r.P.Page-1, r.P.PageSize)
 	children, _ := dal.BatchGetNotes(results)
@@ -495,10 +512,11 @@ func HandleView(t string, w http.ResponseWriter, r *types.Request) {
 	if note.Image != "" || note.Content != "" {
 		views, _ := dal.MetricsSetAdd(strconv.FormatUint(note.Id, 10), r.UserDisplay)
 		r.AddTemplateValue("noteViews", views)
+	} else {
+		r.AddTemplateValue("noteViews", 0)
 	}
 
-	touched, _ := dal.KSVExist(nil, "creator_"+r.UserDisplay, types.Uint64Bytes(note.Id))
-	r.AddTemplateValue("noteTouched", touched)
+	r.AddTemplateValue("noteTouched", dal.KSVExist(nil, "creator_"+r.UserDisplay, types.Uint64Bytes(note.Id)))
 	r.AddTemplateValue("note", note)
 	r.AddTemplateValue("parents", notes)
 	httpTemplates.ExecuteTemplate(w, "manage.html", r)
@@ -516,15 +534,16 @@ func HandleManage(w http.ResponseWriter, r *types.Request) {
 	if q != "" {
 		query, pids, uid := expandQuery(q)
 		if len(pids) == 0 && query == "" && uid != "" {
-			if p := uq.Get("prefix"); p != "" {
-				page := dal.KSVPagingFindLexPrefix("creator_"+uid, []byte(p), r.P.Desc, r.P.PageSize)
-				http.Redirect(w, r.Request, fmt.Sprintf("/ns:manage?sort=1&desc=%v&p=%d&q=%s", r.P.Desc, page, url.QueryEscape(q)), 302)
-				return
-			}
+			// if p := uq.Get("prefix"); p != "" {
+			// 	page := dal.KSVPagingFindLexPrefix("creator_"+uid, []byte(p), r.P.Desc, r.P.PageSize)
+			// 	http.Redirect(w, r.Request, fmt.Sprintf("/ns:manage?sort=1&desc=%v&p=%d&q=%s", r.P.Desc, page, url.QueryEscape(q)), 302)
+			// 	return
+			// }
 
 			results, total, pages = dal.KSVPaging(nil, "creator_"+uid, r.P.Sort, r.P.Desc, r.P.Page-1, r.P.PageSize)
 			notes, _ = dal.BatchGetNotes(results)
 			r.AddTemplateValue("isUserPage", true)
+			r.AddTemplateValue("viewUser", uid)
 		} else if len(pids) == 1 && pids[0] > 0 && uid == "" && query == "" {
 			http.Redirect(w, r.Request, "/ns:id:"+strconv.FormatUint(pids[0], 10), 302)
 			return
@@ -539,11 +558,11 @@ func HandleManage(w http.ResponseWriter, r *types.Request) {
 			})
 		}
 	} else {
-		if p := uq.Get("prefix"); p != "" {
-			page := dal.KSVPagingFindLexPrefix(dal.NoteBK, []byte(p), r.P.Desc, r.P.PageSize)
-			http.Redirect(w, r.Request, fmt.Sprintf("/ns:manage?sort=1&desc=%v&p=%d", r.P.Desc, page), 302)
-			return
-		}
+		// if p := uq.Get("prefix"); p != "" {
+		// 	page := dal.KSVPagingFindLexPrefix(dal.NoteBK, []byte(p), r.P.Desc, r.P.PageSize)
+		// 	http.Redirect(w, r.Request, fmt.Sprintf("/ns:manage?sort=1&desc=%v&p=%d", r.P.Desc, page), 302)
+		// 	return
+		// }
 
 		results, total, pages = dal.KSVPaging(nil, dal.NoteBK, r.P.Sort, r.P.Desc, r.P.Page-1, r.P.PageSize)
 		notes = make([]*types.Note, len(results))

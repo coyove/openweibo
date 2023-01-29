@@ -237,7 +237,9 @@ function ajaxBtn(el, action, args, f) {
         headers: { 'X-Ns-Action': action },
         success: function(data){
             if (!data.success) {
-                alert('发生错误: ' + data.msg + ' (' + data.code + ')');
+                data.code == "COOLDOWN" ?
+                    alert('操作频繁，请在 ' + data.remains + ' 秒后重试') :
+                    alert('发生错误: ' + data.msg + ' (' + data.code + ')');
                 return;
             }
             f ? f(data, args) : location.reload();

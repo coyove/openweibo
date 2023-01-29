@@ -66,7 +66,7 @@
     const searchParams = new URLSearchParams(window.location.search)
     const pre = searchParams.get('pt');
     const title = searchParams.get('title');
-    const ps = $("<div max-tags={{.GetParentsMax}} id=parents class='tag-search-input-container' style='width:100%'></div>");
+    const ps = $("<div max-tags={{.GetParentsMax}} id=parents class='tag-search-input-container'></div>");
 
     pre && ps.attr('tag-data0', pre);
     title && $('#name').val(title.substr(0, {{.GetTitleMaxLen}}));
