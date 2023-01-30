@@ -199,7 +199,13 @@ func serve(pattern string, f func(http.ResponseWriter, *types.Request)) {
 
 		f(w, req)
 
-		if el := (clock.UnixNano() - now) / 1e3; strings.HasPrefix(r.URL.Path, "/ns:") {
+		if el := (clock.UnixNano() - now) / 1e3; r.URL.Path == "/ns:history" ||
+			r.URL.Path == "/ns:new" ||
+			r.URL.Path == "/ns:edit" ||
+			r.URL.Path == "/ns:metrics" ||
+			r.URL.Path == "/ns:search" ||
+			r.URL.Path == "/ns:action" ||
+			r.URL.Path == "/ns:manage" {
 			dal.MetricsIncr(r.URL.Path[1:], float64(el))
 		} else {
 			dal.MetricsIncr("ns:view", float64(el))
