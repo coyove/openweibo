@@ -1,10 +1,8 @@
 package dal
 
 import (
-	"bytes"
 	"encoding/binary"
 	"os"
-	"strconv"
 	"sync"
 	"time"
 
@@ -69,10 +67,10 @@ func startMetricsBackup() {
 	}
 	time.AfterFunc(sleep, do)
 
-	var worker func()
-	worker = func() {
+	var worker func(int)
+	worker = func(c int) {
 		defer func() {
-			time.AfterFunc(time.Second, worker)
+			time.AfterFunc(time.Second, func() { worker(c + 1) })
 		}()
 		if Metrics.DB == nil {
 			return
@@ -80,8 +78,26 @@ func startMetricsBackup() {
 		if len(Metrics.pending) > 0 {
 			batchMetricsIncr()
 		}
+		if c%10 == 0 {
+			stats := Metrics.Stats()
+			Metrics.pending <- metricsPair{"dbacc:metrics:freepage", float64(stats.FreePageN)}
+			Metrics.pending <- metricsPair{"dbacc:metrics:freealloc", float64(stats.FreeAlloc)}
+			Metrics.pending <- metricsPair{"dbacc:metrics:freelistsize", float64(stats.FreelistInuse)}
+
+			stats = Store.Stats()
+			Metrics.pending <- metricsPair{"dbacc:data:freepage", float64(stats.FreePageN)}
+			Metrics.pending <- metricsPair{"dbacc:data:freealloc", float64(stats.FreeAlloc)}
+			Metrics.pending <- metricsPair{"dbacc:data:freelistsize", float64(stats.FreelistInuse)}
+		}
 	}
-	worker()
+	worker(0)
+}
+
+func metricsMakeKey(ns string, typ string, delta int64) []byte {
+	x := append([]byte(ns), typ...)
+	x = append(x, 0, 0, 0, 0)
+	binary.BigEndian.PutUint32(x[len(x)-4:], uint32(delta))
+	return x
 }
 
 func MetricsSetAdd(set string, key string) (count int64, err error) {
@@ -155,6 +171,7 @@ func batchMetricsIncr() {
 		if err != nil {
 			return err
 		}
+		bk.FillPercent = 0.9
 
 		round := 0
 	MORE:
@@ -162,19 +179,19 @@ func batchMetricsIncr() {
 		case in := <-Metrics.pending:
 			delta := clock.Unix() / MetricsDelta
 			ns, value := in.ns, in.value
-			kb := strconv.AppendInt(append([]byte(ns), "_acc_"...), delta, 10)
+			kb := metricsMakeKey(ns, "_sum", delta)
 			old := types.BytesFloat64(bk.Get(kb))
 			if err := bk.Put(kb, types.Float64Bytes(old+value)); err != nil {
 				return err
 			}
 
-			kb = strconv.AppendInt(append([]byte(ns), "_ctr_"...), delta, 10)
+			kb = metricsMakeKey(ns, "_ctr", delta)
 			oldCtr := types.BytesUint64(bk.Get(kb))
 			if err := bk.Put(kb, types.Uint64Bytes(oldCtr+1)); err != nil {
 				return err
 			}
 
-			kb = strconv.AppendInt(append([]byte(ns), "_max_"...), delta, 10)
+			kb = metricsMakeKey(ns, "_max", delta)
 			oldBuf := bk.Get(kb)
 			if value > types.BytesFloat64(oldBuf) || len(oldBuf) == 0 {
 				if err := bk.Put(kb, types.Float64Bytes(value)); err != nil {
@@ -199,6 +216,7 @@ type MetricsIndex struct {
 	Sum   float64
 	Max   float64
 	Avg   float64
+	DAvg  float64
 	Count uint64
 }
 
@@ -210,14 +228,9 @@ func MetricsRange(ns string, start, end int64) (res []MetricsIndex) {
 		}
 
 		for i := start; i <= end; i++ {
-			k := append([]byte(ns), "_acc_"...)
-			total := types.BytesFloat64(bk.Get(strconv.AppendInt(k, i, 10)))
-
-			c := append([]byte(ns), "_ctr_"...)
-			num := types.BytesUint64(bk.Get(strconv.AppendInt(c, i, 10)))
-
-			m := append([]byte(ns), "_max_"...)
-			mx := types.BytesFloat64(bk.Get(strconv.AppendInt(m, i, 10)))
+			total := types.BytesFloat64(bk.Get(metricsMakeKey(ns, "_sum", i)))
+			num := types.BytesUint64(bk.Get(metricsMakeKey(ns, "_ctr", i)))
+			mx := types.BytesFloat64(bk.Get(metricsMakeKey(ns, "_max", i)))
 
 			avg := total / float64(num)
 			if num == 0 {
@@ -236,6 +249,16 @@ func MetricsRange(ns string, start, end int64) (res []MetricsIndex) {
 	return
 }
 
+func MetricsCalcAccDAvg(in []MetricsIndex) []MetricsIndex {
+	for i := 1; i < len(in); i++ {
+		if in[i].Count == 0 {
+			in[i].Avg = in[i-1].Avg
+		}
+		in[i].DAvg = (in[i].Avg - in[i-1].Avg) / float64(in[i].Index-in[i-1].Index)
+	}
+	return in
+}
+
 func MetricsListNamespaces() (ns []string) {
 	Metrics.View(func(tx *bbolt.Tx) error {
 		bk := tx.Bucket([]byte("metrics"))
@@ -247,13 +270,8 @@ func MetricsListNamespaces() (ns []string) {
 		k, _ := c.First()
 
 		for len(k) > 0 {
-			idx := bytes.LastIndexByte(k, '_')
-			k = k[:idx]
-			idx = bytes.LastIndexByte(k, '_')
-			k = k[:idx]
-
+			k = k[:len(k)-8]
 			ns = append(ns, string(k))
-
 			k, _ = c.Seek(append(append([]byte{}, k...), 0xff))
 		}
 		return nil

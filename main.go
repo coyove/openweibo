@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"flag"
@@ -10,6 +11,8 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
+	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/coyove/iis/dal"
@@ -33,7 +36,7 @@ func main() {
 	rand.Seed(clock.Unix())
 	serverStart = clock.Now()
 
-	logrus.SetFormatter(&LogFormatter{})
+	logrus.SetFormatter(&logFormatter{})
 	logrus.SetOutput(io.MultiWriter(os.Stdout, &lumberjack.Logger{
 		Filename:   "data/ns.log",
 		MaxSize:    100,
@@ -92,25 +95,21 @@ func main() {
 		return
 	}
 
-	serve("/", HandleIndex)
+	serve("/", HandleView)
 	serve("/ns:new", HandleNew)
 	serve("/ns:edit", HandleEdit)
 	serve("/ns:search", HandleTagSearch)
 	serve("/ns:manage", HandleManage)
-	serve("/ns:action", HandleTagAction)
+	serve("/ns:action", HandleAction)
 	serve("/ns:history", HandleHistory)
 	serve("/ns:root", HandleRoot)
 	serve("/ns:metrics", HandleMetrics)
 
+	http.Handle("/ns:"+rootUUID+"/debug/pprof/", http.StripPrefix("/ns:"+rootUUID, http.HandlerFunc(pprof.Index)))
 	http.HandleFunc("/ns:"+rootUUID+"/dump", func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		fmt.Fprintf(w, "%v in %v", dump(), time.Since(start))
 	})
-	http.Handle("/ns:"+rootUUID+"/debug/pprof/", http.StripPrefix("/ns:"+rootUUID, http.HandlerFunc(pprof.Index)))
-
-	logrus.Info("debug pprof page: /ns:", rootUUID, "/debug/pprof/")
-	logrus.Info("dumper:           /ns:", rootUUID, "/dump")
-
 	http.HandleFunc("/ns:static/", HandleAssets)
 	http.HandleFunc("/ns:image/", HandleImage)
 	http.HandleFunc("/ns:thumb/", HandleImage)
@@ -155,4 +154,28 @@ func main() {
 		logrus.Infof("start serving HTTP %s, pid=%d, ServeUUID=%s", *listen, os.Getpid(), serveUUID)
 		logrus.Fatal(http.ListenAndServe(*listen, nil))
 	}
+}
+
+type logFormatter struct{}
+
+func (f *logFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+	buf := bytes.Buffer{}
+	if entry.Level <= logrus.ErrorLevel {
+		buf.WriteString("ERR")
+	} else {
+		buf.WriteString("INFO")
+	}
+	buf.WriteString("\t")
+	buf.WriteString(entry.Time.UTC().Format("2006-01-02T15:04:05.000\t"))
+	if entry.Caller == nil {
+		buf.WriteString("internal")
+	} else {
+		buf.WriteString(filepath.Base(entry.Caller.File))
+		buf.WriteString(":")
+		buf.WriteString(strconv.Itoa(entry.Caller.Line))
+	}
+	buf.WriteString("\t")
+	buf.WriteString(entry.Message)
+	buf.WriteByte('\n')
+	return buf.Bytes(), nil
 }

@@ -37,10 +37,15 @@ body { min-width: 1000px}
         var data = M[ns];
         const latChart = document.getElementById('lat');
         latChart.innerHTML = '';
-            if (!data) data = [{"Index": {{.T.start}}000}];
+        if (!data) {
+            data = [{"Index": {{.T.start}}000}];
+        } else {
+            window.history.replaceState({}, "", "?src=" + ns);
+        }
 
         const showQPS = ['s3upload', 'create'].includes(ns);
-        const showBPS = ['upload', 'image', 's3download'].includes(ns);
+        const showBPS = ['ns:outbound', 'upload', 'image', 's3download'].includes(ns);
+        const dbAcc = ns.startsWith('dbacc:');
         const opts = {
             id: "chart1",
             title: ns,
@@ -71,12 +76,16 @@ body { min-width: 1000px}
                 stroke: "hsla(240, 50%, 47%, 1)",
                 fill: "hsla(240, 50%, 47%, 0.3)",
             }],
+                axes: [{}, {size: 75}],
         };
 
         var payload = [[], [], [], []];
         data.forEach(function(i) {
             payload[0].push(i.Index);
-            if (showBPS) {
+            if (dbAcc) {
+                payload[1].push(i.DAvg);
+                payload[2].push(i.Avg);
+            } else if (showBPS) {
                 payload[1].push(i.Sum / 300);
                 payload[2].push(i.Max);
             } else {
@@ -86,16 +95,23 @@ body { min-width: 1000px}
             payload[3].push(i.Count / 300);
         });
 
+        if (dbAcc) {
+            opts.series = opts.series.slice(0, 3);
+            opts.series[1].label = '增速 (DAvg)';
+            opts.series[2].label = '累计 (Avg)';
+            payload = payload.slice(0, 3);
+        }
+
         if (showQPS) {
-            opts.series = [{}, opts.series[3]];
+            opts.series = [opts.series[0], opts.series[3]];
             payload = [payload[0], payload[3]];
         }
 
-        new uPlot(opts, payload, latChart)
+        console.log(new uPlot(opts, payload, latChart).bbox);
     }
 
-    show('');
     window.onresize = function(){ show('') }
+    show(new URLSearchParams(window.location.search).get('src') || '');
 </script>
 
 {{template "footer.html" .}}

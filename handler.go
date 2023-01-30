@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/coyove/iis/dal"
@@ -18,22 +19,22 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-func HandleTagAction(w http.ResponseWriter, r *types.Request) {
+func HandleAction(w *types.Response, r *types.Request) {
 	if ok, remains := limiter.CheckIP(r); !ok {
 		if remains == -1 {
-			writeJSON(w, "success", false, "code", "IP_BANNED")
+			w.WriteJSON("success", false, "code", "IP_BANNED")
 		} else {
-			writeJSON(w, "success", false, "code", "COOLDOWN", "remains", remains)
+			w.WriteJSON("success", false, "code", "COOLDOWN", "remains", remains)
 		}
 		return
 	}
 
 	if err := r.ParseMultipartForm(types.Config.RequestMaxSize); err != nil {
 		if err == limiter.ErrRequestTooLarge {
-			writeJSON(w, "success", false, "code", "CONTENT_TOO_LARGE")
+			w.WriteJSON("success", false, "code", "CONTENT_TOO_LARGE")
 		} else {
 			logrus.Errorf("failed to parse multipart: %v", err)
-			writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
+			w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
 		}
 		return
 	}
@@ -58,13 +59,13 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 		target, err = dal.GetNote(id)
 		if !target.Valid() || err != nil {
 			logrus.Errorf("action %q, can't find %d: %v", action, id, err)
-			writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
+			w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
 			return
 		}
 
 		if action == "touch" {
 			if r.UserDisplay == target.Creator {
-				writeJSON(w, "success", false, "code", "CANT_TOUCH_SELF")
+				w.WriteJSON("success", false, "code", "CANT_TOUCH_SELF")
 				return
 			}
 			if err := dal.Store.Update(func(tx *bbolt.Tx) error {
@@ -77,7 +78,7 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 				}
 				return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
 			}); err != nil {
-				writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
+				w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
 				return
 			}
 			ok = true
@@ -87,7 +88,7 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 			ok = doReject(target, w, r)
 		} else if action == "delete" || action == "Lock" || action == "Unlock" {
 			if !r.User.IsMod() {
-				writeJSON(w, "success", false, "code", "MODS_REQUIRED")
+				w.WriteJSON("success", false, "code", "MODS_REQUIRED")
 				return
 			}
 			if err := dal.Store.Update(func(tx *bbolt.Tx) error {
@@ -101,12 +102,12 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 				return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
 			}); err != nil {
 				logrus.Errorf("mod %s %d: %v", action, id, err)
-				writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
+				w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
 				return
 			}
 			ok = true
 		} else {
-			writeJSON(w, "success", false, "code", "INVALID_ACTION")
+			w.WriteJSON("success", false, "code", "INVALID_ACTION")
 			return
 		}
 	}
@@ -119,11 +120,11 @@ func HandleTagAction(w http.ResponseWriter, r *types.Request) {
 		} else {
 			limiter.AddIP(r, 5)
 		}
-		writeJSON(w, "success", true, "note", target)
+		w.WriteJSON("success", true, "note", target)
 	}
 }
 
-func doCreate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
+func doCreate(w *types.Response, r *types.Request) (*types.Note, bool) {
 	id := clock.Id()
 	ad, msg := getActionData(id, r)
 
@@ -132,7 +133,7 @@ func doCreate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 	}(time.Now())
 
 	if msg != "" {
-		writeJSON(w, "success", false, "code", msg)
+		w.WriteJSON("success", false, "code", msg)
 		return nil, false
 	}
 
@@ -147,11 +148,11 @@ func doCreate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 	exist, err := dal.CreateNote(ad.title, target)
 	if err != nil {
 		logrus.Errorf("create %d: %v", id, err)
-		writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
+		w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
 		return nil, false
 	}
 	if exist {
-		writeJSON(w, "success", false, "code", "DUPLICATED_TITLE")
+		w.WriteJSON("success", false, "code", "DUPLICATED_TITLE")
 		return nil, false
 	}
 
@@ -163,7 +164,7 @@ func doCreate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 	return target, true
 }
 
-func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
+func doUpdate(w *types.Response, r *types.Request) (*types.Note, bool) {
 	id, _ := strconv.ParseUint(r.Form.Get("id"), 10, 64)
 
 	ad, msg := getActionData(id, r)
@@ -172,7 +173,7 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 	}(time.Now())
 
 	if msg != "" {
-		writeJSON(w, "success", false, "code", msg)
+		w.WriteJSON("success", false, "code", msg)
 		return nil, false
 	}
 
@@ -182,17 +183,17 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 	target, err := dal.GetNote(id)
 	if !target.Valid() || err != nil {
 		logrus.Errorf("update can't load note %d: %v", id, err)
-		writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
+		w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
 		return nil, false
 	}
 
 	if target.PendingReview {
-		writeJSON(w, "success", false, "code", "PENDING_REVIEW")
+		w.WriteJSON("success", false, "code", "PENDING_REVIEW")
 		return nil, false
 	}
 
 	if target.Lock && !r.User.IsMod() {
-		writeJSON(w, "success", false, "code", "LOCKED")
+		w.WriteJSON("success", false, "code", "LOCKED")
 		return nil, false
 	}
 
@@ -212,7 +213,7 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 	target.UpdateUnix = clock.UnixMilli()
 
 	if target.ReviewDataNotChanged() {
-		writeJSON(w, "success", false, "code", "DATA_NO_CHANGE")
+		w.WriteJSON("success", false, "code", "DATA_NO_CHANGE")
 		return nil, false
 	}
 
@@ -221,7 +222,7 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
 	}); err != nil {
 		logrus.Errorf("update %d: %v", id, err)
-		writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
+		w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
 		return nil, false
 	}
 
@@ -236,7 +237,7 @@ func doUpdate(w http.ResponseWriter, r *types.Request) (*types.Note, bool) {
 	return target, true
 }
 
-func doApprove(target *types.Note, direct bool, w http.ResponseWriter, r *types.Request) bool {
+func doApprove(target *types.Note, direct bool, w *types.Response, r *types.Request) bool {
 	idKey := types.Uint64Bytes(target.Id)
 
 	defer func(start time.Time) {
@@ -244,12 +245,12 @@ func doApprove(target *types.Note, direct bool, w http.ResponseWriter, r *types.
 	}(time.Now())
 
 	if !target.PendingReview {
-		writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
+		w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
 		return false
 	}
 
 	if !r.User.IsMod() && target.Creator != r.UserDisplay {
-		writeJSON(w, "success", false, "code", "ILLEGAL_APPROVE")
+		w.WriteJSON("success", false, "code", "ILLEGAL_APPROVE")
 		return false
 	}
 
@@ -276,11 +277,11 @@ func doApprove(target *types.Note, direct bool, w http.ResponseWriter, r *types.
 		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
 	}); err != nil {
 		logrus.Errorf("approve %d: %v", target.Id, err)
-		writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
+		w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
 		return false
 	}
 	if exist {
-		writeJSON(w, "success", false, "code", "DUPLICATED_TITLE")
+		w.WriteJSON("success", false, "code", "DUPLICATED_TITLE")
 		return false
 	}
 	h := buildBitmapHashes(target.Title, target.Creator, target.ParentIds)
@@ -288,13 +289,13 @@ func doApprove(target *types.Note, direct bool, w http.ResponseWriter, r *types.
 	return true
 }
 
-func doReject(target *types.Note, w http.ResponseWriter, r *types.Request) bool {
+func doReject(target *types.Note, w *types.Response, r *types.Request) bool {
 	if !target.PendingReview {
-		writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
+		w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
 		return false
 	}
 	if !r.User.IsMod() && target.Creator != r.UserDisplay && target.Modifier != r.UserDisplay {
-		writeJSON(w, "success", false, "code", "ILLEGAL_APPROVE")
+		w.WriteJSON("success", false, "code", "ILLEGAL_APPROVE")
 		return false
 	}
 	target.ClearReviewStatus()
@@ -303,13 +304,13 @@ func doReject(target *types.Note, w http.ResponseWriter, r *types.Request) bool 
 		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
 	}); err != nil {
 		logrus.Errorf("reject %d: %v", target.Id, err)
-		writeJSON(w, "success", false, "code", "INTERNAL_ERROR")
+		w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
 		return false
 	}
 	return true
 }
 
-func HandleHistory(w http.ResponseWriter, r *types.Request) {
+func HandleHistory(w *types.Response, r *types.Request) {
 	uq := r.ParsePaging()
 
 	view := "all"
@@ -367,7 +368,7 @@ func HandleHistory(w http.ResponseWriter, r *types.Request) {
 	httpTemplates.ExecuteTemplate(w, "history.html", r)
 }
 
-func HandleTagSearch(w http.ResponseWriter, r *types.Request) {
+func HandleTagSearch(w *types.Response, r *types.Request) {
 	start, uq := time.Now(), r.URL.Query()
 	q := types.UTF16Trunc(uq.Get("q"), 50)
 	n, _ := strconv.Atoi(uq.Get("n"))
@@ -404,7 +405,7 @@ func HandleTagSearch(w http.ResponseWriter, r *types.Request) {
 		return len(results) < n
 	})
 	diff := time.Since(start)
-	writeJSON(w,
+	w.WriteJSON(
 		"success", true,
 		"notes", results,
 		"elapsed", diff.Milliseconds(),
@@ -414,11 +415,11 @@ func HandleTagSearch(w http.ResponseWriter, r *types.Request) {
 	)
 }
 
-func HandleNew(w http.ResponseWriter, r *types.Request) {
+func HandleNew(w *types.Response, r *types.Request) {
 	httpTemplates.ExecuteTemplate(w, "new.html", r)
 }
 
-func HandleEdit(w http.ResponseWriter, r *types.Request) {
+func HandleEdit(w *types.Response, r *types.Request) {
 	var note *types.Note
 	var readonly bool
 	var recordUnix int64
@@ -445,7 +446,12 @@ func HandleEdit(w http.ResponseWriter, r *types.Request) {
 	httpTemplates.ExecuteTemplate(w, "edit.html", r)
 }
 
-func HandleView(t string, w http.ResponseWriter, r *types.Request) {
+func HandleView(w *types.Response, r *types.Request) {
+	t := strings.TrimPrefix(r.URL.Path, "/")
+	if t == "" {
+		t = "ns:welcome"
+	}
+
 	note, _ := dal.GetNoteByName(t)
 	if !note.Valid() {
 		http.Redirect(w, r.Request, "/ns:manage?q="+types.FullEscape(t), 302)
@@ -493,7 +499,7 @@ func HandleView(t string, w http.ResponseWriter, r *types.Request) {
 	httpTemplates.ExecuteTemplate(w, "manage.html", r)
 }
 
-func HandleManage(w http.ResponseWriter, r *types.Request) {
+func HandleManage(w *types.Response, r *types.Request) {
 	uq := r.ParsePaging()
 	q := types.CleanTitle(uq.Get("q"))
 	r.AddTemplateValue("query", q)
@@ -527,6 +533,7 @@ func HandleManage(w http.ResponseWriter, r *types.Request) {
 				notes = append(notes, t)
 				return len(notes) < 500
 			})
+			r.AddTemplateValue("isSearchPage", true)
 		}
 	} else {
 		// if p := uq.Get("prefix"); p != "" {

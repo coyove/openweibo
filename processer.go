@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"embed"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"path/filepath"
@@ -119,36 +118,7 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 var serveUUID = types.UUIDStr()
 var rootUUID = types.UUIDStr()
 
-var errorMessages = map[string]string{
-	"INTERNAL_ERROR":     "服务器错误",
-	"IP_BANNED":          "IP封禁",
-	"MODS_REQUIRED":      "无管理员权限",
-	"PENDING_REVIEW":     "修改审核中",
-	"LOCKED":             "记事已锁定",
-	"INVALID_CONTENT":    "无效内容，过长或过短",
-	"EMPTY_TITLE":        "标题为空，请输入标题或者选择一篇父记事",
-	"TITLE_TOO_LONG":     "标题过长",
-	"CONTENT_TOO_LONG":   "内容过长",
-	"TOO_MANY_PARENTS":   "父记事过多，最多8个",
-	"DUPLICATED_TITLE":   "标题重名",
-	"ILLEGAL_APPROVE":    "无权审核",
-	"INVALID_ACTION":     "请求错误",
-	"INVALID_IMAGE_NAME": "无效图片名",
-	"INVALID_IMAGE":      "无效图片",
-	"INVALID_PARENT":     "无效父记事",
-	"CONTENT_TOO_LARGE":  "图片过大",
-	"COOLDOWN":           "请稍后重试",
-	"CANT_TOUCH_SELF":    "无法收藏自己的记事",
-	"DATA_NO_CHANGE":     "请编辑记事",
-}
-
-func HandleIndex(w http.ResponseWriter, r *types.Request) {
-	if r.URL.Path == "/" {
-		HandleView("ns:welcome", w, r)
-	} else {
-		HandleView(strings.TrimPrefix(r.URL.Path, "/"), w, r)
-	}
-}
+var servedPaths = map[string]bool{}
 
 func HandleAssets(w http.ResponseWriter, r *http.Request) {
 	p := strings.TrimPrefix(r.URL.Path, "/ns:")
@@ -169,7 +139,8 @@ func HandleAssets(w http.ResponseWriter, r *http.Request) {
 	w.Write(buf)
 }
 
-func serve(pattern string, f func(http.ResponseWriter, *types.Request)) {
+func serve(pattern string, f func(*types.Response, *types.Request)) {
+	servedPaths[pattern] = true
 	h := gziphandler.GzipHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		url := r.URL
 		now := clock.UnixNano()
@@ -188,6 +159,8 @@ func serve(pattern string, f func(http.ResponseWriter, *types.Request)) {
 			ServeUUID:   serveUUID,
 		}
 
+		resp := &types.Response{ResponseWriter: w}
+
 		if s, created := req.ParseSession(); created {
 			http.SetCookie(w, &http.Cookie{
 				Name:   "session",
@@ -197,35 +170,16 @@ func serve(pattern string, f func(http.ResponseWriter, *types.Request)) {
 			})
 		}
 
-		f(w, req)
+		f(resp, req)
 
-		if el := (clock.UnixNano() - now) / 1e3; r.URL.Path == "/ns:history" ||
-			r.URL.Path == "/ns:new" ||
-			r.URL.Path == "/ns:edit" ||
-			r.URL.Path == "/ns:metrics" ||
-			r.URL.Path == "/ns:search" ||
-			r.URL.Path == "/ns:action" ||
-			r.URL.Path == "/ns:manage" {
+		if el := (clock.UnixNano() - now) / 1e3; r.URL.Path != "/" && servedPaths[r.URL.Path] {
 			dal.MetricsIncr(r.URL.Path[1:], float64(el))
 		} else {
 			dal.MetricsIncr("ns:view", float64(el))
 		}
+		dal.MetricsIncr("ns:outbound", float64(resp.Written))
 	}))
 	http.Handle(pattern, h)
-}
-
-func writeJSON(w http.ResponseWriter, args ...interface{}) {
-	m := map[string]interface{}{}
-	for i := 0; i < len(args); i += 2 {
-		k, v := args[i].(string), args[i+1]
-		if k == "code" {
-			m["msg"] = errorMessages[v.(string)]
-		}
-		m[k] = v
-	}
-	buf, _ := json.Marshal(m)
-	w.Header().Add("Content-Type", "application/json")
-	w.Write(buf)
 }
 
 type actionData struct {
