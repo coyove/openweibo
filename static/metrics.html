@@ -10,7 +10,7 @@ body { min-width: 1000px}
 .u-inline tr { margin: 0 !important; background: transparent !important }
 .u-legend th > * { white-space: nowrap }
 </style>
-
+<title>指标浏览</title>
 
 <table>
     <tr>
@@ -30,7 +30,7 @@ body { min-width: 1000px}
     </tr>
 </table>
 
-<script src='https://cdn.jsdelivr.net/npm/uplot@1.6.7/dist/uPlot.iife.min.js'></script>
+<script src='/ns:static/assets/uPlot.iife.min.js'></script>
 <script>
     const M = ({{.T.metrics}});
     function show(ns) {
@@ -40,32 +40,33 @@ body { min-width: 1000px}
             if (!data) data = [{"Index": {{.T.start}}000}];
 
         const showQPS = ['s3upload', 'create'].includes(ns);
+        const showBPS = ['upload', 'image', 's3download'].includes(ns);
         const opts = {
             id: "chart1",
             title: ns,
             width: latChart.getBoundingClientRect().width - 1,
             height: 400,
-            series: [{}, {
-                show: !showQPS,
+            series: [{
+                label: '时间',
+                value: (self, rawValue) => new Date(rawValue * 1000).toLocaleString(),
+            }, {
+                show: true,
                 spanGaps: false,
-                label: '平均时延 (ms)',
-                width: 1,
+                label: showBPS ? '平均流量 (byte/s)' : '平均时延 (ms)',
                 value: (self, rawValue) => rawValue.toFixed(3),
                 stroke: "hsla(110, 50%, 47%, 1)",
                 fill: "hsla(110, 50%, 47%, 0.3)",
             }, {
-                show: !showQPS,
+                show: !showBPS,
                 spanGaps: false,
-                label: '最大时延 (ms)',
-                width: 1,
+                label: showBPS ? '最大流量 (byte)' : '最大时延 (ms)',
                 value: (self, rawValue) => rawValue.toFixed(3),
                 stroke: "hsla(180, 50%, 47%, 1)",
                 fill: "hsla(180, 50%, 47%, 0.3)",
             }, {
-                show: true, 
+                show: !showBPS, 
                 spanGaps: false,
                 label: 'QPS',
-                width: 1,
                 value: (self, rawValue) => rawValue.toFixed(3),
                 stroke: "hsla(240, 50%, 47%, 1)",
                 fill: "hsla(240, 50%, 47%, 0.3)",
@@ -75,8 +76,13 @@ body { min-width: 1000px}
         var payload = [[], [], [], []];
         data.forEach(function(i) {
             payload[0].push(i.Index);
-            payload[1].push(i.Avg / 1000);
-            payload[2].push(i.Max / 1000);
+            if (showBPS) {
+                payload[1].push(i.Sum / 300);
+                payload[2].push(i.Max);
+            } else {
+                payload[1].push(i.Avg / 1000);
+                payload[2].push(i.Max / 1000);
+            }
             payload[3].push(i.Count / 300);
         });
 
@@ -89,6 +95,7 @@ body { min-width: 1000px}
     }
 
     show('');
+    window.onresize = function(){ show('') }
 </script>
 
 {{template "footer.html" .}}

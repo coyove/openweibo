@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/coyove/iis/types"
-	"github.com/coyove/sdss/contrib/clock"
 	"github.com/sirupsen/logrus"
 )
 
@@ -55,7 +54,7 @@ func imageS3Loader(key, saveTo string) error {
 		defer out.Close()
 
 		n, err := io.Copy(out, resp.Body)
-		MetricsIncr("s3download", clock.Unix()/300, float64(n))
+		MetricsIncr("s3download", float64(n))
 		return err
 	}()
 	logrus.Infof("load S3 image: %s: %v in %v", key, err, time.Since(start))
@@ -86,7 +85,7 @@ func UploadS3(files ...string) (lastErr error) {
 			})
 			in.Close()
 			if err == nil {
-				MetricsIncr("s3upload", clock.Unix()/300, 1)
+				MetricsIncr("s3upload", 1)
 				err = os.Remove(file)
 			}
 			return err

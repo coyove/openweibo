@@ -9,14 +9,23 @@ import (
 	"time"
 
 	"github.com/coyove/iis/types"
+	"github.com/coyove/sdss/contrib/clock"
 	"github.com/coyove/sdss/contrib/ngram"
 	"github.com/sirupsen/logrus"
 	"go.etcd.io/bbolt"
 )
 
+const MetricsDelta = 300
+
+type metricsPair struct {
+	ns    string
+	value float64
+}
+
 var Metrics struct {
 	sync.RWMutex
 	*bbolt.DB
+	pending chan metricsPair
 }
 
 var metricsDBOptions = &bbolt.Options{
@@ -25,6 +34,7 @@ var metricsDBOptions = &bbolt.Options{
 }
 
 func startMetricsBackup() {
+	Metrics.pending = make(chan metricsPair, 10000)
 	sleep := time.Hour * 6
 	// if os.Getenv("DEBUG") == "1" {
 	// 	sleep = time.Second * 5
@@ -58,6 +68,20 @@ func startMetricsBackup() {
 		logrus.Infof("[Metrics] backup metrics data in %v", time.Since(start))
 	}
 	time.AfterFunc(sleep, do)
+
+	var worker func()
+	worker = func() {
+		defer func() {
+			time.AfterFunc(time.Second, worker)
+		}()
+		if Metrics.DB == nil {
+			return
+		}
+		if len(Metrics.pending) > 0 {
+			batchMetricsIncr()
+		}
+	}
+	worker()
 }
 
 func MetricsSetAdd(set string, key string) (count int64, err error) {
@@ -123,48 +147,51 @@ func MetricsSetCount(set string) (count int64) {
 	return
 }
 
-func MetricsIncr(ns string, delta int64, value float64) (new float64, err error) {
-	err = Metrics.Update(func(tx *bbolt.Tx) error {
+func MetricsIncr(ns string, value float64) { Metrics.pending <- metricsPair{ns, value} }
+
+func batchMetricsIncr() {
+	err := Metrics.Update(func(tx *bbolt.Tx) error {
 		bk, err := tx.CreateBucketIfNotExists([]byte("metrics"))
 		if err != nil {
 			return err
 		}
 
-		kb := strconv.AppendInt(append([]byte(ns), "_acc_"...), delta, 10)
-		old := types.BytesFloat64(bk.Get(kb))
+		round := 0
+	MORE:
+		select {
+		case in := <-Metrics.pending:
+			delta := clock.Unix() / MetricsDelta
+			ns, value := in.ns, in.value
+			kb := strconv.AppendInt(append([]byte(ns), "_acc_"...), delta, 10)
+			old := types.BytesFloat64(bk.Get(kb))
+			if err := bk.Put(kb, types.Float64Bytes(old+value)); err != nil {
+				return err
+			}
 
-		added, err := bk.TestPut(kb, types.Float64Bytes(old+value))
-		if err != nil {
-			return err
-		}
-
-		a := 0
-		if added {
-			a = 1
-		}
-
-		{
-			kb := strconv.AppendInt(append([]byte(ns), "_ctr_"...), delta, 10)
+			kb = strconv.AppendInt(append([]byte(ns), "_ctr_"...), delta, 10)
 			oldCtr := types.BytesUint64(bk.Get(kb))
 			if err := bk.Put(kb, types.Uint64Bytes(oldCtr+1)); err != nil {
 				return err
 			}
-		}
 
-		{
-			kb := strconv.AppendInt(append([]byte(ns), "_max_"...), delta, 10)
-			old := bk.Get(kb)
-			if value > types.BytesFloat64(old) || len(old) == 0 {
+			kb = strconv.AppendInt(append([]byte(ns), "_max_"...), delta, 10)
+			oldBuf := bk.Get(kb)
+			if value > types.BytesFloat64(oldBuf) || len(oldBuf) == 0 {
 				if err := bk.Put(kb, types.Float64Bytes(value)); err != nil {
 					return err
 				}
 			}
+			if round++; round < 1000 {
+				goto MORE
+			}
+			logrus.Infof("[Metrics] batch worker too many pendings")
+		default:
 		}
-
-		new = old + value
-		return bk.SetSequence(bk.Sequence() + uint64(a))
+		return nil
 	})
-	return
+	if err != nil {
+		logrus.Errorf("[Metrics] batch worker commit error: %v", err)
+	}
 }
 
 type MetricsIndex struct {
@@ -197,7 +224,7 @@ func MetricsRange(ns string, start, end int64) (res []MetricsIndex) {
 				avg = 0
 			}
 			res = append(res, MetricsIndex{
-				Index: i,
+				Index: i * MetricsDelta,
 				Sum:   total,
 				Avg:   avg,
 				Max:   mx,

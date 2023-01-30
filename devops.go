@@ -216,13 +216,6 @@ func HandleRoot(w http.ResponseWriter, r *types.Request) {
 		fmt.Fprintf(w, "Server started at %v\n", serverStart)
 
 		fmt.Fprintf(w, "\n\n")
-		for _, ns := range []string{"image", "upload", "create", "s3download", "s3upload"} {
-			for d, i := clock.Unix()/86400, int64(0); i < 7; i++ {
-				s := dal.MetricsRange(ns, d-i, d-i)[0].Sum
-				fmt.Fprintf(w, "%s_%v: %d (%dM)\n", ns, time.Unix((d-i)*86400, 0).Format("2006-01-02"), int64(s), int64(s)/1e6)
-			}
-			fmt.Fprintf(w, "\n")
-		}
 
 		df, _ := exec.Command("df", "-h").Output()
 		fmt.Fprintf(w, "Disk:\n%s\n", df)
@@ -265,11 +258,7 @@ func HandleMetrics(w http.ResponseWriter, r *types.Request) {
 	start := now - 10*86400/300
 
 	for _, ns := range nss {
-		data := dal.MetricsRange(ns, start, now)
-		for i := range data {
-			data[i].Index *= 300
-		}
-		m[ns] = data
+		m[ns] = dal.MetricsRange(ns, start, now)
 	}
 
 	r.AddTemplateValue("namespaces", nss)

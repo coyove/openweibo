@@ -35,11 +35,11 @@ var httpStaticPages embed.FS
 
 var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 	"formatUnixMilli": func(v int64) string {
-		return time.Unix(0, v*1e6).Format("2006-01-02 15:04:05")
+		return types.LocalTime(time.Unix(0, v*1e6)).Format("2006-01-02 15:04:05")
 	},
 	"formatUnixMilliBR": func(v int64) string {
-		now := clock.Now()
-		t := time.Unix(0, v*1e6)
+		now := types.LocalTime(clock.Now())
+		t := types.LocalTime(time.Unix(0, v*1e6))
 		if now.Year() == t.Year() {
 			if now.YearDay() == t.YearDay() {
 				return t.Format("15:04")
@@ -160,6 +160,8 @@ func HandleAssets(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "text/javascript")
 	case strings.HasSuffix(p, ".css"):
 		w.Header().Add("Content-Type", "text/css")
+	case strings.HasSuffix(p, ".png"):
+		w.Header().Add("Content-Type", "image/png")
 	}
 	w.Header().Add("Cache-Control", "public, max-age=8640000")
 
@@ -198,9 +200,9 @@ func serve(pattern string, f func(http.ResponseWriter, *types.Request)) {
 		f(w, req)
 
 		if el := (clock.UnixNano() - now) / 1e3; strings.HasPrefix(r.URL.Path, "/ns:") {
-			dal.MetricsIncr(r.URL.Path[1:], clock.Unix()/300, float64(el))
+			dal.MetricsIncr(r.URL.Path[1:], float64(el))
 		} else {
-			dal.MetricsIncr("ns:view", clock.Unix()/300, float64(el))
+			dal.MetricsIncr("ns:view", float64(el))
 		}
 	}))
 	http.Handle(pattern, h)

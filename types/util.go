@@ -16,8 +16,13 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
+
+func LocalTime(v time.Time) time.Time {
+	return v.UTC().Add(time.Duration(Config.TzOffset) * time.Hour)
+}
 
 func Uint64Bytes(v uint64) []byte {
 	var p [8]byte

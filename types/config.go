@@ -27,6 +27,7 @@ var Config struct {
 	PagingTimeout  int64
 	RootPassword   string
 	RequestMaxSize int64
+	TzOffset       int64
 
 	ImageCache struct {
 		MaxFiles       int64
@@ -71,6 +72,7 @@ func LoadConfig(path string) {
 		logrus.Fatal("load config: missing RootPassword")
 	}
 
+	ifZero(&Config.TzOffset, 8, 1)
 	ifZero(&Config.RequestMaxSize, 15, 1024*1024)
 	ifZero(&Config.ImageCache.MaxFiles, 1000, 1)
 	ifZero(&Config.ImageCache.PurgerInterval, 10, 1e9)
