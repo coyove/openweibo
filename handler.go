@@ -38,7 +38,19 @@ func HandleAction(w *types.Response, r *types.Request) {
 		}
 		return
 	}
+
 	action := r.Header.Get("X-Ns-Action")
+	if action == "preview" {
+		css, _ := httpStaticAssets.ReadFile("static/assets/main.css")
+		out := &bytes.Buffer{}
+		out.WriteString("<style>")
+		out.Write(css)
+		out.WriteString("</style><div id=container><pre class=note>")
+		out.WriteString(types.RenderClip(r.Form.Get("content")))
+		out.WriteString("</pre></div>")
+		w.WriteJSON("success", true, "content", out.String())
+		return
+	}
 
 	var target *types.Note
 	var ok bool
@@ -389,14 +401,24 @@ func HandleTagSearch(w *types.Response, r *types.Request) {
 			ids = append(ids, note.Id)
 		}
 	} else {
-		ids, jms = collectSimple(expandQuery(q))
+		q, parentIds, uid := expandQuery(q)
+		ids, jms = (collector{}).get(q, parentIds, uid)
+		dn, _ := dal.GetNoteByName(q)
+		if dn.Valid() {
+			ids = types.DedupUint64(append(ids, dn.Id))
+		}
 	}
 
-	tags, _ := dal.BatchGetNotes(ids)
-	sort.Slice(tags, func(i, j int) bool { return len(tags[i].Title) < len(tags[j].Title) })
+	notes, _ := dal.BatchGetNotes(ids)
+	sort.Slice(notes, func(i, j int) bool {
+		if len(notes[i].Title) == len(notes[j].Title) {
+			return notes[i].ChildrenCount+notes[i].TouchCount > notes[j].ChildrenCount+notes[j].TouchCount
+		}
+		return len(notes[i].Title) < len(notes[j].Title)
+	})
 
-	results := []interface{}{}
-	doubleCheckFilterResults(q, nil, tags, func(t *types.Note) bool {
+	results := [][3]interface{}{}
+	doubleCheckFilterResults(q, nil, notes, func(t *types.Note) bool {
 		tt := t.Title
 		if tt == "" {
 			tt = "ns:id:" + strconv.FormatUint(t.Id, 10)
@@ -525,7 +547,7 @@ func HandleManage(w *types.Response, r *types.Request) {
 			http.Redirect(w, r.Request, "/ns:id:"+strconv.FormatUint(pids[0], 10), 302)
 			return
 		} else {
-			ids, _ := collectSimple(query, pids, uid)
+			ids, _ := (collector{}).get(query, pids, uid)
 			res, _ := dal.BatchGetNotes(ids)
 			total = len(res)
 			res = sortNotes(res, r.P.Sort, r.P.Desc)

@@ -16,6 +16,7 @@ a { color: #1565c0 }
 .untitled:before {content: '无标题';font-style:italic}
 .days-ago:after {content: '天前'}
 .wrapall{word-break:break-all;white-space:pre-wrap}
+.note{font:inherit;word-break:break-all;white-space:pre-wrap}
 
 #container {
     max-width: 1120px;
@@ -193,7 +194,7 @@ table { border-collapse: collapse; width: 100%; border-radius: 0.5em; box-shadow
 tr.title {background:#e2e9ec !important}
 td { white-space: nowrap; padding: 0.1em 0.5em; }
 td.small { font-size:80%; width: 1px }
-td .display { display: flex; padding: 0.25em; min-height: 2.5em; align-items:center; flex-wrap: wrap }
+td .display { position:relative; display: flex; padding: 0.25em; min-height: 2.5em; align-items:center; flex-wrap: wrap }
 td .tag-edit-name { text-decoration:none;color:#233;word-break: break-all; white-space: pre-wrap;flex-grow:1}
 td .tag-edit-desc {
     outline: none;

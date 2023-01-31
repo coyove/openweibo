@@ -14,9 +14,10 @@
                                 maxlength={{.GetTitleMaxLen}}
                                 class='tag-edit-title tag-edit-desc'
                                 placeholder='标题：{{.GetTitleMaxLen}}字符'></textarea>
-                        <div style='display: flex;flex-wrap:nowrap'>
-                            <div id=dup style='display:none'><b>重名</b><a class='tag-edit-button icon-eye' style='margin-left:0.5em'></a></div>
+                        <div style='display: flex;flex-wrap:nowrap;flex-direction:column'>
+                            <div id=dup style='display:none'><a class='tag-edit-button icon-right-big' style='margin-right:0.5em'></a><b>重名</b></div>
                             <div id=submit class='tag-edit-button icon-paper-plane'></div>
+                            <div class='tag-edit-button icon-print' title='预览' onclick='openPreview($("#content").val())'></div>
                         </div>
                     </div>
                     <div class=wrapall style='color:#ccc;font-size:80%'>标题为空时，请选择至少一个父记事。</div>

@@ -9,6 +9,7 @@
 <script src="/ns:static/assets/diff.js"></script>
 
 <style>
+.textarea td, .textarea td .display { padding: 0 0 0 0.25em }
 .image-selector-container { margin: 0.5em } 
 div.diff-row {font-family:monospace;white-space:pre-wrap;padding:0 0.5em;line-height: 1.5em;word-break:break-all}
 div.diff-line {color:#aaa;width:3em;display:inline-block;margin-right: 0.5em;line-height: 1.5em}
@@ -102,25 +103,24 @@ div.diff-row.ins{background:#ccffd8}
         </tr>
         {{end}}
 
-        <tr id='tr-content-current'>
+        <tr id='tr-content-current' class=textarea>
             <td colspan=2>
                 <div class=display>
                     <textarea id="content"
                         {{if $.T.readonly}}readonly{{end}}
                         maxlength={{$.GetContentMaxLen}}
                         class=tag-edit-desc
-                        style='height:10em'>{{safeHTML .Content}}
+                        rows=15>{{safeHTML .Content}}
 </textarea>
                 </div>
             </td>
         </tr>
 
         {{if .PendingReview}}
-        <tr id='tr-content-review' style='display:none'>
+        <tr id='tr-content-review' class=textarea style='display:none'>
             <td colspan=2>
                 <div class=display>
-                    <textarea id="review-content" readonly class=tag-edit-desc style='height:10em'
-                        >{{safeHTML .ReviewContent}}</textarea>
+                    <textarea id="review-content" readonly class=tag-edit-desc rows=15>{{safeHTML .ReviewContent}}</textarea>
                 </div>
             </td>
         </tr>
@@ -209,12 +209,17 @@ div.diff-row.ins{background:#ccffd8}
         <tr><td class=small>最近审核人</td><td><div class=display>{{.Reviewer}}</div></td></tr>
         <tr><td class=small>修改时间</td><td><div class=display>{{formatUnixMilli .UpdateUnix}}</div></td></tr>
 
-        {{if and (not $.T.readonly) $.User.IsMod}}
+        {{if not $.T.readonly}}
         <tr>
             <td class=small></td>
             <td>
                 <div class=display>
+                    {{if $.User.IsMod}}
                     <div class='tag-box button alert' onclick='deleteNote(this)'><span>删除记事</span></div>
+                    {{end}}
+                    <div class='tag-box button' onclick='openPreview($("#content").val())'>
+                        <span class=icon-print style='margin-right:0.5em'></span>预览
+                    </div>
                 </div>
             </td>
         </tr>

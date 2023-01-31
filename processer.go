@@ -328,7 +328,11 @@ func expandQuery(query string) (q string, parentIds []uint64, uid string) {
 	return
 }
 
-func collectSimple(q string, parentIds []uint64, uid string) ([]uint64, []bitmap.JoinMetrics) {
+type collector struct {
+	suggest bool
+}
+
+func (col collector) get(q string, parentIds []uint64, uid string) ([]uint64, []bitmap.JoinMetrics) {
 	h := ngram.SplitMore(q).Hashes()
 
 	var h2 []uint64
@@ -337,6 +341,7 @@ func collectSimple(q string, parentIds []uint64, uid string) ([]uint64, []bitmap
 		if unicode.IsLower(r) || unicode.IsUpper(r) {
 		} else {
 			allLetter = false
+			break
 		}
 	}
 	if !allLetter {
@@ -353,7 +358,17 @@ func collectSimple(q string, parentIds []uint64, uid string) ([]uint64, []bitmap
 		return nil, nil
 	}
 
-	res, jms := dal.Store.CollectSimple(cursor.New(), bitmap.Values{Major: h2, Exact: h}, 2000)
+	max := 2000
+	if len(h2)+len(h) <= 2 {
+		max = 200
+	}
+
+	in := bitmap.Values{Major: h2, Exact: h}
+	if col.suggest {
+		in = bitmap.Values{Oneof: h2}
+	}
+
+	res, jms := dal.Store.CollectSimple(cursor.New(), in, max)
 	var ids []uint64
 	for _, kis := range res {
 		ids = append(ids, kis.Key.LowUint64())

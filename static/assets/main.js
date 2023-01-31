@@ -445,6 +445,21 @@ function wrapTagSearchInput(container) {
     container.wrapped = true;
 }
 
+function openPreview(text) {
+    const fd = new FormData(), w = window.open('', '_blank');
+    fd.append('content', text);
+    $.ajax({
+        url: '/ns:action',
+        data: fd,
+        processData: false,
+        contentType: false,
+        type: 'POST',
+        headers: { 'X-Ns-Action': 'preview' },
+        success: function(data){ w.document.body.innerHTML = (data.content); },
+        error: function() { alert('网络错误'); },
+    });
+}
+
 document.onpaste = function (event) {
     var items = (event.clipboardData || event.originalEvent.clipboardData).items;
     for (var index in items) {

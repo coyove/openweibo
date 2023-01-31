@@ -101,8 +101,8 @@ func EqualUint64(a, b []uint64) bool {
 	if len(a) != len(b) {
 		return false
 	}
-	sort.Slice(a, func(i, j int) bool { return a[i] < a[j] })
-	sort.Slice(b, func(i, j int) bool { return b[i] < b[j] })
+	sort.Sort(uint64Sort{a})
+	sort.Sort(uint64Sort{b})
 	for i := range a {
 		if a[i] != b[i] {
 			return false
@@ -309,7 +309,6 @@ func RenderClip(v string) string {
 					"<img src='%s' style='max-width:%dpx;width:100%%;max-height:%dpx;height:100%%;display:block'>"+
 					"</a>", a, url, width, height)
 			}
-		case strings.HasPrefix(rest, "search:"):
 		}
 		return "<a href='" + in + "'>" + in + "</a>"
 	})
