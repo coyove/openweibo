@@ -340,26 +340,43 @@ func HandleRoot(w *types.Response, r *types.Request) {
 }
 
 func HandleMetrics(w *types.Response, r *types.Request) {
+	src := r.URL.Query().Get("src")
 	nss := dal.MetricsListNamespaces()
-	m := map[string][]dal.MetricsIndex{}
-	now := clock.Unix() / 300
-	start := now - 10*86400/300
+	now := clock.Unix() / dal.MetricsDelta
+	start := now - 7*86400/dal.MetricsDelta
 
-	for _, ns := range nss {
-		tmp := dal.MetricsRange(ns, start, now)
-		if strings.HasPrefix(ns, "dbacc:") {
-			tmp = dal.MetricsCalcAccDAvg(tmp)
-		}
-		m[ns] = tmp
-	}
-
-	r.AddTemplateValue("namespaces", nss)
-
-	buf, _ := json.Marshal(m)
 	r.AddTemplateValue("nss", nss)
-	r.AddTemplateValue("metrics", *(*string)(unsafe.Pointer(&buf)))
+	r.AddTemplateValue("src", src)
 	r.AddTemplateValue("start", start)
 	r.AddTemplateValue("end", now)
+	r.AddTemplateValue("metrics", "[]")
+
+	for _, ns := range nss {
+		if ns == src {
+			tmp := dal.MetricsRange(ns, start, now)
+
+			if strings.HasPrefix(ns, "dbacc:") {
+				tmp = dal.MetricsCalcAccDAvg(tmp)
+				r.AddTemplateValue("showDAvg", true)
+				r.AddTemplateValue("label1", "增速 (DAvg)")
+				r.AddTemplateValue("label2", "累计 (Avg)")
+			} else if ns == "create" {
+				r.AddTemplateValue("showQPSOnly", true)
+			} else if ns == "ns:outbound" || ns == "upload" || ns == "image" || ns == "s3:download" {
+				r.AddTemplateValue("showBPS", true)
+				r.AddTemplateValue("label1", "平均流量 (byte/s)")
+				r.AddTemplateValue("label2", "最大流量 (byte)")
+			} else {
+				r.AddTemplateValue("showLatency", true)
+				r.AddTemplateValue("label1", "平均时延 (ms)")
+				r.AddTemplateValue("label2", "最大时延 (ms)")
+			}
+
+			buf, _ := json.Marshal(tmp)
+			r.AddTemplateValue("metrics", *(*string)(unsafe.Pointer(&buf)))
+			break
+		}
+	}
 
 	httpTemplates.ExecuteTemplate(w, "metrics.html", r)
 }

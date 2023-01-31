@@ -10,7 +10,7 @@
 
 <style>
 .image-selector-container { margin: 0.5em } 
-div.diff-row {white-space:pre-wrap;padding:0 0.5em;line-height: 1.5em}
+div.diff-row {font-family:monospace;white-space:pre-wrap;padding:0 0.5em;line-height: 1.5em;word-break:break-all}
 div.diff-line {color:#aaa;width:3em;display:inline-block;margin-right: 0.5em;line-height: 1.5em}
 div.diff-row.del{background:#ffebe9}
 div.diff-row.ins{background:#ccffd8}
@@ -109,7 +109,8 @@ div.diff-row.ins{background:#ccffd8}
                         {{if $.T.readonly}}readonly{{end}}
                         maxlength={{$.GetContentMaxLen}}
                         class=tag-edit-desc
-                        style='height:10em'>{{safeHTML .Content}}</textarea>
+                        style='height:10em'>{{safeHTML .Content}}
+</textarea>
                 </div>
             </td>
         </tr>
@@ -232,7 +233,7 @@ div.diff-row.ins{background:#ccffd8}
 
             {{if .PendingReview}}
             $('#review-content').linedtextarea();
-            const diff = JsDiff.diffLines($('#content').val(), $('#review-content').val());
+            const diff = JsDiff.diffLines($('#content').val().trim(), $('#review-content').val().trim());
             var fragment = document.createDocumentFragment(), lnL = 0, lnR = 0;
             for (var i=0; i < diff.length; i++) {
                 if (diff[i].added && diff[i + 1] && diff[i + 1].removed) {

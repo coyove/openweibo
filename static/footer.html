@@ -4,7 +4,7 @@
         <a href='/ns:root'>NoteServer</a>
         <a href='/ns:metrics'><span class=icon-chart-bar style='margin:0 0.5em'></span></a>
         {{.Elapsed}}ms<br>
-        <a href='javascript:setSession()'>ID: <span style='color:#ba68c8'>{{.UserDisplay}}</span></a>
+        <a href='javascript:setSession()'><span class=icon-user></span> <span style='color:#ba68c8'>{{.UserDisplay}}</span></a>
     </div>
     <script>
         function setSession() {
@@ -14,6 +14,23 @@
                 location.reload();
             }
         }
+        $('code').each(function(_, c) {
+            c = $(c);
+            c.text(c.text().replace(/^\n/, ''));
+            $("<div>").css({
+                'position': 'absolute',
+                'top': 0,
+                'right': 0,
+                'background': 'rgba(255,255,255,0.66)',
+            }).append($("<div class='tag-edit-button icon-docs'>").click(function() {
+                navigator.clipboard.writeText(c.text());
+                // $(this).parent().append($("<span>").text('已复制'));
+                const range = document.createRange();
+                range.selectNode(c.get(0));
+                window.getSelection().removeAllRanges();
+                window.getSelection().addRange(range);
+            })).insertBefore(c.parent());
+        });
     </script>
 </body>
 </html>

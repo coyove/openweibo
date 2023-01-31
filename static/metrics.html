@@ -16,10 +16,12 @@ body { min-width: 1000px}
     <tr>
         <td>
             <div class=display>
-                选择指标:&emsp;
-                {{range .T.nss}}
-                <a style='margin-right: 0.5em' href="javascript:show('{{.}}')">{{.}}</a>
-                {{end}}
+                <select onchange='location.href="?src="+this.value'>
+                    <option value=''>-- 选择指标 --</option>
+                    {{range .T.nss}}
+                    <option value="{{.}}" {{if eq $.T.src .}}selected{{end}}>{{.}}</option>
+                    {{end}}
+                </select>
             </div>
         </td>
     </tr>
@@ -32,86 +34,81 @@ body { min-width: 1000px}
 
 <script src='/ns:static/assets/uPlot.iife.min.js'></script>
 <script>
-    const M = ({{.T.metrics}});
-    function show(ns) {
-        var data = M[ns];
+    function show() {
+        var data = {{.T.metrics}};
         const latChart = document.getElementById('lat');
         latChart.innerHTML = '';
-        if (!data) {
-            data = [{"Index": {{.T.start}}000}];
-        } else {
-            window.history.replaceState({}, "", "?src=" + ns);
-        }
 
-        const showQPS = ['s3upload', 'create'].includes(ns);
-        const showBPS = ['ns:outbound', 'upload', 'image', 's3download'].includes(ns);
-        const dbAcc = ns.startsWith('dbacc:');
         const opts = {
             id: "chart1",
-            title: ns,
+            title: '{{.T.src}}',
             width: latChart.getBoundingClientRect().width - 1,
             height: 400,
             series: [{
                 label: '时间',
                 value: (self, rawValue) => new Date(rawValue * 1000).toLocaleString(),
-            }, {
+            },
+            {{if not .T.showQPSOnly}}
+            {
                 show: true,
                 spanGaps: false,
-                label: showBPS ? '平均流量 (byte/s)' : '平均时延 (ms)',
+                label: '{{.T.label1}}',
                 value: (self, rawValue) => rawValue.toFixed(3),
                 stroke: "hsla(110, 50%, 47%, 1)",
                 fill: "hsla(110, 50%, 47%, 0.3)",
-            }, {
-                show: !showBPS,
+            },
+            {
+                show: true,
                 spanGaps: false,
-                label: showBPS ? '最大流量 (byte)' : '最大时延 (ms)',
+                label: '{{.T.label2}}',
                 value: (self, rawValue) => rawValue.toFixed(3),
                 stroke: "hsla(180, 50%, 47%, 1)",
                 fill: "hsla(180, 50%, 47%, 0.3)",
-            }, {
-                show: !showBPS, 
+            },
+            {{end}}
+            {
+                show: true, 
                 spanGaps: false,
                 label: 'QPS',
                 value: (self, rawValue) => rawValue.toFixed(3),
                 stroke: "hsla(240, 50%, 47%, 1)",
                 fill: "hsla(240, 50%, 47%, 0.3)",
             }],
-                axes: [{}, {size: 75}],
+            axes: [{}, {
+                size: 75,
+                {{if .T.showBPS}}
+                values: (self, ticks) => ticks.map(rawValue => (rawValue / 1024).toFixed(2) + "K"),
+                {{end}}
+            }],
         };
 
-        var payload = [[], [], [], []];
+        var payload = [[], {{if not .T.showQPSOnly}}[], [],{{end}} []];
         data.forEach(function(i) {
             payload[0].push(i.Index);
-            if (dbAcc) {
-                payload[1].push(i.DAvg);
-                payload[2].push(i.Avg);
-            } else if (showBPS) {
-                payload[1].push(i.Sum / 300);
-                payload[2].push(i.Max);
-            } else {
-                payload[1].push(i.Avg / 1000);
-                payload[2].push(i.Max / 1000);
-            }
-            payload[3].push(i.Count / 300);
+
+            {{if .T.showDAvg}}
+            payload[1].push(i.DAvg);
+            payload[2].push(i.Avg);
+            {{end}}
+
+            {{if .T.showBPS}}
+            payload[1].push(i.Sum / 300);
+            payload[2].push(i.Max);
+            {{end}}
+
+            {{if .T.showLatency}}
+            payload[1].push(i.Avg / 1000);
+            payload[2].push(i.Max / 1000);
+            {{end}}
+
+            payload[payload.length - 1].push(i.Count / 300);
         });
 
-        if (dbAcc) {
-            opts.series = opts.series.slice(0, 3);
-            opts.series[1].label = '增速 (DAvg)';
-            opts.series[2].label = '累计 (Avg)';
-            payload = payload.slice(0, 3);
-        }
-
-        if (showQPS) {
-            opts.series = [opts.series[0], opts.series[3]];
-            payload = [payload[0], payload[3]];
-        }
-
-        console.log(new uPlot(opts, payload, latChart).bbox);
+        new uPlot(opts, payload, latChart);
     }
 
-    window.onresize = function(){ show('') }
-    show(new URLSearchParams(window.location.search).get('src') || '');
+    window.onresize = function(){ show() }
+    show();
 </script>
 
 {{template "footer.html" .}}

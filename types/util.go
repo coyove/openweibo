@@ -18,6 +18,9 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+	"unsafe"
+
+	nh "golang.org/x/net/html"
 )
 
 func LocalTime(v time.Time) time.Time {
@@ -198,7 +201,7 @@ func SplitUint64List(v string) (ids []uint64) {
 	return
 }
 
-var regClip = regexp.MustCompile(`(https?://[^\s]+)`)
+var regClip = regexp.MustCompile(`(https?://[^\s]+|<|>)`)
 
 func unq(v string) string {
 	x, err := url.QueryUnescape(v)
@@ -209,7 +212,15 @@ func unq(v string) string {
 }
 
 func RenderClip(v string) string {
+	out := &bytes.Buffer{}
 	return regClip.ReplaceAllStringFunc(v, func(in string) string {
+		if in == "<" {
+			return "&lt;"
+		}
+		if in == ">" {
+			return "&gt;"
+		}
+
 		prefix := "http://"
 		if strings.HasPrefix(in, "https://") {
 			prefix = "https://"
@@ -223,12 +234,52 @@ func RenderClip(v string) string {
 			return fmt.Sprintf("<%c>%s</%c>", rest[0], unq(rest[2:]), rest[0])
 		case strings.HasPrefix(rest, "hl:"):
 			return "<b class=highlight>" + unq(rest[3:]) + "</b>"
-		case rest == "ul", rest == "ol", rest == "ul:start", rest == "ol:start":
-			return "<" + rest[:2] + "><li>"
-		case rest == "li":
-			return "<li>"
-		case rest == "ul:end", rest == "ol:end":
-			return "</" + rest[:2] + ">"
+		case strings.HasPrefix(rest, "!"):
+			out.Reset()
+			z := nh.NewTokenizer(strings.NewReader(unq(rest[1:])))
+			for {
+				tt := z.Next()
+				if tt == nh.ErrorToken {
+					break
+				} else if tt == nh.StartTagToken || tt == nh.EndTagToken {
+					tag, _ := z.TagName()
+					switch ts := *(*string)(unsafe.Pointer(&tag)); ts {
+					case "b", "pre", "code", "div", "p", "span", "u", "i", "hr", "br", "strong":
+						if tt == nh.EndTagToken {
+							out.WriteString("</")
+							out.Write(tag)
+							out.WriteByte('>')
+							if ts == "code" {
+								out.WriteString("</div></div>")
+							}
+						} else {
+							if ts == "code" {
+								out.WriteString("<div style='position:relative;'><div style='white-space:pre;overflow-x:auto'>")
+							}
+							out.WriteByte('<')
+							out.Write(tag)
+							for {
+								k, v, more := z.TagAttr()
+								if *(*string)(unsafe.Pointer(&k)) == "style" {
+									out.WriteString(" style='")
+									out.Write(v)
+									out.WriteByte('\'')
+									break
+								}
+								if !more {
+									break
+								}
+							}
+							out.WriteByte('>')
+						}
+					default:
+						continue
+					}
+				} else {
+					out.Write(z.Raw())
+				}
+			}
+			return out.String()
 		case strings.HasPrefix(rest, "title:"):
 			if idx := strings.IndexByte(rest, '/'); idx >= 0 {
 				title := unq(rest[6:idx])
