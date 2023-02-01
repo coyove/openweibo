@@ -91,12 +91,6 @@
       "src": "linecons"
     },
     {
-      "uid": "efaf7e97e8b1aa7c2b52cc29432c96ca",
-      "css": "inbox",
-      "code": 59407,
-      "src": "linecons"
-    },
-    {
       "uid": "d73eceadda1f594cec0536087539afbf",
       "css": "heart",
       "code": 59408,
@@ -148,6 +142,12 @@
       "uid": "dea706a9bd3144316ce37406ec10f469",
       "css": "level-up",
       "code": 61768,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "ff1710a605b3fc98346903db89034558",
+      "css": "balance-scale",
+      "code": 62030,
       "src": "fontawesome"
     }
   ]

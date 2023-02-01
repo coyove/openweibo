@@ -3,6 +3,7 @@ package types
 import (
 	"bytes"
 	"strings"
+	"unicode"
 	"unsafe"
 
 	"golang.org/x/net/html"
@@ -34,12 +35,14 @@ var allowedAttrs = map[string]bool{
 	"href": true, "width": true, "height": true, "target": true,
 }
 
-var allowedTags = map[string]bool{
-	"b": true, "pre": true, "a": true, "img": true,
-	"div": true, "p": true, "span": true, "u": true,
-	"i": true, "hr": true, "br": true, "strong": true,
-	"blockquote": true, "video": true, "code": true,
-}
+var allowedTags = func() map[string]bool {
+	m := map[string]bool{}
+	for _, p := range strings.Split(`b,em,pre,a,img,div,p,span,u,i,hr,br,strong,blockquote,video,code,ol,ul,li,
+    table,tr,tbody,thead,td,th,h1,h2,h3,h4,label,font,textarea,input,sup,sub,dd,dl,dt`, ",") {
+		m[strings.TrimSpace(p)] = true
+	}
+	return m
+}()
 
 func (out *escaper) writeEnd(tag string) {
 	out.WriteString("</")
@@ -84,6 +87,7 @@ func RenderClip(v string) string {
 
 	var tagStack []string
 
+	// out.WriteString("<div style='word-break:break-all'>")
 	for {
 		tt := z.Next()
 		if tt == html.ErrorToken {
@@ -95,12 +99,24 @@ func RenderClip(v string) string {
 
 		switch tt {
 		case html.StartTagToken:
-			if allowedTags[tagStr] && !inCode {
+			if tagStr == "eat" && !inCode {
+				for out.Len() > 0 && unicode.IsSpace(rune(out.Bytes()[out.Len()-1])) {
+					out.Truncate(out.Len() - 1)
+				}
+			} else if allowedTags[tagStr] && !inCode {
 				out.writeStart(z, tagStr)
 				tagStack = append(tagStack, tagStr)
 				if tagStr == "code" {
 					inCode = true
 				}
+			} else {
+				out.writeEscape(z.Raw())
+			}
+		case html.SelfClosingTagToken:
+			if allowedTags[tagStr] && !inCode {
+				out.writeStart(z, tagStr)
+				out.Truncate(out.Len() - 1)
+				out.WriteString("/>")
 			} else {
 				out.writeEscape(z.Raw())
 			}
@@ -126,6 +142,7 @@ func RenderClip(v string) string {
 			if !matched {
 				out.writeEscape(z.Raw())
 			}
+		case html.DoctypeToken:
 		default:
 			out.writeEscape(z.Raw())
 		}
@@ -135,6 +152,7 @@ func RenderClip(v string) string {
 		out.writeEnd(tagStack[len(tagStack)-1])
 		tagStack = tagStack[:len(tagStack)-1]
 	}
+	// out.WriteString("</div>")
 
 	return out.String()
 }

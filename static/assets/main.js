@@ -63,6 +63,18 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
 			$(window).resize(function() { textarea.scroll(); });
 			/* We call scroll once to add the line numbers */
 			textarea.scroll();
+            textarea.on('keyup', function(ev) {
+                if (ev.which != 119) return;
+                const ta = textarea.get(0);
+                const start = ta.selectionStart, end = ta.selectionEnd;
+
+                const selected = encodeURIComponent(ta.value.slice(start, end));
+                const before = ta.value.slice(0, start);
+                const after = ta.value.slice(end);
+                ta.value = before + selected + after;
+                ta.selectionStart = start;
+                ta.selectionEnd = start + selected.length;
+            })
 
 			/* React to textarea resize via css resize attribute. */
 			var observer = new ResizeObserver(function(mutations) {

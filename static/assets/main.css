@@ -190,7 +190,7 @@ a { color: #1565c0 }
     height: 16px;
 }
 
-table { border-collapse: collapse; width: 100%; border-radius: 0.5em; box-shadow: 0 0 2px #666; margin: 0.5em 0; overflow: hidden }
+table.table { border-collapse: collapse; width: 100%; border-radius: 0.5em; box-shadow: 0 0 2px #666; margin: 0.5em 0; overflow: hidden }
 tr.title {background:#e2e9ec !important}
 td { white-space: nowrap; padding: 0.1em 0.5em; }
 td.small { font-size:80%; width: 1px }

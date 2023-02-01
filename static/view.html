@@ -15,7 +15,6 @@
             <span class={{if $.T.noteTouched}}icon-heart{{else}}icon-heart-empty{{end}}></span>
         </div>
         {{end}}
-        <a class=tag-edit-button href='/ns:edit?id={{.Id}}'><span class=icon-pencil></span></a>
     </div>
     {{if .Modifier}}
     <div>
@@ -23,20 +22,18 @@
         <a class=tag-edit-button href='/ns:history?note={{.Id}}&desc=1'><span class=icon-calendar></span></a>
     </div>
     {{end}}
-    {{if .PendingReview}}
-    <div>
-        <span class=icon-inbox></span> 该记事有新版本等待审核
-    </div>
-    {{end}}
+
     {{if $.User.IsRoot}}
     <div>
         Check images: found={{$.T.checkImagesFound}}, uploaded={{$.T.checkImagesUploaded}}
     </div>
     {{end}}
 
-    {{if or .TouchCount $.T.noteViews}}
-    <div style='font-size: 80%; color: #666'>{{$.T.noteViews}} 浏览&emsp;{{.TouchCount}} 收藏</div>
-    {{end}}
+    <div style='line-height:2em; font-size: 90%; color: #666'>
+        {{$.T.noteViews}} 浏览&emsp;
+        {{.TouchCount}} 收藏&emsp;
+        <a href='/ns:edit?id={{.Id}}'>{{if .PendingReview}}新版本审核中{{else}}编辑{{end}}</a>
+    </div>
 </div>
 <hr style='border:dotted 1px #ccc'>
 
@@ -47,7 +44,6 @@
             <img class=image
                  src="{{imageURL "image" .Image}}"
                  data-src="{{imageURL "image" .Image}}"
-                 data-id="{{.Id}}"
                  style="max-width:100%;max-height:100%">
         </div>
     </a>
@@ -55,7 +51,7 @@
     {{if $.T.parents}}
     <div>
         <b>父记事 <span class=icon-level-up></span></b>
-        <div style='font-size: 90%;line-height:1.5em;padding:0.5em 0'>
+        <div style='font-size:90%;line-height:1.5em;padding:0.5em 0'>
             {{range $.T.parents}}
             <a href='/{{.EscapedTitle}}'>{{.HTMLTitleDisplay}}</a>&emsp;
             {{end}}

@@ -1,6 +1,6 @@
 {{template "header.html" .}}
 <title>新建记事</title>
-<table>
+<table class=table>
     <tr id=is-reply style='display:none;background:#ffe0b2'>
         <td colspan=2><div class=display></div></td>
     </tr>
@@ -38,7 +38,7 @@
     <tr>
         <td>
             <div class=display style='min-height: 2em'>
-                <span style='font-size:90%;color:#ccc'>关于高级语法，请阅读该篇<a href='/ns:edit_syntax'>记事</a></span>
+                <span style='font-size:90%;color:#ccc'>支持常见的HTML标签，如a、b、u、i、img、div等。</span>
             </div>
         </td>
     </tr>
@@ -72,8 +72,7 @@
     const title = searchParams.get('title');
     const ps = $("<div max-tags={{.GetParentsMax}} id=parents class='tag-search-input-container'></div>");
 
-    pre && ps.attr('data0', pre);
-    pre && $('#is-reply').show().find('.display').text('回复 ' + pre);
+    pre && ps.attr('data0', pre) && $('#is-reply').show().find('.display').text('回复 ' + pre);
     title && $('#name').val(title.substr(0, {{.GetTitleMaxLen}}));
     const pTitle = pre ? pre.substr(pre.indexOf(',') + 1) : '';
 

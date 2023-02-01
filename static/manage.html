@@ -11,7 +11,7 @@
 </div>
 
 <div>
-    <table id=list>
+    <table id=list class=table>
         <tr class=title>
             <td>
                 <div class=display>
@@ -63,10 +63,8 @@
                     {{if .Image}}
                         <div
                             class='image-display-container image'
-                            data-src='{{imageURL "image" .Image}}'
-                            data-id='{{.Id}}'
                             style='background: center / cover no-repeat url({{imageURL "thumb" .Image}})'
-                            onclick='openImage("{{imageURL "image" .Image}}")'></div>
+                            onclick='location.href="/{{.EscapedTitle}}"'></div>
                     {{else}}
                         <div class='image-display-container' style='background:rgba(0,0,0,0.03)' onclick='location.href="/{{.EscapedTitle}}"'>
                             {{if .Content}}
@@ -83,7 +81,7 @@
                         </div>
                         <div style='margin-top:0.25em' >
                             {{if .Lock}}<span class='icon-lock'></span>{{end}}
-                            {{if .PendingReview}}<span class='icon-inbox' title='审核中'></span>{{end}}
+                            {{if .PendingReview}}<span class='icon-balance-scale' title='审核中'></span>{{end}}
                             {{if $touched}}<span class='icon-heart' title='收藏的记事'></span>{{end}} 
                         </div>
                         <div class=image-display-bar onclick='location.href="/{{.EscapedTitle}}"'>
