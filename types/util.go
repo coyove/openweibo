@@ -5,22 +5,15 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"encoding/hex"
-	"fmt"
 	"html"
 	"math"
 	"net"
 	"net/http"
-	"net/url"
-	"reflect"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
-	"unsafe"
-
-	nh "golang.org/x/net/html"
 )
 
 func LocalTime(v time.Time) time.Time {
@@ -199,119 +192,6 @@ func SplitUint64List(v string) (ids []uint64) {
 		}
 	}
 	return
-}
-
-var regClip = regexp.MustCompile(`(https?://[^\s]+|<|>)`)
-
-func unq(v string) string {
-	x, err := url.QueryUnescape(v)
-	if err != nil {
-		return v
-	}
-	return x
-}
-
-func RenderClip(v string) string {
-	out := &bytes.Buffer{}
-	return regClip.ReplaceAllStringFunc(v, func(in string) string {
-		if in == "<" {
-			return "&lt;"
-		}
-		if in == ">" {
-			return "&gt;"
-		}
-
-		prefix := "http://"
-		if strings.HasPrefix(in, "https://") {
-			prefix = "https://"
-		}
-		switch rest := in[len(prefix):]; {
-		case strings.HasPrefix(rest, "text:"):
-			return unq(rest[5:])
-		case strings.HasPrefix(rest, "section:"):
-			return "<h2 style='display:inline'>" + unq(rest[8:]) + "</h2>"
-		case strings.HasPrefix(rest, "u:") || strings.HasPrefix(rest, "i:") || strings.HasPrefix(rest, "b:"):
-			return fmt.Sprintf("<%c>%s</%c>", rest[0], unq(rest[2:]), rest[0])
-		case strings.HasPrefix(rest, "hl:"):
-			return "<b class=highlight>" + unq(rest[3:]) + "</b>"
-		case strings.HasPrefix(rest, "!"):
-			out.Reset()
-			z := nh.NewTokenizer(strings.NewReader(unq(rest[1:])))
-			for {
-				tt := z.Next()
-				if tt == nh.ErrorToken {
-					break
-				} else if tt == nh.StartTagToken || tt == nh.EndTagToken {
-					tag, _ := z.TagName()
-					switch ts := *(*string)(unsafe.Pointer(&tag)); ts {
-					case "b", "pre", "code", "div", "p", "span", "u", "i", "hr", "br", "strong":
-						if tt == nh.EndTagToken {
-							out.WriteString("</")
-							out.Write(tag)
-							out.WriteByte('>')
-							if ts == "code" {
-								out.WriteString("</div></div>")
-							}
-						} else {
-							if ts == "code" {
-								out.WriteString("<div style='position:relative;'><div style='white-space:pre;overflow-x:auto'>")
-							}
-							out.WriteByte('<')
-							out.Write(tag)
-							for {
-								k, v, more := z.TagAttr()
-								if *(*string)(unsafe.Pointer(&k)) == "style" {
-									out.WriteString(" style='")
-									out.Write(v)
-									out.WriteByte('\'')
-									break
-								}
-								if !more {
-									break
-								}
-							}
-							out.WriteByte('>')
-						}
-					default:
-						continue
-					}
-				} else {
-					out.Write(z.Raw())
-				}
-			}
-			return out.String()
-		case strings.HasPrefix(rest, "title:"):
-			if idx := strings.IndexByte(rest, '/'); idx >= 0 {
-				title := unq(rest[6:idx])
-				url := rest[idx+1:]
-				if strings.HasPrefix(url, "rel:") {
-					return "<a href='" + url[4:] + "'>" + title + "</a>"
-				}
-				return "<a href='" + prefix + url + "'>" + title + "</a>"
-			}
-		case strings.HasPrefix(rest, "img:"):
-			if idx := strings.IndexByte(rest, '/'); idx >= 0 {
-				tag := reflect.StructTag(unq(rest[4:idx]))
-				var width, height int
-				fmt.Sscanf(tag.Get("size"), "%dx%d", &width, &height)
-				if height <= 0 {
-					height = 200
-				}
-				if width <= 0 {
-					width = 200
-				}
-				url := prefix + rest[idx+1:]
-				a := tag.Get("href")
-				if a == "" {
-					a = url
-				}
-				return fmt.Sprintf("<a href='%s' target=_blank>"+
-					"<img src='%s' style='max-width:%dpx;width:100%%;max-height:%dpx;height:100%%;display:block'>"+
-					"</a>", a, url, width, height)
-			}
-		}
-		return "<a href='" + in + "'>" + in + "</a>"
-	})
 }
 
 func CleanTitle(v string) string {

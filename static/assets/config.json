@@ -49,24 +49,6 @@
       "src": "fontawesome"
     },
     {
-      "uid": "4815ddddea76d90e367a9694a93b7e24",
-      "css": "resize-full",
-      "code": 59394,
-      "src": "iconic"
-    },
-    {
-      "uid": "b05c5a209b56e7ea6632a31e4bd0b41d",
-      "css": "resize-small",
-      "code": 59395,
-      "src": "iconic"
-    },
-    {
-      "uid": "c62cbc7fa604e32cc19731a3bb29be79",
-      "css": "map-o",
-      "code": 62072,
-      "src": "fontawesome"
-    },
-    {
       "uid": "ad6b3fbb5324abe71a9c0b6609cbb9f1",
       "css": "right-big",
       "code": 59396,
@@ -79,27 +61,9 @@
       "src": "linecons"
     },
     {
-      "uid": "6fbd93c0d220507921015a15575009e5",
-      "css": "paper-plane-1",
-      "code": 59398,
-      "src": "linecons"
-    },
-    {
-      "uid": "359f380b2113cb40259269aed843e33d",
-      "css": "attach",
-      "code": 59399,
-      "src": "linecons"
-    },
-    {
       "uid": "56a0672588820ab1a16363e5d07dd22e",
       "css": "user",
       "code": 59400,
-      "src": "linecons"
-    },
-    {
-      "uid": "47e9e56d2b5abe839bcf1e014d643dea",
-      "css": "lock",
-      "code": 59401,
       "src": "linecons"
     },
     {
@@ -112,12 +76,6 @@
       "uid": "2aeb4987b469d22fcb8b471b6d2cdfff",
       "css": "pencil",
       "code": 59403,
-      "src": "linecons"
-    },
-    {
-      "uid": "a58c05a8a3ba59ababd4860a30892560",
-      "css": "eye-1",
-      "code": 59404,
       "src": "linecons"
     },
     {
@@ -166,6 +124,30 @@
       "uid": "7277ded7695b2a307a5f9d50097bb64c",
       "css": "print",
       "code": 59411,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "4ba33d2607902cf690dd45df09774cb0",
+      "css": "plus-circled",
+      "code": 59412,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "c1f1975c885aa9f3dad7810c53b82074",
+      "css": "lock",
+      "code": 59394,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "657ab647f6248a6b57a5b893beaf35a9",
+      "css": "lock-open",
+      "code": 59395,
+      "src": "fontawesome"
+    },
+    {
+      "uid": "dea706a9bd3144316ce37406ec10f469",
+      "css": "level-up",
+      "code": 61768,
       "src": "fontawesome"
     }
   ]

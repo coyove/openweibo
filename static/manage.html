@@ -26,12 +26,12 @@
                         {{end}}
                     {{else}}
                         {{if .T.view}}
-                            {{if ne .P.Page 1}}<b class=wrapall>{{.T.note.HTMLTitleDisplay}} </b>{{end}}子记事
-                            <a class='tag-edit-button icon-paper-plane' href='/ns:new?pt={{.T.note.Id}},{{.T.note.QueryTitle}}'></a>
+                            {{if ne .P.Page 1}}<b class=wrapall>{{.T.note.HTMLTitleDisplay}} </b>{{end}}子记事 ({{.T.total}})
+                            <a class='tag-edit-button icon-plus-circled' href='/ns:new?pt={{.T.note.Id}},{{.T.note.QueryTitle}}'></a>
                         {{else}}
                             <title>全部记事</title>
-                            全部记事
-                        {{end}} ({{.T.total}})
+                            全部记事 ({{.T.total}})
+                        {{end}} 
                     {{end}}
                     </span>
 
@@ -64,6 +64,7 @@
                         <div
                             class='image-display-container image'
                             data-src='{{imageURL "image" .Image}}'
+                            data-id='{{.Id}}'
                             style='background: center / cover no-repeat url({{imageURL "thumb" .Image}})'
                             onclick='openImage("{{imageURL "image" .Image}}")'></div>
                     {{else}}

@@ -12,8 +12,8 @@ import (
 
 func TestA(t *testing.T) {
 	fmt.Println(RenderClip(`
-    http://!<b%20href='b'%20style='font-size:100px'>sad</b>
-    http://!<code>alert("aa") a
+    <a href='http://abc.com' style='font-size:100px'>sad</a>
+    http://!<code>alert("aa") a<b>c</b>
     `))
 }
 

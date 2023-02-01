@@ -179,7 +179,7 @@ div.diff-row.ins{background:#ccffd8}
                     {{if not $.T.readonly}}
                     <div class='tag-edit-button button' action=''
                          onclick='ajaxBtn(this,{{if .Lock}}"Unlock"{{else}}"Lock"{{end}}, {"id": "{{.Id}}"})'>
-                        <span class=icon-lock></span>
+                        <span class={{if .Lock}}icon-lock{{else}}icon-lock-open{{end}}></span>
                     </div>
                     {{end}}
                 </div>
