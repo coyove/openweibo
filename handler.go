@@ -43,11 +43,11 @@ func HandleAction(w *types.Response, r *types.Request) {
 	if action == "preview" {
 		css, _ := httpStaticAssets.ReadFile("static/assets/main.css")
 		out := &bytes.Buffer{}
-		out.WriteString("<style>")
+		out.WriteString("<!doctype html><html><meta charset='UTF-8'><style>")
 		out.Write(css)
 		out.WriteString("</style><div id=container><pre class=note>")
 		out.WriteString(types.RenderClip(r.Form.Get("content")))
-		out.WriteString("</pre></div>")
+		out.WriteString("</pre></div></html>")
 		w.WriteJSON("success", true, "content", out.String())
 		return
 	}
@@ -128,10 +128,8 @@ func HandleAction(w *types.Response, r *types.Request) {
 			go dal.AppendHistory(target.Id, r.UserDisplay, action,
 				types.UTF16Trunc(r.Form.Get("reject_msg"), 100),
 				r.RemoteIPv4Masked(), target)
-			limiter.AddIP(r, 1)
-		} else {
-			limiter.AddIP(r, 5)
 		}
+		limiter.AddIP(r)
 		w.WriteJSON("success", true, "note", target)
 	}
 }
@@ -438,6 +436,24 @@ func HandleTagSearch(w *types.Response, r *types.Request) {
 }
 
 func HandleNew(w *types.Response, r *types.Request) {
+	var parents []string
+	var lastParent uint64
+	var lastTitle string
+	for _, p := range types.SplitUint64List(r.URL.Query().Get("parents")) {
+		if note, _ := dal.GetNote(p); note.Valid() {
+			t := note.Title
+			if t == "" {
+				parents = append(parents, fmt.Sprintf("%d,ns:id:%d", note.Id, note.Id))
+			} else {
+				parents = append(parents, fmt.Sprintf("%d,%s", note.Id, t))
+			}
+			lastParent = p
+			lastTitle = t
+		}
+	}
+	r.AddTemplateValue("parents", parents)
+	r.AddTemplateValue("lastParent", lastParent)
+	r.AddTemplateValue("lastTitle", lastTitle)
 	httpTemplates.ExecuteTemplate(w, "new.html", r)
 }
 

@@ -9,9 +9,15 @@ import (
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/clock"
 	"github.com/tidwall/gjson"
+	"golang.org/x/time/rate"
 )
 
 var cdMap sync.Map
+
+type limiter struct {
+	*rate.Limiter
+	freeAt int64
+}
 
 func CheckIP(r *types.Request) (ok bool, remains int64) {
 	ipm := r.RemoteIPv4Masked()
@@ -39,27 +45,41 @@ func CheckIP(r *types.Request) (ok bool, remains int64) {
 	}
 
 	if v, ok := cdMap.Load(r.RemoteIPv4Masked().String()); ok {
-		return false, v.(int64) - clock.Unix()
+		rl := v.(*limiter)
+		if rl.Allow() {
+			return true, 0
+		}
+		return false, rl.freeAt - clock.Unix()
 	}
 	return true, 0
 }
 
-func AddIP(r *types.Request, factor int64) {
+func AddIP(r *types.Request) {
 	if r.User.IsMod() {
 		return
 	}
+
+	ipStr := r.RemoteIPv4Masked().String()
+	if _, ok := cdMap.Load(ipStr); ok {
+		return
+	}
+
 	sec := r.Config().Get("ip_cooldown_sec").Int()
 	if sec <= 0 {
 		sec = 30
 	}
 
-	sec /= factor
-	if sec <= 0 {
-		sec = 1
+	burst := r.Config().Get("ip_cooldown_burst").Int()
+	if burst <= 0 {
+		burst = 10
 	}
 
-	ipStr := r.RemoteIPv4Masked().String()
-	cdMap.Store(ipStr, clock.Unix()+sec)
+	rl := &limiter{
+		Limiter: rate.NewLimiter(rate.Limit(1.0/float64(sec)), int(burst)),
+		freeAt:  clock.Unix() + sec,
+	}
+
+	cdMap.Store(ipStr, rl)
 	time.AfterFunc(time.Second*time.Duration(sec), func() {
 		cdMap.Delete(ipStr)
 	})

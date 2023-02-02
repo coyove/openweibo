@@ -27,7 +27,27 @@
                     {{else}}
                         {{if .T.view}}
                             {{if ne .P.Page 1}}<b class=wrapall>{{.T.note.HTMLTitleDisplay}} </b>{{end}}子记事 ({{.T.total}})
-                            <a class='tag-edit-button icon-plus-circled' href='/ns:new?pt={{.T.note.Id}},{{.T.note.QueryTitle}}'></a>
+                            <input id="quick-image" type=file class='image-selector' accept="image/*">
+                            <script>
+                                $("#quick-image").imageSelector('', function() {
+                                    const changed = this.attr('changed');
+                                    if (!changed) return;
+                                    ajaxBtn(null, 'create', {
+                                        'image': this.get(0).image,
+                                        'thumb': this.get(0).thumb,
+                                        'image_changed': changed,
+                                        'image_small': this.attr('small'),
+                                        'parents': JSON.stringify({
+                                            '{{.T.note.Id}}': {'tag': ''},
+                                            {{range .T.note.ParentIds}}
+                                            '{{.}}': {'tag': ''},
+                                            {{end}}
+                                        }),
+                                    }, function(data) {
+                                        location.href = '/ns:id:{{.T.note.Id}}?sort=0&desc=1';
+                                    });
+                                }).hide();
+                            </script>
                         {{else}}
                             <title>全部记事</title>
                             全部记事 ({{.T.total}})
@@ -58,12 +78,30 @@
         <tr>
             <td style='padding:0;background:transparent'>
             <div style='display: grid;justify-items: center; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));'>
+            {{if and .T.view (eq .P.Page 1)}}
+                <div class=image-display>
+                    <div class='image-display-container' onclick='location.href="/ns:new?parents={{.T.note.Id}}"'>
+                        <div class='wrapall content100'><span style='font-size:4em' class=icon-plus-circled></span></div>
+                    </div>
+                    <div class=image-display-info>
+                        <div style='flex-grow:1'><span class=tag-edit-name>新建子记事</span></div><div class=image-display-bar></div>
+                    </div>
+                </div>
+                <div class=image-display>
+                    <div class='image-display-container' onclick='$("#quick-image").click()'>
+                        <div class='wrapall content100'><span style='font-size:4em' class=icon-plus-circled></span></div>
+                    </div>
+                    <div class=image-display-info>
+                        <div style='flex-grow:1'><span class=tag-edit-name>新建子记事</span></div><div class=image-display-bar></div>
+                    </div>
+                </div>
+            {{end}}
             {{range .T.notes}}
                 <div class=image-display>
                     {{if .Image}}
                         <div
                             class='image-display-container image'
-                            style='background: center / cover no-repeat url({{imageURL "thumb" .Image}})'
+                            style='background: center / cover no-repeat url({{imageURL "thumb" .Image}});background-color:rgba(0,0,0,0.05)'
                             onclick='location.href="/{{.EscapedTitle}}"'></div>
                     {{else}}
                         <div class='image-display-container' style='background:rgba(0,0,0,0.03)' onclick='location.href="/{{.EscapedTitle}}"'>
@@ -77,16 +115,13 @@
                     <div class=image-display-info>
                         {{$touched := and $.T.isUserPage (ne $.UserDisplay .Creator)}}
                         <div style='flex-grow:1'>
+                            {{if .Lock}}<span class='icon-lock'></span>{{end}}
+                            {{if .PendingReview}}<span class='icon-hammer' title='等待审核'></span>{{end}}
+                            {{if $touched}}<span class='icon-heart' title='收藏的记事'></span>{{end}}
                             <a href='/{{.EscapedTitle}}' class=tag-edit-name>{{makeTitle . 32 true}}</a>
                         </div>
-                        <div style='margin-top:0.25em' >
-                            {{if .Lock}}<span class='icon-lock'></span>{{end}}
-                            {{if .PendingReview}}<span class='icon-balance-scale' title='审核中'></span>{{end}}
-                            {{if $touched}}<span class='icon-heart' title='收藏的记事'></span>{{end}} 
-                        </div>
-                        <div class=image-display-bar onclick='location.href="/{{.EscapedTitle}}"'>
-                            {{formatUnixMilliBR .UpdateUnix}}
-                        </div>
+
+                        <div class=image-display-bar>{{formatUnixMilliBR .UpdateUnix}}</div>
                         {{if .ChildrenCount}}
                         <div class=image-display-count>{{.ChildrenCount}}</div>
                         {{end}}
@@ -130,7 +165,7 @@
         }
     }).val(decodeURIComponent('{{fullEscape .T.query}}') + ' ')
     $(window).on('resize', function() {
-        var current = -1, color = ['white', '#f7f8f9'], colorIdx = 0, colorIdx2 = 0;
+            var current = -1, color = ['white', {{if .T.view}}'#f3f4f5'{{else}}'#f7f8f9'{{end}}], colorIdx = 0, colorIdx2 = 0;
         $('.image-display').each(function(_, id) {
             if ($(id).position().top != current || current == -1) {
                 current = $(id).position().top;

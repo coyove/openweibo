@@ -81,7 +81,7 @@ func (t *Note) QueryTitle() string {
 func (t *Note) HTMLTitleDisplay() string {
 	tt := SafeHTML(t.Title)
 	if tt == "" {
-		return "<span class=untitled></span>"
+		return "<span style='font-style:italic'>无标题</span>"
 	}
 	return tt
 }

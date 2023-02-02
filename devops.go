@@ -285,7 +285,7 @@ func HandleRoot(w *types.Response, r *types.Request) {
 		http.Redirect(w, r.Request, "/ns:root", 302)
 		return
 	} else if rpwd != "" {
-		limiter.AddIP(r, 1)
+		limiter.AddIP(r)
 		http.Redirect(w, r.Request, "/ns:root", 302)
 		return
 	}

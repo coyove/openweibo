@@ -86,7 +86,7 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
 		});
 	};
 
-	$.fn.imageSelector = function(img) {
+	$.fn.imageSelector = function(img, onload) {
         const that = this;
         const readonly = !!this.attr('readonly');
         const processing = $("<div class='title'>").hide();
@@ -103,6 +103,7 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
             div.find('img').get(0).src = display;
             that.get(0).thumb = thumb, that.get(0).image = image;
             processing.hide();
+            onload && onload.apply(that);
         }
 
         function onChange(file) {
@@ -163,7 +164,7 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
         if (!readonly) {
             window.lastChangeImage = onChange;
         }
-        return this;
+        return div;
     }
 })(jQuery);
 
@@ -237,6 +238,7 @@ function ajaxBtn(el, action, args, f) {
     const rect = el.getBoundingClientRect();
     const loader = $("<div style='display:inline-block;text-align:center'>" + window.CONST_loaderHTML + "</div>").
         css('width', rect.width + 'px').
+        css('height', rect.height + 'px').
         css('margin', that.css('margin'));
     that.hide();
     loader.insertBefore(that);

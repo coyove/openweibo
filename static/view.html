@@ -1,7 +1,14 @@
 {{with .T.note}}
 
 {{if .Title}}
-<h1 style='word-break:break-all'>{{safeHTML .Title}}</h1>
+<div style='display:flex;align-items:center'>
+    <h1 style='word-break:break-all'>{{safeHTML .Title}}</h1>
+    {{if ne $.UserDisplay .Creator}}
+    <div style='margin-left: 0.5em' class=tag-edit-button onclick="ajaxBtn(null,'touch',{'id':'{{.Id}}'})">
+        <span class={{if $.T.noteTouched}}icon-heart{{else}}icon-heart-empty{{end}}></span>
+    </div>
+    {{end}}
+</div>
 <title>{{safeHTML .Title}}</title>
 {{else}}
 <title>无标题</title>
@@ -10,16 +17,10 @@
 <div style='font-size: 90%'>
     <div>
         <a href='/ns:manage?q=ns:user:{{.Creator}}'>{{.Creator}}</a> 创建于 {{formatUnixMilli .CreateUnix}}
-        {{if ne $.UserDisplay .Creator}}
-        <div class=tag-edit-button onclick="ajaxBtn(null,'touch',{'id':'{{.Id}}'})">
-            <span class={{if $.T.noteTouched}}icon-heart{{else}}icon-heart-empty{{end}}></span>
-        </div>
-        {{end}}
     </div>
     {{if .Modifier}}
     <div>
         <a href='/ns:manage?q=ns:user:{{.Modifier}}'>{{.Modifier}}</a> 修改于 {{formatUnixMilli .UpdateUnix}}
-        <a class=tag-edit-button href='/ns:history?note={{.Id}}&desc=1'><span class=icon-calendar></span></a>
     </div>
     {{end}}
 
@@ -32,7 +33,8 @@
     <div style='line-height:2em; font-size: 90%; color: #666'>
         {{$.T.noteViews}} 浏览&emsp;
         {{.TouchCount}} 收藏&emsp;
-        <a href='/ns:edit?id={{.Id}}'>{{if .PendingReview}}新版本审核中{{else}}编辑{{end}}</a>
+        <a href='/ns:edit?id={{.Id}}'>{{if .PendingReview}}新版本待审核{{else}}编辑{{end}}</a>
+        (<a href='/ns:history?note={{.Id}}&desc=1'>历史</a>)
     </div>
 </div>
 <hr style='border:dotted 1px #ccc'>
@@ -40,11 +42,11 @@
 <div>
     {{if .Image}}
     <a href="javascript:openImage('{{imageURL "image" .Image}}')">
-        <div class='image-view'>
+        <div style='float:left;margin:0 0.5em 0.5em 0;border-radius:0.5em;overflow:hidden'>
             <img class=image
                  src="{{imageURL "image" .Image}}"
                  data-src="{{imageURL "image" .Image}}"
-                 style="max-width:100%;max-height:100%">
+                 style="max-width:100%;max-height:100vh;display:block;">
         </div>
     </a>
     {{end}}

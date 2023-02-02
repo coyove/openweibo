@@ -41,12 +41,12 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 		t := types.LocalTime(time.Unix(0, v*1e6))
 		if now.Year() == t.Year() {
 			if now.YearDay() == t.YearDay() {
-				return t.Format("15:04")
+				return t.Format("15:04:05")
 			}
 			return t.Format("01-02")
 		}
 		d := (now.Unix()-t.Unix())/86400 + 1
-		return "<span class=days-ago>" + strconv.Itoa(int(d)) + "</span>"
+		return strconv.Itoa(int(d)) + "天前"
 	},
 	"generatePages": func(p int, pages int) (a []int) {
 		if pages > 0 {

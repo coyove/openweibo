@@ -9,10 +9,10 @@
 <script src="/ns:static/assets/diff.js"></script>
 
 <style>
-.textarea td, .textarea td .display { padding: 0 0 0 0.25em }
 .image-selector-container { margin: 0.5em } 
 div.diff-row {font-family:monospace;white-space:pre-wrap;padding:0 0.5em;line-height: 1.5em;word-break:break-all}
-div.diff-line {color:#aaa;width:3em;display:inline-block;margin-right: 0.5em;line-height: 1.5em}
+div.diff-line {color:#aaa;width:3em;display:inline-block;margin-right: 0.5em}
+div.diff-info {color:#999;width:1em;display:inline-block;margin-right: 0.5em}
 div.diff-row.del{background:#ffebe9}
 div.diff-row.ins{background:#ccffd8}
 </style>
@@ -141,7 +141,7 @@ div.diff-row.ins{background:#ccffd8}
                 <td>
                     <div class=display>
                         <div id=current-parents class='tag-search-input-container' readonly max-tags={{$.GetParentsMax}}
-                             {{range $i, $t := $parents}}data{{$i}}={{$t}} {{end}}></div>
+                             {{range $i, $t := $parents}}data{{$i}}='{{safeHTML $t}}' {{end}}></div>
                         <script>wrapTagSearchInput($('#current-parents').get(0))</script>
                     </div>
                 </td>
@@ -151,8 +151,9 @@ div.diff-row.ins{background:#ccffd8}
                 <td>
                     <div class=display>
                         <div id=parents class='tag-search-input-container' {{if $.T.readonly}}readonly{{end}}
-                             max-tags={{$.GetParentsMax}} {{range $i, $t := $reviewParents}}data{{$i}}={{$t}} {{end}}
+                             max-tags={{$.GetParentsMax}} {{range $i, $t := $reviewParents}}data{{$i}}='{{safeHTML $t}}' {{end}}
                         ></div>
+                        <script>wrapTagSearchInput($('#parents').get(0))</script>
                     </div>
                 </td>
             </tr>
@@ -161,13 +162,13 @@ div.diff-row.ins{background:#ccffd8}
                 <td colspan=2>
                     <div class=display>
                         <div id=parents class='tag-search-input-container' {{if $.T.readonly}}readonly{{end}}
-                             max-tags={{$.GetParentsMax}} {{range $i, $t := $parents}}data{{$i}}={{$t}} {{end}}
+                             max-tags={{$.GetParentsMax}} {{range $i, $t := $parents}}data{{$i}}='{{safeHTML $t}}' {{end}}
                         ></div>
+                        <script>wrapTagSearchInput($('#parents').get(0))</script>
                     </div>
                 </td>
             </tr>
             {{end}}
-            <script>wrapTagSearchInput($('#parents').get(0))</script>
         {{end}}
 
         <tr><td class=small>编辑历史</td><td><div class=display><a href='/ns:history?note={{.Id}}&desc=1'>查看</a></div></td></tr>
@@ -252,21 +253,26 @@ div.diff-row.ins{background:#ccffd8}
                     const node = document.createElement('div');
                     const left = document.createElement('div');
                     const right = document.createElement('div');
+                    const info = document.createElement('div');
                     left.className = 'diff-line';
                     right.className = 'diff-line';
+                    info.className = 'diff-info';
 
                     if (removed) {
                         (lnL++), (left.innerText = lnL);
                         node.className = 'diff-row del';
+                                    info.innerText = '-';
                     } else if (added) {
                         (lnR++), (right.innerText = lnR);
                         node.className = 'diff-row ins';
+                                    info.innerText = '+';
                     } else {
                         (lnL++), (lnR++), (left.innerText = lnL), (right.innerText = lnR);
                         node.className = 'diff-row';
                     }
                     node.appendChild(left);
                     node.appendChild(right);
+                    node.appendChild(info);
                     node.appendChild(document.createTextNode(text));
                     fragment.appendChild(node);
                 })

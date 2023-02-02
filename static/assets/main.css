@@ -13,8 +13,6 @@ html, body {
 
 a { color: #1565c0 }
 .highlight {background:wheat;white-space:pre-wrap}
-.untitled:before {content: '无标题';font-style:italic}
-.days-ago:after {content: '天前'}
 .wrapall{word-break:break-all;white-space:pre-wrap}
 .note{font:inherit;word-break:break-all;white-space:pre-wrap}
 
@@ -42,7 +40,6 @@ a { color: #1565c0 }
     #footer {padding-left: 0.5em}
     table { margin: 0.25em 0 }
     #container { padding: 0.25em }
-    .image-view { max-width:250px !important;max-height:250px !important }
 }
 
 #header .header-entry {
@@ -191,6 +188,7 @@ a { color: #1565c0 }
 }
 
 table.table { border-collapse: collapse; width: 100%; border-radius: 0.5em; box-shadow: 0 0 2px #666; margin: 0.5em 0; overflow: hidden }
+table.table .textarea td, table.table .textarea td .display { padding: 0 0 0 0.25em }
 tr.title {background:#e2e9ec !important}
 td { white-space: nowrap; padding: 0.1em 0.5em; }
 td.small { font-size:80%; width: 1px }
@@ -325,11 +323,3 @@ tr:nth-child(odd) { background: white; }
     flex-wrap: wrap;
 }
 
-.image-view {
-    border-radius:0.5em;
-    width:100%;
-    max-width:320px;max-height:320px;
-    float:left;margin:0 1em 1em 0;
-    overflow:hidden;
-    display:flex;align-items:center;justify-content:center;
-}
