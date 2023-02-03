@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
+	"html"
 	"net/http"
 	"path/filepath"
 	"runtime/debug"
@@ -69,16 +70,17 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 		}
 		return
 	},
-	"getFullParents": func(ids []uint64) (res []string) {
+	"getParentsData": func(ids []uint64) string {
+		buf := &bytes.Buffer{}
 		notes, _ := dal.BatchGetNotes(ids)
-		for _, n := range notes {
+		for i, n := range notes {
 			if n.Title != "" {
-				res = append(res, fmt.Sprintf("%d,%s", n.Id, n.Title))
+				fmt.Fprintf(buf, " data%d='%d,%s'", i, n.Id, html.EscapeString(n.Title))
 			} else {
-				res = append(res, fmt.Sprintf("%d,ns:id:%d", n.Id, n.Id))
+				fmt.Fprintf(buf, " data%d='%d,ns:id:%d'", i, n.Id, n.Id)
 			}
 		}
-		return
+		return buf.String()
 	},
 	"makeTitle": func(t *types.Note, max int, hl bool) string {
 		tt := types.SafeHTML(t.Title)
@@ -116,6 +118,7 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 }).ParseFS(httpStaticPages, "static/*.html"))
 
 var serveUUID = types.UUIDStr()
+
 var rootUUID = types.UUIDStr()
 
 var servedPaths = map[string]bool{}
@@ -238,7 +241,7 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 			ad.parentIds = append(ad.parentIds, key.Uint())
 			return true
 		})
-		if len(ad.parentIds) > r.GetParentsMax() {
+		if len(ad.parentIds) > r.MaxParents() {
 			return ad, "TOO_MANY_PARENTS"
 		}
 		ad.parentIds, _ = dal.FilterInvalidParentIds(ad.parentIds)
@@ -249,12 +252,12 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 		return ad, "EMPTY_TITLE"
 	}
 
-	if types.UTF16LenExceeds(ad.title, r.GetTitleMaxLen()) {
+	if types.UTF16LenExceeds(ad.title, r.MaxTitle()) {
 		return ad, "TITLE_TOO_LONG"
 	}
 
 	ad.content = strings.TrimSpace(q.Get("content"))
-	if types.UTF16LenExceeds(ad.content, r.GetContentMaxLen()) {
+	if types.UTF16LenExceeds(ad.content, r.MaxContent()) {
 		return ad, "CONTENT_TOO_LONG"
 	}
 	return ad, ""

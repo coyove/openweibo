@@ -3,19 +3,19 @@ package limiter
 import (
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/clock"
 	"github.com/tidwall/gjson"
-	"golang.org/x/time/rate"
 )
 
 var cdMap sync.Map
 
 type limiter struct {
-	*rate.Limiter
+	ctr    int64
 	freeAt int64
 }
 
@@ -46,7 +46,7 @@ func CheckIP(r *types.Request) (ok bool, remains int64) {
 
 	if v, ok := cdMap.Load(r.RemoteIPv4Masked().String()); ok {
 		rl := v.(*limiter)
-		if rl.Allow() {
+		if atomic.AddInt64(&rl.ctr, -1) > 0 {
 			return true, 0
 		}
 		return false, rl.freeAt - clock.Unix()
@@ -66,20 +66,19 @@ func AddIP(r *types.Request) {
 
 	sec := r.Config().Get("ip_cooldown_sec").Int()
 	if sec <= 0 {
-		sec = 30
+		sec = 60
 	}
 
-	burst := r.Config().Get("ip_cooldown_burst").Int()
-	if burst <= 0 {
-		burst = 10
+	ctr := r.Config().Get("ip_cooldown_counter").Int()
+	if ctr <= 0 {
+		ctr = 10
 	}
 
-	rl := &limiter{
-		Limiter: rate.NewLimiter(rate.Limit(1.0/float64(sec)), int(burst)),
-		freeAt:  clock.Unix() + sec,
-	}
+	cdMap.Store(ipStr, &limiter{
+		ctr:    ctr,
+		freeAt: clock.Unix() + sec,
+	})
 
-	cdMap.Store(ipStr, rl)
 	time.AfterFunc(time.Second*time.Duration(sec), func() {
 		cdMap.Delete(ipStr)
 	})

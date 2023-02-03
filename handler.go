@@ -127,7 +127,7 @@ func HandleAction(w *types.Response, r *types.Request) {
 		if action != "touch" {
 			go dal.AppendHistory(target.Id, r.UserDisplay, action,
 				types.UTF16Trunc(r.Form.Get("reject_msg"), 100),
-				r.RemoteIPv4Masked(), target)
+				r.RemoteIPv4, target)
 		}
 		limiter.AddIP(r)
 		w.WriteJSON("success", true, "note", target)
@@ -459,7 +459,7 @@ func HandleNew(w *types.Response, r *types.Request) {
 
 func HandleEdit(w *types.Response, r *types.Request) {
 	var note *types.Note
-	var readonly bool
+	var readonly string
 	var recordUnix int64
 	id, _ := strconv.ParseUint(r.URL.Query().Get("id"), 10, 64)
 	if id > 0 {
@@ -471,7 +471,7 @@ func HandleEdit(w *types.Response, r *types.Request) {
 		if r != nil {
 			note = r.Note()
 			recordUnix = r.CreateUnix
-			readonly = true
+			readonly = "readonly"
 		}
 	}
 	if !note.Valid() {

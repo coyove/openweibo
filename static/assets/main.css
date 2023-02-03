@@ -265,6 +265,9 @@ tr:nth-child(odd) { background: white; }
     align-items: center;
     justify-content: center;
 }
+.image-selector-container .view-large {
+    margin: 0; left: unset; right: 0; top: 0; width: 2em; height: 2em; border-bottom-left-radius: 0.5em;
+}
 
 .dialog { position:fixed;left:0;right:0;top:0;bottom:0;overflow:auto;background:white;padding-bottom:0.5em }
 .image-container { height: 100%; display: flex; align-items: center; justify-content: center; }

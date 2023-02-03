@@ -48,19 +48,14 @@ div.diff-row.ins{background:#ccffd8}
 
         <tr>
             <td class=small>ID</td>
-            <td>
-                <div class=display>
-                    <a href='/ns:id:{{.Id}}'>{{.Id}}</a>
-                </div>
-            </td>
+            <td><div class=display><a href='/ns:id:{{.Id}}'>{{.Id}}</a></div></td>
         </tr>
         <tr>
             <td colspan=2>
                 <div class=display>
-                    <script type="text/plain" id=title{{.Id}}>{{.Title}}</script>
-                    <input placeholder='标题' id="title" maxlength={{$.GetTitleMaxLen}} class=tag-edit-name {{if $.T.readonly}}readonly{{end}}/>
+                    <input placeholder='标题' id="title" value="{{safeHTML .Title}}" maxlength={{$.MaxTitle}} class=tag-edit-name {{$.T.readonly}}/>
                     {{if and (not $.T.readonly) (not .PendingReview)}}
-                    <div class='tag-box button' onclick='updateNote(this)' id=update {{if $.T.readonly}}style='display:none'{{end}}>更新</div>
+                    <div class='tag-box button' onclick='updateNote(this)' id=update>更新</div>
                     {{end}}
                 </div>
             </td>
@@ -80,11 +75,14 @@ div.diff-row.ins{background:#ccffd8}
             <td colspan=2>
                 <div class=display>
                     {{if $showImageDiff}}
-                    <input id="current-image" readonly type=file class='image-selector' accept="image/*">
+                    <input id="current-image" readonly type=file class='image-selector' accept="image/*"
+                        default='{{imageURL "thumb" .Image}}' large='{{imageURL "image" .Image}}'>
                     <div class=icon-right-big></div>
-                    <input id="image" {{if $.T.readonly}}readonly{{end}} type=file class='image-selector' accept="image/*">
+                    <input id="image" {{$.T.readonly}} type=file class='image-selector' accept="image/*"
+                        default='{{imageURL "thumb" .ReviewImage}}' large='{{imageURL "image" .ReviewImage}}'>
                     {{else}}
-                    <input id="image" {{if $.T.readonly}}readonly{{end}} type=file class='image-selector' accept="image/*">
+                    <input id="image" {{$.T.readonly}} type=file class='image-selector' accept="image/*"
+                        default='{{imageURL "thumb" .Image}}' large='{{imageURL "image" .Image}}'>
                     {{end}}
                 </div>
             </td>
@@ -105,11 +103,7 @@ div.diff-row.ins{background:#ccffd8}
         <tr id='tr-content-current' class=textarea>
             <td colspan=2>
                 <div class=display>
-                    <textarea id="content"
-                        {{if $.T.readonly}}readonly{{end}}
-                        maxlength={{$.GetContentMaxLen}}
-                        class=tag-edit-desc
-                        rows=15>{{safeHTML .Content}}
+                    <textarea id="content" {{$.T.readonly}} maxlength={{$.MaxContent}} class=tag-edit-desc rows=15>{{safeHTML .Content}}
 </textarea>
                 </div>
             </td>
@@ -130,8 +124,8 @@ div.diff-row.ins{background:#ccffd8}
         </tr>
         {{end}}
 
-        {{$parents := getFullParents .ParentIds}}
-        {{$reviewParents := getFullParents .ReviewParentIds}}
+        {{$parents := getParentsData .ParentIds}}
+        {{$reviewParents := getParentsData .ReviewParentIds}}
         {{$showParentsDiff := and .PendingReview (not (equ64s .ParentIds .ReviewParentIds))}}
         {{if or $parents $showParentsDiff (not $.T.readonly)}}
             {{if $showParentsDiff}}
@@ -139,9 +133,7 @@ div.diff-row.ins{background:#ccffd8}
                 <td class=small>父记事</td>
                 <td>
                     <div class=display>
-                        <div id=current-parents class='tag-search-input-container' readonly max-tags={{$.GetParentsMax}}
-                             {{range $i, $t := $parents}}data{{$i}}='{{safeHTML $t}}' {{end}}></div>
-                        <script>wrapTagSearchInput($('#current-parents').get(0))</script>
+                        <div id=current-parents class='tag-search-input-container' readonly max-tags={{$.MaxParents}} {{$parents}}></div>
                     </div>
                 </td>
             </tr>
@@ -149,10 +141,7 @@ div.diff-row.ins{background:#ccffd8}
                 <td class=small><div class=icon-right-big></div></td>
                 <td>
                     <div class=display>
-                        <div id=parents class='tag-search-input-container' {{if $.T.readonly}}readonly{{end}}
-                             max-tags={{$.GetParentsMax}} {{range $i, $t := $reviewParents}}data{{$i}}='{{safeHTML $t}}' {{end}}
-                        ></div>
-                        <script>wrapTagSearchInput($('#parents').get(0))</script>
+                        <div id=parents class='tag-search-input-container' {{$.T.readonly}} max-tags={{$.MaxParents}} {{$reviewParents}}></div>
                     </div>
                 </td>
             </tr>
@@ -160,10 +149,7 @@ div.diff-row.ins{background:#ccffd8}
             <tr>
                 <td colspan=2>
                     <div class=display>
-                        <div id=parents class='tag-search-input-container' {{if $.T.readonly}}readonly{{end}}
-                             max-tags={{$.GetParentsMax}} {{range $i, $t := $parents}}data{{$i}}='{{safeHTML $t}}' {{end}}
-                        ></div>
-                        <script>wrapTagSearchInput($('#parents').get(0))</script>
+                        <div id=parents class='tag-search-input-container' {{$.T.readonly}} max-tags={{$.MaxParents}} {{$parents}}></div>
                     </div>
                 </td>
             </tr>
@@ -226,15 +212,7 @@ div.diff-row.ins{background:#ccffd8}
         {{end}}
 
         <script>
-            $('#title').val($('#title{{.Id}}').text());
             $('#content').linedtextarea();
-
-            {{if $showImageDiff}}
-            $('#current-image').imageSelector("{{imageURL "thumb" .Image}}");
-            $('#image').imageSelector("{{imageURL "thumb" .ReviewImage}}");
-            {{else}}
-            $('#image').imageSelector("{{imageURL "thumb" .Image}}");
-            {{end}}
 
             {{if .PendingReview}}
             $('#review-content').linedtextarea();
@@ -260,11 +238,11 @@ div.diff-row.ins{background:#ccffd8}
                     if (removed) {
                         (lnL++), (left.innerText = lnL);
                         node.className = 'diff-row del';
-                                    info.innerText = '-';
+                        info.innerText = '-';
                     } else if (added) {
                         (lnR++), (right.innerText = lnR);
                         node.className = 'diff-row ins';
-                                    info.innerText = '+';
+                        info.innerText = '+';
                     } else {
                         (lnL++), (lnR++), (left.innerText = lnL), (right.innerText = lnR);
                         node.className = 'diff-row';
@@ -280,16 +258,12 @@ div.diff-row.ins{background:#ccffd8}
             {{end}}
 
             function updateNote(btn) {
-                ajaxBtn(btn, "update", {
+                ajaxBtn(btn, "update", Object.assign({
                     'id': "{{.Id}}",
                     'title': $("#title").val(),
                     'content': $("#content").val(),
-                    'image': $('#image').get(0).image,
-                    'thumb': $('#image').get(0).thumb,
-                    'image_changed': $('#image').attr('changed'),
-                    'image_small': $('#image').attr('small'),
                     'parents': JSON.stringify($('#parents').get(0).getTags()),
-                });
+                }, $("#image").get(0).imageData));
             }
 
             function deleteNote(btn) {

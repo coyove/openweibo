@@ -25,9 +25,9 @@
                     <div style='display: flex;flex-grow:1'>
                         <textarea
                                 id=name
-                                maxlength={{.GetTitleMaxLen}}
+                                maxlength={{.MaxTitle}}
                                 class='tag-edit-title tag-edit-desc'
-                                placeholder='标题：{{.GetTitleMaxLen}}字符'></textarea>
+                                placeholder='标题：{{.MaxTitle}}字符'></textarea>
                         <div>
                             <div id=submit class='tag-edit-button icon-paper-plane'></div>
                         </div>
@@ -42,9 +42,9 @@
             <div class=display>
                 <textarea
                     id=content
-                    maxlength={{.GetContentMaxLen}}
+                    maxlength={{.MaxContent}}
                     class=tag-edit-desc
-                    placeholder='内容：0-{{.GetContentMaxLen}}字符'
+                    placeholder='内容：0-{{.MaxContent}}字符'
                     rows=20></textarea>
             </div>
         </td>
@@ -60,7 +60,7 @@
     <tr>
         <td>
             <div class=display>
-                <div max-tags={{.GetParentsMax}}
+                <div max-tags={{.MaxParents}}
                      id=parents
                      class='tag-search-input-container'
                      {{range $i, $v := .T.parents}}data{{$i}}='{{safeHTML $v}}' {{end}}></div>
@@ -71,15 +71,11 @@
 
 <script>
     $('#submit').click(function() {
-        ajaxBtn(this, 'create', {
+        ajaxBtn(this, 'create', Object.assign({
             'title': $('#name').val(),
             'content': $('#content').val(),
-            'image': $('#image').get(0).image,
-            'thumb': $('#image').get(0).thumb,
-            'image_changed': $('#image').attr('changed'),
-            'image_small': $('#image').attr('small'),
             'parents': JSON.stringify($('#parents').get(0).getTags()),
-        }, function(data) {
+        }, $('#image').get(0).imageData), function(data) {
             window.localStorage.removeItem('draft:new');
             {{if .T.lastParent}}
             location.href = '/ns:id:{{.T.lastParent}}?sort=0&desc=1';
@@ -121,8 +117,6 @@
     }
     checkTitle();
 
-    $('#image').imageSelector();
-    wrapTagSearchInput($('#parents').get(0));
     $('#content').linedtextarea().val(window.localStorage.getItem('draft:new') || '');
     setInterval(function() {
         window.localStorage.setItem('draft:new', $('#content').val());

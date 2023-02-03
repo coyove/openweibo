@@ -71,23 +71,16 @@
                         <div class='wrapall content100'><span id=quick-image-loader class='image-display-icon icon-folder'></span></div>
                     </div>
                     <div class=image-display-info>
-                        <input id="quick-image" type=file class='image-selector' accept="image/*">
+                        <input id="quick-image" type=file accept="image/*">
                         <script>
-                            $("#quick-image").imageSelector('', function() {
-                                const changed = this.attr('changed');
+                            $("#quick-image").imageSelector(function() {
+                                const changed = this.get(0).imageData.image_changed;
                                 if (!changed) return;
-                                ajaxBtn($("#quick-image-loader").get(0), 'create', {
-                                    'image': this.get(0).image,
-                                    'thumb': this.get(0).thumb,
-                                    'image_changed': changed,
-                                    'image_small': this.attr('small'),
+                                ajaxBtn($("#quick-image-loader").get(0), 'create', Object.assign({
                                     'parents': JSON.stringify({
-                                        '{{.T.note.Id}}': {'tag': ''},
-                                        {{range .T.note.ParentIds}}
-                                        '{{.}}': {'tag': ''},
-                                        {{end}}
+                                        '{{.T.note.Id}}': {'tag': ''},{{range .T.note.ParentIds}}'{{.}}': {'tag': ''},{{end}}
                                     }),
-                                }, function(data) {
+                                }, this.get(0).imageData), function(data) {
                                     location.href = '/ns:id:{{.T.note.Id}}?sort=0&desc=1';
                                 });
                             }).hide();

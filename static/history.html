@@ -58,7 +58,9 @@
                         {{.Modifier}}&nbsp;
                         <a href='/ns:history?user={{.Modifier}}&desc=1' class='tag-edit-button icon-user'></a>&nbsp;
                     </div>
+                    {{if $.User.IsMod}}
                     <div class=diff-header-ip>{{.ModifierIP}}</div>
+                    {{end}}
                 </div>
             </td>
         </tr>

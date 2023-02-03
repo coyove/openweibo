@@ -135,7 +135,7 @@ func (r *Request) RemoteIPv4Masked() net.IP {
 	return ip
 }
 
-func (r *Request) GetTitleMaxLen() int {
+func (r *Request) MaxTitle() int {
 	v := r.Config().Get("title_max").Int()
 	if v <= 0 {
 		return 80
@@ -143,7 +143,7 @@ func (r *Request) GetTitleMaxLen() int {
 	return int(v)
 }
 
-func (r *Request) GetContentMaxLen() int {
+func (r *Request) MaxContent() int {
 	v := r.Config().Get("content_max").Int()
 	if v <= 0 {
 		return 500000
@@ -151,7 +151,7 @@ func (r *Request) GetContentMaxLen() int {
 	return int(v)
 }
 
-func (r *Request) GetParentsMax() int {
+func (r *Request) MaxParents() int {
 	v := r.Config().Get("parents_max").Int()
 	if v <= 0 {
 		return 32
