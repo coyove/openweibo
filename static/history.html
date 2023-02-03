@@ -23,7 +23,6 @@
                         {{if eq .T.viewType "note"}}
                             <title>{{.T.note.HTMLTitleDisplay}} 编辑历史</title>
                             <b class=wrapall>{{.T.note.HTMLTitleDisplay}}</b>
-                            <a class=tag-edit-button href='/{{.T.note.EscapedTitle}}'><span class=icon-eye></span></a>
                             <a class=tag-edit-button href='/ns:edit?id={{.T.note.Id}}'><span class=icon-pencil></span></a>
                             修改历史
                         {{end}}

@@ -278,6 +278,7 @@ tr:nth-child(odd) { background: white; }
 }
 
 .image-display {
+    margin: 0 auto;
     flex-direction: column;
     display: flex;
     width: 100%;
@@ -308,6 +309,8 @@ tr:nth-child(odd) { background: white; }
     flex-grow: 1;
     width: 100%;
 }
+.image-display-icon { color: #666; font-size: 3em; }
+.image-display-icon:hover { color: #222 }
 
 .image-display-bar { width: 100%; font-size: 80%; margin-top: 0.25em; display: flex; align-items: center; justify-content: center; color:#666 }
 .image-display-count {

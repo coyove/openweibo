@@ -63,11 +63,13 @@ func InitDB() {
 	if err != nil {
 		logrus.Fatal("init store database: ", err)
 	}
+	Store.DB.Update(func(*bbolt.Tx) error { return nil })
 
 	Metrics.DB, err = bbolt.Open("data/metrics.db", 0777, metricsDBOptions)
 	if err != nil {
 		logrus.Fatal("init metrics database: ", err)
 	}
+	Metrics.DB.Update(func(*bbolt.Tx) error { return nil })
 	startMetricsBackup()
 
 	Store.ImageCache, err = disklru.New("lru_cache",

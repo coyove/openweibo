@@ -67,7 +67,13 @@ func saveImage(r *types.Request, id uint64, ts int64, ext string,
 	}
 	defer out.Close()
 
-	n, err := io.Copy(out, img)
+	rd := bufio.NewReader(img)
+	buf, _ := rd.Peek(512)
+	if !strings.Contains(http.DetectContentType(buf), "image") {
+		return "", "INVALID_IMAGE"
+	}
+
+	n, err := io.Copy(out, rd)
 	if err != nil {
 		logrus.Errorf("copy image to local %s err: %v", path, err)
 		return "", "INTERNAL_ERROR"

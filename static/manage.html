@@ -27,27 +27,6 @@
                     {{else}}
                         {{if .T.view}}
                             {{if ne .P.Page 1}}<b class=wrapall>{{.T.note.HTMLTitleDisplay}} </b>{{end}}子记事 ({{.T.total}})
-                            <input id="quick-image" type=file class='image-selector' accept="image/*">
-                            <script>
-                                $("#quick-image").imageSelector('', function() {
-                                    const changed = this.attr('changed');
-                                    if (!changed) return;
-                                    ajaxBtn(null, 'create', {
-                                        'image': this.get(0).image,
-                                        'thumb': this.get(0).thumb,
-                                        'image_changed': changed,
-                                        'image_small': this.attr('small'),
-                                        'parents': JSON.stringify({
-                                            '{{.T.note.Id}}': {'tag': ''},
-                                            {{range .T.note.ParentIds}}
-                                            '{{.}}': {'tag': ''},
-                                            {{end}}
-                                        }),
-                                    }, function(data) {
-                                        location.href = '/ns:id:{{.T.note.Id}}?sort=0&desc=1';
-                                    });
-                                }).hide();
-                            </script>
                         {{else}}
                             <title>全部记事</title>
                             全部记事 ({{.T.total}})
@@ -77,11 +56,11 @@
 
         <tr>
             <td style='padding:0;background:transparent'>
-            <div style='display: grid;justify-items: center; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));'>
+            <div id=grid style='display: grid;justify-items: center; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));'>
             {{if and .T.view (eq .P.Page 1)}}
                 <div class=image-display>
                     <div class='image-display-container' onclick='location.href="/ns:new?parents={{.T.note.Id}}"'>
-                        <div class='wrapall content100'><span style='font-size:4em' class=icon-plus-circled></span></div>
+                        <div class='wrapall content100'><span class='image-display-icon icon-plus-circled'></span></div>
                     </div>
                     <div class=image-display-info>
                         <div style='flex-grow:1'><span class=tag-edit-name>新建子记事</span></div><div class=image-display-bar></div>
@@ -89,10 +68,31 @@
                 </div>
                 <div class=image-display>
                     <div class='image-display-container' onclick='$("#quick-image").click()'>
-                        <div class='wrapall content100'><span style='font-size:4em' class=icon-plus-circled></span></div>
+                        <div class='wrapall content100'><span id=quick-image-loader class='image-display-icon icon-folder'></span></div>
                     </div>
                     <div class=image-display-info>
-                        <div style='flex-grow:1'><span class=tag-edit-name>新建子记事</span></div><div class=image-display-bar></div>
+                        <input id="quick-image" type=file class='image-selector' accept="image/*">
+                        <script>
+                            $("#quick-image").imageSelector('', function() {
+                                const changed = this.attr('changed');
+                                if (!changed) return;
+                                ajaxBtn($("#quick-image-loader").get(0), 'create', {
+                                    'image': this.get(0).image,
+                                    'thumb': this.get(0).thumb,
+                                    'image_changed': changed,
+                                    'image_small': this.attr('small'),
+                                    'parents': JSON.stringify({
+                                        '{{.T.note.Id}}': {'tag': ''},
+                                        {{range .T.note.ParentIds}}
+                                        '{{.}}': {'tag': ''},
+                                        {{end}}
+                                    }),
+                                }, function(data) {
+                                    location.href = '/ns:id:{{.T.note.Id}}?sort=0&desc=1';
+                                });
+                            }).hide();
+                        </script>
+                        <div style='flex-grow:1'><span class=tag-edit-name>添加子图片</span></div><div class=image-display-bar></div>
                     </div>
                 </div>
             {{end}}
@@ -165,15 +165,25 @@
         }
     }).val(decodeURIComponent('{{fullEscape .T.query}}') + ' ')
     $(window).on('resize', function() {
-            var current = -1, color = ['white', {{if .T.view}}'#f3f4f5'{{else}}'#f7f8f9'{{end}}], colorIdx = 0, colorIdx2 = 0;
+        var current = -1, color = ['white', '#f7f8f9'], colorIdx = 0, colorIdx2 = 0;
+        $('.image-dummy').remove();
         $('.image-display').each(function(_, id) {
             if ($(id).position().top != current || current == -1) {
                 current = $(id).position().top;
                 colorIdx = (colorIdx2++, colorIdx2 % 2);
             }
-            colorIdx ++;
+            colorIdx++;
             $(id).css('background', color[colorIdx % 2]);
-        })
+        });
+        while (colorIdx2 > 0) {
+            colorIdx++;
+            var dummy = $("<div class='image-display image-dummy'>").css('background', color[colorIdx % 2]);
+            $('#grid').append(dummy);
+            if (dummy.position().top != current) {
+                dummy.remove();
+                break;
+            }
+        }
     }).resize();
 
     function findLexPrefix() {

@@ -129,13 +129,13 @@
     {
       "uid": "c1f1975c885aa9f3dad7810c53b82074",
       "css": "lock",
-      "code": 59394,
+      "code": 128296,
       "src": "fontawesome"
     },
     {
       "uid": "657ab647f6248a6b57a5b893beaf35a9",
       "css": "lock-open",
-      "code": 59395,
+      "code": 128193,
       "src": "fontawesome"
     },
     {
@@ -145,10 +145,16 @@
       "src": "fontawesome"
     },
     {
-      "uid": "ff1710a605b3fc98346903db89034558",
-      "css": "balance-scale",
-      "code": 62030,
+      "uid": "dec0ce0476433f7e49e096526cf89465",
+      "css": "hammer",
+      "code": 59394,
       "src": "fontawesome"
+    },
+    {
+      "uid": "0ccb084ddeeae372673793ed0b45bb4a",
+      "css": "folder",
+      "code": 59395,
+      "src": "entypo"
     }
   ]
 }
