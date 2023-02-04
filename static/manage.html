@@ -177,6 +177,8 @@
                 break;
             }
         }
+        const mainImage = $('#main-image');
+        mainImage && mainImage.parent().css('float', mainImage.width() > $(window).width() * 0.75 ? '' : 'left');
     }).resize();
 
     function findLexPrefix() {

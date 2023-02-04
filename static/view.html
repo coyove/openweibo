@@ -42,8 +42,8 @@
 <div>
     {{if .Image}}
     <a href="javascript:openImage('{{imageURL "image" .Image}}')">
-        <div style='float:left;margin:0 0.5em 0.5em 0;border-radius:0.5em;overflow:hidden'>
-            <img class=image
+        <div style='display:inline-block;float:left;margin:0 0.5em 0.5em 0;border-radius:0.5em;overflow:hidden'>
+            <img id=main-image class=image
                  src="{{imageURL "image" .Image}}"
                  data-src="{{imageURL "image" .Image}}"
                  style="max-width:100%;max-height:100vh;display:block;">

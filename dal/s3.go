@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/clock"
@@ -62,6 +63,23 @@ func imageS3Loader(key, saveTo string) error {
 	}()
 	logrus.Infof("load S3 image: %s: %v in %v", key, err, time.Since(start))
 	return err
+}
+
+func DeleteS3(files ...string) {
+	for _, file := range files {
+		if file == "" {
+			continue
+		}
+		out, err := Store.S3.S3.DeleteObject(&s3.DeleteObjectInput{
+			Bucket: aws.String("nsimages"),
+			Key:    aws.String(file),
+		})
+		if err != nil || out == nil {
+			logrus.Errorf("DeleteS3 %s error: %v", file, err)
+			continue
+		}
+		logrus.Infof("DeleteS3 %s: %v", file, *out.VersionId)
+	}
 }
 
 func UploadS3(files ...string) (lastErr error) {

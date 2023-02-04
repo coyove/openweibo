@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/NYTimes/gziphandler"
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/clock"
@@ -110,7 +111,7 @@ func main() {
 		start := time.Now()
 		fmt.Fprintf(w, "%v in %v", dump(), time.Since(start))
 	})
-	http.HandleFunc("/ns:static/", HandleAssets)
+	http.Handle("/ns:static/", gziphandler.GzipHandler(http.HandlerFunc(HandleAssets)))
 	http.HandleFunc("/ns:image/", HandleImage)
 	http.HandleFunc("/ns:thumb/", HandleImage)
 	http.HandleFunc("/loaderio-9a0a63b98532fb7e58f548512801933c.txt", func(w http.ResponseWriter, r *http.Request) {

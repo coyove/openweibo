@@ -200,7 +200,7 @@ div.diff-row.ins{background:#ccffd8}
             <td class=small></td>
             <td>
                 <div class=display>
-                    {{if $.User.IsMod}}
+                    {{if or $.User.IsMod (eq $.UserDisplay .Creator)}}
                     <div class='tag-box button alert' onclick='deleteNote(this)'><span>删除记事</span></div>
                     {{end}}
                     <div class='tag-box button' onclick='openPreview($("#content").val())'>
