@@ -115,12 +115,7 @@ func HandleHistory(w *types.Response, r *types.Request) {
 		view, idStr = "all", ""
 	case "note":
 		id, _ := strconv.ParseUint(idStr, 10, 64)
-		if note, _ = dal.GetNote(id); note.Valid() {
-			results, total, pages = dal.KSVPaging(nil, fmt.Sprintf("history_%d", note.Id), -1, r.P.Desc, r.P.Page-1, r.P.PageSize)
-		} else {
-			http.Redirect(w, r.Request, "/ns:not_found", 302)
-			return
-		}
+		results, total, pages = dal.KSVPaging(nil, fmt.Sprintf("history_%d", id), -1, r.P.Desc, r.P.Page-1, r.P.PageSize)
 	case "user":
 		results, total, pages = dal.KSVPaging(nil, "history_"+idStr, -1, r.P.Desc, r.P.Page-1, r.P.PageSize)
 	}
@@ -262,7 +257,11 @@ func HandleView(w *types.Response, r *types.Request) {
 
 	note, _ := dal.GetNoteByName(t)
 	if !note.Valid() {
-		http.Redirect(w, r.Request, "/ns:manage?q="+types.FullEscape(t), 302)
+		if strings.HasPrefix(t, "ns:id:") {
+			http.Redirect(w, r.Request, "/ns:not_found", 302)
+		} else {
+			http.Redirect(w, r.Request, "/ns:manage?q="+types.FullEscape(t), 302)
+		}
 		return
 	}
 

@@ -11,7 +11,8 @@ html, body {
     background: #fffffc;
 }
 
-a { color: #1565c0 }
+a { color: #1565c0; text-decoration: none }
+a:hover { text-decoration: underline }
 .highlight {background:wheat;white-space:pre-wrap}
 .wrapall{word-break:break-all;white-space:pre-wrap}
 .note{font:inherit;word-break:break-all;white-space:pre-wrap}
@@ -312,7 +313,7 @@ tr:nth-child(odd) { background: white; }
     flex-grow: 1;
     width: 100%;
 }
-.image-display-icon { color: #666; font-size: 3em; }
+.image-display-icon { color: #666; font-size: 24px; }
 .image-display-icon:hover { color: #222 }
 
 .image-display-bar { width: 100%; font-size: 80%; margin-top: 0.25em; display: flex; align-items: center; justify-content: center; color:#666 }

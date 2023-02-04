@@ -26,8 +26,46 @@ func CreateNote(name string, tag *types.Note) (existed bool, err error) {
 
 		ProcessParentChanges(tx, tag, nil, tag.ParentIds)
 		UpdateCreator(tx, tag.Creator, tag)
+		AppendImage(tx, tag)
 		MetricsIncr("create", 1)
 		return KSVUpsert(tx, NoteBK, KSVFromTag(tag))
+	})
+	return
+}
+
+func AppendImage(tx *bbolt.Tx, note *types.Note) error {
+	bk, err := tx.CreateBucketIfNotExists(append([]byte("image_"), types.Uint64Bytes(note.Id)...))
+	if err != nil {
+		return err
+	}
+	if note.ReviewImage != "" {
+		if err := bk.Put([]byte(note.ReviewImage), nil); err != nil {
+			return err
+		}
+	}
+	if note.Image != "" {
+		if err := bk.Put([]byte(note.Image), nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func ListImage(id uint64, deleteBucket bool) (res []string) {
+	Store.Update(func(tx *bbolt.Tx) error {
+		name := append([]byte("image_"), types.Uint64Bytes(id)...)
+		bk := tx.Bucket(name)
+		if bk == nil {
+			return nil
+		}
+		c := bk.Cursor()
+		for k, _ := c.First(); len(k) > 0; k, _ = c.Next() {
+			res = append(res, string(k))
+		}
+		if deleteBucket {
+			return tx.DeleteBucket(name)
+		}
+		return nil
 	})
 	return
 }

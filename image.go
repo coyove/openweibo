@@ -4,11 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"math/rand"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -19,7 +19,6 @@ import (
 
 func HandleImage(w http.ResponseWriter, r *http.Request) {
 	if d := types.Config.Domain; d != "" && !strings.Contains(r.Referer(), d) {
-		time.Sleep(time.Duration(rand.Intn(500)+500) * time.Millisecond)
 		w.WriteHeader(400)
 		return
 	}
@@ -33,6 +32,17 @@ func HandleImage(w http.ResponseWriter, r *http.Request) {
 		p = p[:len(p)-len(ext)] + ".thumb.jpg"
 	}
 	p = strings.Replace(p, "/", "", -1)
+
+	if idx1, idx2 := strings.IndexByte(p, '-'), strings.IndexByte(p, '.'); idx1 < 0 || idx2 < 0 || idx1+1 > idx2-1 {
+		w.WriteHeader(400)
+		return
+	} else if id, _ := strconv.ParseUint(p[idx1+1:idx2-1], 16, 64); id == 0 {
+		w.WriteHeader(400)
+		return
+	} else if note, _ := dal.GetNote(id); !note.Valid() {
+		w.WriteHeader(404)
+		return
+	}
 
 	f, err := dal.Store.ImageCache.Open(p)
 	if err != nil {
@@ -57,7 +67,7 @@ func HandleImage(w http.ResponseWriter, r *http.Request) {
 
 func saveImage(r *types.Request, id uint64, ts int64, ext string,
 	img multipart.File, hdr *multipart.FileHeader) (string, string) {
-	fn := fmt.Sprintf("%s-%x%s", time.Unix(0, ts).Format("060102150405.000"), id, ext)
+	fn := fmt.Sprintf("%s%03d-%x%s", time.Unix(0, ts).Format("060102150405"), (ts/1e6)%1000, id, ext)
 	path := dal.ImageCacheDir + fn
 	os.MkdirAll(filepath.Dir(path), 0777)
 	out, err := os.Create(path)

@@ -109,6 +109,7 @@ func doUpdate(w *types.Response, r *types.Request) (*types.Note, bool) {
 
 	if err := dal.Store.Update(func(tx *bbolt.Tx) error {
 		dal.UpdateCreator(tx, target.Creator, target)
+		dal.AppendImage(tx, target)
 		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
 	}); err != nil {
 		logrus.Errorf("update %d: %v", id, err)
@@ -241,7 +242,7 @@ func doDelete(target *types.Note, w *types.Response, r *types.Request) bool {
 		w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
 		return false
 	}
-	go dal.DeleteS3(target.Image, target.ReviewImage)
+	go dal.DeleteS3(dal.ListImage(target.Id, true)...)
 	return true
 }
 

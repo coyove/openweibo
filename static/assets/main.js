@@ -100,26 +100,34 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
             click(function() { !readonly && that.click() });
         div.insertBefore(this.hide());
 
-        function finish(changed, small, display, image, thumb) {
-            div.find('img').get(0).src = display;
-            that.get(0).imageData = {'image': image, 'thumb': thumb, 'image_changed': changed, 'image_small': small};
-            processing.hide();
-            display ? viewLarge.show().off('click').click(function(ev) {
-                window.open(URL.createObjectURL(image));
-                ev.stopPropagation();
-            }) : viewLarge.hide();
-            onload && onload.apply(that);
-        }
+        function onChange(fileIdx, files) {
+            function finish(changed, small, display, image, thumb) {
+                div.find('img').get(0).src = display;
+                that.get(0).imageData = {
+                    'image': image,
+                    'thumb': thumb,
+                    'image_changed': changed,
+                    'image_small': small,
+                    'image_index': fileIdx,
+                    'image_total': files.length,
+                };
+                processing.hide();
+                display ? viewLarge.show().off('click').click(function(ev) {
+                    window.open(URL.createObjectURL(image));
+                    ev.stopPropagation();
+                }) : viewLarge.hide();
+                display && onload && onload.apply(that, [that.get(0).imageData, file, fileIdx < files.length - 1 ? function() {
+                    onChange(fileIdx + 1, files);
+                } : false]);
+            }
 
-        function onChange(file) {
-            processing.text('处理中')
-            if (!file) {
+            if (fileIdx >= files.length) {
                 finish(false, false, '', null, null);
                 return;
             }
-            processing.show();
-            const reader = new FileReader();
-            const size = 300;
+
+            processing.text('处理中').show();
+            const file = files[fileIdx], reader = new FileReader(), size = 300;
             reader.onload = function (e) {
                 var img = document.createElement("img");
                 img.onload = function (event) {
@@ -142,14 +150,19 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
                     }, 'image/jpeg');
                 }
                 img.onerror = function() {
-                    alert('无效图片');
+                    alert('无效图片: ' + file.name);
                     finish(false, false, '', null, null);
                 }
                 img.src = e.target.result;
             }
             reader.readAsDataURL(file);
         }
-        this.change(function() { onChange(that.get(0).files[0]) });
+        this.change(function() {
+            const files = [];
+            for (var i = 0; i < that.get(0).files.length; i ++) files.push(that.get(0).files[i]);
+            files.sort(function(a, b) { return a.name < b.name ? -1 : 1})
+            onChange(0, files);
+        });
         this.get(0).imageData = {};
         defaultImage && (div.find('img').get(0).src = defaultImage);
         largeImage && viewLarge.show().click(function(ev) {
@@ -229,15 +242,16 @@ function openImage(src) {
 function ajaxBtn(el, action, args, f) {
     if (!el)
         el = document.createElement("div");
+    const that = $(el);
+    if (that.attr('busy') == 'true') return;
     const fd = new FormData();    
     for (const k in args) fd.append(k, args[k]);
-    const that = $(el);
     const rect = el.getBoundingClientRect();
     const loader = $("<div style='display:inline-block;text-align:center'>" + window.CONST_loaderHTML + "</div>").
         css('width', rect.width + 'px').
         css('height', rect.height + 'px').
         css('margin', that.css('margin'));
-    that.hide();
+    that.attr('busy', 'true').hide();
     loader.insertBefore(that);
     $.ajax({
         url: '/ns:action',
@@ -259,7 +273,7 @@ function ajaxBtn(el, action, args, f) {
             alert('网络错误');
         },
         complete: function () {
-            that.show();
+            that.attr('busy', '').show();
             loader.remove();
         },
     });
@@ -482,7 +496,7 @@ document.onpaste = function (event) {
     for (var index in items) {
         var item = items[index];
         if (item.kind === 'file' && window.lastChangeImage) {
-            window.lastChangeImage(item.getAsFile());
+            window.lastChangeImage(0, [item.getAsFile()]);
             break;
         }
     }

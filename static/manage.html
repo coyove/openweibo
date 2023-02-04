@@ -35,9 +35,8 @@
                     </span>
 
                     <div>
-                        {{if .T.view}}
-                        {{end}}
                         <a class='tag-edit-button icon-search' href='javascript:$("#search-bar").toggle().find("input").focus()'></a>
+                        <a class='tag-edit-button icon-picture' id=gallery-mode title='看图模式' href='javascript:openImage("")'></a>
                         {{$qy := printf "q=%s" (fullEscape .T.query)}}
                         <a class='tag-edit-button icon-sort-name-up {{if and (eq .P.Sort 1) (not .P.Desc)}}selected{{end}}' href='?sort=1&{{$qy}}'></a>
                         <a class='tag-edit-button icon-sort-name-down {{if and (eq .P.Sort 1) (.P.Desc)}}selected{{end}}' href='?sort=1&desc=1&{{$qy}}'></a>
@@ -71,21 +70,28 @@
                         <div class='wrapall content100'><span id=quick-image-loader class='image-display-icon icon-folder'></span></div>
                     </div>
                     <div class=image-display-info>
-                        <input id="quick-image" type=file accept="image/*">
+                        <input id="quick-image" multiple type=file accept="image/*">
                         <script>
-                            $("#quick-image").imageSelector(function() {
-                                const changed = this.get(0).imageData.image_changed;
-                                if (!changed) return;
+                            $("#quick-image").imageSelector(function(imageData, file, next) {
+                                if (!imageData.image_changed) return;
+                                imageData.image_index == 0 && $('#quick-image-info').text("上传中");
                                 ajaxBtn($("#quick-image-loader").get(0), 'create', Object.assign({
+                                    'content': file.name,
                                     'parents': JSON.stringify({
                                         '{{.T.note.Id}}': {'tag': ''},{{range .T.note.ParentIds}}'{{.}}': {'tag': ''},{{end}}
                                     }),
-                                }, this.get(0).imageData), function(data) {
-                                    location.href = '/ns:id:{{.T.note.Id}}?sort=0&desc=1';
+                                }, imageData), function(data) {
+                                    if (!next) {
+                                        location.href = '/ns:id:{{.T.note.Id}}?sort=0&desc=1';
+                                        return;
+                                    }
+                                    $('#quick-image-info').text("上传 " + file.name + " 成功 (" +
+                                                                    (imageData.image_index + 1) + "/" + imageData.image_total + ")");
+                                    next();
                                 });
                             }).hide();
                         </script>
-                        <div style='flex-grow:1'><span class=tag-edit-name>添加子图片</span></div><div class=image-display-bar></div>
+                        <div style='flex-grow:1'><span id=quick-image-info class=tag-edit-name>添加子图片</span></div><div class=image-display-bar></div>
                     </div>
                 </div>
             {{end}}
@@ -95,6 +101,7 @@
                         <div
                             class='image-display-container image'
                             style='background: center / cover no-repeat url({{imageURL "thumb" .Image}});background-color:rgba(0,0,0,0.05)'
+                            data-src="{{imageURL "image" .Image}}"
                             onclick='location.href="/{{.EscapedTitle}}"'></div>
                     {{else}}
                         <div class='image-display-container' style='background:rgba(0,0,0,0.03)' onclick='location.href="/{{.EscapedTitle}}"'>
@@ -178,7 +185,8 @@
             }
         }
         const mainImage = $('#main-image');
-        mainImage && mainImage.parent().css('float', mainImage.width() > $(window).width() * 0.75 ? '' : 'left');
+        mainImage && mainImage.parent().css('float', mainImage.width() > $('#container').width() * 0.75 ? '' : 'left');
+        $('#gallery-mode')[$('.image').length ? 'show' : 'hide']();
     }).resize();
 
     function findLexPrefix() {
