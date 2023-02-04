@@ -188,6 +188,7 @@ func serve(pattern string, f func(*types.Response, *types.Request)) {
 type actionData struct {
 	title, content, image string
 	imageChanged          bool
+	imageTotal            int
 	parentIds, hash       []uint64
 }
 
@@ -208,6 +209,7 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 
 		seed := clock.UnixNano()
 		ad.imageChanged = q.Get("image_changed") == "true"
+		ad.imageTotal, _ = strconv.Atoi(q.Get("image_total"))
 
 		if q.Get("image_small") == "true" {
 			ad.image, msg = saveImage(r, id, seed, "s"+ext, img, hdr)

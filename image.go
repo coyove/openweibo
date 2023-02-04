@@ -119,7 +119,11 @@ func imageURL(p, a string) string {
 			}
 		}
 	}
-	return "/ns:" + p + "/" + a
+	path := "/ns:" + p + "/" + a
+	if types.Config.ImageDomain != "" {
+		return "https://" + types.Config.ImageDomain + path
+	}
+	return path
 }
 
 func checkImageCache(n *types.Note) (found, uploaded int) {

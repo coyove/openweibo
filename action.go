@@ -35,7 +35,7 @@ func doCreate(w *types.Response, r *types.Request) (*types.Note, bool) {
 		Creator:   r.UserDisplay,
 		ParentIds: ad.parentIds,
 	}
-	exist, err := dal.CreateNote(ad.title, target)
+	exist, err := dal.CreateNote(ad.title, target, ad.imageTotal > 1)
 	if err != nil {
 		logrus.Errorf("create %d: %v", id, err)
 		w.WriteJSON("success", false, "code", "INTERNAL_ERROR")

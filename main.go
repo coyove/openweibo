@@ -130,10 +130,8 @@ func main() {
 			mux.HandleFunc("/ns:image/", HandleImage)
 			mux.HandleFunc("/ns:thumb/", HandleImage)
 			srv := &http.Server{
-				Addr:         ":80",
-				Handler:      mux,
-				ReadTimeout:  time.Second,
-				WriteTimeout: time.Second,
+				Addr:    ":80",
+				Handler: mux,
 			}
 			logrus.Fatal(srv.ListenAndServe())
 		}()

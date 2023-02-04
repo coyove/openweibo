@@ -14,6 +14,7 @@ import (
 var Config struct {
 	Key            string
 	Domain         string
+	ImageDomain    string
 	PagingTimeout  int64
 	RootPassword   string
 	RequestMaxSize int64

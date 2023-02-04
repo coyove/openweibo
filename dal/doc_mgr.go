@@ -12,7 +12,7 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-func CreateNote(name string, tag *types.Note) (existed bool, err error) {
+func CreateNote(name string, tag *types.Note, noSort bool) (existed bool, err error) {
 	err = Store.Update(func(tx *bbolt.Tx) error {
 		if name != "" {
 			if _, existed = KSVFirstKeyOfSort1(tx, NoteBK, []byte(name)); existed {
@@ -28,7 +28,10 @@ func CreateNote(name string, tag *types.Note) (existed bool, err error) {
 		UpdateCreator(tx, tag.Creator, tag)
 		AppendImage(tx, tag)
 		MetricsIncr("create", 1)
-		return KSVUpsert(tx, NoteBK, KSVFromTag(tag))
+
+		t := KSVFromTag(tag)
+		t.NoSort = noSort
+		return KSVUpsert(tx, NoteBK, t)
 	})
 	return
 }

@@ -194,7 +194,7 @@ function openImage(src) {
             document.body.style.overflow = '';
             return;
         }
-        dialog.find('div.image-container-info').text((idx+1) + '/' + images.length);
+        dialog.find('div.image-container-info').text((idx+1) + ' / ' + images.length);
         load($(images[idx]).attr('data-src'))
     }
     const dialog = $("<div class=dialog>").css('cursor', 'pointer').
@@ -311,7 +311,7 @@ $(document).ready(function() {
         }
 
         function select(src, fromHistory) {
-            const tagID = parseInt(src.attr('tag-id')), tagText = src.attr('tag-text');
+            const tagID = src.attr('tag-id'), tagText = src.attr('tag-text');
             if (!(tagID in selected) && Object.keys(selected).length < maxTags) {
                 selected[tagID] = {'tag': tagText};
                 const t = $("<div>").addClass('tag-box normal user-selected').attr('tag-id', tagID);
