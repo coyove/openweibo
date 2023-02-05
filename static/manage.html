@@ -121,7 +121,13 @@
                             <a href='/{{.EscapedTitle}}' class=tag-edit-name>{{makeTitle . 32 true}}</a>
                         </div>
 
-                        <div class=image-display-bar>{{formatUnixMilliBR .UpdateUnix}}</div>
+                        <div class=image-display-bar>
+                            {{if $.User.IsMod}}
+                            <label><input class=batch-delete data={{.Id}} type=checkbox> {{formatUnixMilliBR .UpdateUnix}}</label>
+                            {{else}}
+                            {{formatUnixMilliBR .UpdateUnix}}
+                            {{end}}
+                        </div>
                         {{if .ChildrenCount}}
                         <div class=image-display-count>{{.ChildrenCount}}</div>
                         {{end}}
@@ -147,10 +153,12 @@
             {{end}}
         {{end}}
     {{end}}
-    <!--{{if and (eq .P.Sort 1) $gp}}
-        <a href='javascript:findLexPrefix()'><div style='margin-left: 0.2em' class='tag-edit-button icon-map-o'></div></a>
-    {{end}}-->
 </div>
+
+{{if .User.IsMod}}
+    <div class='tag-box button' onclick='$(".batch-delete").attr("checked", "checked")'>全选</div>
+    <div class='tag-box alert button' onclick='deleteNotes(this)'>批量删除</div>
+{{end}}
 
 <script>
     $('#search').on('keyup', function(ev) {
@@ -185,7 +193,10 @@
             }
         }
         const mainImage = $('#main-image');
-        mainImage && mainImage.parent().css('float', mainImage.width() > $('#container').width() * 0.75 ? '' : 'left');
+        if (mainImage) {
+            const narrow = mainImage.width() > $('#container').width() * 0.75;
+            mainImage.parent().css('float', narrow  ? '' : 'left').css('margin-right', narrow ? '0' : '0.5em');
+        }
         $('#gallery-mode')[$('.image').length ? 'show' : 'hide']();
     }).resize();
 
@@ -193,6 +204,14 @@
         const prefix = prompt('跳转到前缀');
         if (!prefix) return;
         location.href = '?sort=1&desc={{.T.desc}}&q={{fullEscape .T.query}}&prefix=' + encodeURIComponent(prefix);
+    }
+
+    function deleteNotes(btn) {
+        const ids = [];
+        $('.batch-delete:checked').each(function(_, el) { ids.push($(el).attr('data')) });
+        if (ids.length == 0) return;
+        if (!confirm("确认删除" + ids.join(', ') + "?")) return;
+        ajaxBtn(btn, 'delete', {'id': ids[0], 'ids': ids.join(',')});
     }
 </script>
 

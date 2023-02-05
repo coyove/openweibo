@@ -103,6 +103,7 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 				}
 				return buf.String()
 			}
+			return t.HTMLTitleDisplay()
 		}
 		return tt
 	},

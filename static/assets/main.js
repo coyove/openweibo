@@ -36,9 +36,11 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
 		return this.each(function() {
 			var lineNo = 1;
 			var textarea = $(this);
+            if (textarea.attr('lined') == 'true') return;
+            textarea.attr('lined', 'true');
 
 			/* Wrap the text area in the elements we need */
-			textarea.wrap($("<div style='overflow:hidden;flex-grow:1;min-height:10em'></div>"));
+			textarea.wrap($("<div style='overflow:hidden;flex-grow:1;min-height:20em'></div>"));
 			textarea.height('100%').css({'float': "right", 'line-height': '1.2em'}).attr('wrap', 'off');
 			textarea.parent().
                 prepend("<div class='lines' style='float:left;color:#ccc;text-align:right;line-height:1.2em'></div>").
@@ -64,11 +66,13 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
 			/* We call scroll once to add the line numbers */
 			textarea.scroll();
             textarea.on('keyup', function(ev) {
-                if (ev.which != 119) return;
+                if (ev.which != 119 && ev.which != 120) return;
                 const ta = textarea.get(0);
                 const start = ta.selectionStart, end = ta.selectionEnd;
 
-                const selected = encodeURIComponent(ta.value.slice(start, end));
+                const selected = ev.which == 119 ?
+                    encodeURIComponent(ta.value.slice(start, end)) :
+                    ta.value.slice(start, end).replaceAll('<', '&lt;').replaceAll('>', '&gt;');
                 const before = ta.value.slice(0, start);
                 const after = ta.value.slice(end);
                 ta.value = before + selected + after;

@@ -139,6 +139,9 @@ func convertToBkIDs(v interface{}) (ids [][]byte) {
 
 func BatchGetNotes(v interface{}) (tags []*types.Note, err error) {
 	ids := convertToBkIDs(v)
+	if len(ids) == 0 {
+		return
+	}
 	err = Store.View(func(tx *bbolt.Tx) error {
 		bk := tx.Bucket([]byte(NoteBK + "_kv"))
 		if bk == nil {

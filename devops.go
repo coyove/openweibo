@@ -313,6 +313,22 @@ func HandleRoot(w *types.Response, r *types.Request) {
 		fmt.Fprintf(w, "Image cache: %d\n", len(ic))
 
 		{
+			var outBoundSum, downloadSum float64
+			start, end := (clock.Unix()-86400)/dal.MetricsDelta, clock.Unix()/dal.MetricsDelta
+			for _, r := range dal.MetricsRange("image", start, end) {
+				outBoundSum += r.Sum
+			}
+			for _, r := range dal.MetricsRange("ns:outbound", start, end) {
+				outBoundSum += r.Sum
+			}
+			for _, r := range dal.MetricsRange("s3:download", start, end) {
+				downloadSum += r.Sum
+			}
+
+			fmt.Fprintf(w, "Traffic in 24h: outbound: %.2fM, s3: %.2fM\n", outBoundSum/1024/1024, downloadSum/1024/1024)
+		}
+
+		{
 			enc := json.NewEncoder(w)
 			enc.SetIndent("", "  ")
 			enc.Encode(dal.Store.Stats())

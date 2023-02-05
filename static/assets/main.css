@@ -105,8 +105,9 @@ a:hover { text-decoration: underline }
 }
 
 .tag-box.button:not(.selected):not(.alert):hover { background: #cfd8dc; }
+.tag-box.button.alert:not(.selected):hover { background: #f3746b; color: #eee; }
 .tag-edit-button.selected, .tag-box.button.selected { background: #607d8b; color: white }
-.tag-box.button a, .nav-page { text-decoration: none; color: #233; }
+.tag-box.button a:hover, .nav-page { text-decoration: none !important; color: #233; }
 .tag-box.button.selected a { color: white }
 
 .tag-search-input-container {
@@ -193,7 +194,7 @@ table.table .textarea td, table.table .textarea td .display { padding: 0 0 0 0.2
 tr.title {background:#e2e9ec !important}
 td { white-space: nowrap; padding: 0.1em 0.5em; }
 td.small { font-size:80%; width: 1px }
-td .display { position:relative; display: flex; padding: 0.25em; min-height: 2.5em; align-items:center; flex-wrap: wrap }
+td .display { position:relative; display: flex; padding: 0.25em; min-height: 2.5em; align-items:center; flex-wrap: wrap; row-gap: 0.25em; }
 td .tag-edit-name { text-decoration:none;color:#233;word-break: break-all; white-space: pre-wrap;flex-grow:1}
 td .tag-edit-desc {
     outline: none;

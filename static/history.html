@@ -12,6 +12,13 @@
 .diff-header-ip {
     font-size:90%; color: #aaa;
 }
+.tiny-image {
+    background: center / cover no-repeat var(--image);
+    background-color:rgba(0,0,0,0.05);
+    width: 2em;
+    height: 2em;
+    border-radius: 0.25em;
+}
 </style>
 
 <div>
@@ -76,8 +83,18 @@
                         <a class=wrapall href='/ns:id:{{.Id}}'>{{.HTMLTitleDisplay}}</a>
                         {{if $msg}}<span class=wrapall>&emsp;<i>留言：{{safeHTML $msg}}</i></span>{{end}}
                     {{else}}
-                        {{if ne .Image .ReviewImage}}<span class=icon-picture style='margin-right:0.5em'></span>{{end}}
-                        <a class=wrapall href='/ns:edit?hid={{$rid}}'>{{.HTMLTitleDisplay}}</a>
+                        <a class=wrapall href='/ns:edit?hid={{$rid}}' style='flex-grow: 1'>{{makeTitle . 100 true}}</a>
+                        {{if .Image}}
+                            <a href='{{imageURL "image" .Image}}' target=_blank>
+                                <div style='--image: url({{imageURL "thumb" .Image}})' class=tiny-image></div>
+                            </a>
+                        {{end}}
+                        {{if and .ReviewImage (ne .Image .ReviewImage)}}
+                            <div class=icon-right-big style='margin-left: 0.5em'></div>
+                            <a href='{{imageURL "image" .ReviewImage}}' target=_blank>
+                                <div style='--image: url({{imageURL "thumb" .ReviewImage}}); margin-left: 0.5em' class=tiny-image></div>
+                            </a>
+                        {{end}}
                     {{end}}
                 </div>
             </td>

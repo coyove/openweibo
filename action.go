@@ -223,7 +223,16 @@ func doTouch(target *types.Note, w *types.Response, r *types.Request) bool {
 }
 
 func doDelete(target *types.Note, w *types.Response, r *types.Request) bool {
+	ids := types.DedupUint64(append(types.SplitUint64List(r.Form.Get("ids")), target.Id))
+	notes, _ := dal.BatchGetNotes(ids)
+	if len(notes) == 0 {
+		return true
+	}
 	if !r.User.IsMod() {
+		if len(notes) > 1 {
+			w.WriteJSON("success", false, "code", "MODS_REQUIRED")
+			return false
+		}
 		if r.UserDisplay != target.Creator {
 			w.WriteJSON("success", false, "code", "MODS_REQUIRED")
 			return false
@@ -234,15 +243,24 @@ func doDelete(target *types.Note, w *types.Response, r *types.Request) bool {
 		}
 	}
 	if err := dal.Store.Update(func(tx *bbolt.Tx) error {
-		dal.ProcessParentChanges(tx, target, target.ParentIds, nil)
-		dal.DeleteCreator(tx, target.Creator, target)
-		return dal.KSVDelete(tx, dal.NoteBK, types.Uint64Bytes(target.Id))
+		for _, n := range notes {
+			dal.ProcessParentChanges(tx, n, n.ParentIds, nil)
+			dal.DeleteCreator(tx, n.Creator, n)
+			if err := dal.KSVDelete(tx, dal.NoteBK, types.Uint64Bytes(n.Id)); err != nil {
+				return err
+			}
+		}
+		return nil
 	}); err != nil {
-		logrus.Errorf("delete %d: %v", target.Id, err)
+		logrus.Errorf("delete %v: %v", ids, err)
 		w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
 		return false
 	}
-	go dal.DeleteS3(dal.ListImage(target.Id, true)...)
+	go func() {
+		for _, n := range notes {
+			dal.DeleteS3(dal.ListImage(n.Id, true)...)
+		}
+	}()
 	return true
 }
 
