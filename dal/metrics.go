@@ -220,6 +220,13 @@ type MetricsIndex struct {
 	Count uint64
 }
 
+func MetricsRangeSum(ns string, start, end int64) (res float64) {
+	for _, r := range MetricsRange(ns, start, end) {
+		res += r.Sum
+	}
+	return
+}
+
 func MetricsRange(ns string, start, end int64) (res []MetricsIndex) {
 	Metrics.View(func(tx *bbolt.Tx) error {
 		bk := tx.Bucket([]byte("metrics"))

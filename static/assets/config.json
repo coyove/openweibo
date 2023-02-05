@@ -67,12 +67,6 @@
       "src": "linecons"
     },
     {
-      "uid": "8573943a49ed6dd8f7819070445baa46",
-      "css": "photo",
-      "code": 59402,
-      "src": "linecons"
-    },
-    {
       "uid": "2aeb4987b469d22fcb8b471b6d2cdfff",
       "css": "pencil",
       "code": 59403,
@@ -82,12 +76,6 @@
       "uid": "43e4647c57186b5e06874621b5e665be",
       "css": "calendar",
       "code": 59405,
-      "src": "linecons"
-    },
-    {
-      "uid": "29f4bce4a60650057c5248e30baa15a6",
-      "css": "note",
-      "code": 59406,
       "src": "linecons"
     },
     {
@@ -155,6 +143,12 @@
       "css": "folder",
       "code": 59395,
       "src": "entypo"
+    },
+    {
+      "uid": "381da2c2f7fd51f8de877c044d7f439d",
+      "css": "picture",
+      "code": 59398,
+      "src": "fontawesome"
     }
   ]
 }

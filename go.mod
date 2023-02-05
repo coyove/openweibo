@@ -20,3 +20,5 @@ require (
 replace github.com/coyove/sdss v1.0.0 => ../sdss
 
 replace go.etcd.io/bbolt v1.3.6 => ./bbolt
+
+// replace github.com/pierrec/lz4/v4 v4.1.17 => ./lz4

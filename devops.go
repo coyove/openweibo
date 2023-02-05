@@ -15,9 +15,12 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"time"
 	"unsafe"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/limiter"
 	"github.com/coyove/iis/types"
@@ -250,22 +253,70 @@ func compact(pCurrent, pTotal *int64) {
 	exited = true
 }
 
-func dump() error {
+var dumpWorkerLock int64
+
+func dumpWorker(onetime bool) {
+	if !onetime {
+		defer func() {
+			time.AfterFunc(time.Minute*10, func() { dumpWorker(false) })
+		}()
+	}
+
+	if !atomic.CompareAndSwapInt64(&dumpWorkerLock, 0, 1) {
+		return
+	}
+	defer func() { dumpWorkerLock = 0 }()
+
+	if !onetime {
+		last, err := dal.KVGetInt64(nil, "last_dump")
+		if err != nil {
+			logrus.Errorf("[dumpWorker] db error: %v", err)
+			return
+		}
+		if clock.Unix()-last < 3600*3 {
+			return
+		}
+	}
+
+	logrus.Infof("[dumpWorker] start backup job")
+	path, err := dump()
+	logrus.Infof("[dumpWorker] finish dumping: %v", err)
+	if err != nil {
+		return
+	}
+
+	in, err := os.Open(path)
+	if err != nil {
+		logrus.Errorf("[dumpWorker] open dump file: %v", err)
+		return
+	}
+	defer in.Close()
+
+	_, err = dal.Store.S3.Upload(&s3manager.UploadInput{
+		Bucket: aws.String("nsimages"),
+		Key:    aws.String(fmt.Sprintf("db0")),
+		Body:   in,
+	})
+
+	logrus.Infof("[dumpWorker] finish uploading, s3=%v, db=%v",
+		err, dal.KVSetInt64(nil, "last_dump", clock.Unix()))
+}
+
+func dump() (string, error) {
 	oldPath := dal.Store.DB.Path()
 	tmpPath := oldPath + ".dumped.lz4"
 	os.Remove(tmpPath)
 
 	f, err := os.Create(tmpPath)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer f.Close()
 
 	out := lz4.NewWriter(f)
-	return dal.Store.View(func(tx *bbolt.Tx) error {
-		_, err := tx.WriteTo(out)
-		return err
-	})
+	err = dal.Store.WriteTo(io.MultiWriter(out), 1024*1024)
+	out.Close()
+	return tmpPath, err
 }
 
 func HandleRoot(w *types.Response, r *types.Request) {
@@ -295,8 +346,8 @@ func HandleRoot(w *types.Response, r *types.Request) {
 	fmt.Fprintf(w, "<title>ns:root</title>")
 	if r.User.IsRoot() {
 		fmt.Fprintf(w, "<pre class=wrapall>")
-		fmt.Fprintf(w, "<a href='/ns:%v/debug/pprof/'>Go pprof</a>\n", rootUUID)
-		fmt.Fprintf(w, "Dumper: /ns:%v/dump\n\n", rootUUID)
+		fmt.Fprintf(w, "<a href='/ns:%v/debug/pprof/'>Go pprof</a>\n\n", rootUUID)
+		fmt.Fprintf(w, "<a href='/ns:%v/dump'>Dumper</a>\n\n", rootUUID)
 		fmt.Fprintf(w, "Your cookie: %s&emsp;", r.UserSession)
 		fmt.Fprintf(w, "<button onclick=\"document.cookie='session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';location.reload()\">Clear</button>\n\n")
 		fmt.Fprintf(w, "Server started at %v\n", serverStart)
@@ -312,19 +363,13 @@ func HandleRoot(w *types.Response, r *types.Request) {
 		ic, _ := ioutil.ReadDir("image_cache")
 		fmt.Fprintf(w, "Image cache: %d\n", len(ic))
 
-		{
-			var outBoundSum, downloadSum float64
-			start, end := (clock.Unix()-86400)/dal.MetricsDelta, clock.Unix()/dal.MetricsDelta
-			for _, r := range dal.MetricsRange("image", start, end) {
-				outBoundSum += r.Sum
-			}
-			for _, r := range dal.MetricsRange("ns:outbound", start, end) {
-				outBoundSum += r.Sum
-			}
-			for _, r := range dal.MetricsRange("s3:download", start, end) {
-				downloadSum += r.Sum
-			}
+		lastDump, _ := dal.KVGetInt64(nil, "last_dump")
+		fmt.Fprintf(w, "Last dump backup: %v\n", time.Unix(lastDump, 0))
 
+		{
+			start, end := (clock.Unix()-86400)/dal.MetricsDelta, clock.Unix()/dal.MetricsDelta
+			outBoundSum := dal.MetricsRangeSum("image", start, end) + dal.MetricsRangeSum("ns:outbound", start, end)
+			downloadSum := dal.MetricsRangeSum("s3:download", start, end)
 			fmt.Fprintf(w, "Traffic in 24h: outbound: %.2fM, s3: %.2fM\n", outBoundSum/1024/1024, downloadSum/1024/1024)
 		}
 
@@ -379,9 +424,13 @@ func HandleMetrics(w *types.Response, r *types.Request) {
 			} else if ns == "create" {
 				r.AddTemplateValue("showQPSOnly", true)
 			} else if ns == "ns:outbound" || ns == "upload" || ns == "image" || ns == "s3:download" {
+				for i := range tmp {
+					tmp[i].Sum /= 1024
+					tmp[i].Max /= 1024
+				}
 				r.AddTemplateValue("showBPS", true)
-				r.AddTemplateValue("label1", "平均流量 (byte/s)")
-				r.AddTemplateValue("label2", "最大流量 (byte)")
+				r.AddTemplateValue("label1", "平均流量 (K/s)")
+				r.AddTemplateValue("label2", "最大流量 (K)")
 			} else {
 				r.AddTemplateValue("showLatency", true)
 				r.AddTemplateValue("label1", "平均时延 (ms)")

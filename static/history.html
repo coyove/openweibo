@@ -80,7 +80,7 @@
             <td class='tag-edit'>
                 <div class=display>
                     {{if $ipa}}
-                        <a class=wrapall href='/ns:id:{{.Id}}'>{{.HTMLTitleDisplay}}</a>
+                        <a class=wrapall href='/ns:id:{{.IdStr}}'>{{.HTMLTitleDisplay}}</a>
                         {{if $msg}}<span class=wrapall>&emsp;<i>留言：{{safeHTML $msg}}</i></span>{{end}}
                     {{else}}
                         <a class=wrapall href='/ns:edit?hid={{$rid}}' style='flex-grow: 1'>{{makeTitle . 100 true}}</a>

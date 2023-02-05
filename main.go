@@ -108,8 +108,8 @@ func main() {
 
 	http.Handle("/ns:"+rootUUID+"/debug/pprof/", http.StripPrefix("/ns:"+rootUUID, http.HandlerFunc(pprof.Index)))
 	http.HandleFunc("/ns:"+rootUUID+"/dump", func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-		fmt.Fprintf(w, "%v in %v", dump(), time.Since(start))
+		go dumpWorker(true)
+		w.Write([]byte("ok"))
 	})
 	http.Handle("/ns:static/", gziphandler.GzipHandler(http.HandlerFunc(HandleAssets)))
 	http.HandleFunc("/ns:image/", HandleImage)
@@ -147,6 +147,7 @@ func main() {
 			WriteTimeout:      10 * time.Second,
 		}
 
+		go dumpWorker(false)
 		logrus.Infof("start serving HTTPS + HTTP redirector, pid=%d, ServeUUID=%s", os.Getpid(), serveUUID)
 		logrus.Fatal(srv.ListenAndServeTLS("", ""))
 	} else {

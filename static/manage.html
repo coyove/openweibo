@@ -78,13 +78,17 @@
                                 ajaxBtn($("#quick-image-loader").get(0), 'create', Object.assign({
                                     'content': file.name,
                                     'parents': JSON.stringify({
-                                        '{{.T.note.Id}}': {'tag': ''},{{range .T.note.ParentIds}}'{{.}}': {'tag': ''},{{end}}
+                                        '{{.T.note.Id}}': {'tag': ''},
+                                        [window.prevNoteId || '']: {'tag': ''},
+                                        {{range .T.note.ParentIds}}'{{.}}': {'tag': ''},{{end}}
                                     }),
                                 }, imageData), function(data) {
                                     if (!next) {
-                                        location.href = '/ns:id:{{.T.note.Id}}?sort=0&desc=1';
+                                        window.prevNoteId = '';
+                                        location.href = '/ns:id:{{.T.note.IdStr}}?sort=0&desc=1';
                                         return;
                                     }
+                                    window.prevNoteId = data.note_id;
                                     $('#quick-image-info').text("上传 " + file.name + " 成功 (" +
                                                                     (imageData.image_index + 1) + "/" + imageData.image_total + ")");
                                     next();
@@ -96,7 +100,7 @@
                 </div>
             {{end}}
             {{range .T.notes}}
-                <div class=image-display>
+                <div class=image-display id=note{{.Id}}>
                     {{if .Image}}
                         <div
                             class='image-display-container image'
@@ -172,6 +176,7 @@
             location.href="/ns:manage?q="+encodeURIComponent(filter + $("#search").val());
         }
     }).val(decodeURIComponent('{{fullEscape .T.query}}') + ' ')
+
     $(window).on('resize', function() {
         var current = -1, color = ['white', '#f7f8f9'], colorIdx = 0, colorIdx2 = 0;
         $('.image-dummy').remove();
@@ -198,6 +203,7 @@
             mainImage.parent().css('float', narrow  ? '' : 'left').css('margin-right', narrow ? '0' : '0.5em');
         }
         $('#gallery-mode')[$('.image').length ? 'show' : 'hide']();
+        $(location.hash).css('background', '#fffddd');
     }).resize();
 
     function findLexPrefix() {

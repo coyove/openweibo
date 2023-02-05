@@ -83,16 +83,19 @@ func DeleteS3(files ...string) {
 }
 
 func UploadS3(files ...string) (lastErr error) {
-	for _, file := range files {
-		if file == "" {
+	dedup := map[string]bool{}
+	for _, f := range files {
+		if f == "" || dedup[f] {
 			continue
 		}
-		file = ImageCacheDir + file
+		dedup[f] = true
+		file := ImageCacheDir + f
+		start := clock.UnixNano()
+
 		err := func() error {
 			LockKey(file)
 			defer UnlockKey(file)
 
-			start := clock.UnixNano()
 			in, err := os.Open(file)
 			if err != nil {
 				if os.IsNotExist(err) {
@@ -109,12 +112,12 @@ func UploadS3(files ...string) (lastErr error) {
 			in.Close()
 			if err == nil {
 				MetricsIncr("s3:uploadlat", float64(clock.UnixNano()-start)/1e3)
-				err = os.Remove(file)
+				err = os.Rename(file, Store.ImageCache.GetKeyPath(f))
 			}
 			return err
 		}()
 
-		logrus.Infof("upload %s to S3: %v", file, err)
+		logrus.Infof("upload %s to S3: %v in %vms", file, err, (clock.UnixNano()-start)/1e6)
 		if err != nil {
 			lastErr = fmt.Errorf("failed to upload %s to S3: %v", file, err)
 		}

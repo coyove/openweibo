@@ -1,6 +1,10 @@
 package bbolt
 
-import "bytes"
+import (
+	"bytes"
+	"fmt"
+	"io"
+)
 
 func (db *DB) Size() (sz int64) {
 	db.View(func(tx *Tx) error {
@@ -74,4 +78,24 @@ func (b *Bucket) TestPut(key []byte, value []byte) (bool, error) {
 	c.node().put(key, key, value, 0, 0)
 
 	return !bytes.Equal(key, k), nil
+}
+
+func (b *DB) WriteTo(out io.Writer, safeSizeMargin int) error {
+	sz := b.Size()
+	if sz == -1 {
+		return fmt.Errorf("failed to get DB size")
+	}
+	// Re-mmap data file to a larger size, hopefully big enough so that read tx won't block writes
+	if err := b.Update(func(tx *Tx) error {
+		x := int(sz) + safeSizeMargin
+		return b.mmap(x / b.pageSize * b.pageSize)
+	}); err != nil {
+		return err
+	}
+
+	return b.View(func(tx *Tx) error {
+		tx.WriteFlag = 0x4000
+		_, err := tx.WriteTo(out)
+		return err
+	})
 }

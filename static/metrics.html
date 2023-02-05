@@ -76,9 +76,6 @@ body { min-width: 1000px}
             }],
             axes: [{}, {
                 size: 75,
-                {{if .T.showBPS}}
-                values: (self, ticks) => ticks.map(rawValue => (rawValue / 1024).toFixed(2) + "K"),
-                {{end}}
             }],
         };
 

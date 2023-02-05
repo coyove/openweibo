@@ -12,6 +12,7 @@ import (
 	"github.com/coyove/iis/limiter"
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/bitmap"
+	"github.com/coyove/sdss/contrib/clock"
 	"github.com/sirupsen/logrus"
 )
 
@@ -86,7 +87,7 @@ func HandleAction(w *types.Response, r *types.Request) {
 				r.RemoteIPv4, target)
 		}
 		limiter.AddIP(r)
-		w.WriteJSON("success", true, "note", target)
+		w.WriteJSON("success", true, "note", target, "note_id", strconv.FormatUint(target.Id, 10))
 	}
 }
 
@@ -184,9 +185,9 @@ func HandleTagSearch(w *types.Response, r *types.Request) {
 	doubleCheckFilterResults(q, nil, notes, func(t *types.Note) bool {
 		tt := t.Title
 		if tt == "" {
-			tt = "ns:id:" + strconv.FormatUint(t.Id, 10)
+			tt = "ns:id:" + t.IdStr()
 		}
-		results = append(results, [3]interface{}{t.Id, tt, t.ChildrenCount})
+		results = append(results, [3]interface{}{t.IdStr(), tt, t.ChildrenCount})
 		return len(results) < n
 	})
 	diff := time.Since(start)
@@ -202,17 +203,17 @@ func HandleTagSearch(w *types.Response, r *types.Request) {
 
 func HandleNew(w *types.Response, r *types.Request) {
 	var parents []string
-	var lastParent uint64
+	var lastParent string
 	var lastTitle string
 	for _, p := range types.SplitUint64List(r.URL.Query().Get("parents")) {
 		if note, _ := dal.GetNote(p); note.Valid() {
 			t := note.Title
 			if t == "" {
-				parents = append(parents, fmt.Sprintf("%d,ns:id:%d", note.Id, note.Id))
+				parents = append(parents, fmt.Sprintf("%s,ns:id:%s", note.IdStr(), note.IdStr()))
 			} else {
-				parents = append(parents, fmt.Sprintf("%d,%s", note.Id, t))
+				parents = append(parents, fmt.Sprintf("%s,%s", note.IdStr(), t))
 			}
-			lastParent = p
+			lastParent = note.IdStr()
 			lastTitle = t
 		}
 	}
@@ -271,12 +272,11 @@ func HandleView(w *types.Response, r *types.Request) {
 	}
 
 	uq := r.ParsePaging()
-	_ = uq
-	// if p := uq.Get("prefix"); p != "" {
-	// 	page := dal.KSVPagingFindLexPrefix(fmt.Sprintf("children_%d", note.Id), []byte(p), r.P.Desc, r.P.PageSize)
-	// 	http.Redirect(w, r.Request, fmt.Sprintf("/ns:id:%d?sort=1&desc=%v&p=%d", note.Id, r.P.Desc, page), 302)
-	// 	return
-	// }
+	if p, _ := strconv.ParseUint(uq.Get("findid"), 10, 64); p > 0 {
+		page := dal.KSVPagingSort0FindKey(fmt.Sprintf("children_%d", note.Id), types.Uint64Bytes(p), r.P.Desc, r.P.PageSize)
+		http.Redirect(w, r.Request, fmt.Sprintf("/ns:id:%s?sort=0&desc=%v&p=%d#note%d", note.IdStr(), r.P.Desc, page, p), 302)
+		return
+	}
 
 	results, total, pages := dal.KSVPaging(nil, fmt.Sprintf("children_%d", note.Id), r.P.Sort, r.P.Desc, r.P.Page-1, r.P.PageSize)
 	children, _ := dal.BatchGetNotes(results)
@@ -318,18 +318,12 @@ func HandleManage(w *types.Response, r *types.Request) {
 	if q != "" {
 		query, pids, uid := expandQuery(q)
 		if len(pids) == 0 && query == "" && uid != "" {
-			// if p := uq.Get("prefix"); p != "" {
-			// 	page := dal.KSVPagingFindLexPrefix("creator_"+uid, []byte(p), r.P.Desc, r.P.PageSize)
-			// 	http.Redirect(w, r.Request, fmt.Sprintf("/ns:manage?sort=1&desc=%v&p=%d&q=%s", r.P.Desc, page, url.QueryEscape(q)), 302)
-			// 	return
-			// }
-
 			results, total, pages = dal.KSVPaging(nil, "creator_"+uid, r.P.Sort, r.P.Desc, r.P.Page-1, r.P.PageSize)
 			notes, _ = dal.BatchGetNotes(results)
 			r.AddTemplateValue("isUserPage", true)
 			r.AddTemplateValue("viewUser", uid)
 		} else if len(pids) == 1 && pids[0] > 0 && uid == "" && query == "" {
-			http.Redirect(w, r.Request, "/ns:id:"+strconv.FormatUint(pids[0], 10), 302)
+			http.Redirect(w, r.Request, "/ns:id:"+clock.Base40Encode(pids[0]), 302)
 			return
 		} else {
 			ids, _ := (collector{}).get(query, pids, uid)
@@ -343,12 +337,6 @@ func HandleManage(w *types.Response, r *types.Request) {
 			r.AddTemplateValue("isSearchPage", true)
 		}
 	} else {
-		// if p := uq.Get("prefix"); p != "" {
-		// 	page := dal.KSVPagingFindLexPrefix(dal.NoteBK, []byte(p), r.P.Desc, r.P.PageSize)
-		// 	http.Redirect(w, r.Request, fmt.Sprintf("/ns:manage?sort=1&desc=%v&p=%d", r.P.Desc, page), 302)
-		// 	return
-		// }
-
 		results, total, pages = dal.KSVPaging(nil, dal.NoteBK, r.P.Sort, r.P.Desc, r.P.Page-1, r.P.PageSize)
 		notes = make([]*types.Note, len(results))
 		for i := range notes {

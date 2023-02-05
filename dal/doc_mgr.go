@@ -3,7 +3,6 @@ package dal
 import (
 	"fmt"
 	"net"
-	"strconv"
 	"strings"
 
 	"github.com/coyove/iis/types"
@@ -200,7 +199,7 @@ func GetJsonizedNote(name string) (gjson.Result, error) {
 
 func GetNoteByName(name string) (*types.Note, error) {
 	if strings.HasPrefix(name, "ns:id:") {
-		id, _ := strconv.ParseUint(name[6:], 10, 64)
+		id, _ := clock.Base40Decode(name[6:])
 		return GetNote(id)
 	}
 

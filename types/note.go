@@ -2,10 +2,11 @@ package types
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/url"
-	"strconv"
 
+	"github.com/coyove/sdss/contrib/clock"
 	"github.com/gogo/protobuf/proto"
 	"github.com/pierrec/lz4/v4"
 )
@@ -39,6 +40,8 @@ func (t *Note) String() string { return proto.CompactTextString(t) }
 
 func (t *Note) Clone() *Note { return UnmarshalNoteBinary(t.MarshalBinary()) }
 
+func (t *Note) IdStr() string { return clock.Base40Encode(t.Id) }
+
 func (t *Note) ContainsParents(ids []uint64) bool {
 	s := 0
 	for _, id := range ids {
@@ -66,14 +69,14 @@ func FullEscape(v string) string {
 
 func (t *Note) EscapedTitle() string {
 	if t.Title == "" {
-		return "ns:id:" + strconv.FormatUint(t.Id, 10)
+		return "ns:id:" + clock.Base40Encode(t.Id)
 	}
 	return FullEscape(t.Title)
 }
 
 func (t *Note) QueryTitle() string {
 	if t.Title == "" {
-		return "ns:id:" + strconv.FormatUint(t.Id, 10)
+		return "ns:id:" + clock.Base40Encode(t.Id)
 	}
 	return url.QueryEscape(t.Title)
 }
@@ -81,7 +84,7 @@ func (t *Note) QueryTitle() string {
 func (t *Note) HTMLTitleDisplay() string {
 	tt := SafeHTML(t.Title)
 	if tt == "" {
-		return "<span style='font-style:italic'>无标题</span>"
+		return fmt.Sprintf("<span style='font-style:italic'>ns:id:%s</span>", t.IdStr())
 	}
 	return tt
 }

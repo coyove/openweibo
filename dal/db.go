@@ -29,7 +29,9 @@ var (
 		locks      [256]sync.Mutex
 	}
 
-	BBoltOptions = &bbolt.Options{FreelistType: bbolt.FreelistMapType}
+	BBoltOptions = &bbolt.Options{
+		FreelistType: bbolt.FreelistMapType,
+	}
 
 	NoteBK = "notes"
 )
@@ -313,14 +315,14 @@ func KSVPaging(tx *bbolt.Tx, bkPrefix string, bySort int, desc bool, page, pageS
 	return
 }
 
-func KSVPagingFindLexPrefix(bkPrefix string, prefix []byte, desc bool, pageSize int) (page int) {
+func KSVPagingSort0FindKey(bkPrefix string, key []byte, desc bool, pageSize int) (page int) {
 	i := 0
 	Store.View(func(tx *bbolt.Tx) error {
-		sort1Key := tx.Bucket([]byte(bkPrefix + "_s1k"))
-		if sort1Key == nil {
+		sort0Key := tx.Bucket([]byte(bkPrefix + "_s0k"))
+		if sort0Key == nil {
 			return nil
 		}
-		c := sort1Key.Cursor()
+		c := sort0Key.Cursor()
 
 		a, _ := c.First()
 		if desc {
@@ -333,14 +335,12 @@ func KSVPagingFindLexPrefix(bkPrefix string, prefix []byte, desc bool, pageSize 
 				return nil
 			}
 
-			ln := int(a[len(a)-1])
-			sort1 := a[:len(a)-1-ln]
-			if desc {
-				if bytes.Compare(sort1, prefix) <= 0 {
+			if sort1 := a[8:]; desc {
+				if bytes.Compare(sort1, key) <= 0 {
 					break
 				}
 			} else {
-				if bytes.Compare(sort1, prefix) >= 0 {
+				if bytes.Compare(sort1, key) >= 0 {
 					break
 				}
 			}

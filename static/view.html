@@ -56,7 +56,7 @@
         <b>父记事 <span class=icon-level-up></span></b>
         <div style='font-size:90%;line-height:1.5em;padding:0.5em 0'>
             {{range $.T.parents}}
-            <a href='/{{.EscapedTitle}}'>{{.HTMLTitleDisplay}}</a>&emsp;
+            <a href='/{{.EscapedTitle}}?findid={{$.T.note.Id}}'>{{.HTMLTitleDisplay}}</a>&emsp;
             {{end}}
         </div>
     </div>

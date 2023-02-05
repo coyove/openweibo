@@ -75,9 +75,9 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 		notes, _ := dal.BatchGetNotes(ids)
 		for i, n := range notes {
 			if n.Title != "" {
-				fmt.Fprintf(buf, " data%d='%d,%s'", i, n.Id, html.EscapeString(n.Title))
+				fmt.Fprintf(buf, " data%d='%s,%s'", i, n.IdStr(), html.EscapeString(n.Title))
 			} else {
-				fmt.Fprintf(buf, " data%d='%d,ns:id:%d'", i, n.Id, n.Id)
+				fmt.Fprintf(buf, " data%d='%s,ns:id:%s'", i, n.IdStr(), n.IdStr())
 			}
 		}
 		return buf.String()
@@ -241,9 +241,13 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 
 	if pt := q.Get("parents"); pt != "" {
 		gjson.Parse(pt).ForEach(func(key, value gjson.Result) bool {
-			ad.parentIds = append(ad.parentIds, key.Uint())
+			id, ok := clock.Base40Decode(key.Str)
+			if ok {
+				ad.parentIds = append(ad.parentIds, id)
+			}
 			return true
 		})
+		ad.parentIds = types.DedupUint64(ad.parentIds)
 		if len(ad.parentIds) > r.MaxParents() {
 			return ad, "TOO_MANY_PARENTS"
 		}
@@ -295,11 +299,11 @@ func expandQuery(query string) (q string, parentIds []uint64, uid string) {
 
 		if strings.HasPrefix(query, "ns:id:") {
 			if idx > 0 {
-				id, _ := strconv.ParseUint((query)[6:idx], 10, 64)
+				id, _ := clock.Base40Decode((query)[6:idx])
 				parentIds = append(parentIds, id)
 				query = strings.TrimSpace((query)[idx+1:])
 			} else {
-				id, _ := strconv.ParseUint((query)[6:], 10, 64)
+				id, _ := clock.Base40Decode((query)[6:])
 				parentIds = append(parentIds, id)
 				query = ""
 				break
