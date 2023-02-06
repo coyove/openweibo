@@ -305,6 +305,11 @@ tr:nth-child(odd) { background: white; }
     position: relative;
     border-radius: 0.5em;
 }
+.image-display-container a {
+    position: absolute;
+    display: block;
+    left:0 ; right: 0; top:0; bottom:0;
+}
 .image-display-info {
     margin-top: 0.5em;
     display: flex;

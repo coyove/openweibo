@@ -257,6 +257,7 @@ function ajaxBtn(el, action, args, f) {
         css('margin', that.css('margin'));
     that.attr('busy', 'true').hide();
     loader.insertBefore(that);
+    function finish() { that.attr('busy', '').show(); loader.remove(); }
     $.ajax({
         url: '/ns:action',
         data: fd,
@@ -271,15 +272,13 @@ function ajaxBtn(el, action, args, f) {
                     alert('发生错误: ' + data.msg + ' (' + data.code + ')');
                 return;
             }
+            finish();
             f ? f(data, args) : location.reload();
         },
         error: function() {
             alert('网络错误');
         },
-        complete: function () {
-            that.attr('busy', '').show();
-            loader.remove();
-        },
+        complete: finish,
     });
 }
 

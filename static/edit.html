@@ -264,12 +264,15 @@ div.diff-row.ins{background:#ccffd8}
                     'title': $("#title").val(),
                     'content': $("#content").val(),
                     'parents': JSON.stringify($('#parents').get(0).getTags()),
-                }, $("#image").get(0).imageData));
+                }, $("#image").get(0).imageData), function(data) {
+                    if (!data.direct_approve) { location.reload(); return; }
+                    ajaxBtn(btn, "approve", {"id":"{{.Id}}"});
+                });
             }
 
             function deleteNote(btn, hide) {
                 if (!hide && !confirm("确认删除该记事?")) return;
-                ajaxBtn(btn, hide ? 'hide' : 'delete', {'id': '{{.Id}}'}, function(data) {
+                ajaxBtn(btn, hide ? 'hide' : 'delete', {'id': '{{.Id}}', 'ids': '{{.Id}}'}, function(data) {
                     hide ? location.reload() : (location.href = '/ns:manage?desc=1');
                 });
             }

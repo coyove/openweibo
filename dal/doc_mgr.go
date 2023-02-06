@@ -214,14 +214,18 @@ func GetNoteByName(name string) (*types.Note, error) {
 	return t, err
 }
 
+func GetNoteTx(tx *bbolt.Tx, id uint64) *types.Note {
+	bk := tx.Bucket([]byte(NoteBK + "_kv"))
+	if bk == nil {
+		return nil
+	}
+	return types.UnmarshalNoteBinary(bk.Get(types.Uint64Bytes(id)))
+}
+
 func GetNote(id uint64) (*types.Note, error) {
 	var t *types.Note
 	err := Store.View(func(tx *bbolt.Tx) error {
-		bk := tx.Bucket([]byte(NoteBK + "_kv"))
-		if bk == nil {
-			return nil
-		}
-		t = types.UnmarshalNoteBinary(bk.Get(types.Uint64Bytes(id)))
+		t = GetNoteTx(tx, id)
 		return nil
 	})
 	return t, err
@@ -272,8 +276,13 @@ func ProcessParentChanges(tx *bbolt.Tx, tag *types.Note, old, new []uint64) erro
 	return nil
 }
 
-func AppendHistory(tagId uint64, user, action string, rejectMsg string, ip net.IP, old *types.Note) error {
+func AppendHistory(noteId uint64, user, action string, rejectMsg string, ip net.IP) error {
 	return Store.Update(func(tx *bbolt.Tx) error {
+		note := GetNoteTx(tx, noteId)
+		if !note.Valid() {
+			note = &types.Note{Id: noteId}
+		}
+
 		id := clock.Id()
 		tr := (&types.Record{
 			Id:         id,
@@ -285,13 +294,12 @@ func AppendHistory(tagId uint64, user, action string, rejectMsg string, ip net.I
 		})
 		switch action {
 		case "approve", "reject", "Lock", "Unlock":
-			tmp := *old
-			tmp.Content = ""
-			tmp.ReviewContent = ""
-			tr.SetNote(&tmp)
-		default:
-			tr.SetNote(old)
+			note.Content = ""
+			note.ReviewContent = ""
+			note.Image = ""
+			note.ReviewImage = ""
 		}
+		tr.SetNote(note)
 		k := types.Uint64Bytes(tr.Id)
 		KSVUpsert(tx, "history", KeySortValue{
 			Key:    k[:],
@@ -299,6 +307,6 @@ func AppendHistory(tagId uint64, user, action string, rejectMsg string, ip net.I
 			NoSort: true,
 		})
 		KSVUpsert(tx, fmt.Sprintf("history_%s", user), KeySortValue{Key: k[:], NoSort: true})
-		return KSVUpsert(tx, fmt.Sprintf("history_%d", tagId), KeySortValue{Key: k[:], NoSort: true})
+		return KSVUpsert(tx, fmt.Sprintf("history_%d", noteId), KeySortValue{Key: k[:], NoSort: true})
 	})
 }

@@ -124,18 +124,19 @@
             {{range .T.notes}}
                 <div class=image-display id=note{{.Id}}>
                     {{if .Image}}
-                        <div
-                            class='image-display-container image'
+                        <div class='image-display-container image'
                             style='background: center / cover no-repeat url({{imageURL "thumb" .Image}});background-color:rgba(0,0,0,0.05)'
-                            data-src="{{imageURL "image" .Image}}"
-                            onclick='location.href="/{{.EscapedTitle}}"'></div>
+                            data-src="{{imageURL "image" .Image}}">
+                            <a href='/{{.EscapedTitle}}'></a>
+                        </div>
                     {{else}}
-                        <div class='image-display-container' style='background:rgba(0,0,0,0.03)' onclick='location.href="/{{.EscapedTitle}}"'>
+                        <div class='image-display-container' style='background:rgba(0,0,0,0.03)'>
                             {{if .Content}}
                             <div class='wrapall content100'>{{safeHTML (trunc .Content 100)}}</div>
                             {{else}}
                             <div class='wrapall content100'>{{makeTitle . 100 false}}</div>
                             {{end}}
+                            <a href='/{{.EscapedTitle}}'></a>
                         </div>
                     {{end}}
                     <div class=image-display-info>

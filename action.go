@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"strconv"
 	"time"
 
 	"github.com/coyove/iis/dal"
@@ -14,17 +13,14 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-func doCreate(w *types.Response, r *types.Request) (*types.Note, bool) {
-	id := clock.Id()
+type writeError string
+
+func (e writeError) Error() string { return string(e) }
+
+func doCreate(id uint64, r *types.Request) error {
 	ad, msg := getActionData(id, r)
-
-	defer func(start time.Time) {
-		logrus.Infof("create %d, data: %v in %v", id, ad, time.Since(start))
-	}(time.Now())
-
 	if msg != "" {
-		w.WriteJSON("success", false, "code", msg)
-		return nil, false
+		return writeError(msg)
 	}
 
 	target := &types.Note{
@@ -37,121 +33,90 @@ func doCreate(w *types.Response, r *types.Request) (*types.Note, bool) {
 	}
 	exist, err := dal.CreateNote(ad.title, target, ad.imageTotal > 1)
 	if err != nil {
-		logrus.Errorf("create %d: %v", id, err)
-		w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
-		return nil, false
+		return writeError("INTERNAL_ERROR")
 	}
 	if exist {
-		w.WriteJSON("success", false, "code", "DUPLICATED_TITLE")
-		return nil, false
+		return writeError("DUPLICATED_TITLE")
 	}
 
 	if len(ad.hash) > 0 {
 		dal.Store.Saver().AddAsync(bitmap.Uint64Key(id),
 			types.DedupUint64(append(ad.hash, ngram.StrHash(r.UserDisplay))))
 	}
+
 	time.AfterFunc(time.Second*10, func() { dal.UploadS3(target.Image, imageThumbName(target.Image)) })
-	return target, true
+	logrus.Infof("create %d, data: %v", id, ad)
+	return nil
 }
 
-func doUpdate(w *types.Response, r *types.Request) (*types.Note, bool) {
-	id, _ := strconv.ParseUint(r.Form.Get("id"), 10, 64)
-
+func doUpdate(id uint64, r *types.Request) error {
 	ad, msg := getActionData(id, r)
-	defer func(start time.Time) {
-		logrus.Infof("update %d, data: %v in %v", id, ad, time.Since(start))
-	}(time.Now())
-
 	if msg != "" {
-		w.WriteJSON("success", false, "code", msg)
-		return nil, false
-	}
-
-	dal.LockKey(id)
-	defer dal.UnlockKey(id)
-
-	target, err := dal.GetNote(id)
-	if !target.Valid() || err != nil {
-		logrus.Errorf("update can't load note %d: %v", id, err)
-		w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
-		return nil, false
-	}
-
-	if target.PendingReview {
-		w.WriteJSON("success", false, "code", "PENDING_REVIEW")
-		return nil, false
-	}
-
-	if target.Lock && !r.User.IsMod() {
-		w.WriteJSON("success", false, "code", "LOCKED")
-		return nil, false
-	}
-
-	if target.Creator == "bulk" {
-		target.Creator = r.UserDisplay
-	}
-	target.PendingReview = true
-	target.ReviewTitle = ad.title
-	target.ReviewContent = ad.content
-	target.ReviewParentIds = ad.parentIds
-	if ad.imageChanged {
-		target.ReviewImage = ad.image
-	} else {
-		target.ReviewImage = target.Image
-	}
-	target.Modifier = r.UserDisplay
-	target.UpdateUnix = clock.UnixMilli()
-
-	if target.ReviewDataNotChanged() {
-		w.WriteJSON("success", false, "code", "DATA_NO_CHANGE")
-		return nil, false
+		return writeError(msg)
 	}
 
 	if err := dal.Store.Update(func(tx *bbolt.Tx) error {
+		target := dal.GetNoteTx(tx, id)
+		if !target.Valid() {
+			return writeError("ID_NOT_FOUND")
+		}
+
+		if target.PendingReview {
+			return writeError("PENDING_REVIEW")
+		}
+
+		if target.Lock && !r.User.IsMod() {
+			return writeError("LOCKED")
+		}
+
+		if target.Creator == "bulk" {
+			target.Creator = r.UserDisplay
+		}
+		target.PendingReview = true
+		target.ReviewTitle = ad.title
+		target.ReviewContent = ad.content
+		target.ReviewParentIds = ad.parentIds
+		if ad.imageChanged {
+			target.ReviewImage = ad.image
+		} else {
+			target.ReviewImage = target.Image
+		}
+		target.Modifier = r.UserDisplay
+		target.UpdateUnix = clock.UnixMilli()
+
+		if target.ReviewDataNotChanged() {
+			return writeError("DATA_NO_CHANGE")
+		}
+
 		dal.UpdateCreator(tx, target.Creator, target)
 		dal.AppendImage(tx, target)
 		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
 	}); err != nil {
-		logrus.Errorf("update %d: %v", id, err)
-		w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
-		return nil, false
-	}
-
-	if r.User.IsMod() || r.UserDisplay == target.Creator {
-		// We don't want to alter 'target', so pass a copy into doApprove.
-		if !doApprove(target.Clone(), true, w, r) {
-			return nil, false
-		}
+		return err
 	}
 
 	time.AfterFunc(time.Second*10, func() { dal.UploadS3(ad.image, imageThumbName(ad.image)) })
-	return target, true
+	logrus.Infof("update %d, data: %v", id, ad)
+	return nil
 }
 
-func doApprove(target *types.Note, direct bool, w *types.Response, r *types.Request) bool {
-	idKey := types.Uint64Bytes(target.Id)
-
-	defer func(start time.Time) {
-		logrus.Infof("approve %d in %v, direct update: %v", target.Id, time.Since(start), direct)
-	}(time.Now())
-
-	if !target.PendingReview {
-		w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
-		return false
-	}
-
-	if !r.User.IsMod() && target.Creator != r.UserDisplay {
-		w.WriteJSON("success", false, "code", "ILLEGAL_APPROVE")
-		return false
-	}
-
-	var exist bool
-	if err := dal.Store.Update(func(tx *bbolt.Tx) error {
+func doApprove(id uint64, r *types.Request) error {
+	var target *types.Note
+	err := dal.Store.Update(func(tx *bbolt.Tx) error {
+		target = dal.GetNoteTx(tx, id)
+		if !target.Valid() {
+			return writeError("ID_NOT_FOUND")
+		}
+		if !target.PendingReview {
+			return writeError("INTERNAL_ERROR")
+		}
+		if !r.User.IsMod() && target.Creator != r.UserDisplay {
+			return writeError("ILLEGAL_APPROVE")
+		}
 		if tt := target.ReviewTitle; tt != "" {
 			if key, found := dal.KSVFirstKeyOfSort1(tx, dal.NoteBK, []byte(tt)); found {
-				if !bytes.Equal(key, idKey[:]) {
-					exist = true
-					return nil
+				if !bytes.Equal(key, types.Uint64Bytes(target.Id)) {
+					return writeError("DUPLICATED_TITLE")
 				}
 			}
 		}
@@ -165,48 +130,42 @@ func doApprove(target *types.Note, direct bool, w *types.Response, r *types.Requ
 		target.Reviewer = r.UserDisplay
 		target.ClearReviewStatus()
 		dal.UpdateCreator(tx, target.Creator, target)
+
 		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
-	}); err != nil {
-		logrus.Errorf("approve %d: %v", target.Id, err)
-		w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
-		return false
+	})
+	if err == nil {
+		h := buildBitmapHashes(target.Title, target.Creator, target.ParentIds)
+		dal.Store.Saver().AddAsync(bitmap.Uint64Key(target.Id), types.DedupUint64(h))
 	}
-	if exist {
-		w.WriteJSON("success", false, "code", "DUPLICATED_TITLE")
-		return false
-	}
-	h := buildBitmapHashes(target.Title, target.Creator, target.ParentIds)
-	dal.Store.Saver().AddAsync(bitmap.Uint64Key(target.Id), types.DedupUint64(h))
-	return true
+	return err
 }
 
-func doReject(target *types.Note, w *types.Response, r *types.Request) bool {
-	if !target.PendingReview {
-		w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
-		return false
-	}
-	if !r.User.IsMod() && target.Creator != r.UserDisplay && target.Modifier != r.UserDisplay {
-		w.WriteJSON("success", false, "code", "ILLEGAL_APPROVE")
-		return false
-	}
-	target.ClearReviewStatus()
-
-	if err := dal.Store.Update(func(tx *bbolt.Tx) error {
+func doReject(id uint64, r *types.Request) error {
+	return dal.Store.Update(func(tx *bbolt.Tx) error {
+		target := dal.GetNoteTx(tx, id)
+		if !target.Valid() {
+			return writeError("ID_NOT_FOUND")
+		}
+		if !target.PendingReview {
+			return writeError("INTERNAL_ERROR")
+		}
+		if !r.User.IsMod() && target.Creator != r.UserDisplay && target.Modifier != r.UserDisplay {
+			return writeError("ILLEGAL_APPROVE")
+		}
+		target.ClearReviewStatus()
 		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
-	}); err != nil {
-		logrus.Errorf("reject %d: %v", target.Id, err)
-		w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
-		return false
-	}
-	return true
+	})
 }
 
-func doTouch(target *types.Note, w *types.Response, r *types.Request) bool {
-	if r.UserDisplay == target.Creator {
-		w.WriteJSON("success", false, "code", "CANT_TOUCH_SELF")
-		return false
-	}
-	if err := dal.Store.Update(func(tx *bbolt.Tx) error {
+func doTouch(id uint64, r *types.Request) error {
+	return dal.Store.Update(func(tx *bbolt.Tx) error {
+		target := dal.GetNoteTx(tx, id)
+		if !target.Valid() {
+			return writeError("ID_NOT_FOUND")
+		}
+		if r.UserDisplay == target.Creator {
+			return writeError("CANT_TOUCH_SELF")
+		}
 		if dal.KSVExist(tx, "creator_"+r.UserDisplay, types.Uint64Bytes(target.Id)) {
 			dal.DeleteCreator(tx, r.UserDisplay, target)
 			target.TouchCount--
@@ -215,35 +174,26 @@ func doTouch(target *types.Note, w *types.Response, r *types.Request) bool {
 			target.TouchCount++
 		}
 		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
-	}); err != nil {
-		w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
-		return false
-	}
-	return true
+	})
 }
 
-func doDelete(target *types.Note, hide bool, w *types.Response, r *types.Request) bool {
-	ids := types.DedupUint64(append(types.SplitUint64List(r.Form.Get("ids")), target.Id))
-	notes, _ := dal.BatchGetNotes(ids)
-	if len(notes) == 0 {
-		return true
-	}
-	if !r.User.IsMod() {
-		if len(notes) > 1 {
-			w.WriteJSON("success", false, "code", "MODS_REQUIRED")
-			return false
-		}
-		if r.UserDisplay != target.Creator {
-			w.WriteJSON("success", false, "code", "MODS_REQUIRED")
-			return false
-		}
-		if clock.UnixMilli()-target.CreateUnix > 300*1000 {
-			w.WriteJSON("success", false, "code", "DELETE_CHANCE_EXPIRED")
-			return false
-		}
-	}
+func doDeleteHide(hide bool, r *types.Request) error {
+	ids := types.DedupUint64(types.SplitUint64List(r.Form.Get("ids")))
+
 	if err := dal.Store.Update(func(tx *bbolt.Tx) error {
-		for _, n := range notes {
+		for _, id := range ids {
+			n := dal.GetNoteTx(tx, id)
+			if !n.Valid() {
+				continue
+			}
+			if !r.User.IsMod() {
+				if r.UserDisplay != n.Creator {
+					return writeError("MODS_REQUIRED")
+				}
+				if clock.UnixMilli()-n.CreateUnix > 300*1000 {
+					return writeError("DELETE_CHANCE_EXPIRED")
+				}
+			}
 			if hide {
 				if err := dal.KSVDeleteSort0(tx, dal.NoteBK, types.Uint64Bytes(n.Id)); err != nil {
 					return err
@@ -258,36 +208,37 @@ func doDelete(target *types.Note, hide bool, w *types.Response, r *types.Request
 		}
 		return nil
 	}); err != nil {
-		logrus.Errorf("delete %v: %v", ids, err)
-		w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
-		return false
+		return err
 	}
 
 	if !hide {
 		go func() {
-			for _, n := range notes {
-				dal.DeleteS3(dal.ListImage(n.Id, true)...)
+			for _, id := range ids {
+				var imgs []string
+				for _, img := range dal.ListImage(id, true) {
+					imgs = append(imgs, img, imageThumbName(img))
+				}
+				dal.DeleteS3(imgs...)
 			}
 		}()
 	}
-	return true
+	logrus.Infof("delete(%v) data: %v", hide, ids)
+	return nil
 }
 
-func doLockUnlock(target *types.Note, lock bool, w *types.Response, r *types.Request) bool {
+func doLockUnlock(id uint64, lock bool, r *types.Request) error {
 	if !r.User.IsMod() {
-		w.WriteJSON("success", false, "code", "MODS_REQUIRED")
-		return false
+		return writeError("MODS_REQUIRED")
 	}
-	if err := dal.Store.Update(func(tx *bbolt.Tx) error {
+	return dal.Store.Update(func(tx *bbolt.Tx) error {
+		target := dal.GetNoteTx(tx, id)
+		if !target.Valid() {
+			return writeError("ID_NOT_FOUND")
+		}
 		target.Lock = lock
 		target.UpdateUnix = clock.UnixMilli()
 		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
-	}); err != nil {
-		logrus.Errorf("lock(%v) %d: %v", lock, target.Id, err)
-		w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
-		return false
-	}
-	return true
+	})
 }
 
 func doPreview(w *types.Response, r *types.Request) {

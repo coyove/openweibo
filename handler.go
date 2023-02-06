@@ -42,53 +42,53 @@ func HandleAction(w *types.Response, r *types.Request) {
 		return
 	}
 
-	var target *types.Note
-	var ok bool
-	if action == "create" {
-		target, ok = doCreate(w, r)
-	} else if action == "update" {
-		target, ok = doUpdate(w, r)
-	} else {
-		id, err := strconv.ParseUint(r.Form.Get("id"), 10, 64)
+	id, _ := strconv.ParseUint(r.Form.Get("id"), 10, 64)
 
-		defer func(start time.Time) {
-			logrus.Infof("action %q - %d in %v", action, id, time.Since(start))
-		}(time.Now())
+	var err error
+	var directApprove bool
 
-		dal.LockKey(id)
-		defer dal.UnlockKey(id)
-
-		target, err = dal.GetNote(id)
-		if !target.Valid() || err != nil {
-			logrus.Errorf("action %q, can't find %d: %v", action, id, err)
-			w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
-			return
+	start := time.Now()
+	switch action {
+	case "create":
+		id = clock.Id()
+		err = doCreate(id, r)
+	case "update":
+		err = doUpdate(id, r)
+		if err == nil {
+			note, _ := dal.GetNote(id)
+			directApprove = r.User.IsMod() || (note.Valid() && note.Creator == r.UserDisplay)
 		}
-
-		if action == "touch" {
-			ok = doTouch(target, w, r)
-		} else if action == "approve" {
-			ok = doApprove(target, false, w, r)
-		} else if action == "reject" {
-			ok = doReject(target, w, r)
-		} else if action == "delete" || action == "hide" {
-			ok = doDelete(target, action == "hide", w, r)
-		} else if action == "Lock" || action == "Unlock" {
-			ok = doLockUnlock(target, action == "Lock", w, r)
+	case "touch":
+		err = doTouch(id, r)
+	case "approve":
+		err = doApprove(id, r)
+	case "reject":
+		err = doReject(id, r)
+	case "delete", "hide":
+		err = doDeleteHide(action == "hide", r)
+	case "Lock", "Unlock":
+		err = doLockUnlock(id, action == "Lock", r)
+	default:
+		err = writeError("INVALID_ACTION")
+	}
+	if err != nil {
+		logrus.Errorf("action %q %v: %v", action, id, err)
+		if e, ok := err.(writeError); ok {
+			w.WriteJSON("success", false, "code", string(e))
 		} else {
-			w.WriteJSON("success", false, "code", "INVALID_ACTION")
-			return
+			w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
 		}
+		return
 	}
-	if ok {
-		if action != "touch" && action != "hide" {
-			go dal.AppendHistory(target.Id, r.UserDisplay, action,
-				types.UTF16Trunc(r.Form.Get("reject_msg"), 100),
-				r.RemoteIPv4, target)
-		}
-		limiter.AddIP(r)
-		w.WriteJSON("success", true, "note", target, "note_id", strconv.FormatUint(target.Id, 10))
+	logrus.Infof("action %q %v in %v", action, id, time.Since(start))
+
+	if action != "touch" && action != "hide" {
+		msg := types.UTF16Trunc(r.Form.Get("reject_msg"), 100)
+		go dal.AppendHistory(id, r.UserDisplay, action, msg, r.RemoteIPv4)
 	}
+
+	limiter.AddIP(r)
+	w.WriteJSON("success", true, "note_id", strconv.FormatUint(id, 10), "direct_approve", directApprove)
 }
 
 func HandleHistory(w *types.Response, r *types.Request) {
@@ -117,6 +117,10 @@ func HandleHistory(w *types.Response, r *types.Request) {
 	case "note":
 		id, _ := strconv.ParseUint(idStr, 10, 64)
 		results, total, pages = dal.KSVPaging(nil, fmt.Sprintf("history_%d", id), -1, r.P.Desc, r.P.Page-1, r.P.PageSize)
+		tmp, _ := dal.GetNote(id)
+		if tmp.Valid() {
+			note = tmp
+		}
 	case "user":
 		results, total, pages = dal.KSVPaging(nil, "history_"+idStr, -1, r.P.Desc, r.P.Page-1, r.P.PageSize)
 	}
@@ -129,6 +133,9 @@ func HandleHistory(w *types.Response, r *types.Request) {
 			t, _ = dal.GetTagRecord(types.BytesUint64(results[i].Key))
 			if t == nil || t.Note() == nil {
 				continue
+			}
+			if view == "note" && !note.Valid() && t.ActionName() != "delete" {
+				note = t.Note()
 			}
 		}
 		records = append(records, t)

@@ -72,6 +72,8 @@
                 </div>
             </td>
         </tr>
+
+        {{if ne .ActionName "delete"}}
         <tr id='record{{.Id}}'>
             {{$rid := .Id}}
             {{$ipa := .IsPlainAction}}
@@ -80,7 +82,7 @@
             <td class='tag-edit'>
                 <div class=display>
                     {{if $ipa}}
-                        <a class=wrapall href='/ns:id:{{.IdStr}}'>{{.HTMLTitleDisplay}}</a>
+                        <a class=wrapall href='/ns:id:{{.IdStr}}'>{{makeTitle . 100 true}}</a>
                         {{if $msg}}<span class=wrapall>&emsp;<i>留言：{{safeHTML $msg}}</i></span>{{end}}
                     {{else}}
                         <a class=wrapall href='/ns:edit?hid={{$rid}}' style='flex-grow: 1'>{{makeTitle . 100 true}}</a>
@@ -100,6 +102,7 @@
             </td>
             {{end}}
         </tr>
+        {{end}}
         {{end}}
     </table>
 </div>
