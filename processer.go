@@ -244,6 +244,8 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 			id, ok := clock.Base40Decode(key.Str)
 			if ok {
 				ad.parentIds = append(ad.parentIds, id)
+			} else if !ok {
+				ad.parentIds = append(ad.parentIds, key.Uint())
 			}
 			return true
 		})

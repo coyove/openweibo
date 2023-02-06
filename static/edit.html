@@ -201,6 +201,7 @@ div.diff-row.ins{background:#ccffd8}
             <td>
                 <div class=display>
                     {{if or $.User.IsMod (eq $.UserDisplay .Creator)}}
+                    <div class='tag-box button' onclick='deleteNote(this, true)'><span>时间线隐藏</span></div>
                     <div class='tag-box button alert' onclick='deleteNote(this)'><span>删除记事</span></div>
                     {{end}}
                     <div class='tag-box button' onclick='openPreview($("#content").val())'>
@@ -266,10 +267,10 @@ div.diff-row.ins{background:#ccffd8}
                 }, $("#image").get(0).imageData));
             }
 
-            function deleteNote(btn) {
-                if (!confirm("确认删除该记事?")) return;
-                ajaxBtn(btn, 'delete', {'id': '{{.Id}}'}, function(data) {
-                    location.href = '/ns:manage?desc=1';
+            function deleteNote(btn, hide) {
+                if (!hide && !confirm("确认删除该记事?")) return;
+                ajaxBtn(btn, hide ? 'hide' : 'delete', {'id': '{{.Id}}'}, function(data) {
+                    hide ? location.reload() : (location.href = '/ns:manage?desc=1');
                 });
             }
 

@@ -231,10 +231,33 @@ func KSVDelete(tx *bbolt.Tx, bkPrefix string, key []byte) error {
 	if err := keySortSort2.Delete(key); err != nil {
 		return err
 	}
+
 	if deleted, err := keyValue.TestDelete(key); err != nil {
 		return err
 	} else if deleted {
 		keyValue.SetSequence(keyValue.Sequence() - 1)
+	}
+	return nil
+}
+
+func KSVDeleteSort0(tx *bbolt.Tx, bkPrefix string, key []byte) error {
+	sort0Key := tx.Bucket([]byte(bkPrefix + "_s0k"))
+	keySortSort2 := tx.Bucket([]byte(bkPrefix + "_kss"))
+	if sort0Key == nil || keySortSort2 == nil {
+		return nil
+	}
+
+	oldSort := keySortSort2.Get(key)
+	if len(oldSort) >= 8 {
+		if deleted, err := sort0Key.TestDelete((KeySortValue{
+			Key:   key,
+			Sort0: types.BytesUint64(oldSort[:8]),
+			Sort1: oldSort[8:],
+		}).sort0Key()); err != nil {
+			return err
+		} else if deleted {
+			sort0Key.SetSequence(sort0Key.Sequence() - 1)
+		}
 	}
 	return nil
 }

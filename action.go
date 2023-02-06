@@ -222,7 +222,7 @@ func doTouch(target *types.Note, w *types.Response, r *types.Request) bool {
 	return true
 }
 
-func doDelete(target *types.Note, w *types.Response, r *types.Request) bool {
+func doDelete(target *types.Note, hide bool, w *types.Response, r *types.Request) bool {
 	ids := types.DedupUint64(append(types.SplitUint64List(r.Form.Get("ids")), target.Id))
 	notes, _ := dal.BatchGetNotes(ids)
 	if len(notes) == 0 {
@@ -244,10 +244,16 @@ func doDelete(target *types.Note, w *types.Response, r *types.Request) bool {
 	}
 	if err := dal.Store.Update(func(tx *bbolt.Tx) error {
 		for _, n := range notes {
-			dal.ProcessParentChanges(tx, n, n.ParentIds, nil)
-			dal.DeleteCreator(tx, n.Creator, n)
-			if err := dal.KSVDelete(tx, dal.NoteBK, types.Uint64Bytes(n.Id)); err != nil {
-				return err
+			if hide {
+				if err := dal.KSVDeleteSort0(tx, dal.NoteBK, types.Uint64Bytes(n.Id)); err != nil {
+					return err
+				}
+			} else {
+				dal.ProcessParentChanges(tx, n, n.ParentIds, nil)
+				dal.DeleteCreator(tx, n.Creator, n)
+				if err := dal.KSVDelete(tx, dal.NoteBK, types.Uint64Bytes(n.Id)); err != nil {
+					return err
+				}
 			}
 		}
 		return nil
@@ -256,11 +262,14 @@ func doDelete(target *types.Note, w *types.Response, r *types.Request) bool {
 		w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
 		return false
 	}
-	go func() {
-		for _, n := range notes {
-			dal.DeleteS3(dal.ListImage(n.Id, true)...)
-		}
-	}()
+
+	if !hide {
+		go func() {
+			for _, n := range notes {
+				dal.DeleteS3(dal.ListImage(n.Id, true)...)
+			}
+		}()
+	}
 	return true
 }
 

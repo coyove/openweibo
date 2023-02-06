@@ -81,6 +81,14 @@ func (t *Note) QueryTitle() string {
 	return url.QueryEscape(t.Title)
 }
 
+func (t *Note) TitleDisplay() string {
+	tt := t.Title
+	if tt == "" {
+		return "ns:id:" + t.IdStr()
+	}
+	return tt
+}
+
 func (t *Note) HTMLTitleDisplay() string {
 	tt := SafeHTML(t.Title)
 	if tt == "" {

@@ -66,20 +66,32 @@ func imageS3Loader(key, saveTo string) error {
 }
 
 func DeleteS3(files ...string) {
-	for _, file := range files {
-		if file == "" {
-			continue
-		}
-		out, err := Store.S3.S3.DeleteObject(&s3.DeleteObjectInput{
-			Bucket: aws.String("nsimages"),
-			Key:    aws.String(file),
-		})
-		if err != nil || out == nil {
-			logrus.Errorf("DeleteS3 %s error: %v", file, err)
-			continue
-		}
-		logrus.Infof("DeleteS3 %s: %v", file, *out.VersionId)
+	if len(files) > 50 {
+		defer DeleteS3(files[50:]...)
+		files = files[:50]
 	}
+
+	dedup := map[string]bool{}
+	tmp := []*s3.ObjectIdentifier{}
+	for _, file := range files {
+		if file == "" || dedup[file] {
+			continue
+		}
+		dedup[file] = true
+		tmp = append(tmp, &s3.ObjectIdentifier{Key: aws.String(file)})
+	}
+	if len(tmp) == 0 {
+		return
+	}
+	out, err := Store.S3.S3.DeleteObjects(&s3.DeleteObjectsInput{
+		Bucket: aws.String("nsimages"),
+		Delete: &s3.Delete{Objects: tmp},
+	})
+	if err != nil || out == nil {
+		logrus.Errorf("DeleteS3 %s error: %v", files, err)
+		return
+	}
+	logrus.Infof("DeleteS3 %s: %v successes, %v errors", files, len(out.Deleted), len(out.Errors))
 }
 
 func UploadS3(files ...string) (lastErr error) {

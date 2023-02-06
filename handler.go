@@ -71,8 +71,8 @@ func HandleAction(w *types.Response, r *types.Request) {
 			ok = doApprove(target, false, w, r)
 		} else if action == "reject" {
 			ok = doReject(target, w, r)
-		} else if action == "delete" {
-			ok = doDelete(target, w, r)
+		} else if action == "delete" || action == "hide" {
+			ok = doDelete(target, action == "hide", w, r)
 		} else if action == "Lock" || action == "Unlock" {
 			ok = doLockUnlock(target, action == "Lock", w, r)
 		} else {
@@ -81,7 +81,7 @@ func HandleAction(w *types.Response, r *types.Request) {
 		}
 	}
 	if ok {
-		if action != "touch" {
+		if action != "touch" && action != "hide" {
 			go dal.AppendHistory(target.Id, r.UserDisplay, action,
 				types.UTF16Trunc(r.Form.Get("reject_msg"), 100),
 				r.RemoteIPv4, target)
@@ -165,12 +165,7 @@ func HandleTagSearch(w *types.Response, r *types.Request) {
 			ids = append(ids, note.Id)
 		}
 	} else {
-		q, parentIds, uid := expandQuery(q)
-		ids, jms = (collector{}).get(q, parentIds, uid)
-		dn, _ := dal.GetNoteByName(q)
-		if dn.Valid() {
-			ids = types.DedupUint64(append(ids, dn.Id))
-		}
+		ids, jms = (collector{}).get(q, nil, "")
 	}
 
 	notes, _ := dal.BatchGetNotes(ids)
@@ -183,13 +178,16 @@ func HandleTagSearch(w *types.Response, r *types.Request) {
 
 	results := [][3]interface{}{}
 	doubleCheckFilterResults(q, nil, notes, func(t *types.Note) bool {
-		tt := t.Title
-		if tt == "" {
-			tt = "ns:id:" + t.IdStr()
-		}
-		results = append(results, [3]interface{}{t.IdStr(), tt, t.ChildrenCount})
+		results = append(results, [3]interface{}{t.IdStr(), t.TitleDisplay(), t.ChildrenCount})
 		return len(results) < n
 	})
+
+	if q != "" {
+		if dn, _ := dal.GetNoteByName(q); dn.Valid() && !types.ContainsUint64(ids, dn.Id) {
+			results = append([][3]interface{}{{dn.IdStr(), dn.TitleDisplay(), dn.ChildrenCount}}, results...)
+		}
+	}
+
 	diff := time.Since(start)
 	w.WriteJSON(
 		"success", true,

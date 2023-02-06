@@ -6,6 +6,29 @@
     {{end}}
 {{end}}
 
+<style>
+.command {
+    padding: 0.5em;
+    margin: 0 0.2em;
+    border-radius: 0.5em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.command:hover {
+    background: rgba(0,0,0,0.08);
+}
+
+.command > span {
+    white-space: normal;
+}
+.command > span:first-child {
+    font-size: 24px;
+    margin-right: 0.25em;
+}
+</style>
+
 <div id='search-bar' style='display:none'>
     <input id=search class='border1' style='width:100%' placeholder='搜索'>
 </div>
@@ -53,52 +76,51 @@
         </tr>
         {{end}}
 
+        {{if and .T.view (eq .P.Page 1)}}
+        <tr>
+            <td style='padding:0'>
+                <div style='display:flex;align-items:center;padding:0.25em;{{if .T.notes}}border-bottom:solid 1px #ddd;{{end}}'>
+                    <div class=command>
+                        <span class=icon-plus-circled></span>
+                        <span onclick='location.href="/ns:new?parents={{.T.note.Id}}"'>新建子记事</span>
+                    </div>
+                    <div class=command>
+                        <span id=quick-image-loader class='icon-folder'></span>
+                        <span id=quick-image-info onclick='$("#quick-image").click()'>添加子图片</span>
+                    </div>
+
+                    <input id="quick-image" multiple type=file accept="image/*">
+                    <script>
+                        $("#quick-image").imageSelector(function(imageData, file, next) {
+                            if (!imageData.image_changed) return;
+                            imageData.image_index == 0 && $('#quick-image-info').text("上传中");
+                            ajaxBtn($("#quick-image-loader").get(0), 'create', Object.assign({
+                                'content': file.name,
+                                'parents': JSON.stringify({
+                                    '{{.T.note.Id}}': {'tag': ''},
+                                    [window.prevNoteId || '']: {'tag': ''},
+                                    {{range .T.note.ParentIds}}'{{.}}': {'tag': ''},{{end}}
+                                }),
+                            }, imageData), function(data) {
+                                if (!next) {
+                                    window.prevNoteId = '';
+                                    location.href = '/ns:id:{{.T.note.IdStr}}?sort=0&desc=1';
+                                    return;
+                                }
+                                window.prevNoteId = data.note_id;
+                                $('#quick-image-info').text("上传 " + file.name + " 成功 (" +
+                                                                (imageData.image_index + 1) + "/" + imageData.image_total + ")");
+                                next();
+                            });
+                        }).hide();
+                    </script>
+                </div>
+            </td>
+        </tr>
+        {{end}}
         <tr>
             <td style='padding:0;background:transparent'>
             <div id=grid style='display: grid;justify-items: center; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));'>
-            {{if and .T.view (eq .P.Page 1)}}
-                <div class=image-display>
-                    <div class='image-display-container' onclick='location.href="/ns:new?parents={{.T.note.Id}}"'>
-                        <div class='wrapall content100'><span class='image-display-icon icon-plus-circled'></span></div>
-                    </div>
-                    <div class=image-display-info>
-                        <div style='flex-grow:1'><span class=tag-edit-name>新建子记事</span></div><div class=image-display-bar></div>
-                    </div>
-                </div>
-                <div class=image-display>
-                    <div class='image-display-container' onclick='$("#quick-image").click()'>
-                        <div class='wrapall content100'><span id=quick-image-loader class='image-display-icon icon-folder'></span></div>
-                    </div>
-                    <div class=image-display-info>
-                        <input id="quick-image" multiple type=file accept="image/*">
-                        <script>
-                            $("#quick-image").imageSelector(function(imageData, file, next) {
-                                if (!imageData.image_changed) return;
-                                imageData.image_index == 0 && $('#quick-image-info').text("上传中");
-                                ajaxBtn($("#quick-image-loader").get(0), 'create', Object.assign({
-                                    'content': file.name,
-                                    'parents': JSON.stringify({
-                                        '{{.T.note.Id}}': {'tag': ''},
-                                        [window.prevNoteId || '']: {'tag': ''},
-                                        {{range .T.note.ParentIds}}'{{.}}': {'tag': ''},{{end}}
-                                    }),
-                                }, imageData), function(data) {
-                                    if (!next) {
-                                        window.prevNoteId = '';
-                                        location.href = '/ns:id:{{.T.note.IdStr}}?sort=0&desc=1';
-                                        return;
-                                    }
-                                    window.prevNoteId = data.note_id;
-                                    $('#quick-image-info').text("上传 " + file.name + " 成功 (" +
-                                                                    (imageData.image_index + 1) + "/" + imageData.image_total + ")");
-                                    next();
-                                });
-                            }).hide();
-                        </script>
-                        <div style='flex-grow:1'><span id=quick-image-info class=tag-edit-name>添加子图片</span></div><div class=image-display-bar></div>
-                    </div>
-                </div>
-            {{end}}
             {{range .T.notes}}
                 <div class=image-display id=note{{.Id}}>
                     {{if .Image}}
@@ -117,7 +139,7 @@
                         </div>
                     {{end}}
                     <div class=image-display-info>
-                        {{$touched := and $.T.isUserPage (ne $.UserDisplay .Creator)}}
+                        {{$touched := and $.T.isUserPage (ne $.T.viewUser .Creator)}}
                         <div style='flex-grow:1'>
                             {{if .Lock}}<span class='icon-lock'></span>{{end}}
                             {{if .PendingReview}}<span class='icon-hammer' title='等待审核'></span>{{end}}
@@ -161,6 +183,9 @@
 
 {{if .User.IsMod}}
     <div class='tag-box button' onclick='$(".batch-delete").attr("checked", "checked")'>全选</div>
+    {{if eq .P.Sort 0}}
+    <div class='tag-box button' onclick='deleteNotes(this, true)'>批量时间线隐藏</div>
+    {{end}}
     <div class='tag-box alert button' onclick='deleteNotes(this)'>批量删除</div>
 {{end}}
 
@@ -212,12 +237,12 @@
         location.href = '?sort=1&desc={{.T.desc}}&q={{fullEscape .T.query}}&prefix=' + encodeURIComponent(prefix);
     }
 
-    function deleteNotes(btn) {
+    function deleteNotes(btn, hide) {
         const ids = [];
         $('.batch-delete:checked').each(function(_, el) { ids.push($(el).attr('data')) });
         if (ids.length == 0) return;
-        if (!confirm("确认删除" + ids.join(', ') + "?")) return;
-        ajaxBtn(btn, 'delete', {'id': ids[0], 'ids': ids.join(',')});
+        if (!hide && !confirm("确认删除" + ids.join(', ') + "?")) return;
+        ajaxBtn(btn, hide ? 'hide' : 'delete', {'id': ids[0], 'ids': ids.join(',')});
     }
 </script>
 
