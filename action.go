@@ -102,6 +102,7 @@ func doUpdate(id uint64, r *types.Request) error {
 
 func doApprove(id uint64, r *types.Request) error {
 	var target *types.Note
+	var duped bool
 	err := dal.Store.Update(func(tx *bbolt.Tx) error {
 		target = dal.GetNoteTx(tx, id)
 		if !target.Valid() {
@@ -116,7 +117,9 @@ func doApprove(id uint64, r *types.Request) error {
 		if tt := target.ReviewTitle; tt != "" {
 			if key, found := dal.KSVFirstKeyOfSort1(tx, dal.NoteBK, []byte(tt)); found {
 				if !bytes.Equal(key, types.Uint64Bytes(target.Id)) {
-					return writeError("DUPLICATED_TITLE")
+					duped = true
+					target.ClearReviewStatus()
+					return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
 				}
 			}
 		}
@@ -134,6 +137,9 @@ func doApprove(id uint64, r *types.Request) error {
 		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
 	})
 	if err == nil {
+		if duped {
+			return writeError("DUPLICATED_TITLE")
+		}
 		h := buildBitmapHashes(target.Title, target.Creator, target.ParentIds)
 		dal.Store.Saver().AddAsync(bitmap.Uint64Key(target.Id), types.DedupUint64(h))
 	}
