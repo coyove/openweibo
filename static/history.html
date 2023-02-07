@@ -28,8 +28,9 @@
                 <div class=display >
                     <div style='flex-grow:1'>
                         {{if eq .T.viewType "note"}}
-                            <title>{{.T.note.HTMLTitleDisplay}} 的编辑历史</title>
-                            <b class=wrapall>{{.T.note.HTMLTitleDisplay}}</b> 的编辑历史
+                            {{$title := makeTitle .T.note 100 true}}
+                            <title>{{$title}} 的编辑历史</title>
+                            <b class=wrapall>{{$title}}</b> 的编辑历史
                         {{end}}
 
                         {{if eq .T.viewType "user"}}
@@ -60,10 +61,10 @@
                         (<a href='/ns:history?user={{.Modifier}}&desc=1'>历史</a> | <a href='/ns:manage?q=ns:user:{{.Modifier}}&desc=1'>记事</a>)
                         {{if eq .ActionName "create"}}创建{{end}}
                         {{if eq .ActionName "update"}}编辑{{end}}
-                        {{if eq .ActionName "approve"}}通过{{end}}
-                        {{if eq .ActionName "reject"}}驳回{{end}}
+                        {{if eq .ActionName "approve"}}审核通过{{end}}
+                        {{if eq .ActionName "reject"}}审核驳回{{end}}
                         {{if eq .ActionName "lock"}}锁定{{end}}
-                        {{if eq .ActionName "unlock"}}解锁{{end}}
+                        {{if eq .ActionName "unlock"}}解除锁定{{end}}
                         {{if eq .ActionName "delete"}}删除{{end}}
                     </div>
                     {{if $.User.IsMod}}
@@ -73,19 +74,26 @@
             </td>
         </tr>
 
-        {{if ne .ActionName "delete"}}
         <tr id='record{{.Id}}'>
-            {{$rid := .Id}}
-            {{$ipa := .IsPlainAction}}
-            {{$msg := .RejectMsg}}
+            {{$r := .}}
             {{with .Note}}
             <td class='tag-edit'>
                 <div class=display>
-                    {{if $ipa}}
-                        <a class=wrapall href='/ns:id:{{.IdStr}}'>{{makeTitle . 100 true}}</a>
-                        {{if $msg}}<span class=wrapall>&emsp;<i>留言：{{safeHTML $msg}}</i></span>{{end}}
+                    {{if and (ne $r.ActionName "create") (ne $r.ActionName "update")}}
+                        {{if eq $r.ActionName "delete"}}
+                        <a class=wrapall href='/ns:history?note={{.Id}}'><i>记事已删除，查看编辑历史</i></a>
+                        {{else}}
+                            <a class=wrapall href='/ns:id:{{.IdStr}}'>{{makeTitle . 100 true}}</a>
+                            {{if $r.RejectMsg}}
+                            <span class=wrapall>&emsp;<i>留言：{{safeHTML $r.RejectMsg}}</i></span>
+                            {{end}}
+                        {{end}}
                     {{else}}
-                        <a class=wrapall href='/ns:edit?hid={{$rid}}' style='flex-grow: 1'>{{makeTitle . 100 true}}</a>
+                        <div style='flex-grow: 1'>
+                            <a class=wrapall href='/ns:edit?hid={{$r.Id}}'>{{makeTitle . 100 true}}</a>
+                            {{$bd := $r.BytesDiff}}
+                            {{if $bd}}<span style='color:#aaa;margin-left:0.5em'><i>{{$bd}}字节</i></span>{{end}}
+                        </div>
                         {{if .Image}}
                             <a href='{{imageURL "image" .Image}}' target=_blank>
                                 <div style='--image: url({{imageURL "thumb" .Image}})' class=tiny-image></div>
@@ -102,7 +110,6 @@
             </td>
             {{end}}
         </tr>
-        {{end}}
         {{end}}
     </table>
 </div>

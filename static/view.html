@@ -33,9 +33,8 @@
     <div style='line-height:2em; font-size: 90%; color: #666'>
         {{$.T.noteViews}} 浏览&emsp;
         {{.TouchCount}} 收藏&emsp;
-        <a href='/ns:edit?id={{.Id}}'>
-            {{if .PendingReview}}新版本待审核{{else}}编辑{{end}}
-        </a> | <a href='/ns:history?note={{.Id}}&desc=1'>历史</a>
+        <a href='/ns:edit?id={{.Id}}'>{{if .PendingReview}}新版本待审核{{else}}编辑{{end}}</a> |
+        <a href='/ns:history?note={{.Id}}&desc=1'>历史</a>
     </div>
 </div>
 <hr style='border:dotted 1px #ccc'>

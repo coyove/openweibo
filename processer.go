@@ -108,7 +108,6 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 		return tt
 	},
 	"add":        func(a, b int) int { return a + b },
-	"mul":        func(a, b int) int { return a * b },
 	"uuid":       func() string { return types.UUIDStr() },
 	"imageURL":   imageURL,
 	"equ64s":     types.EqualUint64,

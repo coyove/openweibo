@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/url"
+	"strconv"
 
 	"github.com/coyove/sdss/contrib/clock"
 	"github.com/gogo/protobuf/proto"
@@ -174,12 +175,22 @@ func (t *Record) MarshalBinary() []byte {
 	return buf
 }
 
-func (t *Record) IsPlainAction() bool {
-	switch t.Action {
-	case 'a', 'r', 'L', 'U':
-		return true
+func (t *Record) BytesDiff() string {
+	n := t.Note()
+	if t.Action == 'c' {
+		if len(n.Content) == 0 {
+			return ""
+		}
+		return "+" + strconv.Itoa(len(n.Content))
 	}
-	return false
+	a, b := len(n.Content), len(n.ReviewContent)
+	if a == b {
+		return ""
+	}
+	if b > a {
+		return "+" + strconv.Itoa(b-a)
+	}
+	return strconv.Itoa(b - a)
 }
 
 func (t *Record) ActionName() string {

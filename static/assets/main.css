@@ -14,7 +14,7 @@ html, body {
 a { color: #1565c0; text-decoration: none }
 a:hover { text-decoration: underline }
 .highlight {background:wheat;white-space:pre-wrap}
-.wrapall{word-break:break-all;white-space:pre-wrap}
+.wrapall{word-break:break-all;white-space:normal}
 .note{font:inherit;word-break:break-all;white-space:pre-wrap}
 
 #container {
@@ -219,6 +219,7 @@ td .tag-edit-title::-webkit-scrollbar { display: none }
     line-height: 1em;
     text-align: center;
     display: inline-flex;
+    text-decoration: none !important;
 }
 .tag-edit-button:not([disabled]):not(.selected):hover { background: rgba(0, 0, 0, 0.1); }
 .tag-edit-button:not([disabled]):not(.selected):active { background: rgba(0, 0, 0, 0.2); }

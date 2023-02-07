@@ -183,7 +183,7 @@ func rebuildIndexFromDB() {
 	mgr.Saver().Close()
 
 	logrus.Infof("remove current bitmaps: %v", os.RemoveAll("data/index"))
-	logrus.Infof("rename rebuilt bitmaps: %v", os.Rename("data/rebuilt", "bitmap_cache/index"))
+	logrus.Infof("rename rebuilt bitmaps: %v", os.Rename("data/rebuilt", "data/index"))
 }
 
 func compact(pCurrent, pTotal *int64) {

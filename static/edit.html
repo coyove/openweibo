@@ -38,8 +38,8 @@ div.diff-row.ins{background:#ccffd8}
                 <div class=display>
                     <div class=wrapall style='flex-grow:1'>{{safeHTML .ReviewTitle}}</div>
                     {{if not $.T.readonly}}
-                    <div class='tag-box button' onclick='ajaxBtn(this,"approve",{"id":"{{.Id}}"})'><span>通过</span></div>
-                    <div class='tag-box button' onclick='ajaxBtn(this,"reject",{"id":"{{.Id}}","reject_msg":prompt("驳回理由（默认无）")||""})'><span>驳回</span></div>
+                    <div class='tag-box button' onclick='ajaxBtn(this,"approve",{"id":"{{.Id}}"})'>通过</div>
+                    <div class='tag-box button' onclick='ajaxBtn(this,"reject",{"id":"{{.Id}}","reject_msg":prompt("驳回理由（默认无）")||""})'>驳回</div>
                     {{end}}
                 </div>
             </td>
@@ -54,8 +54,13 @@ div.diff-row.ins{background:#ccffd8}
             <td colspan=2>
                 <div class=display>
                     <input placeholder='标题' id="title" value="{{safeHTML .Title}}" maxlength={{$.MaxTitle}} class=tag-edit-name {{$.T.readonly}}/>
-                    {{if and (not $.T.readonly) (not .PendingReview)}}
-                    <div class='tag-box button' onclick='updateNote(this)' id=update>更新</div>
+                    <div class='tag-box button' onclick='openPreview($("#content").val())'>
+                        <span class=icon-print style='margin-right:0.5em'></span>预览
+                    </div>
+                    {{if not $.T.readonly}}
+                    <div class='tag-box button' onclick='updateNote(this)' id=update>
+                        <span class=icon-paper-plane style='margin-right:0.5em'></span>更新
+                    </div>
                     {{end}}
                 </div>
             </td>
@@ -64,8 +69,9 @@ div.diff-row.ins{background:#ccffd8}
         {{if and (not $.User.IsMod) (ne $.UserDisplay .Creator) (not $.T.readonly)}}
         <tr>
             <td colspan=2>
-                <div class='display wrapall' style='font-size:90%;color:#e91e63'
-                    >修改将会由创建者或管理员审核后生效，在此之前你可以驳回自己的修改。</div>
+                <div class='display wrapall' style='font-size:90%;color:#e91e63'>
+                    修改将会由创建者或管理员审核后生效，在此之前你可以完善或驳回自己的修改。
+                </div>
             </td>
         </tr>
         {{end}}
@@ -92,34 +98,39 @@ div.diff-row.ins{background:#ccffd8}
         <tr>
             <td colspan=2>
                 <div class=display>
-                    <label><input onclick='switchDiffView(this)' type=radio name=diff value=current checked> 原内容&emsp;</label>
-                    <label><input onclick='switchDiffView(this)' type=radio name=diff value=review> 新内容&emsp;</label>
+                    <label><input onclick='switchDiffView(this)' type=radio name=diff value=current checked> 新内容&emsp;</label>
+                    <label><input onclick='switchDiffView(this)' type=radio name=diff value=previous> 原内容&emsp;</label>
                     <label><input onclick='switchDiffView(this)' type=radio name=diff value=diff> Diff内容&emsp;</label>
                 </div>
             </td>
         </tr>
-        {{end}}
-
         <tr id='tr-content-current' class=textarea>
             <td colspan=2>
                 <div class=display>
-                    <textarea id="content" {{$.T.readonly}} maxlength={{$.MaxContent}} class=tag-edit-desc rows=15>{{safeHTML .Content}}
+                    <textarea id="content" {{$.T.readonly}} maxlength={{$.MaxContent}} class=tag-edit-desc rows=15>{{safeHTML .ReviewContent}}
 </textarea>
                 </div>
             </td>
         </tr>
-
-        {{if .PendingReview}}
-        <tr id='tr-content-review' class=textarea style='display:none'>
+        <tr id='tr-content-previous' class=textarea style='display:none'>
             <td colspan=2>
                 <div class=display>
-                    <textarea id="review-content" readonly class=tag-edit-desc rows=15>{{safeHTML .ReviewContent}}</textarea>
+                    <textarea id="previous-content" readonly class=tag-edit-desc rows=15>{{safeHTML .Content}}</textarea>
                 </div>
             </td>
         </tr>
         <tr id='tr-content-diff' style='display:none'>
             <td colspan=2 style='padding: 0'>
                 <div id=diff style='width: 100%'></div>
+            </td>
+        </tr>
+        {{else}}
+        <tr class=textarea>
+            <td colspan=2>
+                <div class=display>
+                    <textarea id="content" {{$.T.readonly}} maxlength={{$.MaxContent}} class=tag-edit-desc rows=15>{{safeHTML .Content}}
+</textarea>
+                </div>
             </td>
         </tr>
         {{end}}
@@ -141,7 +152,7 @@ div.diff-row.ins{background:#ccffd8}
                 <td class=small><div class=icon-right-big></div></td>
                 <td>
                     <div class=display>
-                        <div id=parents class='tag-search-input-container' {{$.T.readonly}} max-tags={{$.MaxParents}} {{$reviewParents}}></div>
+                        <div id=parents class='tag-search-input-container' readonly max-tags={{$.MaxParents}} {{$reviewParents}}></div>
                     </div>
                 </td>
             </tr>
@@ -196,28 +207,25 @@ div.diff-row.ins{background:#ccffd8}
         <tr><td class=small>修改时间</td><td><div class=display>{{formatUnixMilli .UpdateUnix}}</div></td></tr>
 
         {{if not $.T.readonly}}
+        {{if or $.User.IsMod (eq $.UserDisplay .Creator)}}
         <tr>
             <td class=small></td>
             <td>
                 <div class=display>
-                    {{if or $.User.IsMod (eq $.UserDisplay .Creator)}}
                     <div class='tag-box button' onclick='deleteNote(this, true)'><span>时间线隐藏</span></div>
                     <div class='tag-box button alert' onclick='deleteNote(this)'><span>删除记事</span></div>
-                    {{end}}
-                    <div class='tag-box button' onclick='openPreview($("#content").val())'>
-                        <span class=icon-print style='margin-right:0.5em'></span>预览
-                    </div>
                 </div>
             </td>
         </tr>
+        {{end}}
         {{end}}
 
         <script>
             $('#content').linedtextarea();
 
             {{if .PendingReview}}
-            $('#review-content').linedtextarea();
-            const diff = JsDiff.diffLines($('#content').val().trim(), $('#review-content').val().trim());
+            $('#previous-content').linedtextarea();
+            const diff = JsDiff.diffLines($('#previous-content').val().trim(), $('#content').val().trim());
             var fragment = document.createDocumentFragment(), lnL = 0, lnR = 0;
             for (var i=0; i < diff.length; i++) {
                 if (diff[i].added && diff[i + 1] && diff[i + 1].removed) {

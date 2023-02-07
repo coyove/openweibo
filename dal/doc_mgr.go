@@ -293,13 +293,15 @@ func AppendHistory(noteId uint64, user, action string, rejectMsg string, ip net.
 			RejectMsg:  rejectMsg,
 		})
 		switch action {
-		case "approve", "reject", "Lock", "Unlock":
-			note.Content = ""
-			note.ReviewContent = ""
-			note.Image = ""
-			note.ReviewImage = ""
+		case "create", "update":
+			tr.SetNote(note)
+		default:
+			tr.SetNote(&types.Note{
+				Id:        note.Id,
+				Title:     note.Title,
+				ParentIds: note.ParentIds,
+			})
 		}
-		tr.SetNote(note)
 		k := types.Uint64Bytes(tr.Id)
 		KSVUpsert(tx, "history", KeySortValue{
 			Key:    k[:],

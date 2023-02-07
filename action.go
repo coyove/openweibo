@@ -62,7 +62,9 @@ func doUpdate(id uint64, r *types.Request) error {
 		}
 
 		if target.PendingReview {
-			return writeError("PENDING_REVIEW")
+			if !r.User.IsMod() && r.UserDisplay != target.Modifier && r.UserDisplay != target.Creator {
+				return writeError("PENDING_REVIEW")
+			}
 		}
 
 		if target.Lock && !r.User.IsMod() {
@@ -102,7 +104,7 @@ func doUpdate(id uint64, r *types.Request) error {
 
 func doApprove(id uint64, r *types.Request) error {
 	var target *types.Note
-	var duped bool
+	var changed bool
 	err := dal.Store.Update(func(tx *bbolt.Tx) error {
 		target = dal.GetNoteTx(tx, id)
 		if !target.Valid() {
@@ -117,13 +119,12 @@ func doApprove(id uint64, r *types.Request) error {
 		if tt := target.ReviewTitle; tt != "" {
 			if key, found := dal.KSVFirstKeyOfSort1(tx, dal.NoteBK, []byte(tt)); found {
 				if !bytes.Equal(key, types.Uint64Bytes(target.Id)) {
-					duped = true
-					target.ClearReviewStatus()
-					return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
+					return writeError("DUPLICATED_TITLE")
 				}
 			}
 		}
 
+		changed = target.ReviewTitle != target.Title || !types.EqualUint64(target.ParentIds, target.ReviewParentIds)
 		dal.ProcessParentChanges(tx, target, target.ParentIds, target.ReviewParentIds)
 
 		target.Title = target.ReviewTitle
@@ -137,11 +138,10 @@ func doApprove(id uint64, r *types.Request) error {
 		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
 	})
 	if err == nil {
-		if duped {
-			return writeError("DUPLICATED_TITLE")
+		if changed {
+			h := buildBitmapHashes(target.Title, target.Creator, target.ParentIds)
+			dal.Store.Saver().AddAsync(bitmap.Uint64Key(target.Id), types.DedupUint64(h))
 		}
-		h := buildBitmapHashes(target.Title, target.Creator, target.ParentIds)
-		dal.Store.Saver().AddAsync(bitmap.Uint64Key(target.Id), types.DedupUint64(h))
 	}
 	return err
 }
