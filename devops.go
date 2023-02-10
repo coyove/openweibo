@@ -345,7 +345,7 @@ func HandleRoot(w *types.Response, r *types.Request) {
 	start := time.Now()
 	fmt.Fprintf(w, "<title>ns:root</title>")
 	if r.User.IsRoot() {
-		fmt.Fprintf(w, "<pre class=wrapall>")
+		fmt.Fprintf(w, "<pre class='wrapall' style='white-space:pre-wrap'>")
 		fmt.Fprintf(w, "<a href='/ns:%v/debug/pprof/'>Go pprof</a>\n\n", rootUUID)
 		fmt.Fprintf(w, "<a href='/ns:%v/dump'>Dumper</a>\n\n", rootUUID)
 		fmt.Fprintf(w, "Your cookie: %s&emsp;", r.UserSession)
