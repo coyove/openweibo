@@ -65,7 +65,7 @@ func HandleImage(w http.ResponseWriter, r *http.Request) {
 	dal.MetricsIncr("image", float64(n))
 }
 
-func saveImage(r *types.Request, id uint64, ts int64, ext string,
+func saveFile(r *types.Request, id uint64, ts int64, ext string,
 	img multipart.File, hdr *multipart.FileHeader) (string, string) {
 	fn := fmt.Sprintf("%s%03d-%x%s", time.Unix(0, ts).Format("060102150405"), (ts/1e6)%1000, id, ext)
 	path := dal.ImageCacheDir + fn
@@ -79,8 +79,12 @@ func saveImage(r *types.Request, id uint64, ts int64, ext string,
 
 	rd := bufio.NewReader(img)
 	buf, _ := rd.Peek(512)
-	if !strings.Contains(http.DetectContentType(buf), "image") {
-		return "", "INVALID_IMAGE"
+	switch typ := http.DetectContentType(buf); typ {
+	case "application/pdf", "application/mp4", "video/mp4", "audio/mp4":
+	default:
+		if !strings.Contains(typ, "image") {
+			return "", "INVALID_IMAGE"
+		}
 	}
 
 	n, err := io.Copy(out, rd)
@@ -98,6 +102,9 @@ func imageThumbName(a string) string {
 		return ""
 	}
 	ext := filepath.Ext(a)
+	if ext == ".pdf" {
+		return ""
+	}
 	if ext != "" {
 		x := a[:len(a)-len(ext)]
 		if strings.HasSuffix(x, "f") {
@@ -112,10 +119,15 @@ func imageURL(p, a string) string {
 		return ""
 	}
 	ext := filepath.Ext(a)
-	if ext != "" {
+	if ext == ".pdf" {
+		if p == "thumb" {
+			return ""
+		}
+		p = "image"
+	} else if ext != "" {
 		if strings.HasSuffix(a[:len(a)-len(ext)], "s") {
 			if p == "thumb" {
-				return "/ns:image/" + a
+				p = "image"
 			}
 		}
 	}

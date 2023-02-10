@@ -26,6 +26,12 @@ func HandleAction(w *types.Response, r *types.Request) {
 		return
 	}
 
+	defer func() {
+		if r.MultipartForm != nil {
+			r.MultipartForm.RemoveAll()
+		}
+	}()
+
 	if err := r.ParseMultipartForm(types.Config.RequestMaxSize); err != nil {
 		if err == limiter.ErrRequestTooLarge {
 			w.WriteJSON("success", false, "code", "CONTENT_TOO_LARGE")
@@ -49,25 +55,29 @@ func HandleAction(w *types.Response, r *types.Request) {
 
 	start := time.Now()
 	switch action {
+	case "approve":
+		err = doApprove(id, r)
 	case "create":
 		id = clock.Id()
 		err = doCreate(id, r)
+	case "delete":
+		err = doDeleteHide(false, r)
+	case "hide":
+		err = doDeleteHide(true, r)
+	case "Lock":
+		err = doLockUnlock(id, true, r)
+	case "reject":
+		err = doReject(id, r)
+	case "touch":
+		err = doTouch(id, r)
 	case "update":
 		err = doUpdate(id, r)
 		if err == nil {
 			note, _ := dal.GetNote(id)
 			directApprove = r.User.IsMod() || (note.Valid() && note.Creator == r.UserDisplay)
 		}
-	case "touch":
-		err = doTouch(id, r)
-	case "approve":
-		err = doApprove(id, r)
-	case "reject":
-		err = doReject(id, r)
-	case "delete", "hide":
-		err = doDeleteHide(action == "hide", r)
-	case "Lock", "Unlock":
-		err = doLockUnlock(id, action == "Lock", r)
+	case "Unlock":
+		err = doLockUnlock(id, false, r)
 	default:
 		err = writeError("INVALID_ACTION")
 	}

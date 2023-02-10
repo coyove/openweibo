@@ -19,12 +19,12 @@
         <td>
             <div class=display style='flex-wrap:nowrap;align-items:stretch;padding:0.5em 0'>
                 <div style='margin-right: 0.5em'>
-                    <input id="image" type=file class='image-selector' accept="image/*">
+                    <input id="image" type=file class='image-selector' accept="image/*,application/pdf,video/mp4,audio/mp4">
                 </div>
                 <div style='display: flex;flex-grow:1;flex-direction:column'>
                     <div style='display: flex;flex-grow:1'>
                         <textarea
-                                id=name
+                                id=title
                                 maxlength={{.MaxTitle}}
                                 class='tag-edit-title tag-edit-desc'
                                 placeholder='标题：{{.MaxTitle}}字符'></textarea>
@@ -72,7 +72,7 @@
 <script>
     $('#submit').click(function() {
         ajaxBtn(this, 'create', Object.assign({
-            'title': $('#name').val(),
+            'title': $('#title').val(),
             'content': $('#content').val(),
             'parents': JSON.stringify($('#parents').get(0).getTags()),
         }, $('#image').get(0).imageData), function(data) {
@@ -86,7 +86,7 @@
     });
 
     function checkTitle() {
-        const that = this, last = this.last || '', input = $('#name').val();
+        const that = this, last = this.last || '', input = $('#title').val();
         function reset() {
             $('#tr').css('background', '');
             $('#prompt').text(input ? '' : '标题为空时，请选择至少一个父记事。').off('click');
@@ -94,7 +94,7 @@
         if (!input) reset();
         if (input && input != last) {
             $.get('/ns:search?n=1&title=' + encodeURIComponent(input), function(data) {
-                if (data.notes.length > 0 && $('#name').val() == input) {
+                if (data.notes.length > 0 && $('#title').val() == input) {
                     const res = data.notes[0];
                     $('#tr').css('background', '#fce4ec');
                     $('#prompt').
@@ -102,7 +102,7 @@
                             css('cursor', 'pointer').
                             click(function() { window.open('/ns:id:' + res[0]) });
                     $('#parents').get(0).select(res[0], res[1]);
-                    $('#name').focus();
+                    $('#title').focus();
                 } else {
                     reset();
                 }

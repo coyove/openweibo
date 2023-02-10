@@ -202,7 +202,7 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 
 	img, hdr, _ := r.Request.FormFile("image")
 	if img != nil {
-		ext := filepath.Ext(filepath.Base(hdr.Filename))
+		ext := strings.ToLower(filepath.Ext(filepath.Base(hdr.Filename)))
 		if ext == "" {
 			return ad, "INVALID_IMAGE_NAME"
 		}
@@ -211,8 +211,13 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 		ad.imageChanged = q.Get("image_changed") == "true"
 		ad.imageTotal, _ = strconv.Atoi(q.Get("image_total"))
 
-		if q.Get("image_small") == "true" {
-			ad.image, msg = saveImage(r, id, seed, "s"+ext, img, hdr)
+		if q.Get("file_type") == "application/pdf" {
+			ad.image, msg = saveFile(r, id, seed, "a"+ext, img, hdr)
+			if msg != "" {
+				return ad, msg
+			}
+		} else if q.Get("image_small") == "true" {
+			ad.image, msg = saveFile(r, id, seed, "s"+ext, img, hdr)
 			if msg != "" {
 				return ad, msg
 			}
@@ -221,11 +226,11 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 			if thumb == nil || thhdr == nil {
 				return ad, "INVALID_IMAGE"
 			}
-			ad.image, msg = saveImage(r, id, seed, "f"+ext, img, hdr)
+			ad.image, msg = saveFile(r, id, seed, "f"+ext, img, hdr)
 			if msg != "" {
 				return ad, msg
 			}
-			_, msg = saveImage(r, id, seed, "f.thumb.jpg", thumb, thhdr)
+			_, msg = saveFile(r, id, seed, "f.thumb.jpg", thumb, thhdr)
 			if msg != "" {
 				return ad, msg
 			}

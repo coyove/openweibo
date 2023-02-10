@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/url"
+	"path/filepath"
 	"strconv"
 
 	"github.com/coyove/sdss/contrib/clock"
@@ -96,6 +97,14 @@ func (t *Note) HTMLTitleDisplay() string {
 		return fmt.Sprintf("<span style='font-style:italic'>ns:id:%s</span>", t.IdStr())
 	}
 	return tt
+}
+
+func (t *Note) IsSpecialImage() bool {
+	switch filepath.Ext(t.Image) {
+	case ".pdf", ".mp4":
+		return true
+	}
+	return false
 }
 
 func (t *Note) ClearReviewStatus() {

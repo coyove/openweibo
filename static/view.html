@@ -41,14 +41,20 @@
 
 <div>
     {{if .Image}}
-    <a href="{{imageURL "image" .Image}}" target=_blank>
-        <div style='display:inline-block;float:left;margin:0 0.5em 0.5em 0;border-radius:0.5em;overflow:hidden'>
-            <img id=main-image
-                 src="{{imageURL "image" .Image}}"
-                 onload="$(window).resize()"
-                 style="max-width:100%;max-height:100vh;display:block;">
+        {{if .IsSpecialImage}}
+        <div style='display:inline-block;padding:0.5em;border:dashed #667 2px;'>
+            <span class=icon-docs>&emsp;<a href='{{imageURL "image" .Image}}'>打开文件</a></span>
         </div>
-    </a>
+        {{else}}
+        <a href="{{imageURL "image" .Image}}" target=_blank>
+            <div style='display:inline-block;float:left;margin:0 0.5em 0.5em 0;border-radius:0.5em;overflow:hidden'>
+                <img id=main-image
+                     src="{{imageURL "image" .Image}}"
+                     onload="$(window).resize()"
+                     style="max-width:100%;max-height:100vh;display:block;">
+            </div>
+        </a>
+        {{end}}
     {{end}}
     {{if $.T.parents}}
     <div>

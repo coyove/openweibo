@@ -114,6 +114,7 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
                     'image_small': small,
                     'image_index': fileIdx,
                     'image_total': files.length,
+                    'file_type': image ? (image.type || '') : '',
                 };
                 processing.hide();
                 display ? viewLarge.show().off('click').click(function(ev) {
@@ -131,7 +132,29 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
             }
 
             processing.text('处理中').show();
-            const file = files[fileIdx], reader = new FileReader(), size = 300;
+            const file = files[fileIdx];
+            if (["application/mp4", "application/pdf", "video/mp4", "audio/mp4"].indexOf(file.type) >= 0) {
+                const canvas = document.createElement("canvas");
+                canvas.width = 300; canvas.height = 300;
+                const ctx = canvas.getContext("2d");
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, 300, 300);
+
+                ctx.fillStyle = 'black';
+                ctx.font = "48px serif";
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(file.type.replace(/.+\//, '').toUpperCase() + " " + (file.size / 1024 / 1024).toFixed(2) + 'M', 150, 120);
+                ctx.font = '32px serif';
+                ctx.fillText(file.name, 150, 160);
+                canvas.toBlob(function(blob)  {
+                    finish(true, false, canvas.toDataURL('image/jpeg'), file, new File([blob], "thumb.jpg", { type: "image/jpeg" }));
+                    $('#title').val(file.name);
+                }, 'image/jpeg');
+                return;
+            }
+
+            const reader = new FileReader(), size = 300;
             reader.onload = function (e) {
                 var img = document.createElement("img");
                 img.onload = function (event) {
