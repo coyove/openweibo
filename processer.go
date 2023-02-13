@@ -3,10 +3,13 @@ package main
 import (
 	"bytes"
 	"embed"
+	"errors"
 	"fmt"
 	"html"
 	"net/http"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"runtime/debug"
 	"sort"
 	"strconv"
@@ -211,10 +214,20 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 		ad.imageChanged = q.Get("image_changed") == "true"
 		ad.imageTotal, _ = strconv.Atoi(q.Get("image_total"))
 
-		if q.Get("file_type") == "application/pdf" {
+		if ft := q.Get("file_type"); ft == "application/pdf" {
 			ad.image, msg = saveFile(r, id, seed, "a"+ext, img, hdr)
 			if msg != "" {
 				return ad, msg
+			}
+		} else if strings.HasPrefix(ft, "video/") {
+			ad.image, msg = saveFile(r, id, seed, "f"+ext, img, hdr)
+			if msg != "" {
+				return ad, msg
+			}
+			thumb := calcFilename(id, seed, "f.thumb.jpg")
+			if err := extractVideoThumb(dal.ImageCacheDir+"/"+ad.image, dal.ImageCacheDir+"/"+thumb); err != nil {
+				logrus.Errorf("extract MP4 %s frame: %v", ad.image, err)
+				return ad, "INTERNAL_ERROR"
 			}
 		} else if q.Get("image_small") == "true" {
 			ad.image, msg = saveFile(r, id, seed, "s"+ext, img, hdr)
@@ -443,4 +456,22 @@ func sortNotes(notes []*types.Note, st int, desc bool) []*types.Note {
 		}
 	}
 	return notes
+}
+
+func extractVideoThumb(src, dest string) error {
+	out := &bytes.Buffer{}
+	e := "./ffmpeg"
+	if runtime.GOOS == "windows" {
+		e = "./ffmpeg.exe"
+	}
+	cmd := exec.Command(e,
+		"-i", src, "-vf", `select=eq(n\,50)`, "-q:v", "3", "-vframes", "1", "-hide_banner", "-loglevel", "error", dest)
+	cmd.Stderr = out
+	if err := cmd.Run(); err != nil {
+		return err
+	}
+	if out.Len() > 0 {
+		return errors.New(out.String())
+	}
+	return nil
 }

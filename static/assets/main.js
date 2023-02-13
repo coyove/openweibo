@@ -133,7 +133,7 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
 
             processing.text('处理中').show();
             const file = files[fileIdx];
-            if (["application/mp4", "application/pdf", "video/mp4", "audio/mp4"].indexOf(file.type) >= 0) {
+            if (file.type == "application/pdf" || file.type.startsWith("video/")) {
                 const canvas = document.createElement("canvas");
                 canvas.width = 300; canvas.height = 300;
                 const ctx = canvas.getContext("2d");

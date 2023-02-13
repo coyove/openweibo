@@ -41,6 +41,11 @@
 
 <div>
     {{if .Image}}
+        {{if .IsMP4}}
+        <div style='width: 100%'>
+            <video controls style='width: 100%;max-height:100vh'><source src="{{imageURL "image" .Image}}" type='video/mp4'></video>
+        </div>
+        {{else}}
         {{if .IsSpecialImage}}
         <div style='display:inline-block;padding:0.5em;border:dashed #667 2px;'>
             <span class=icon-docs>&emsp;<a href='{{imageURL "image" .Image}}'>打开文件</a></span>
@@ -54,6 +59,7 @@
                      style="max-width:100%;max-height:100vh;display:block;">
             </div>
         </a>
+        {{end}}
         {{end}}
     {{end}}
     {{if $.T.parents}}

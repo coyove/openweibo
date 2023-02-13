@@ -99,6 +99,14 @@ func (t *Note) HTMLTitleDisplay() string {
 	return tt
 }
 
+func (t *Note) IsMP4() bool {
+	switch filepath.Ext(t.Image) {
+	case ".mp4":
+		return true
+	}
+	return false
+}
+
 func (t *Note) IsSpecialImage() bool {
 	switch filepath.Ext(t.Image) {
 	case ".pdf", ".mp4":

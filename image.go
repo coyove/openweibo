@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -65,9 +66,12 @@ func HandleImage(w http.ResponseWriter, r *http.Request) {
 	dal.MetricsIncr("image", float64(n))
 }
 
-func saveFile(r *types.Request, id uint64, ts int64, ext string,
-	img multipart.File, hdr *multipart.FileHeader) (string, string) {
-	fn := fmt.Sprintf("%s%03d-%x%s", time.Unix(0, ts).Format("060102150405"), (ts/1e6)%1000, id, ext)
+func calcFilename(id uint64, ts int64, ext string) string {
+	return fmt.Sprintf("%s%03d-%x%s", time.Unix(0, ts).Format("060102150405"), (ts/1e6)%1000, id, ext)
+}
+
+func saveFile(r *types.Request, id uint64, ts int64, ext string, img multipart.File, hdr *multipart.FileHeader) (string, string) {
+	fn := calcFilename(id, ts, ext)
 	path := dal.ImageCacheDir + fn
 	os.MkdirAll(filepath.Dir(path), 0777)
 	out, err := os.Create(path)
@@ -82,7 +86,10 @@ func saveFile(r *types.Request, id uint64, ts int64, ext string,
 	switch typ := http.DetectContentType(buf); typ {
 	case "application/pdf", "application/mp4", "video/mp4", "audio/mp4":
 	default:
-		if !strings.Contains(typ, "image") {
+		if strings.HasPrefix(typ, "video/") {
+		} else if bytes.HasPrefix(buf, []byte{0x6D, 0x6F, 0x6F, 0x76}) { // .mov
+		} else if !strings.Contains(typ, "image") {
+			fmt.Println(typ, buf[:10])
 			return "", "INVALID_IMAGE"
 		}
 	}
