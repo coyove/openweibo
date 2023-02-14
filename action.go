@@ -9,6 +9,7 @@ import (
 	"github.com/coyove/sdss/contrib/bitmap"
 	"github.com/coyove/sdss/contrib/clock"
 	"github.com/coyove/sdss/contrib/ngram"
+	"github.com/coyove/sdss/contrib/simple"
 	"github.com/sirupsen/logrus"
 	"go.etcd.io/bbolt"
 )
@@ -41,7 +42,7 @@ func doCreate(id uint64, r *types.Request) error {
 
 	if len(ad.hash) > 0 {
 		dal.Store.Saver().AddAsync(bitmap.Uint64Key(id),
-			types.DedupUint64(append(ad.hash, ngram.StrHash(r.UserDisplay))))
+			simple.Uint64.Dedup(append(ad.hash, ngram.StrHash(r.UserDisplay))))
 	}
 
 	time.AfterFunc(time.Second*10, func() { dal.UploadS3(target.Image, imageThumbName(target.Image)) })
@@ -124,7 +125,7 @@ func doApprove(id uint64, r *types.Request) error {
 			}
 		}
 
-		changed = target.ReviewTitle != target.Title || !types.EqualUint64(target.ParentIds, target.ReviewParentIds)
+		changed = target.ReviewTitle != target.Title || !simple.Uint64.Equal(target.ParentIds, target.ReviewParentIds)
 		dal.ProcessParentChanges(tx, target, target.ParentIds, target.ReviewParentIds)
 
 		target.Title = target.ReviewTitle
@@ -140,7 +141,7 @@ func doApprove(id uint64, r *types.Request) error {
 	if err == nil {
 		if changed {
 			h := buildBitmapHashes(target.Title, target.Creator, target.ParentIds)
-			dal.Store.Saver().AddAsync(bitmap.Uint64Key(target.Id), types.DedupUint64(h))
+			dal.Store.Saver().AddAsync(bitmap.Uint64Key(target.Id), simple.Uint64.Dedup(h))
 		}
 	}
 	return err
@@ -184,7 +185,7 @@ func doTouch(id uint64, r *types.Request) error {
 }
 
 func doDeleteHide(hide bool, r *types.Request) error {
-	ids := types.DedupUint64(types.SplitUint64List(r.Form.Get("ids")))
+	ids := simple.Uint64.Dedup(types.SplitUint64List(r.Form.Get("ids")))
 
 	if err := dal.Store.Update(func(tx *bbolt.Tx) error {
 		for _, id := range ids {

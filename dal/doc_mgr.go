@@ -7,6 +7,7 @@ import (
 
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/clock"
+	"github.com/coyove/sdss/contrib/simple"
 	"github.com/tidwall/gjson"
 	"go.etcd.io/bbolt"
 )
@@ -239,7 +240,7 @@ func ProcessParentChanges(tx *bbolt.Tx, tag *types.Note, old, new []uint64) erro
 	}
 
 	for _, o := range old {
-		if types.ContainsUint64(new, o) {
+		if simple.Uint64.Contains(new, o) {
 			continue
 		}
 		ok := types.Uint64Bytes(o)
@@ -255,7 +256,7 @@ func ProcessParentChanges(tx *bbolt.Tx, tag *types.Note, old, new []uint64) erro
 	now := clock.UnixMilli()
 	tt := []byte(tag.Title)
 	for _, n := range new {
-		if types.ContainsUint64(old, n) {
+		if simple.Uint64.Contains(old, n) {
 			// No need to incr 1
 		} else {
 			nk := types.Uint64Bytes(n)

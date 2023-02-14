@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -34,7 +33,7 @@ func HandleImage(w http.ResponseWriter, r *http.Request) {
 	}
 	p = strings.Replace(p, "/", "", -1)
 
-	if idx1, idx2 := strings.IndexByte(p, '-'), strings.IndexByte(p, '.'); idx1 < 0 || idx2 < 0 || idx1+1 > idx2-1 {
+	if idx1, idx2 := strings.LastIndexByte(p, '-'), strings.LastIndexByte(p, '.'); idx1 < 0 || idx2 < 0 || idx1+1 > idx2-1 {
 		w.WriteHeader(400)
 		return
 	} else if id, _ := strconv.ParseUint(p[idx1+1:idx2-1], 16, 64); id == 0 {
@@ -66,12 +65,9 @@ func HandleImage(w http.ResponseWriter, r *http.Request) {
 	dal.MetricsIncr("image", float64(n))
 }
 
-func calcFilename(id uint64, ts int64, ext string) string {
-	return fmt.Sprintf("%s%03d-%x%s", time.Unix(0, ts).Format("060102150405"), (ts/1e6)%1000, id, ext)
-}
-
-func saveFile(r *types.Request, id uint64, ts int64, ext string, img multipart.File, hdr *multipart.FileHeader) (string, string) {
-	fn := calcFilename(id, ts, ext)
+func saveFile(r *types.Request, id uint64, ts int64, ext string, fileSize int,
+	img multipart.File, hdr *multipart.FileHeader) (string, string) {
+	fn := fmt.Sprintf("%s%03d(%d)-%x%s", time.Unix(0, ts).Format("060102150405"), (ts/1e6)%1000, fileSize, id, ext)
 	path := dal.ImageCacheDir + fn
 	os.MkdirAll(filepath.Dir(path), 0777)
 	out, err := os.Create(path)
@@ -82,17 +78,17 @@ func saveFile(r *types.Request, id uint64, ts int64, ext string, img multipart.F
 	defer out.Close()
 
 	rd := bufio.NewReader(img)
-	buf, _ := rd.Peek(512)
-	switch typ := http.DetectContentType(buf); typ {
-	case "application/pdf", "application/mp4", "video/mp4", "audio/mp4":
-	default:
-		if strings.HasPrefix(typ, "video/") {
-		} else if bytes.HasPrefix(buf, []byte{0x6D, 0x6F, 0x6F, 0x76}) { // .mov
-		} else if !strings.Contains(typ, "image") {
-			fmt.Println(typ, buf[:10])
-			return "", "INVALID_IMAGE"
-		}
-	}
+	//buf, _ := rd.Peek(512)
+	//switch typ := http.DetectContentType(buf); typ {
+	//case "application/pdf", "application/mp4", "video/mp4", "audio/mp4":
+	//default:
+	//	if strings.HasPrefix(typ, "video/") {
+	//	} else if bytes.HasPrefix(buf, []byte{0x6D, 0x6F, 0x6F, 0x76}) { // .mov
+	//	} else if !strings.Contains(typ, "image") {
+	//		fmt.Println(typ, buf[:10])
+	//		return "", "INVALID_IMAGE"
+	//	}
+	//}
 
 	n, err := io.Copy(out, rd)
 	if err != nil {
@@ -109,11 +105,11 @@ func imageThumbName(a string) string {
 		return ""
 	}
 	ext := filepath.Ext(a)
-	if ext == ".pdf" {
-		return ""
-	}
 	if ext != "" {
 		x := a[:len(a)-len(ext)]
+		if strings.HasSuffix(x, "a") {
+			return ""
+		}
 		if strings.HasSuffix(x, "f") {
 			return x + ".thumb.jpg"
 		}
@@ -126,13 +122,14 @@ func imageURL(p, a string) string {
 		return ""
 	}
 	ext := filepath.Ext(a)
-	if ext == ".pdf" {
-		if p == "thumb" {
-			return ""
+	if ext != "" {
+		x := a[:len(a)-len(ext)]
+		if strings.HasSuffix(x, "a") {
+			if p == "thumb" {
+				return ""
+			}
 		}
-		p = "image"
-	} else if ext != "" {
-		if strings.HasSuffix(a[:len(a)-len(ext)], "s") {
+		if strings.HasSuffix(x, "s") {
 			if p == "thumb" {
 				p = "image"
 			}

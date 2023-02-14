@@ -26,6 +26,7 @@ import (
 	"github.com/coyove/sdss/contrib/clock"
 	"github.com/coyove/sdss/contrib/cursor"
 	"github.com/coyove/sdss/contrib/ngram"
+	"github.com/coyove/sdss/contrib/simple"
 	"github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
 )
@@ -113,7 +114,7 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 	"add":        func(a, b int) int { return a + b },
 	"uuid":       func() string { return types.UUIDStr() },
 	"imageURL":   imageURL,
-	"equ64s":     types.EqualUint64,
+	"equ64s":     simple.Uint64.Equal,
 	"trunc":      types.UTF16Trunc,
 	"renderClip": types.RenderClip,
 	"safeHTML":   types.SafeHTML,
@@ -213,24 +214,15 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 		seed := clock.UnixNano()
 		ad.imageChanged = q.Get("image_changed") == "true"
 		ad.imageTotal, _ = strconv.Atoi(q.Get("image_total"))
+		fileSize, _ := strconv.Atoi(q.Get("file_size"))
 
-		if ft := q.Get("file_type"); ft == "application/pdf" {
-			ad.image, msg = saveFile(r, id, seed, "a"+ext, img, hdr)
+		if ft := q.Get("file_type"); !strings.HasPrefix(ft, "image/") {
+			ad.image, msg = saveFile(r, id, seed, "a"+ext, fileSize, img, hdr)
 			if msg != "" {
 				return ad, msg
-			}
-		} else if strings.HasPrefix(ft, "video/") {
-			ad.image, msg = saveFile(r, id, seed, "f"+ext, img, hdr)
-			if msg != "" {
-				return ad, msg
-			}
-			thumb := calcFilename(id, seed, "f.thumb.jpg")
-			if err := extractVideoThumb(dal.ImageCacheDir+"/"+ad.image, dal.ImageCacheDir+"/"+thumb); err != nil {
-				logrus.Errorf("extract MP4 %s frame: %v", ad.image, err)
-				return ad, "INTERNAL_ERROR"
 			}
 		} else if q.Get("image_small") == "true" {
-			ad.image, msg = saveFile(r, id, seed, "s"+ext, img, hdr)
+			ad.image, msg = saveFile(r, id, seed, "s"+ext, fileSize, img, hdr)
 			if msg != "" {
 				return ad, msg
 			}
@@ -239,11 +231,11 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 			if thumb == nil || thhdr == nil {
 				return ad, "INVALID_IMAGE"
 			}
-			ad.image, msg = saveFile(r, id, seed, "f"+ext, img, hdr)
+			ad.image, msg = saveFile(r, id, seed, "f"+ext, fileSize, img, hdr)
 			if msg != "" {
 				return ad, msg
 			}
-			_, msg = saveFile(r, id, seed, "f.thumb.jpg", thumb, thhdr)
+			_, msg = saveFile(r, id, seed, "f.thumb.jpg", fileSize, thumb, thhdr)
 			if msg != "" {
 				return ad, msg
 			}
@@ -266,7 +258,7 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 			}
 			return true
 		})
-		ad.parentIds = types.DedupUint64(ad.parentIds)
+		ad.parentIds = simple.Uint64.Dedup(ad.parentIds)
 		if len(ad.parentIds) > r.MaxParents() {
 			return ad, "TOO_MANY_PARENTS"
 		}

@@ -7,8 +7,10 @@ import (
 	"net/url"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/coyove/sdss/contrib/clock"
+	"github.com/coyove/sdss/contrib/simple"
 	"github.com/gogo/protobuf/proto"
 	"github.com/pierrec/lz4/v4"
 )
@@ -99,17 +101,32 @@ func (t *Note) HTMLTitleDisplay() string {
 	return tt
 }
 
-func (t *Note) IsMP4() bool {
-	switch filepath.Ext(t.Image) {
-	case ".mp4":
-		return true
-	}
-	return false
+func (t *Note) FileExt() string {
+	return strings.ToLower(filepath.Ext(t.Image))
 }
 
-func (t *Note) IsSpecialImage() bool {
-	switch filepath.Ext(t.Image) {
-	case ".pdf", ".mp4":
+func (t *Note) FileSizeString() string {
+	return fmt.Sprintf("%.2fM", float64(t.FileSize())/1024/1024)
+}
+
+func (t *Note) FileSize() int {
+	if t.Image == "" {
+		return 0
+	}
+	idx1, idx2 := strings.IndexByte(t.Image, '('), strings.IndexByte(t.Image, ')')
+	if idx1 > 0 && idx2 > idx1 {
+		a, _ := strconv.Atoi(t.Image[idx1+1 : idx2])
+		return a
+	}
+	return 0
+}
+
+func (t *Note) IsImage() bool {
+	switch strings.ToLower(filepath.Ext(t.Image)) {
+	case ".jpg", ".jpeg", ".jpe", ".jif", ".jfif", ".jfi",
+		".png", ".gif", ".webp", ".tiff", ".tif", ".bmp",
+		".dib", ".heif", ".heic", ".jp2", ".j2k", ".jpf",
+		".jpx", ".jpm", ".mj2":
 		return true
 	}
 	return false
@@ -124,7 +141,7 @@ func (t *Note) ReviewDataNotChanged() bool {
 	return t.ReviewTitle == t.Title &&
 		t.ReviewContent == t.Content &&
 		t.ReviewImage == t.Image &&
-		EqualUint64(t.ReviewParentIds, t.ParentIds)
+		simple.Uint64.Equal(t.ReviewParentIds, t.ParentIds)
 }
 
 func (t *Note) Valid() bool {

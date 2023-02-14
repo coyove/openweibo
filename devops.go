@@ -155,7 +155,8 @@ func rebuildIndexFromDB() {
 	out := "data/rebuilt"
 	os.RemoveAll(out)
 
-	mgr, err := bitmap.NewManager(out, types.Config.Index.SwitchThreshold, types.Config.Index.CacheSize)
+	mgr, err := bitmap.NewManager(out, types.Config.Index.SwitchThreshold,
+		bitmap.NewLRUCache(types.Config.Index.CacheSize))
 	if err != nil {
 		logrus.Fatal("init bitmap manager: ", err)
 	}

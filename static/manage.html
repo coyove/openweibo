@@ -123,7 +123,7 @@
             <div id=grid style='display: grid;justify-items: center; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));'>
             {{range .T.notes}}
                 <div class=image-display id=note{{.Id}}>
-                    {{if and .Image (or .IsMP4 (not .IsSpecialImage))}}
+                    {{if and .Image .IsImage}}
                         <div class='image-display-container image'
                             style='background: center / cover no-repeat url({{imageURL "thumb" .Image}});background-color:rgba(0,0,0,0.05)'
                             data-src="{{imageURL "image" .Image}}">

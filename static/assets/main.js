@@ -115,6 +115,8 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
                     'image_index': fileIdx,
                     'image_total': files.length,
                     'file_type': image ? (image.type || '') : '',
+                    'file_name': image.name,
+                    'file_size': image.size,
                 };
                 processing.hide();
                 display ? viewLarge.show().off('click').click(function(ev) {
@@ -133,7 +135,7 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
 
             processing.text('处理中').show();
             const file = files[fileIdx];
-            if (file.type == "application/pdf" || file.type.startsWith("video/")) {
+            if (!file.type.startsWith("image/")) {
                 const canvas = document.createElement("canvas");
                 canvas.width = 300; canvas.height = 300;
                 const ctx = canvas.getContext("2d");

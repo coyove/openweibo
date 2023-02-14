@@ -84,10 +84,10 @@ div.diff-row.ins{background:#ccffd8}
                     <input id="current-image" readonly type=file class='image-selector'
                         default='{{imageURL "thumb" .Image}}' large='{{imageURL "image" .Image}}'>
                     <div class=icon-right-big></div>
-                    <input id="image" {{$.T.readonly}} type=file class='image-selector' accept="image/*,application/pdf,video/mp4,audio/mp4"
+                    <input id="image" {{$.T.readonly}} type=file class='image-selector'
                         default='{{imageURL "thumb" .ReviewImage}}' large='{{imageURL "image" .ReviewImage}}'>
                     {{else}}
-                    <input id="image" {{$.T.readonly}} type=file class='image-selector' accept="image/*,application/pdf,video/mp4,audio/mp4"
+                    <input id="image" {{$.T.readonly}} type=file class='image-selector'
                         default='{{imageURL "thumb" .Image}}' large='{{imageURL "image" .Image}}'>
                     {{end}}
                 </div>

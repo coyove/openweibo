@@ -56,7 +56,7 @@ func InitDB() {
 	Store.S3 = s3manager.NewUploader(sess)
 
 	Store.Manager, err = bitmap.NewManager("data/index",
-		types.Config.Index.SwitchThreshold, types.Config.Index.CacheSize)
+		types.Config.Index.SwitchThreshold, bitmap.NewLRUCache(types.Config.Index.CacheSize))
 	if err != nil {
 		logrus.Fatal("init bitmap manager: ", err)
 	}

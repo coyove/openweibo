@@ -13,6 +13,7 @@ import (
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/bitmap"
 	"github.com/coyove/sdss/contrib/clock"
+	"github.com/coyove/sdss/contrib/simple"
 	"github.com/sirupsen/logrus"
 )
 
@@ -200,7 +201,7 @@ func HandleTagSearch(w *types.Response, r *types.Request) {
 	})
 
 	if q != "" {
-		if dn, _ := dal.GetNoteByName(q); dn.Valid() && !types.ContainsUint64(ids, dn.Id) {
+		if dn, _ := dal.GetNoteByName(q); dn.Valid() && !simple.Uint64.Contains(ids, dn.Id) {
 			results = append([][3]interface{}{{dn.IdStr(), dn.TitleDisplay(), dn.ChildrenCount}}, results...)
 		}
 	}
