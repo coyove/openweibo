@@ -6,6 +6,10 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"html"
+	"image"
+	"image/draw"
+	"image/png"
+	"io"
 	"math"
 	"net"
 	"net/http"
@@ -13,6 +17,8 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+
+	"github.com/coyove/common/dejavu"
 )
 
 func LocalTime(v time.Time) time.Time {
@@ -171,4 +177,34 @@ func UnescapeSpace(v string) string {
 		buf.WriteByte(v[i])
 	}
 	return buf.String()
+}
+
+var NotFoundPNG []byte
+
+func WriteImageText(w io.Writer, texts ...string) {
+	if w, ok := w.(*Response); ok {
+		w.Header().Add("Content-Type", "image/png")
+	}
+	img := image.NewRGBA(image.Rect(0, 0, 200, 200))
+	draw.Draw(img, img.Bounds(), image.Black, image.Point{}, draw.Over)
+
+	ln := 0
+	for _, text := range texts {
+		ln += int(math.Ceil(float64(len(text)) / 28))
+	}
+
+	y := (200-ln*dejavu.FullHeight)/2 + dejavu.FullHeight
+	for _, text := range texts {
+		for i := 0; i < len(text); i += 28 {
+			end := i + 28
+			if end > len(text) {
+				dejavu.DrawText(img, text[i:], (200-len(text[i:])*dejavu.Width)/2, y, image.White)
+			} else {
+				dejavu.DrawText(img, text[i:end], 2, y, image.White)
+			}
+			y += dejavu.FullHeight
+		}
+	}
+
+	png.Encode(w, img)
 }

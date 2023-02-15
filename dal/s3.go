@@ -20,18 +20,35 @@ import (
 type S3Error int
 
 func (e S3Error) Error() string {
-	return fmt.Sprintf("S3 response: %v", int(e))
+	return fmt.Sprintf("S3 HTTP response: %v", int(e))
 }
 
 const ImageCacheDir = "image_cache/"
+
+func copyFile(src, dest string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("copyFile: %v", err)
+	}
+	defer in.Close()
+	out, err := os.Create(dest)
+	if err != nil {
+		return fmt.Errorf("copyFile: %v", err)
+	}
+	defer out.Close()
+	if _, err = io.Copy(out, in); err != nil {
+		return fmt.Errorf("copyFile: %v", err)
+	}
+	return nil
+}
 
 func imageS3Loader(key, saveTo string) error {
 	file := ImageCacheDir + key
 	LockKey(file)
 	defer UnlockKey(file)
 
-	if buf, err := ioutil.ReadFile(file); err == nil && len(buf) > 0 {
-		return ioutil.WriteFile(saveTo, buf, 0777)
+	if _, err := os.Stat(file); err == nil {
+		return copyFile(file, saveTo)
 	}
 
 	start := time.Now()
@@ -44,8 +61,7 @@ func imageS3Loader(key, saveTo string) error {
 		defer resp.Body.Close()
 		if resp.StatusCode != 200 {
 			if resp.StatusCode == 404 {
-				ioutil.WriteFile(saveTo, []byte("404"), 0777)
-				return nil
+				return ioutil.WriteFile(saveTo, types.NotFoundPNG, 0777)
 			}
 			return S3Error(resp.StatusCode)
 		}

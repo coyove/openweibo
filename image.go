@@ -18,11 +18,6 @@ import (
 )
 
 func HandleImage(w http.ResponseWriter, r *http.Request) {
-	if d := types.Config.Domain; d != "" && !strings.Contains(r.Referer(), d) {
-		w.WriteHeader(400)
-		return
-	}
-
 	var p string
 	if strings.HasPrefix(r.URL.Path, "/ns:image/") {
 		p = strings.TrimPrefix(r.URL.Path, "/ns:image/")
@@ -38,10 +33,10 @@ func HandleImage(w http.ResponseWriter, r *http.Request) {
 	p2 = strings.TrimRight(p2, "afs")
 	// fmt.Println(p, p2)
 	if id, _ := strconv.ParseUint(p2, 16, 64); id == 0 {
-		w.WriteHeader(400)
+		types.WriteImageText(w, types.Config.Domain, "Bad Request File")
 		return
 	} else if note, _ := dal.GetNote(id); !note.Valid() {
-		w.WriteHeader(404)
+		types.WriteImageText(w, types.Config.Domain, "Data Deleted")
 		return
 	}
 

@@ -1,6 +1,7 @@
 package types
 
 import (
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/json"
@@ -98,4 +99,8 @@ func LoadConfig(path string) {
 			logrus.Infof("[Config] %s=%s", n, tmp)
 		}
 	}
+
+	tmp := &bytes.Buffer{}
+	WriteImageText(tmp, Config.Domain, "Image Not Found")
+	NotFoundPNG = tmp.Bytes()
 }

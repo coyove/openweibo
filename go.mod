@@ -5,6 +5,7 @@ go 1.16
 require (
 	github.com/NYTimes/gziphandler v1.1.1
 	github.com/aws/aws-sdk-go v1.28.2
+	github.com/coyove/common v0.0.0-20210601082815-1e7f2ca0bb84
 	github.com/coyove/sdss v1.0.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/pierrec/lz4/v4 v4.1.17
