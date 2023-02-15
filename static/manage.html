@@ -111,6 +111,7 @@
                                 $('#quick-image-info').text("上传 " + file.name + " 成功 (" +
                                                                 (imageData.image_index + 1) + "/" + imageData.image_total + ")");
                                 next();
+                                return "keep_loading";
                             });
                         }).hide();
                     </script>
@@ -125,7 +126,7 @@
                 <div class=image-display id=note{{.Id}}>
                     {{if and .Image .IsImage}}
                         <div class='image-display-container image'
-                            style='background: center / cover no-repeat url({{imageURL "thumb" .Image}});background-color:rgba(0,0,0,0.05)'
+                            style='background: center / cover no-repeat url("{{imageURL "thumb" .Image}}");background-color:rgba(0,0,0,0.05)'
                             data-src="{{imageURL "image" .Image}}">
                             <a href='/{{.EscapedTitle}}'></a>
                         </div>

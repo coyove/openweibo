@@ -33,10 +33,11 @@ func HandleImage(w http.ResponseWriter, r *http.Request) {
 	}
 	p = strings.Replace(p, "/", "", -1)
 
-	if idx1, idx2 := strings.LastIndexByte(p, '-'), strings.IndexByte(p, '.'); idx1 < 0 || idx2 < 0 || idx1+1 > idx2-1 {
-		w.WriteHeader(400)
-		return
-	} else if id, _ := strconv.ParseUint(p[idx1+1:idx2-1], 16, 64); id == 0 {
+	p2 := p[strings.LastIndexByte(p, '-')+1:]
+	p2 = strings.TrimSuffix(p2[:len(p2)-len(filepath.Ext(p2))], ".thumb")
+	p2 = strings.TrimRight(p2, "afs")
+	// fmt.Println(p, p2)
+	if id, _ := strconv.ParseUint(p2, 16, 64); id == 0 {
 		w.WriteHeader(400)
 		return
 	} else if note, _ := dal.GetNote(id); !note.Valid() {

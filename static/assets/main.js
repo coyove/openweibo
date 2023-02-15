@@ -268,6 +268,14 @@ function openImage(src) {
     move(0);
 }
 
+function createLoader(el) {
+    const rect = el.getBoundingClientRect();
+    return $("<div class='ajax-loader' style='display:inline-flex;align-items:center;justify-content:center;'>" + window.CONST_loaderHTML + "</div>").
+        css('width', rect.width).
+        css('height', rect.height).
+        css('margin', $(el).css('margin'));
+}
+
 function ajaxBtn(el, action, args, f) {
     if (!el)
         el = document.createElement("div");
@@ -275,13 +283,8 @@ function ajaxBtn(el, action, args, f) {
     if (that.attr('busy') == 'true') return;
     const fd = new FormData();    
     for (const k in args) fd.append(k, args[k]);
-    const rect = el.getBoundingClientRect();
-    const loader = $("<div style='display:inline-block;text-align:center'>" + window.CONST_loaderHTML + "</div>").
-        css('width', rect.width + 'px').
-        css('height', rect.height + 'px').
-        css('margin', that.css('margin'));
-    that.attr('busy', 'true').hide();
-    loader.insertBefore(that);
+    const loader = createLoader(el);
+    !that.prev().hasClass('ajax-loader') && loader.insertBefore(that.attr('busy', 'true').hide());
     function finish() { that.attr('busy', '').show(); loader.remove(); }
     $.ajax({
         url: '/ns:action',
@@ -297,13 +300,17 @@ function ajaxBtn(el, action, args, f) {
                     alert('发生错误: ' + data.msg + ' (' + data.code + ')');
                 return;
             }
+            if (f) {
+                f(data, args) !== "keep_loading" ? finish() : that.attr('busy', '');
+                return;
+            }
             finish();
-            f ? f(data, args) : location.reload();
+            location.reload();
         },
         error: function() {
             alert('网络错误');
+            finish();
         },
-        complete: finish,
     });
 }
 

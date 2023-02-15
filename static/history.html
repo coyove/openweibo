@@ -96,7 +96,7 @@
                         </div>
                         {{if .Image}}
                             <a href='{{imageURL "image" .Image}}' target=_blank>
-                                <div style='--image: url({{imageURL "thumb" .Image}})' class=tiny-image></div>
+                                <div style='--image: url("{{imageURL "thumb" .Image}}")' class=tiny-image></div>
                             </a>
                         {{end}}
                         {{if and .ReviewImage (ne .Image .ReviewImage)}}

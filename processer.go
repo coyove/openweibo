@@ -91,7 +91,12 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 		if tt == "" {
 			notes, _ := dal.BatchGetNotes(t.ParentIds)
 			if len(notes) > 0 {
-				sort.Slice(notes, func(i, j int) bool { return notes[i].ChildrenCount > notes[j].ChildrenCount })
+				sort.Slice(notes, func(i, j int) bool {
+					if len(notes[i].Title) == len(notes[j].Title) {
+						return notes[i].ChildrenCount > notes[j].ChildrenCount
+					}
+					return len(notes[i].Title) > len(notes[j].Title)
+				})
 				buf := &bytes.Buffer{}
 				for _, n := range notes {
 					if hl {
