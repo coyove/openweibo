@@ -255,7 +255,7 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 
 	if pt := q.Get("parents"); pt != "" {
 		gjson.Parse(pt).ForEach(func(key, value gjson.Result) bool {
-			id, ok := clock.Base40Decode(key.Str)
+			id, ok := clock.Base62Decode(key.Str)
 			if ok {
 				ad.parentIds = append(ad.parentIds, id)
 			} else if !ok {
@@ -315,11 +315,11 @@ func expandQuery(query string) (q string, parentIds []uint64, uid string) {
 
 		if strings.HasPrefix(query, "ns:id:") {
 			if idx > 0 {
-				id, _ := clock.Base40Decode((query)[6:idx])
+				id, _ := clock.Base62Decode((query)[6:idx])
 				parentIds = append(parentIds, id)
 				query = strings.TrimSpace((query)[idx+1:])
 			} else {
-				id, _ := clock.Base40Decode((query)[6:])
+				id, _ := clock.Base62Decode((query)[6:])
 				parentIds = append(parentIds, id)
 				query = ""
 				break

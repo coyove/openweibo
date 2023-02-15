@@ -200,7 +200,7 @@ func GetJsonizedNote(name string) (gjson.Result, error) {
 
 func GetNoteByName(name string) (*types.Note, error) {
 	if strings.HasPrefix(name, "ns:id:") {
-		id, _ := clock.Base40Decode(name[6:])
+		id, _ := clock.Base62Decode(name[6:])
 		return GetNote(id)
 	}
 

@@ -16,6 +16,8 @@ a:hover { text-decoration: underline }
 .highlight {background:wheat;white-space:pre-wrap}
 .wrapall{word-break:break-all;white-space:normal}
 .note{font:inherit;word-break:break-all;white-space:pre-wrap}
+.mr5{margin-right:0.5em}
+.ml5{margin-left:0.5em}
 
 #container {
     max-width: 1120px;

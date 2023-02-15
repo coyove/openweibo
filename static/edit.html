@@ -55,11 +55,11 @@ div.diff-row.ins{background:#ccffd8}
                 <div class=display>
                     <input placeholder='标题' id="title" value="{{safeHTML .Title}}" maxlength={{$.MaxTitle}} class=tag-edit-name {{$.T.readonly}}/>
                     <div class='tag-box button' onclick='openPreview($("#content").val())'>
-                        <span class=icon-print style='margin-right:0.5em'></span>预览
+                        <span class='icon-print mr5'></span>预览
                     </div>
                     {{if not $.T.readonly}}
                     <div class='tag-box button' onclick='updateNote(this)' id=update>
-                        <span class=icon-paper-plane style='margin-right:0.5em'></span>更新
+                        <span class='icon-paper-plane mr5'></span>更新
                     </div>
                     {{end}}
                 </div>

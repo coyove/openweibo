@@ -100,9 +100,9 @@
                             </a>
                         {{end}}
                         {{if and .ReviewImage (ne .Image .ReviewImage)}}
-                            <div class=icon-right-big style='margin-left: 0.5em'></div>
+                            <div class='ml5 icon-right-big'></div>
                             <a href='{{imageURL "image" .ReviewImage}}' target=_blank>
-                                <div style='--image: url({{imageURL "thumb" .ReviewImage}}); margin-left: 0.5em' class=tiny-image></div>
+                                <div style='--image: url({{imageURL "thumb" .ReviewImage}})' class='ml5 tiny-image'></div>
                             </a>
                         {{end}}
                     {{end}}

@@ -44,7 +44,7 @@ func (t *Note) String() string { return proto.CompactTextString(t) }
 
 func (t *Note) Clone() *Note { return UnmarshalNoteBinary(t.MarshalBinary()) }
 
-func (t *Note) IdStr() string { return clock.Base40Encode(t.Id) }
+func (t *Note) IdStr() string { return clock.Base62Encode(t.Id) }
 
 func (t *Note) ContainsParents(ids []uint64) bool {
 	s := 0
@@ -73,14 +73,14 @@ func FullEscape(v string) string {
 
 func (t *Note) EscapedTitle() string {
 	if t.Title == "" {
-		return "ns:id:" + clock.Base40Encode(t.Id)
+		return "ns:id:" + clock.Base62Encode(t.Id)
 	}
 	return FullEscape(t.Title)
 }
 
 func (t *Note) QueryTitle() string {
 	if t.Title == "" {
-		return "ns:id:" + clock.Base40Encode(t.Id)
+		return "ns:id:" + clock.Base62Encode(t.Id)
 	}
 	return url.QueryEscape(t.Title)
 }

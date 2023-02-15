@@ -4,7 +4,7 @@
 <div style='display:flex;align-items:center'>
     <h1 style='word-break:break-all'>{{safeHTML .Title}}</h1>
     {{if ne $.UserDisplay .Creator}}
-    <div style='margin-left: 0.5em' class=tag-edit-button onclick="ajaxBtn(null,'touch',{'id':'{{.Id}}'})">
+    <div class='ml5 tag-edit-button' onclick="ajaxBtn(null,'touch',{'id':'{{.Id}}'})">
         <span class={{if $.T.noteTouched}}icon-heart{{else}}icon-heart-empty{{end}}></span>
     </div>
     {{end}}
@@ -43,7 +43,7 @@
     {{if .Image}}
         {{if not .IsImage}}
         <div style='display:inline-block;padding:0.5em;border:dashed #667 2px;background:#f7f8f9'>
-            <span class=icon-docs>&emsp;<a href='{{imageURL "image" .Image}}'>打开 {{.FileExt}} ({{.FileSizeString}})</a></span>
+            <span class='mr5 icon-download'></span><a href='{{imageURL "image" .Image}}'>打开 {{.FileExt}} ({{.FileSizeString}})</a>
         </div>
         {{else}}
         <a href="{{imageURL "image" .Image}}" target=_blank>

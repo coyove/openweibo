@@ -339,7 +339,7 @@ func HandleManage(w *types.Response, r *types.Request) {
 			r.AddTemplateValue("isUserPage", true)
 			r.AddTemplateValue("viewUser", uid)
 		} else if len(pids) == 1 && pids[0] > 0 && uid == "" && query == "" {
-			http.Redirect(w, r.Request, "/ns:id:"+clock.Base40Encode(pids[0]), 302)
+			http.Redirect(w, r.Request, "/ns:id:"+clock.Base62Encode(pids[0]), 302)
 			return
 		} else {
 			ids, _ := (collector{}).get(query, pids, uid)
