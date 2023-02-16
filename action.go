@@ -263,9 +263,9 @@ func doPreview(w *types.Response, r *types.Request) {
 	w.WriteJSON("success", true, "content", out.String())
 }
 
-func doUser(r *types.Request) (*types.User, error) {
+func doUserLogin(register bool, r *types.Request) (*types.User, error) {
 	id := r.Form.Get("id")
-	p := r.Form.Get("password")
+	p := types.UTF16Trunc(r.Form.Get("password"), 100)
 	if id == "" || p == "" {
 		return nil, writeError("INVALID_REGISTER_INFO")
 	}
@@ -273,7 +273,7 @@ func doUser(r *types.Request) (*types.User, error) {
 		return nil, writeError("INVALID_REGISTER_INFO")
 	}
 	for _, r := range id {
-		if unicode.IsSpace(r) || r == '<' || r == '>' || r == '&' {
+		if unicode.IsSpace(r) || r == '<' || r == '>' || r == '&' || r == ':' || r == '"' || r == '\'' {
 			return nil, writeError("INVALID_REGISTER_ID")
 		}
 	}
@@ -302,25 +302,58 @@ func doUser(r *types.Request) (*types.User, error) {
 		if bytes.Equal(exist.PwdHash, pwd) {
 			return exist, nil
 		}
+		if !register {
+			return nil, writeError("WRONG_PASSWORD")
+		}
 		return nil, writeError("ALREADY_REGISTERED")
 	}
 	return target, nil
 }
 
-func doUpdateEmail(id string, r *types.Request) error {
-	return dal.UpdateUser(id, func(u *types.User) error {
-		u.Email = types.UTF16Trunc(r.Form.Get("email"), 100)
+func doResetPassword(r *types.Request) error {
+	if !r.User.IsRoot() {
+		return writeError("MODS_REQUIRED")
+	}
+	_, err := dal.UpdateUser(r.Form.Get("id"), func(u *types.User) error {
+		np := types.UUIDStr()
+		h := hmac.New(sha1.New, []byte(types.Config.Key))
+		h.Write([]byte(np))
+		u.PwdHash = h.Sum(nil)
+		u.LastResetPwd = np
+		u.Session64 = rand.Int63()
 		return nil
 	})
+	return err
 }
 
-func doLogout(r *types.Request) {
-	if r.User != nil {
-		if err := dal.UpdateUser(r.User.Id, func(u *types.User) error {
-			u.Session64 = rand.Int63()
-			return nil
-		}); err != nil {
-			logrus.Errorf("logout user %s: %v", r.User.Id, err)
-		}
+func doUpdatePassword(r *types.Request) error {
+	old := types.UTF16Trunc(r.Form.Get("old"), 100)
+	new := types.UTF16Trunc(r.Form.Get("new"), 100)
+	if new == "" {
+		return writeError("INVALID_PASSWORD")
 	}
+	if old == new {
+		return writeError("SAME_PASSWORD")
+	}
+	_, err := dal.UpdateUser(r.User.Id, func(u *types.User) error {
+		h := hmac.New(sha1.New, []byte(types.Config.Key))
+		h.Write([]byte(old))
+		if !bytes.Equal(u.PwdHash, h.Sum(nil)) {
+			return writeError("WRONG_PASSWORD")
+		}
+		h.Reset()
+		h.Write([]byte(new))
+		u.PwdHash = h.Sum(nil)
+		u.Session64 = rand.Int63()
+		return nil
+	})
+	return err
+}
+
+func doLogout(r *types.Request) error {
+	_, err := dal.UpdateUser(r.User.Id, func(u *types.User) error {
+		u.Session64 = rand.Int63()
+		return nil
+	})
+	return err
 }

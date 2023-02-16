@@ -175,6 +175,9 @@ var errorMessages = map[string]string{
 	"INVALID_REGISTER_ID":   "无效ID，不得包含空格和特殊字符",
 	"ALREADY_REGISTERED":    "该ID已被注册",
 	"PLEASE_LOGIN":          "请先登入",
+	"WRONG_PASSWORD":        "错误密码",
+	"SAME_PASSWORD":         "新旧密码相同",
+	"INVALID_PASSWORD":      "无效密码",
 }
 
 type Response struct {

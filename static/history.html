@@ -58,7 +58,7 @@
                     <div class='diff-header'>
                         {{formatUnixMilli .CreateUnix}}
                         <b>{{.Modifier}}</b>
-                        (<a href='/ns:history?user={{.Modifier}}&desc=1'>历史</a> | <a href='/ns:manage?q=ns:user:{{.Modifier}}&desc=1'>记事</a>)
+                        (<a href='/ns:history?user={{fullEscape .Modifier}}&desc=1'>历史</a> | <a href='/ns:manage?q=ns:user:{{fullEscape .Modifier}}&desc=1'>记事</a>)
                         {{if eq .ActionName "create"}}创建{{end}}
                         {{if eq .ActionName "update"}}编辑{{end}}
                         {{if eq .ActionName "approve"}}审核通过{{end}}
@@ -114,17 +114,5 @@
     </table>
 </div>
 
-<div id=page>
-    {{range (generatePages .P.Page .T.pages)}}
-        {{if eq . 0}}
-            <div style='width:2em;text-align:center'>&middot;&middot;&middot;</div>
-        {{else}}
-            {{if eq . $.P.Page}}
-            <div class='tag-box nav-page button selected'><span><b>{{.}}</b></span></div>
-            {{else}}
-            <a class=nav-page href='?{{$.BuildPageLink .}}&{{$.T.viewType}}={{$.T.id}}'><div class='tag-box nav-page button'>{{.}}</div></a>
-            {{end}}
-        {{end}}
-    {{end}}
-</div>
+{{generatePages . (printf "&%v=%v" .T.viewType .T.id)}}
 {{template "footer.html" .}}

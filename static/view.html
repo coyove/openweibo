@@ -16,11 +16,11 @@
 
 <div style='font-size: 90%'>
     <div>
-        <a href='/ns:manage?q=ns:user:{{.Creator}}'>{{.Creator}}</a> 创建于 {{formatUnixMilli .CreateUnix}}
+        <a href='/ns:manage?q=ns:user:{{fullEscape .Creator}}'>{{.Creator}}</a> 创建于 {{formatUnixMilli .CreateUnix}}
     </div>
     {{if .Modifier}}
     <div>
-        <a href='/ns:manage?q=ns:user:{{.Modifier}}'>{{.Modifier}}</a> 修改于 {{formatUnixMilli .UpdateUnix}}
+        <a href='/ns:manage?q=ns:user:{{fullEscape .Modifier}}'>{{.Modifier}}</a> 修改于 {{formatUnixMilli .UpdateUnix}}
     </div>
     {{end}}
 

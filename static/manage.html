@@ -44,7 +44,7 @@
                         <title>{{.T.viewUser}} 的记事</title>
                         <span>
                             {{.T.viewUser}} 的记事 ({{.T.total}})
-                            {{if .User.IsMod}}(<a href='/ns:user:{{fullEscape .T.viewUser}}'>profile</a>){{end}}
+                            {{if .User.IsMod}}(<a href='/ns:profile?id={{fullEscape .T.viewUser}}'>profile</a>){{end}}
                         </span>
                         {{else}}
                         <title>搜索 {{safeHTML .T.query}}</title>
@@ -171,20 +171,7 @@
     </table>
 </div>
 
-<div id=page>
-    {{$gp := generatePages .P.Page .T.pages}}
-    {{range $gp}}
-        {{if eq . 0}}
-            <div style='width:2em;text-align:center'>&middot;&middot;&middot;</div>
-        {{else}}
-            {{if eq . $.P.Page}}
-            <div class='tag-box button selected'><span><b>{{.}}</b></span></div>
-            {{else}}
-            <a class=nav-page href='?{{$.BuildPageLink .}}&q={{fullEscape $.T.query}}'><div class='tag-box button'>{{.}}</div></a>
-            {{end}}
-        {{end}}
-    {{end}}
-</div>
+{{generatePages . (printf "&q=%s" (fullEscape .T.query))}}
 
 {{if .User.IsMod}}
     <div class='tag-box button' onclick='$(".batch-delete").attr("checked", "checked")'>全选</div>

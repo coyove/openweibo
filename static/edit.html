@@ -187,7 +187,7 @@ div.diff-row.ins{background:#ccffd8}
             <td>
                 <div class=display>
                     {{.Creator}}&nbsp;
-                    <a class='tag-edit-button' href='/ns:manage?q=ns:user:{{.Creator}}'><span class=icon-user></span></a>
+                    <a class='tag-edit-button' href='/ns:manage?q=ns:user:{{fullEscape .Creator}}'><span class=icon-user></span></a>
                 </div>
             </td>
         </tr>
@@ -198,7 +198,7 @@ div.diff-row.ins{background:#ccffd8}
                 <div class=display>
                     {{.Modifier}}&nbsp;
                     {{if .Modifier}}
-                    <a class='tag-edit-button' href='/ns:history?user={{.Modifier}}'><span class=icon-user></span></a>
+                    <a class='tag-edit-button' href='/ns:history?user={{fullEscape .Modifier}}'><span class=icon-user></span></a>
                     {{end}}
                 </div>
             </td>
@@ -272,10 +272,10 @@ div.diff-row.ins{background:#ccffd8}
                     'title': $("#title").val(),
                     'content': $("#content").val(),
                     'parents': JSON.stringify($('#parents').get(0).getTags()),
-                }, $("#image").get(0).imageData), function(data) {
+                }, $("#image").get(0).imageData)/*, function(data) {
                     if (!data.direct_approve) { location.reload(); return; }
                     ajaxBtn(btn, "approve", {"id":"{{.Id}}"});
-                });
+                }*/);
             }
 
             function deleteNote(btn, hide) {

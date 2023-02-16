@@ -15,7 +15,7 @@
             <a class="header-entry" title='新建记事' href='/ns:new'><div class="icon-pencil"></div></a>
             <a class="header-entry" title='我的记事'
                {{if .User}}
-               href='/ns:manage?desc=1&q=ns:user:{{.UserDisplay}}'
+               href='/ns:manage?desc=1&q=ns:user:{{fullEscape .UserDisplay}}'
                {{else}}
                href='/ns:profile'
                {{end}}

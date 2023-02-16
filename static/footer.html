@@ -4,7 +4,7 @@
         <a href='/ns:root'>NoteServer</a>
         <a href='/ns:metrics'><span class=icon-chart-bar style='margin:0 0.5em'></span></a>
         {{.Elapsed}}ms<br>
-        <a href='/ns:profile'><span class=icon-user></span> <span style='color:#ba68c8'>{{.UserDisplay}}</span></a>
+        <a href='/ns:profile' style='color:#ba68c8'>{{if .User}}{{.UserDisplay}}{{else}}登入{{end}}</a>
     </div>
     <script>
         $('code').each(function(_, c) {

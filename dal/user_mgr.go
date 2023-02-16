@@ -25,6 +25,7 @@ func CreateUser(id string, u *types.User) (existed *types.User, err error) {
 				existed.LoginIP = u.CreateIP
 				existed.LoginUA = u.LoginUA
 				existed.LoginUnix = u.CreateUnix
+				existed.LastResetPwd = ""
 				return KSVUpsert(tx, UserBK, KSVFromUser(existed))
 			}
 		}
@@ -47,17 +48,19 @@ func GetUser(id string) (u *types.User, err error) {
 	return
 }
 
-func UpdateUser(id string, f func(*types.User) error) error {
-	return Store.DB.Update(func(tx *bbolt.Tx) error {
+func UpdateUser(id string, f func(*types.User) error) (u *types.User, err error) {
+	err = Store.DB.Update(func(tx *bbolt.Tx) error {
 		if bk := tx.Bucket([]byte(UserBK + "_kv")); bk != nil {
 			existed := types.UnmarshalUserBinary(bk.Get([]byte(id)))
 			if existed.Valid() {
 				if err := f(existed); err != nil {
 					return err
 				}
+				u = existed
 				return KSVUpsert(tx, UserBK, KSVFromUser(existed))
 			}
 		}
 		return nil
 	})
+	return
 }

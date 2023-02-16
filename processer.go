@@ -54,7 +54,9 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 		d := (now.Unix()-t.Unix())/86400 + 1
 		return strconv.Itoa(int(d)) + "天前"
 	},
-	"generatePages": func(p int, pages int) (a []int) {
+	"generatePages": func(r *types.Request, suffix string) string {
+		p, pages := int64(r.P.Page), reflect.ValueOf(r.T["pages"]).Int()
+		var a []int64
 		if pages > 0 {
 			a = append(a, 1)
 			i := p - 2
@@ -73,7 +75,19 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 				a = append(a, pages)
 			}
 		}
-		return
+		buf := bytes.NewBufferString("<div id=page>")
+		for _, a := range a {
+			if a == 0 {
+				buf.WriteString("<div style='width:2em;text-align:center'>&middot;&middot;&middot;</div>")
+			} else if a == p {
+				fmt.Fprintf(buf, "<div class='tag-box button selected'><span><b>%d</b></span></div>", a)
+			} else {
+				fmt.Fprintf(buf, "<a class=nav-page href='?%s%s'><div class='tag-box button'>%d</div></a>",
+					r.BuildPageLink(int(a)), suffix, a)
+			}
+		}
+		buf.WriteString("</div>")
+		return buf.String()
 	},
 	"getParentsData": func(ids []uint64) string {
 		buf := &bytes.Buffer{}

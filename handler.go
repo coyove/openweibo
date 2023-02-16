@@ -17,6 +17,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func gerr(e error) string {
+	if e, ok := e.(writeError); ok {
+		return string(e)
+	}
+	return "INTERNAL_ERROR"
+}
+
 func HandleAction(w *types.Response, r *types.Request) {
 	if ok, remains := limiter.CheckIP(r); !ok {
 		if remains == -1 {
@@ -48,20 +55,8 @@ func HandleAction(w *types.Response, r *types.Request) {
 		doPreview(w, r)
 		return
 	}
-
-	switch action {
-	case "USER":
-		u, err := doUser(r)
-		if err != nil {
-			if e, ok := err.(writeError); ok {
-				w.WriteJSON("success", false, "code", string(e))
-			} else {
-				w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
-			}
-		} else {
-			http.SetCookie(w, u.GenerateSession())
-			w.WriteJSON("success", true, "user_id", u.Id)
-		}
+	if strings.HasPrefix(action, "user:") {
+		doUserAction(action, w, r)
 		return
 	}
 
@@ -73,7 +68,6 @@ func HandleAction(w *types.Response, r *types.Request) {
 	id, _ := strconv.ParseUint(r.Form.Get("id"), 10, 64)
 
 	var err error
-	var directApprove bool
 
 	start := time.Now()
 	switch action {
@@ -86,27 +80,14 @@ func HandleAction(w *types.Response, r *types.Request) {
 		err = doDeleteHide(false, r)
 	case "hide":
 		err = doDeleteHide(true, r)
-	case "LOGOUT":
-		doLogout(r)
-		http.SetCookie(w, &http.Cookie{Name: "session", Value: "", Path: "/"})
-		w.WriteJSON("success", true)
-		return
 	case "Lock":
 		err = doLockUnlock(id, true, r)
 	case "reject":
 		err = doReject(id, r)
 	case "touch":
 		err = doTouch(id, r)
-	case "UPDATEEMAIL":
-		doUpdateEmail(r.User.Id, r)
-		w.WriteJSON("success", true)
-		return
 	case "update":
 		err = doUpdate(id, r)
-		if err == nil {
-			note, _ := dal.GetNote(id)
-			directApprove = r.User.IsMod() || (note.Valid() && note.Creator == r.UserDisplay)
-		}
 	case "Unlock":
 		err = doLockUnlock(id, false, r)
 	default:
@@ -114,11 +95,7 @@ func HandleAction(w *types.Response, r *types.Request) {
 	}
 	if err != nil {
 		logrus.Errorf("action %q %v: %v", action, id, err)
-		if e, ok := err.(writeError); ok {
-			w.WriteJSON("success", false, "code", string(e))
-		} else {
-			w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
-		}
+		w.WriteJSON("success", false, "code", gerr(err))
 		return
 	}
 	logrus.Infof("action %q %v in %v", action, id, time.Since(start))
@@ -129,7 +106,63 @@ func HandleAction(w *types.Response, r *types.Request) {
 	}
 
 	limiter.AddIP(r)
-	w.WriteJSON("success", true, "note_id", strconv.FormatUint(id, 10), "direct_approve", directApprove)
+	w.WriteJSON("success", true, "note_id", strconv.FormatUint(id, 10))
+}
+
+func doUserAction(action string, w *types.Response, r *types.Request) {
+	switch action {
+	case "user:login", "user:register":
+		u, err := doUserLogin(action == "user:register", r)
+		if err != nil {
+			w.WriteJSON("success", false, "code", gerr(err))
+		} else {
+			http.SetCookie(w, u.GenerateSession())
+			w.WriteJSON("success", true, "user_id", u.Id)
+		}
+		limiter.AddIP(r)
+		return
+	}
+
+	if r.User == nil {
+		w.WriteJSON("success", false, "code", "PLEASE_LOGIN")
+		return
+	}
+
+	var err error
+	start := time.Now()
+	switch action {
+	case "user:logout":
+		if err = doLogout(r); err == nil {
+			http.SetCookie(w, &http.Cookie{Name: "session", Value: "", Path: "/"})
+		}
+	case "user:resetpwd":
+		err = doResetPassword(r)
+	case "user:updateemail":
+		_, err = dal.UpdateUser(r.User.Id, func(u *types.User) error {
+			u.Email = types.UTF16Trunc(r.Form.Get("email"), 100)
+			return nil
+		})
+	case "user:updatehideimg":
+		_, err = dal.UpdateUser(r.User.Id, func(u *types.User) error {
+			u.HideImage = r.Form.Get("hide_image") != ""
+			return nil
+		})
+	case "user:updatepwd":
+		if err = doUpdatePassword(r); err == nil {
+			http.SetCookie(w, &http.Cookie{Name: "session", Value: "", Path: "/"})
+		}
+	default:
+		err = writeError("INVALID_ACTION")
+	}
+
+	limiter.AddIP(r)
+	if err != nil {
+		logrus.Errorf("user action %q %v: %v", action, r.User.Id, err)
+		w.WriteJSON("success", false, "code", gerr(err))
+		return
+	}
+	logrus.Infof("user action %q %v in %v", action, r.User.Id, time.Since(start))
+	w.WriteJSON("success", true)
 }
 
 func HandleHistory(w *types.Response, r *types.Request) {
@@ -248,10 +281,28 @@ func HandleTagSearch(w *types.Response, r *types.Request) {
 }
 
 func HandleUser(w *types.Response, r *types.Request) {
+	uq := r.ParsePaging()
+	viewUser := func(r *types.Request, id string) {
+		u, _ := dal.GetUser(id)
+		r.AddTemplateValue("user", u)
+		r.AddTemplateValue("userCreates", dal.KSVCount(nil, "creator_"+id))
+
+		results, total, pages := dal.KSVPaging(nil, dal.UserBK, r.P.Sort, r.P.Desc, r.P.Page-1, r.P.PageSize)
+		users := make([]*types.User, len(results))
+		for i := range users {
+			users[i] = types.UnmarshalUserBinary(results[i].Value)
+		}
+		r.AddTemplateValue("users", users)
+		r.AddTemplateValue("total", total)
+		r.AddTemplateValue("pages", pages)
+	}
+
 	if r.User != nil {
-		r.User, _ = dal.GetUser(r.User.Id)
-		r.AddTemplateValue("user", r.User)
-		r.AddTemplateValue("userCreates", dal.KSVCount(nil, "creator_"+r.User.Id))
+		if id := uq.Get("id"); id != "" && r.User.IsMod() {
+			viewUser(r, id)
+		} else {
+			viewUser(r, r.User.Id)
+		}
 	}
 	httpTemplates.ExecuteTemplate(w, "user.html", r)
 }
@@ -309,14 +360,6 @@ func HandleView(w *types.Response, r *types.Request) {
 	t := strings.TrimPrefix(r.URL.Path, "/")
 	if t == "" {
 		t = "ns:welcome"
-	}
-
-	if strings.HasPrefix(t, "ns:user:") && r.User.IsMod() {
-		if u, _ := dal.GetUser(t[8:]); u.Valid() {
-			r.AddTemplateValue("user", u)
-			httpTemplates.ExecuteTemplate(w, "user.html", r)
-			return
-		}
 	}
 
 	note, _ := dal.GetNoteByName(t)

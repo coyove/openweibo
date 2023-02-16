@@ -301,10 +301,8 @@ function ajaxBtn(el, action, args, f) {
                 finish();
                 return;
             }
-            if (f) {
-                f(data, args) !== "keep_loading" ? finish() : that.attr('busy', '');
-                return;
-            }
+            that.attr('busy', '');
+            if (f && f(data, args) === "keep_loading") return;
             finish();
             location.reload();
         },
