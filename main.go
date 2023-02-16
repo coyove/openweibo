@@ -40,13 +40,14 @@ func main() {
 	logrus.SetFormatter(&logFormatter{})
 	logrus.SetOutput(io.MultiWriter(os.Stdout, &lumberjack.Logger{
 		Filename:   "data/ns.log",
-		MaxSize:    100,
+		MaxSize:    20,
 		MaxBackups: 10,
 		MaxAge:     7,
 		Compress:   true,
 	}))
 	logrus.SetReportCaller(true)
 
+	logrus.Info(clock.Setup(9, 13))
 	types.LoadConfig("config.json")
 	dal.InitDB()
 
@@ -97,6 +98,7 @@ func main() {
 	}
 
 	serve("/", HandleView)
+	serve("/ns:profile", HandleUser)
 	serve("/ns:new", HandleNew)
 	serve("/ns:edit", HandleEdit)
 	serve("/ns:search", HandleTagSearch)

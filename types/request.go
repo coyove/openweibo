@@ -2,7 +2,6 @@ package types
 
 import (
 	"crypto/cipher"
-	"crypto/rand"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
@@ -36,52 +35,43 @@ type Request struct {
 
 	ServeUUID   string
 	Config      func() gjson.Result
-	User        UserHash
+	User        *User
 	UserDisplay string
 	UserSession string
 	RemoteIPv4  net.IP
 }
 
-func (r *Request) GenerateSession(name byte) (UserHash, string) {
-	uh, h := r.newUserHash(name)
-	nonce := [12]byte{}
-	rand.Read(nonce[:])
-	aesgcm, _ := cipher.NewGCM(Config.Runtime.AESBlock)
-	return uh, base64.URLEncoding.EncodeToString(append(nonce[:], aesgcm.Seal(nil, nonce[:], h, nil)...))
-}
-
-func (r *Request) parseSession(v string) (UserHash, bool) {
-	buf, err := base64.URLEncoding.DecodeString(v)
+func (r *Request) ParseSession(w *Response, f func(string) int64) {
+	sess, _ := r.Cookie("session")
+	if sess == nil {
+		return
+	}
+	buf, err := base64.URLEncoding.DecodeString(sess.Value)
 	if err != nil || len(buf) < 12 {
-		return UserHash{}, false
+		return
 	}
 	aesgcm, _ := cipher.NewGCM(Config.Runtime.AESBlock)
 	data, err := aesgcm.Open(nil, buf[:12], buf[12:], nil)
 	if err != nil {
-		return UserHash{}, false
+		return
 	}
-	return ParseUserHash(data), true
-}
-
-func (r *Request) ParseSession() (string, bool) {
-	if sess, _ := r.Cookie("session"); sess != nil {
-		uh, ok := r.parseSession(sess.Value)
-		if ok {
-			r.User = uh
-			r.UserDisplay = uh.Display()
-			r.UserSession = sess.Value
-			return sess.Value, false
+	if len(data) < 4 {
+		return
+	}
+	expire := int64(binary.BigEndian.Uint32(data[len(data)-4:]))
+	u := UnmarshalUserBinary(data[:len(data)-4])
+	if !u.Valid() {
+		return
+	}
+	if clock.Unix() > expire {
+		if f(u.Id) != u.Session64 {
+			return
 		}
+		http.SetCookie(w, u.GenerateSession())
 	}
-	uh, s := r.GenerateSession(0)
-
-	// fmt.Println(uh, r.UserAgent())
-	// fmt.Println(ParseUserHash(uh.base64))
-
-	r.User = uh
-	r.UserDisplay = uh.Display()
-	r.UserSession = s
-	return s, true
+	r.User = u
+	r.UserDisplay = u.Id
+	r.UserSession = sess.Value
 }
 
 func (r *Request) AddTemplateValue(k string, v interface{}) {
@@ -181,6 +171,10 @@ var errorMessages = map[string]string{
 	"CANT_TOUCH_SELF":       "无法收藏自己的记事",
 	"DATA_NO_CHANGE":        "请编辑记事",
 	"DELETE_CHANCE_EXPIRED": "超过5分钟后无法删除",
+	"INVALID_REGISTER_INFO": "无效注册信息",
+	"INVALID_REGISTER_ID":   "无效ID，不得包含空格和特殊字符",
+	"ALREADY_REGISTERED":    "该ID已被注册",
+	"PLEASE_LOGIN":          "请先登入",
 }
 
 type Response struct {

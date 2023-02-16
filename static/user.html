@@ -1,0 +1,149 @@
+{{template "header.html" .}}
+
+{{if .T.user}}
+    {{with .T.user}}
+    <title>用户 {{.Id}}</title>
+    <table class=table>
+        <tr>
+            <td colspan=2>
+                <div class=display>
+                    <div style='flex-grow:1'>{{.Id}} ({{.Role}})</div>
+                    <div class='tag-box alert button' onclick='ajaxBtn(this,"LOGOUT",{})'>登出</div>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td colspan=2>
+                <div class='display wrapall' style='font-size: 90%'>
+                    <a class=mr5 href='/ns:manage?q=ns:user:{{.Id}}'>记事 ({{$.T.userCreates}})</a><span class='icon-right-big mr5'></span>&emsp;
+                    <a class=mr5 href='/ns:history?user={{.Id}}'>编辑历史</a><span class='icon-right-big mr5'></span>&emsp;
+                    <span>总上传 {{mega .UploadSize}}</span>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class=small>Email</td>
+            <td>
+                <div class='display wrapall'>
+                    <div style='flex-grow:1'>
+                        <input id="update-email" class=tag-edit-name value='{{safeHTML .Email}}'>
+                    </div>
+                    <div class='tag-box button' onclick='ajaxBtn(this,"UPDATEEMAIL",{"email":$("#update-email").val()})'>更新Email</div>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class=small>登入时间</td>
+            <td><div class='display wrapall'>{{formatUnixMilli .LoginUnix}}</div></td>
+        </tr>
+        <tr>
+            <td class=small>登入浏览器</td>
+            <td><div class='display wrapall'>{{.LoginIP}} @ {{.LoginUA}}</div></td>
+        </tr>
+        <tr>
+            <td class=small>注册时间</td>
+            <td><div class='display wrapall'>{{formatUnixMilli .CreateUnix}}</div></td>
+        </tr>
+        <tr>
+            <td class=small>注册浏览器</td>
+            <td><div class='display wrapall'>{{.CreateIP}} @ {{.CreateUA}}</div></td>
+        </tr>
+    </table>
+    {{end}}
+{{else}}
+    <title>用户登入</title>
+    <table id=login class=table>
+        <tr>
+            <td class=small>ID</td>
+            <td>
+                <div class=display>
+                    <input id="user-id" maxlength=20 placeholder="用户名" class=tag-edit-name>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class=small>密码</td>
+            <td>
+                <div class=display>
+                    <input id="password" type=password class=tag-edit-name onkeyup="event.keyCode==13&&$('#login-btn').click()">
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class=small></td>
+            <td>
+                <div class=display>
+                    <div class=mr5><div id="login-btn" class='tag-box button' onclick='login(this)'>登入</div></div>
+                    <a href='javascript:($("#reg").show(),$("#login").hide())'>注册账号</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <table id=reg style='display:none' class=table>
+        <tr>
+            <td class=small>ID</td>
+            <td>
+                <div class=display>
+                    <input id="reg-user-id" maxlength=20 placeholder="用户名" class=tag-edit-name>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class=small>密码</td>
+            <td>
+                <div class=display>
+                <input id="reg-password" type=password class=tag-edit-name>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class=small>确认密码</td>
+            <td>
+                <div class=display>
+                <input id="reg-password2" type=password class=tag-edit-name>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class=small>邮箱</td>
+            <td>
+                <div class=display>
+                    <input id="reg-email" class=tag-edit-name>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class=small></td>
+            <td>
+                <div class=display>
+                    <div class=mr5>
+                    <div class='tag-box button' onclick='register(this)'>注册</div>
+                    </div>
+                    <a href='javascript:($("#login").show(),$("#reg").hide())'>登入账号</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+            <script>
+                function login(el) {
+                    ajaxBtn(el, 'USER', {
+                        'id': $('#user-id').val(),
+                        'password': $('#password').val(),
+                    })
+                }
+                function register(el) {
+                    if ($('#reg-password').val() != $('#reg-password2').val()) {
+                        alert('请确认密码');
+                        return;
+                    }
+                    ajaxBtn(el, 'USER', {
+                        'id': $('#reg-user-id').val(),
+                        'password': $('#reg-password').val(),
+                        'email': $('#reg-email').val(),
+                    })
+                }
+            </script>
+{{end}}
+{{template "footer.html" .}}

@@ -105,10 +105,6 @@ func (t *Note) FileExt() string {
 	return strings.ToLower(filepath.Ext(t.Image))
 }
 
-func (t *Note) FileSizeString() string {
-	return fmt.Sprintf("%.2fM", float64(t.FileSize())/1024/1024)
-}
-
 func (t *Note) FileSize() int {
 	if t.Image == "" {
 		return 0

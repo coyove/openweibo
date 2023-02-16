@@ -298,6 +298,7 @@ function ajaxBtn(el, action, args, f) {
                 data.code == "COOLDOWN" ?
                     alert('操作频繁，请在 ' + data.remains + ' 秒后重试') :
                     alert('发生错误: ' + data.msg + ' (' + data.code + ')');
+                finish();
                 return;
             }
             if (f) {

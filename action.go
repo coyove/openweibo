@@ -2,7 +2,11 @@ package main
 
 import (
 	"bytes"
+	"crypto/hmac"
+	"crypto/sha1"
+	"math/rand"
 	"time"
+	"unicode"
 
 	"github.com/coyove/iis/dal"
 	"github.com/coyove/iis/types"
@@ -257,4 +261,66 @@ func doPreview(w *types.Response, r *types.Request) {
 	out.WriteString(types.RenderClip(r.Form.Get("content")))
 	out.WriteString("</pre></div></html>")
 	w.WriteJSON("success", true, "content", out.String())
+}
+
+func doUser(r *types.Request) (*types.User, error) {
+	id := r.Form.Get("id")
+	p := r.Form.Get("password")
+	if id == "" || p == "" {
+		return nil, writeError("INVALID_REGISTER_INFO")
+	}
+	if types.UTF16LenExceeds(id, 20) {
+		return nil, writeError("INVALID_REGISTER_INFO")
+	}
+	for _, r := range id {
+		if unicode.IsSpace(r) || r == '<' || r == '>' || r == '&' {
+			return nil, writeError("INVALID_REGISTER_ID")
+		}
+	}
+
+	h := hmac.New(sha1.New, []byte(types.Config.Key))
+	h.Write([]byte(p))
+	pwd := h.Sum(nil)
+
+	target := &types.User{
+		Id:         id,
+		PwdHash:    pwd,
+		Email:      types.UTF16Trunc(r.Form.Get("email"), 100),
+		CreateUnix: clock.UnixMilli(),
+		LoginUnix:  clock.UnixMilli(),
+		CreateUA:   r.UserAgent(),
+		CreateIP:   r.RemoteIPv4.String(),
+		LoginUA:    r.UserAgent(),
+		LoginIP:    r.RemoteIPv4.String(),
+		Session64:  rand.Int63(),
+	}
+	exist, err := dal.CreateUser(id, target)
+	if err != nil {
+		return nil, writeError("INTERNAL_ERROR")
+	}
+	if exist.Valid() {
+		if bytes.Equal(exist.PwdHash, pwd) {
+			return exist, nil
+		}
+		return nil, writeError("ALREADY_REGISTERED")
+	}
+	return target, nil
+}
+
+func doUpdateEmail(id string, r *types.Request) error {
+	return dal.UpdateUser(id, func(u *types.User) error {
+		u.Email = types.UTF16Trunc(r.Form.Get("email"), 100)
+		return nil
+	})
+}
+
+func doLogout(r *types.Request) {
+	if r.User != nil {
+		if err := dal.UpdateUser(r.User.Id, func(u *types.User) error {
+			u.Session64 = rand.Int63()
+			return nil
+		}); err != nil {
+			logrus.Errorf("logout user %s: %v", r.User.Id, err)
+		}
+	}
 }

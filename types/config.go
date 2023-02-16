@@ -20,6 +20,8 @@ var Config struct {
 	RootPassword   string
 	RequestMaxSize int64
 	TzOffset       int64
+	SessionTTL     int64
+	SessionAge     int64
 
 	ImageCache struct {
 		MaxFiles       int64
@@ -65,6 +67,8 @@ func LoadConfig(path string) {
 	}
 
 	ifZero(&Config.TzOffset, 8, 1)
+	ifZero(&Config.SessionTTL, 10, 1)
+	ifZero(&Config.SessionAge, 365*86400, 1)
 	ifZero(&Config.RequestMaxSize, 15, 1024*1024)
 	ifZero(&Config.ImageCache.MaxFiles, 1000, 1)
 	ifZero(&Config.ImageCache.PurgerInterval, 10, 1e9)

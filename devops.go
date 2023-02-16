@@ -22,7 +22,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/coyove/iis/dal"
-	"github.com/coyove/iis/limiter"
 	"github.com/coyove/iis/types"
 	"github.com/coyove/sdss/contrib/bitmap"
 	"github.com/coyove/sdss/contrib/clock"
@@ -321,24 +320,8 @@ func dump() (string, error) {
 }
 
 func HandleRoot(w *types.Response, r *types.Request) {
-	if ok, _ := limiter.CheckIP(r); !ok {
-		w.WriteHeader(400)
-		return
-	}
-	if rpwd := r.URL.Query().Get("rpwd"); rpwd == types.Config.RootPassword {
-		_, v := r.GenerateSession('r')
-		http.SetCookie(w, &http.Cookie{
-			Name:   "session",
-			Value:  v,
-			Path:   "/",
-			MaxAge: 365 * 86400,
-		})
-		logrus.Info("generate root session: ", v, " remote: ", r.RemoteIPv4)
-		http.Redirect(w, r.Request, "/ns:root", 302)
-		return
-	} else if rpwd != "" {
-		limiter.AddIP(r)
-		http.Redirect(w, r.Request, "/ns:root", 302)
+	if !r.User.IsRoot() {
+		http.Redirect(w, r.Request, "/ns:welcome", 302)
 		return
 	}
 
@@ -422,7 +405,7 @@ func HandleMetrics(w *types.Response, r *types.Request) {
 				r.AddTemplateValue("showDAvg", true)
 				r.AddTemplateValue("label1", "增速 (DAvg)")
 				r.AddTemplateValue("label2", "累计 (Avg)")
-			} else if ns == "create" {
+			} else if ns == "create" || ns == "user:create" {
 				r.AddTemplateValue("showQPSOnly", true)
 			} else if ns == "ns:outbound" || ns == "upload" || ns == "image" || ns == "s3:download" {
 				for i := range tmp {

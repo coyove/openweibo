@@ -3,7 +3,7 @@
 {{if .T.readonly}}
 <title>快照 {{formatUnixMilli .T.recordUnix}} {{safeHTML .T.note.Title}}</title>
 {{else}}
-<title>编辑 {{.T.note.Id}} {{safeHTML .T.note.Title}}</title>
+<title>编辑 {{.T.note.IdStr}} {{safeHTML .T.note.Title}}</title>
 {{end}}
 
 <script src="/ns:static/assets/diff.js"></script>

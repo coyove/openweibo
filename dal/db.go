@@ -34,6 +34,7 @@ var (
 	}
 
 	NoteBK = "notes"
+	UserBK = "users"
 )
 
 func InitDB() {
@@ -394,4 +395,19 @@ func KSVFirstKeyOfSort1(tx *bbolt.Tx, bkPrefix string, sort1 []byte) (key []byte
 		}
 	}
 	return
+}
+
+func KSVCount(tx *bbolt.Tx, bkPrefix string) (sz int) {
+	if tx == nil {
+		Store.DB.View(func(tx *bbolt.Tx) error {
+			sz = KSVCount(tx, bkPrefix)
+			return nil
+		})
+		return
+	}
+	keyValue := tx.Bucket([]byte(bkPrefix + "_kv"))
+	if keyValue == nil {
+		return 0
+	}
+	return int(keyValue.Sequence())
 }

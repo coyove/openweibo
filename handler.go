@@ -49,6 +49,27 @@ func HandleAction(w *types.Response, r *types.Request) {
 		return
 	}
 
+	switch action {
+	case "USER":
+		u, err := doUser(r)
+		if err != nil {
+			if e, ok := err.(writeError); ok {
+				w.WriteJSON("success", false, "code", string(e))
+			} else {
+				w.WriteJSON("success", false, "code", "INTERNAL_ERROR")
+			}
+		} else {
+			http.SetCookie(w, u.GenerateSession())
+			w.WriteJSON("success", true, "user_id", u.Id)
+		}
+		return
+	}
+
+	if r.User == nil {
+		w.WriteJSON("success", false, "code", "PLEASE_LOGIN")
+		return
+	}
+
 	id, _ := strconv.ParseUint(r.Form.Get("id"), 10, 64)
 
 	var err error
@@ -65,12 +86,21 @@ func HandleAction(w *types.Response, r *types.Request) {
 		err = doDeleteHide(false, r)
 	case "hide":
 		err = doDeleteHide(true, r)
+	case "LOGOUT":
+		doLogout(r)
+		http.SetCookie(w, &http.Cookie{Name: "session", Value: "", Path: "/"})
+		w.WriteJSON("success", true)
+		return
 	case "Lock":
 		err = doLockUnlock(id, true, r)
 	case "reject":
 		err = doReject(id, r)
 	case "touch":
 		err = doTouch(id, r)
+	case "UPDATEEMAIL":
+		doUpdateEmail(r.User.Id, r)
+		w.WriteJSON("success", true)
+		return
 	case "update":
 		err = doUpdate(id, r)
 		if err == nil {
@@ -217,6 +247,15 @@ func HandleTagSearch(w *types.Response, r *types.Request) {
 	)
 }
 
+func HandleUser(w *types.Response, r *types.Request) {
+	if r.User != nil {
+		r.User, _ = dal.GetUser(r.User.Id)
+		r.AddTemplateValue("user", r.User)
+		r.AddTemplateValue("userCreates", dal.KSVCount(nil, "creator_"+r.User.Id))
+	}
+	httpTemplates.ExecuteTemplate(w, "user.html", r)
+}
+
 func HandleNew(w *types.Response, r *types.Request) {
 	var parents []string
 	var lastParent string
@@ -270,6 +309,14 @@ func HandleView(w *types.Response, r *types.Request) {
 	t := strings.TrimPrefix(r.URL.Path, "/")
 	if t == "" {
 		t = "ns:welcome"
+	}
+
+	if strings.HasPrefix(t, "ns:user:") && r.User.IsMod() {
+		if u, _ := dal.GetUser(t[8:]); u.Valid() {
+			r.AddTemplateValue("user", u)
+			httpTemplates.ExecuteTemplate(w, "user.html", r)
+			return
+		}
 	}
 
 	note, _ := dal.GetNoteByName(t)

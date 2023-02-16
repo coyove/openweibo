@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"runtime/debug"
 	"sort"
@@ -116,6 +117,9 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 		}
 		return tt
 	},
+	"mega": func(in interface{}) string {
+		return fmt.Sprintf("%.2fM", float64(reflect.ValueOf(in).Int())/1024/1024)
+	},
 	"add":        func(a, b int) int { return a + b },
 	"uuid":       func() string { return types.UUIDStr() },
 	"imageURL":   imageURL,
@@ -172,16 +176,12 @@ func serve(pattern string, f func(*types.Response, *types.Request)) {
 		}
 
 		resp := &types.Response{ResponseWriter: w}
-
-		if s, created := req.ParseSession(); created {
-			http.SetCookie(w, &http.Cookie{
-				Name:   "session",
-				Value:  s,
-				Path:   "/",
-				MaxAge: 365 * 86400,
-			})
-		}
-
+		req.ParseSession(resp, func(id string) int64 {
+			if u, _ := dal.GetUser(id); u.Valid() {
+				return u.Session64
+			}
+			return 0
+		})
 		f(resp, req)
 
 		if el := (clock.UnixNano() - now) / 1e3; r.URL.Path != "/" && servedPaths[r.URL.Path] {
@@ -221,30 +221,40 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 		ad.imageTotal, _ = strconv.Atoi(q.Get("image_total"))
 		fileSize, _ := strconv.Atoi(q.Get("file_size"))
 
+		var totalSize, tmpSize int64
 		if ft := q.Get("file_type"); !strings.HasPrefix(ft, "image/") {
-			ad.image, msg = saveFile(r, id, seed, "a"+ext, fileSize, img, hdr)
+			tmpSize, ad.image, msg = saveFile(r, id, seed, "a"+ext, fileSize, img, hdr)
 			if msg != "" {
 				return ad, msg
 			}
+			totalSize += tmpSize
 		} else if q.Get("image_small") == "true" {
-			ad.image, msg = saveFile(r, id, seed, "s"+ext, fileSize, img, hdr)
+			tmpSize, ad.image, msg = saveFile(r, id, seed, "s"+ext, fileSize, img, hdr)
 			if msg != "" {
 				return ad, msg
 			}
+			totalSize += tmpSize
 		} else {
 			thumb, thhdr, _ := r.Request.FormFile("thumb")
 			if thumb == nil || thhdr == nil {
 				return ad, "INVALID_IMAGE"
 			}
-			ad.image, msg = saveFile(r, id, seed, "f"+ext, fileSize, img, hdr)
+			tmpSize, ad.image, msg = saveFile(r, id, seed, "f"+ext, fileSize, img, hdr)
 			if msg != "" {
 				return ad, msg
 			}
-			_, msg = saveFile(r, id, seed, "f.thumb.jpg", fileSize, thumb, thhdr)
+			totalSize += tmpSize
+
+			tmpSize, _, msg = saveFile(r, id, seed, "f.thumb.jpg", fileSize, thumb, thhdr)
 			if msg != "" {
 				return ad, msg
 			}
+			totalSize += tmpSize
 		}
+		dal.UpdateUser(r.User.Id, func(u *types.User) error {
+			u.UploadSize += totalSize
+			return nil
+		})
 	}
 
 	ad.title = types.CleanTitle(q.Get("title"))

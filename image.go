@@ -62,14 +62,14 @@ func HandleImage(w http.ResponseWriter, r *http.Request) {
 }
 
 func saveFile(r *types.Request, id uint64, ts int64, ext string, fileSize int,
-	img multipart.File, hdr *multipart.FileHeader) (string, string) {
+	img multipart.File, hdr *multipart.FileHeader) (int64, string, string) {
 	fn := fmt.Sprintf("%s%03d(%d)-%x%s", time.Unix(0, ts).Format("060102150405"), (ts/1e6)%1000, fileSize, id, ext)
 	path := dal.ImageCacheDir + fn
 	os.MkdirAll(filepath.Dir(path), 0777)
 	out, err := os.Create(path)
 	if err != nil {
 		logrus.Errorf("create image %s err: %v", path, err)
-		return "", "INTERNAL_ERROR"
+		return 0, "", "INTERNAL_ERROR"
 	}
 	defer out.Close()
 
@@ -89,11 +89,11 @@ func saveFile(r *types.Request, id uint64, ts int64, ext string, fileSize int,
 	n, err := io.Copy(out, rd)
 	if err != nil {
 		logrus.Errorf("copy image to local %s err: %v", path, err)
-		return "", "INTERNAL_ERROR"
+		return 0, "", "INTERNAL_ERROR"
 	}
 
 	dal.MetricsIncr("upload", float64(n))
-	return fn, ""
+	return n, fn, ""
 }
 
 func imageThumbName(a string) string {

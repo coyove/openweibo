@@ -43,7 +43,7 @@
     {{if .Image}}
         {{if not .IsImage}}
         <div style='display:inline-block;padding:0.5em;border:dashed #667 2px;background:#f7f8f9'>
-            <span class='mr5 icon-download'></span><a href='{{imageURL "image" .Image}}'>打开 {{.FileExt}} ({{.FileSizeString}})</a>
+            <span class='mr5 icon-download'></span><a href='{{imageURL "image" .Image}}'>打开 {{.FileExt}} ({{mega .FileSize}})</a>
         </div>
         {{else}}
         <a href="{{imageURL "image" .Image}}" target=_blank>

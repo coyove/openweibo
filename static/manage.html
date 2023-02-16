@@ -42,7 +42,10 @@
                     {{if .T.query}}
                         {{if .T.isUserPage}}
                         <title>{{.T.viewUser}} 的记事</title>
-                        <span>{{.T.viewUser}} 的记事 ({{.T.total}})</span>
+                        <span>
+                            {{.T.viewUser}} 的记事 ({{.T.total}})
+                            {{if .User.IsMod}}(<a href='/ns:user:{{fullEscape .T.viewUser}}'>profile</a>){{end}}
+                        </span>
                         {{else}}
                         <title>搜索 {{safeHTML .T.query}}</title>
                         <span>搜索：<b class=wrapall>{{safeHTML .T.query}}</b> ({{.T.total}})</span>

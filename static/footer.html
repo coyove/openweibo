@@ -4,16 +4,9 @@
         <a href='/ns:root'>NoteServer</a>
         <a href='/ns:metrics'><span class=icon-chart-bar style='margin:0 0.5em'></span></a>
         {{.Elapsed}}ms<br>
-        <a href='javascript:setSession()'><span class=icon-user></span> <span style='color:#ba68c8'>{{.UserDisplay}}</span></a>
+        <a href='/ns:profile'><span class=icon-user></span> <span style='color:#ba68c8'>{{.UserDisplay}}</span></a>
     </div>
     <script>
-        function setSession() {
-            const cookie = prompt('请输入Cookie（当前ID：{{.UserDisplay}}）', '{{.UserSession}}');
-            if (cookie) {
-                document.cookie='session=' + cookie + '; Path=/; Expires=Thu, 01 Jan 2100 00:00:01 GMT;';
-                location.reload();
-            }
-        }
         $('code').each(function(_, c) {
             c = $(c);
             c.text(c.text().replace(/^\n/, ''));
