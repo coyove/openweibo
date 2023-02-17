@@ -192,7 +192,7 @@ a:hover { text-decoration: underline }
 }
 
 table.table { border-collapse: collapse; width: 100%; border-radius: 0.5em; box-shadow: 0 0 2px #666; margin: 0.5em 0; overflow: hidden }
-table.table .textarea td, table.table .textarea td .display { padding: 0 0 0 0.25em }
+table.table .textarea td, table.table .textarea td .display { padding: 0 }
 tr.title {background:#e2e9ec !important}
 td { white-space: nowrap; padding: 0.1em 0.5em; }
 td.small { font-size:80%; width: 1px }

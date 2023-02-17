@@ -102,7 +102,7 @@
                         {{if and .ReviewImage (ne .Image .ReviewImage)}}
                             <div class='ml5 icon-right-big'></div>
                             <a href='{{imageURL "image" .ReviewImage}}' target=_blank>
-                                <div style='--image: url({{imageURL "thumb" .ReviewImage}})' class='ml5 tiny-image'></div>
+                                <div style='--image: url("{{imageURL "thumb" .ReviewImage}}")' class='ml5 tiny-image'></div>
                             </a>
                         {{end}}
                     {{end}}

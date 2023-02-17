@@ -53,10 +53,11 @@ div.diff-row.ins{background:#ccffd8}
         <tr>
             <td colspan=2>
                 <div class=display>
+                    {{if .IsBio}}
+                    <div style='flex-grow:1'>这是一篇个人记事（无标题）</div><input id="title" style='display:none'>
+                    {{else}}
                     <input placeholder='标题' id="title" value="{{safeHTML .Title}}" maxlength={{$.MaxTitle}} class=tag-edit-name {{$.T.readonly}}/>
-                    <div class='tag-box button' onclick='openPreview($("#content").val())'>
-                        <span class='icon-print mr5'></span>预览
-                    </div>
+                    {{end}}
                     {{if not $.T.readonly}}
                     <div class='tag-box button' onclick='updateNote(this)' id=update>
                         <span class='icon-paper-plane mr5'></span>更新
@@ -107,8 +108,10 @@ div.diff-row.ins{background:#ccffd8}
         <tr id='tr-content-current' class=textarea>
             <td colspan=2>
                 <div class=display>
-                    <textarea id="content" {{$.T.readonly}} maxlength={{$.MaxContent}} class=tag-edit-desc rows=15>{{safeHTML .ReviewContent}}
-</textarea>
+                    <textarea id="content" {{$.T.readonly}}
+                        maxlength={{$.MaxContent}}
+                        class=tag-edit-desc
+                        rows=15>{{safeHTML .ReviewContent}}</textarea>
                 </div>
             </td>
         </tr>
@@ -128,8 +131,11 @@ div.diff-row.ins{background:#ccffd8}
         <tr class=textarea>
             <td colspan=2>
                 <div class=display>
-                    <textarea id="content" {{$.T.readonly}} maxlength={{$.MaxContent}} class=tag-edit-desc rows=15>{{safeHTML .Content}}
-</textarea>
+                    <textarea id="content" {{$.T.readonly}}
+                        maxlength={{$.MaxContent}}
+                        class=tag-edit-desc
+                        placeholder="内容"
+                        rows=15>{{safeHTML .Content}}</textarea>
                 </div>
             </td>
         </tr>

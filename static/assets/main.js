@@ -1,92 +1,64 @@
 window.CONST_closeSVG = "<svg class='svg16 closer' viewBox='0 0 16 16'><circle cx=8 cy=8 r=8 fill='#aaa' /><path d='M 5 5 L 11 11' stroke=white stroke-width=3 fill=transparent /><path d='M 11 5 L 5 11' stroke=white stroke-width=3 fill=transparent /></svg>";
-window.CONST_tickSVG = "<svg class='svg16' viewBox='0 0 16 16'><circle cx=8 cy=8 r=8 fill='green' /><path fill=white stroke=transparent d='M 4.139 6.749 L 2.235 8.848 L 6.491 13.156 L 13.534 6.429 L 11.657 4.382 L 6.781 9.244 L 4.139 6.749 Z' /></svg>";
-window.CONST_starSVG = "<svg class='svg16 starer' viewBox='0 0 16 16'><circle cx=8 cy=8 r=8 fill='#aaa' /><path d='M 8.065 2.75 L 9.418 6.642 L 13.537 6.726 L 10.254 9.215 L 11.447 13.159 L 8.065 10.806 L 4.683 13.159 L 5.876 9.215 L 2.593 6.726 L 6.712 6.642 Z' fill=white /></svg>";
 window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
 
-/**
- * Adapted from jQuery Lined Textarea Plugin
- * http://alan.blog-city.com/jquerylinedtextarea.htm
- *
- * Released under the MIT License:
- * http://www.opensource.org/licenses/mit-license.php
- */
 (function($) {
-    $.fn.isInViewport = function() {
-        var elementTop = $(this).offset().top;
-        var elementBottom = elementTop + $(this).outerHeight();
-
-        var viewportTop = $(window).scrollTop();
-        var viewportBottom = viewportTop + $(window).height();
-
-        return elementBottom > viewportTop && elementTop < viewportBottom;
-    };
 	$.fn.linedtextarea = function() {
-		/*
-		 * Helper function to make sure the line numbers are always kept up to
-		 * the current system
-		 */
-		var fillOutLines = function(linesDiv, h, lineNo) {
-			while (linesDiv.height() < h) {
-				linesDiv.append("<div>" + lineNo + "</div>");
-				lineNo++;
-			}
-			return lineNo;
-		};
-
 		return this.each(function() {
-			var lineNo = 1;
-			var textarea = $(this);
-            if (textarea.attr('lined') == 'true') return;
-            textarea.attr('lined', 'true');
-
-			/* Wrap the text area in the elements we need */
-			textarea.wrap($("<div style='overflow:hidden;flex-grow:1;min-height:20em'></div>"));
-			textarea.height('100%').css({'float': "right", 'line-height': '1.2em'}).attr('wrap', 'off');
-			textarea.parent().
-                prepend("<div class='lines' style='float:left;color:#ccc;text-align:right;line-height:1.2em'></div>").
-                prepend("<div class='measure' style='white-space:nowrap;display:none'></div>");
-			var linesDiv = textarea.parent().find(".lines");
-			var measureDiv = textarea.parent().find(".measure");
-
-			var scroll = function(tn) {
-				var domTextArea = $(this)[0];
-				var scrollTop = domTextArea.scrollTop;
-				var clientHeight = domTextArea.clientHeight;
-				linesDiv.css({
-					'margin-top' : (-scrollTop) + "px"
-				});
-				lineNo = fillOutLines(linesDiv, scrollTop + clientHeight, lineNo);
-                measureDiv.innerText = lineNo;
-                linesDiv.width(window.getComputedStyle(measureDiv.get(0)).width);
-                textarea.width(textarea.parent().width() - linesDiv.width() - 16);
-			};
-			/* React to the scroll event */
-			textarea.scroll(scroll);
-			$(window).resize(function() { textarea.scroll(); });
-			/* We call scroll once to add the line numbers */
-			textarea.scroll();
-            textarea.on('keyup', function(ev) {
-                if (ev.which != 119 && ev.which != 120) return;
-                const ta = textarea.get(0);
-                const start = ta.selectionStart, end = ta.selectionEnd;
-
-                const selected = ev.which == 119 ?
-                    encodeURIComponent(ta.value.slice(start, end)) :
-                    ta.value.slice(start, end).replaceAll('<', '&lt;').replaceAll('>', '&gt;');
-                const before = ta.value.slice(0, start);
-                const after = ta.value.slice(end);
-                ta.value = before + selected + after;
+            const that = $(this);
+            that.css('padding', '0.25em').wrap($('<div>').css({
+                'display': 'flex',
+                'flex-direction': 'column',
+                'width': '100%',
+                'height': '100%',
+            }));
+            !that.attr('readonly') && that.parent().prepend($('<div>').css({
+                'padding': '0.25em',
+                'width': '100%',
+                'background': 'rgba(0,0,0,0.03)',
+                'box-shadow': '0 1px 1px rgba(0,0,0,0.2)',
+            }).
+                append($('<div title="URL Escape" class="icon-percent tag-edit-button">').click(function(){
+                    insert(function(o) { return encodeURIComponent(o); });
+                })).
+                append($('<div title="创建链接" class="icon-link tag-edit-button">').click(function() {
+                    insert(function(o) { return "<a href='" + o + "'>" + o + "</a>"; });
+                })).
+                append($('<div title="消空格" class="icon-myspace tag-edit-button">').click(function(){
+                    const ta = that.get(0), end = ta.selectionEnd;
+                    ta.focus();
+                    ta.value = ta.value.slice(0, end) + "<eat>" + ta.value.slice(end);
+                    ta.selectionStart = end + 5;
+                    ta.selectionEnd = end + 5;
+                })).
+                append($('<div title="HTML Escape" class="icon-quote-left tag-edit-button">').click(function() {
+                    insert(function(o) {
+                        return o.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").
+                            replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+                    });
+                })).
+                append($('<div title="预览" class="icon-print tag-edit-button">').click(function() {
+                    const fd = new FormData(), w = window.open('', '_blank');
+                    fd.append('content', that.val());
+                    $.ajax({
+                        url: '/ns:action',
+                        data: fd,
+                        processData: false,
+                        contentType: false,
+                        type: 'POST',
+                        headers: { 'X-Ns-Action': 'preview' },
+                        success: function(data){ w.document.body.innerHTML = (data.content); },
+                        error: function() { alert('网络错误'); },
+                    });
+                }))
+            );
+            function insert(f) {
+                const ta = that.get(0), start = ta.selectionStart, end = ta.selectionEnd;
+                const res = f(ta.value.slice(start, end));
+                ta.focus();
+                ta.value = ta.value.slice(0, start) + res + ta.value.slice(end);
                 ta.selectionStart = start;
-                ta.selectionEnd = start + selected.length;
-            })
-
-			/* React to textarea resize via css resize attribute. */
-			var observer = new ResizeObserver(function(mutations) {
-				textarea.scroll();
-                textarea.parent().height(textarea.height());
-			});
-			observer.observe(textarea[0], {attributes: true});
-			observer.observe(textarea.parents()[0], {attributes: true});
+                ta.selectionEnd = start + res.length;
+            }
 		});
 	};
 
@@ -302,7 +274,10 @@ function ajaxBtn(el, action, args, f) {
                 return;
             }
             that.attr('busy', '');
-            if (f && f(data, args) === "keep_loading") return;
+            if (f) {
+                (f(data, args) !== "keep_loading") && finish();
+                return;
+            }
             finish();
             location.reload();
         },
@@ -509,21 +484,6 @@ $(document).ready(function() {
         $(i).imageSelector();
     });
 })
-
-function openPreview(text) {
-    const fd = new FormData(), w = window.open('', '_blank');
-    fd.append('content', text);
-    $.ajax({
-        url: '/ns:action',
-        data: fd,
-        processData: false,
-        contentType: false,
-        type: 'POST',
-        headers: { 'X-Ns-Action': 'preview' },
-        success: function(data){ w.document.body.innerHTML = (data.content); },
-        error: function() { alert('网络错误'); },
-    });
-}
 
 document.onpaste = function (event) {
     var items = (event.clipboardData || event.originalEvent.clipboardData).items;

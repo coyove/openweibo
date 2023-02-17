@@ -103,12 +103,13 @@ func (ksv KeySortValue) String() string {
 	return fmt.Sprintf("ksv(%x, %d, %v, %s)", ksv.Key, ksv.Sort0, ksv.Sort1, ksv.Value)
 }
 
-func KSVFromTag(tag *types.Note) KeySortValue {
+func KSVFromNote(tag *types.Note) KeySortValue {
 	return KeySortValue{
-		Key:   types.Uint64Bytes(tag.Id),
-		Sort0: uint64(tag.UpdateUnix),
-		Sort1: []byte(tag.Title),
-		Value: tag.MarshalBinary(),
+		Key:    types.Uint64Bytes(tag.Id),
+		Sort0:  uint64(tag.UpdateUnix),
+		Sort1:  []byte(tag.Title),
+		Value:  tag.MarshalBinary(),
+		NoSort: tag.IsBio,
 	}
 }
 

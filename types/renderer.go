@@ -21,6 +21,9 @@ func (e *escaper) writeEscape(p []byte) (n int, err error) {
 		case '>':
 			o.WriteString("&gt;")
 			n += 4
+		case '&':
+			o.WriteString("&amp;")
+			n += 5
 		default:
 			o.WriteByte(p[i])
 			n++

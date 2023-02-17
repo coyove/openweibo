@@ -4,6 +4,7 @@ import (
 	"math/rand"
 
 	"github.com/coyove/iis/types"
+	"github.com/coyove/sdss/contrib/clock"
 	"go.etcd.io/bbolt"
 )
 
@@ -16,7 +17,9 @@ func KSVFromUser(user *types.User) KeySortValue {
 	}
 }
 
-func CreateUser(id string, u *types.User) (existed *types.User, err error) {
+func UpsertUser(id string, u *types.User) (existed *types.User, err error) {
+	noteId := clock.Id()
+	created := false
 	err = Store.DB.Update(func(tx *bbolt.Tx) error {
 		if bk := tx.Bucket([]byte(UserBK + "_kv")); bk != nil {
 			existed = types.UnmarshalUserBinary(bk.Get([]byte(id)))
@@ -31,9 +34,27 @@ func CreateUser(id string, u *types.User) (existed *types.User, err error) {
 		}
 
 		MetricsIncr("user:create", 1)
-		t := KSVFromUser(u)
-		return KSVUpsert(tx, UserBK, t)
+		created = true
+
+		tag := &types.Note{
+			Id:         noteId,
+			Creator:    id,
+			CreateUnix: clock.UnixMilli(),
+			UpdateUnix: clock.UnixMilli(),
+			IsBio:      true,
+		}
+		UpdateCreator(tx, id, tag)
+
+		n := KSVFromNote(tag)
+		n.NoSort = true
+		KSVUpsert(tx, NoteBK, n)
+
+		u.BioNote = noteId
+		return KSVUpsert(tx, UserBK, KSVFromUser(u))
 	})
+	if err == nil && created {
+		go AppendHistory(noteId, id, "create", "", u.LoginIP)
+	}
 	return
 }
 

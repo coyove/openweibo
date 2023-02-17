@@ -41,7 +41,7 @@ type Request struct {
 	RemoteIPv4  net.IP
 }
 
-func (r *Request) ParseSession(w *Response, f func(string) int64) {
+func (r *Request) ParseSession(w *Response, f func(string) *User) {
 	sess, _ := r.Cookie("session")
 	if sess == nil {
 		return
@@ -64,9 +64,11 @@ func (r *Request) ParseSession(w *Response, f func(string) int64) {
 		return
 	}
 	if clock.Unix() > expire {
-		if f(u.Id) != u.Session64 {
+		u2 := f(u.Id)
+		if !u2.Valid() || u2.Session64 != u.Session64 {
 			return
 		}
+		u = u2
 		http.SetCookie(w, u.GenerateSession())
 	}
 	r.User = u

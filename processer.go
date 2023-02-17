@@ -102,6 +102,9 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 		return buf.String()
 	},
 	"makeTitle": func(t *types.Note, max int, hl bool) string {
+		if t.IsBio {
+			return "<b>个人记事</b>"
+		}
 		tt := types.SafeHTML(t.Title)
 		if tt == "" {
 			notes, _ := dal.BatchGetNotes(t.ParentIds)
@@ -127,6 +130,9 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 				}
 				return buf.String()
 			}
+			if t.Image != "" && t.IsImage() {
+				return fmt.Sprintf("%s (%.2fM)", t.FileExt(), float64(t.FileSize())/1024/1024)
+			}
 			return t.HTMLTitleDisplay()
 		}
 		return tt
@@ -134,14 +140,15 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 	"mega": func(in interface{}) string {
 		return fmt.Sprintf("%.2fM", float64(reflect.ValueOf(in).Int())/1024/1024)
 	},
-	"add":        func(a, b int) int { return a + b },
-	"uuid":       func() string { return types.UUIDStr() },
-	"imageURL":   imageURL,
-	"equ64s":     simple.Uint64.Equal,
-	"trunc":      types.UTF16Trunc,
-	"renderClip": types.RenderClip,
-	"safeHTML":   types.SafeHTML,
-	"fullEscape": types.FullEscape,
+	"add":          func(a, b int) int { return a + b },
+	"uuid":         func() string { return types.UUIDStr() },
+	"imageURL":     imageURL,
+	"equ64s":       simple.Uint64.Equal,
+	"trunc":        types.UTF16Trunc,
+	"renderClip":   types.RenderClip,
+	"safeHTML":     types.SafeHTML,
+	"fullEscape":   types.FullEscape,
+	"base62Encode": clock.Base62Encode,
 }).ParseFS(httpStaticPages, "static/*.html"))
 
 var serveUUID = types.UUIDStr()
@@ -190,11 +197,9 @@ func serve(pattern string, f func(*types.Response, *types.Request)) {
 		}
 
 		resp := &types.Response{ResponseWriter: w}
-		req.ParseSession(resp, func(id string) int64 {
-			if u, _ := dal.GetUser(id); u.Valid() {
-				return u.Session64
-			}
-			return 0
+		req.ParseSession(resp, func(id string) *types.User {
+			u, _ := dal.GetUser(id)
+			return u
 		})
 		f(resp, req)
 
@@ -296,7 +301,11 @@ func getActionData(id uint64, r *types.Request) (ad actionData, msg string) {
 
 	ad.hash = buildBitmapHashes(ad.title, "", ad.parentIds)
 	if len(ad.hash) == 0 {
-		return ad, "EMPTY_TITLE"
+		note, _ := dal.GetNote(id)
+		if note.Valid() && note.IsBio {
+		} else {
+			return ad, "EMPTY_TITLE"
+		}
 	}
 
 	if types.UTF16LenExceeds(ad.title, r.MaxTitle()) {

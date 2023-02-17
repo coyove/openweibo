@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
 	"net/http"
 	"sort"
 	"strconv"
@@ -102,7 +103,7 @@ func HandleAction(w *types.Response, r *types.Request) {
 
 	if action != "touch" && action != "hide" {
 		msg := types.UTF16Trunc(r.Form.Get("reject_msg"), 100)
-		go dal.AppendHistory(id, r.UserDisplay, action, msg, r.RemoteIPv4)
+		go dal.AppendHistory(id, r.UserDisplay, action, msg, r.RemoteIPv4.String())
 	}
 
 	limiter.AddIP(r)
@@ -132,21 +133,24 @@ func doUserAction(action string, w *types.Response, r *types.Request) {
 	start := time.Now()
 	switch action {
 	case "user:logout":
-		if err = doLogout(r); err == nil {
+		if _, err = dal.UpdateUser(r.User.Id, func(u *types.User) error {
+			u.Session64 = rand.Int63()
+			return nil
+		}); err == nil {
 			http.SetCookie(w, &http.Cookie{Name: "session", Value: "", Path: "/"})
 		}
 	case "user:resetpwd":
 		err = doResetPassword(r)
-	case "user:updateemail":
-		_, err = dal.UpdateUser(r.User.Id, func(u *types.User) error {
+	case "user:update":
+		var out *types.User
+		if _, err = dal.UpdateUser(r.User.Id, func(u *types.User) error {
 			u.Email = types.UTF16Trunc(r.Form.Get("email"), 100)
+			u.HideImage = r.Form.Get("hide_image") == "true"
+			out = u
 			return nil
-		})
-	case "user:updatehideimg":
-		_, err = dal.UpdateUser(r.User.Id, func(u *types.User) error {
-			u.HideImage = r.Form.Get("hide_image") != ""
-			return nil
-		})
+		}); err == nil {
+			http.SetCookie(w, out.GenerateSession())
+		}
 	case "user:updatepwd":
 		if err = doUpdatePassword(r); err == nil {
 			http.SetCookie(w, &http.Cookie{Name: "session", Value: "", Path: "/"})

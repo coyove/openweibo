@@ -34,6 +34,7 @@ type Note struct {
 	ReviewImage     string   `protobuf:"bytes,15,opt"`
 	ChildrenCount   int64    `protobuf:"varint,16,opt"`
 	TouchCount      int64    `protobuf:"varint,18,opt"`
+	IsBio           bool     `protobuf:"varint,20,opt"`
 }
 
 func (t *Note) Reset() { *t = Note{} }

@@ -26,6 +26,7 @@ type User struct {
 	UploadSize   int64  `protobuf:"fixed64,11,opt"`
 	LastResetPwd string `protobuf:"bytes,100,opt"`
 	HideImage    bool   `protobuf:"varint,101,opt"`
+	BioNote      uint64 `protobuf:"fixed64,102,opt"`
 }
 
 func (t *User) Reset() { *t = User{} }
@@ -44,6 +45,10 @@ func (t *User) IsMod() bool {
 
 func (t *User) IsRoot() bool {
 	return t != nil && (t.Id == "root")
+}
+
+func (t *User) IsHideImage() bool {
+	return t != nil && t.HideImage
 }
 
 func (t *User) Role() string {

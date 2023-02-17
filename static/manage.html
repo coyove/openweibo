@@ -44,7 +44,7 @@
                         <title>{{.T.viewUser}} 的记事</title>
                         <span>
                             {{.T.viewUser}} 的记事 ({{.T.total}})
-                            {{if .User.IsMod}}(<a href='/ns:profile?id={{fullEscape .T.viewUser}}'>profile</a>){{end}}
+                            {{if .User.IsMod}}<a href='/ns:profile?id={{fullEscape .T.viewUser}}'>个人页</a>{{end}}
                         </span>
                         {{else}}
                         <title>搜索 {{safeHTML .T.query}}</title>
@@ -127,7 +127,7 @@
             <div id=grid style='display: grid;justify-items: center; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));'>
             {{range .T.notes}}
                 <div class=image-display id=note{{.Id}}>
-                    {{if and .Image .IsImage}}
+                    {{if and .Image .IsImage (not $.User.IsHideImage)}}
                         <div class='image-display-container image'
                             style='background: center / cover no-repeat url("{{imageURL "thumb" .Image}}");background-color:rgba(0,0,0,0.05)'
                             data-src="{{imageURL "image" .Image}}">

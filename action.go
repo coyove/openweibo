@@ -97,7 +97,8 @@ func doUpdate(id uint64, r *types.Request) error {
 
 		dal.UpdateCreator(tx, target.Creator, target)
 		dal.AppendImage(tx, target)
-		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
+
+		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromNote(target))
 	}); err != nil {
 		return err
 	}
@@ -140,7 +141,7 @@ func doApprove(id uint64, r *types.Request) error {
 		target.ClearReviewStatus()
 		dal.UpdateCreator(tx, target.Creator, target)
 
-		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
+		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromNote(target))
 	})
 	if err == nil {
 		if changed {
@@ -164,7 +165,7 @@ func doReject(id uint64, r *types.Request) error {
 			return writeError("ILLEGAL_APPROVE")
 		}
 		target.ClearReviewStatus()
-		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
+		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromNote(target))
 	})
 }
 
@@ -184,7 +185,7 @@ func doTouch(id uint64, r *types.Request) error {
 			dal.UpdateCreator(tx, r.UserDisplay, target)
 			target.TouchCount++
 		}
-		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
+		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromNote(target))
 	})
 }
 
@@ -248,7 +249,7 @@ func doLockUnlock(id uint64, lock bool, r *types.Request) error {
 		}
 		target.Lock = lock
 		target.UpdateUnix = clock.UnixMilli()
-		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromTag(target))
+		return dal.KSVUpsert(tx, dal.NoteBK, dal.KSVFromNote(target))
 	})
 }
 
@@ -266,7 +267,11 @@ func doPreview(w *types.Response, r *types.Request) {
 func doUserLogin(register bool, r *types.Request) (*types.User, error) {
 	id := r.Form.Get("id")
 	p := types.UTF16Trunc(r.Form.Get("password"), 100)
+	email := types.UTF16Trunc(r.Form.Get("email"), 100)
 	if id == "" || p == "" {
+		return nil, writeError("INVALID_REGISTER_INFO")
+	}
+	if register && email == "" {
 		return nil, writeError("INVALID_REGISTER_INFO")
 	}
 	if types.UTF16LenExceeds(id, 20) {
@@ -285,7 +290,7 @@ func doUserLogin(register bool, r *types.Request) (*types.User, error) {
 	target := &types.User{
 		Id:         id,
 		PwdHash:    pwd,
-		Email:      types.UTF16Trunc(r.Form.Get("email"), 100),
+		Email:      email,
 		CreateUnix: clock.UnixMilli(),
 		LoginUnix:  clock.UnixMilli(),
 		CreateUA:   r.UserAgent(),
@@ -294,7 +299,7 @@ func doUserLogin(register bool, r *types.Request) (*types.User, error) {
 		LoginIP:    r.RemoteIPv4.String(),
 		Session64:  rand.Int63(),
 	}
-	exist, err := dal.CreateUser(id, target)
+	exist, err := dal.UpsertUser(id, target)
 	if err != nil {
 		return nil, writeError("INTERNAL_ERROR")
 	}
@@ -344,14 +349,6 @@ func doUpdatePassword(r *types.Request) error {
 		h.Reset()
 		h.Write([]byte(new))
 		u.PwdHash = h.Sum(nil)
-		u.Session64 = rand.Int63()
-		return nil
-	})
-	return err
-}
-
-func doLogout(r *types.Request) error {
-	_, err := dal.UpdateUser(r.User.Id, func(u *types.User) error {
 		u.Session64 = rand.Int63()
 		return nil
 	})

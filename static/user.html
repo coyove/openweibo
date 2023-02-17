@@ -11,7 +11,7 @@
         <tr>
             <td colspan=2>
                 <div class=display>
-                    <div style='flex-grow:1'>{{.Id}} ({{.Role}})</div>
+                    <div style='flex-grow:1'> {{.Id}} ({{.Role}}) </div>
                     {{if $me}}
                     <div class='tag-box alert button' onclick='ajaxBtn(this,"user:logout",{})'>登出</div>
                     {{end}}
@@ -21,6 +21,7 @@
         <tr>
             <td colspan=2>
                 <div class='display wrapall' style='font-size: 90%'>
+                    <span class='icon-right-big mr5'></span><a class=mr5 href='/ns:id:{{base62Encode .BioNote}}'>个人记事</a>&emsp;
                     <span class='icon-right-big mr5'></span><a class=mr5 href='/ns:manage?q=ns:user:{{fullEscape .Id}}'>记事 ({{$.T.userCreates}})</a>&emsp;
                     <span class='icon-right-big mr5'></span><a class=mr5 href='/ns:history?user={{fullEscape .Id}}'>编辑历史</a>&emsp;
                     <span>总上传 {{mega .UploadSize}}</span>
@@ -31,10 +32,19 @@
             <td class=small>Email</td>
             <td>
                 <div class='display wrapall'>
-                    <input id="update-email" class=tag-edit-name value='{{safeHTML .Email}}'>
-                    {{if $me}}
-                    <div class='tag-box button' onclick='ajaxBtn(this,"user:updateemail",{"email":$("#update-email").val()})'>更新Email</div>
-                    {{end}}
+                    <input id="update-email" autocomplete="off" class=tag-edit-name value='{{safeHTML .Email}}'>
+                    {{if $me}}<div class='tag-box button' onclick='update(this)'>更新Email</div>{{end}}
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class=small>隐藏缩略图</td>
+            <td>
+                <div class='display wrapall'>
+                    <div id=hide-image class='tag-edit-button {{if .HideImage}}icon-toggle-on{{else}}icon-toggle-off{{end}}'
+                         data-hide='{{.HideImage}}'
+                         {{if $me}}onclick='$(this).attr("data-hide",{{not .HideImage}});update(this)'{{end}}
+                         ></div>
                 </div>
             </td>
         </tr>
@@ -120,8 +130,8 @@
                     <span style='flex-grow:1'>全部用户 ({{.T.total}})</span>
 
                     <div>
-                        <a class='tag-edit-button icon-sort-name-up {{if and (eq .P.Sort 1) (not .P.Desc)}}selected{{end}}' href='?sort=1'></a>
-                        <a class='tag-edit-button icon-sort-name-down {{if and (eq .P.Sort 1) (.P.Desc)}}selected{{end}}' href='?sort=1&desc=1'></a>
+                        <a class='tag-edit-button icon-sort-alt-up {{if and (eq .P.Sort 1) (not .P.Desc)}}selected{{end}}' href='?sort=1'></a>
+                        <a class='tag-edit-button icon-sort-alt-down {{if and (eq .P.Sort 1) (.P.Desc)}}selected{{end}}' href='?sort=1&desc=1'></a>
                         <a class='tag-edit-button icon-sort-number-up {{if and (eq .P.Sort 0) (not .P.Desc)}}selected{{end}}' href='?sort=0'></a>
                         <a class='tag-edit-button icon-sort-number-down {{if and (eq .P.Sort 0) (.P.Desc)}}selected{{end}}' href='?sort=0&desc=1'></a>
                     </div>
@@ -242,6 +252,12 @@
                     ajaxBtn(el, "user:updatepwd", {
                         "old": $("#old-password").val(),
                         "new": $("#new-password").val(),
+                    })
+                }
+                function update(el) {
+                    ajaxBtn(el, "user:update", {
+                        "email": $("#update-email").val(),
+                        "hide_image": $("#hide-image").attr('data-hide'),
                     })
                 }
             </script>

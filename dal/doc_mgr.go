@@ -2,7 +2,6 @@ package dal
 
 import (
 	"fmt"
-	"net"
 	"strings"
 
 	"github.com/coyove/iis/types"
@@ -29,7 +28,7 @@ func CreateNote(name string, tag *types.Note, noSort bool) (existed bool, err er
 		AppendImage(tx, tag)
 		MetricsIncr("create", 1)
 
-		t := KSVFromTag(tag)
+		t := KSVFromNote(tag)
 		t.NoSort = noSort
 		return KSVUpsert(tx, NoteBK, t)
 	})
@@ -277,7 +276,7 @@ func ProcessParentChanges(tx *bbolt.Tx, tag *types.Note, old, new []uint64) erro
 	return nil
 }
 
-func AppendHistory(noteId uint64, user, action string, rejectMsg string, ip net.IP) error {
+func AppendHistory(noteId uint64, user, action string, rejectMsg string, ip string) error {
 	return Store.Update(func(tx *bbolt.Tx) error {
 		note := GetNoteTx(tx, noteId)
 		if !note.Valid() {
@@ -290,7 +289,7 @@ func AppendHistory(noteId uint64, user, action string, rejectMsg string, ip net.
 			Action:     int64(action[0]),
 			CreateUnix: clock.UnixMilli(),
 			Modifier:   user,
-			ModifierIP: ip.String(),
+			ModifierIP: ip,
 			RejectMsg:  rejectMsg,
 		})
 		switch action {
