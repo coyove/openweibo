@@ -198,13 +198,8 @@ func doDeleteHide(hide bool, r *types.Request) error {
 			if !n.Valid() {
 				continue
 			}
-			if !r.User.IsMod() {
-				if r.UserDisplay != n.Creator {
-					return writeError("MODS_REQUIRED")
-				}
-				if clock.UnixMilli()-n.CreateUnix > 300*1000 {
-					return writeError("DELETE_CHANCE_EXPIRED")
-				}
+			if !r.User.IsMod() && r.UserDisplay != n.Creator {
+				return writeError("MODS_REQUIRED")
 			}
 			if hide {
 				if err := dal.KSVDeleteSort0(tx, dal.NoteBK, types.Uint64Bytes(n.Id)); err != nil {
@@ -254,13 +249,10 @@ func doLockUnlock(id uint64, lock bool, r *types.Request) error {
 }
 
 func doPreview(w *types.Response, r *types.Request) {
-	css, _ := httpStaticAssets.ReadFile("static/assets/main.css")
 	out := &bytes.Buffer{}
-	out.WriteString("<!doctype html><html><meta charset='UTF-8'><style>")
-	out.Write(css)
-	out.WriteString("</style><div id=container><pre class=note>")
+	out.WriteString("<pre class=note>")
 	out.WriteString(types.RenderClip(r.Form.Get("content")))
-	out.WriteString("</pre></div></html>")
+	out.WriteString("</pre>")
 	w.WriteJSON("success", true, "content", out.String())
 }
 

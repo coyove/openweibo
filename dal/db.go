@@ -242,6 +242,22 @@ func KSVDelete(tx *bbolt.Tx, bkPrefix string, key []byte) error {
 	return nil
 }
 
+func KSVDeleteAll(tx *bbolt.Tx, bkPrefix string) error {
+	if err := tx.DeleteBucket([]byte(bkPrefix + "_kv")); err != nil {
+		return err
+	}
+	if err := tx.DeleteBucket([]byte(bkPrefix + "_s0k")); err != nil {
+		return err
+	}
+	if err := tx.DeleteBucket([]byte(bkPrefix + "_s1k")); err != nil {
+		return err
+	}
+	if err := tx.DeleteBucket([]byte(bkPrefix + "_kss")); err != nil {
+		return err
+	}
+	return nil
+}
+
 func KSVDeleteSort0(tx *bbolt.Tx, bkPrefix string, key []byte) error {
 	sort0Key := tx.Bucket([]byte(bkPrefix + "_s0k"))
 	keySortSort2 := tx.Bucket([]byte(bkPrefix + "_kss"))

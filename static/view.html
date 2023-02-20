@@ -1,15 +1,20 @@
 {{with .T.note}}
 
-{{if .Title}}
+{{if or .Title .IsBio}}
 <div style='display:flex;align-items:center'>
+    {{if .IsBio}}
+    <title>{{.Creator}} 个人记事</title>
+    <h1 style='word-break:break-all'>{{.Creator}} 个人记事</h1>
+    {{else}}
+    <title>{{safeHTML .Title}}</title>
     <h1 style='word-break:break-all'>{{safeHTML .Title}}</h1>
+    {{end}}
     {{if ne $.UserDisplay .Creator}}
     <div class='ml5 tag-edit-button' onclick="ajaxBtn(null,'touch',{'id':'{{.Id}}'})">
         <span class={{if $.T.noteTouched}}icon-heart{{else}}icon-heart-empty{{end}}></span>
     </div>
     {{end}}
 </div>
-<title>{{safeHTML .Title}}</title>
 {{else}}
 <title>无标题</title>
 {{end}}

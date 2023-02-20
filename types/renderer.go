@@ -21,9 +21,6 @@ func (e *escaper) writeEscape(p []byte) (n int, err error) {
 		case '>':
 			o.WriteString("&gt;")
 			n += 4
-		case '&':
-			o.WriteString("&amp;")
-			n += 5
 		default:
 			o.WriteByte(p[i])
 			n++
@@ -58,7 +55,7 @@ func (out *escaper) writeEnd(tag string) {
 
 func (out *escaper) writeStart(z *html.Tokenizer, tag string) {
 	if tag == "code" {
-		out.WriteString("<div style='position:relative;'><div style='white-space:pre;overflow-x:auto'><code")
+		out.WriteString("<div style='position:relative;'><div style='white-space:pre;overflow-x:auto;overflow-y:hidden'><code")
 	} else {
 		out.WriteByte('<')
 		out.WriteString(tag)
@@ -71,7 +68,7 @@ func (out *escaper) writeStart(z *html.Tokenizer, tag string) {
 			out.WriteString(" ")
 			out.WriteString(k)
 			out.WriteString("='")
-			if !bytes.HasPrefix(v, []byte("javascript")) {
+			if !bytes.HasPrefix(v, []byte("javascript")) && !bytes.HasPrefix(v, []byte("data:image/svg")) {
 				out.Write(v)
 			}
 			out.WriteString("'")
@@ -102,21 +99,25 @@ func RenderClip(v string) string {
 
 		switch tt {
 		case html.StartTagToken:
-			if tagStr == "eat" && !inCode {
+			if inCode {
+				out.writeEscape(z.Raw())
+			} else if tagStr == "eat" {
 				for out.Len() > 0 && unicode.IsSpace(rune(out.Bytes()[out.Len()-1])) {
 					out.Truncate(out.Len() - 1)
 				}
-			} else if allowedTags[tagStr] && !inCode {
+			} else if tagStr == "code" {
+				out.writeStart(z, "code")
+				inCode = true
+			} else if allowedTags[tagStr] {
 				out.writeStart(z, tagStr)
 				tagStack = append(tagStack, tagStr)
-				if tagStr == "code" {
-					inCode = true
-				}
 			} else {
 				out.writeEscape(z.Raw())
 			}
 		case html.SelfClosingTagToken:
-			if allowedTags[tagStr] && !inCode {
+			if inCode {
+				out.writeEscape(z.Raw())
+			} else if allowedTags[tagStr] {
 				out.writeStart(z, tagStr)
 				out.Truncate(out.Len() - 1)
 				out.WriteString("/>")
@@ -124,30 +125,26 @@ func RenderClip(v string) string {
 				out.writeEscape(z.Raw())
 			}
 		case html.EndTagToken:
-			matched := false
-			if tagStr == "code" || (allowedTags[tagStr] && !inCode) {
-				if tagStr == "code" {
-					inCode = false
-				}
-
+			if tagStr == "code" {
+				inCode = false
+				out.writeEnd("code")
+			} else if inCode {
+				out.writeEscape(z.Raw())
+			} else if allowedTags[tagStr] {
 				for len(tagStack) > 0 {
 					last := tagStack[len(tagStack)-1]
 					tagStack = tagStack[:len(tagStack)-1]
-
 					out.writeEnd(last)
-
 					if last == tagStr {
-						matched = true
 						break
 					}
 				}
-			}
-			if !matched {
+			} else {
 				out.writeEscape(z.Raw())
 			}
 		case html.DoctypeToken:
 		default:
-			out.writeEscape(z.Raw())
+			out.Write(z.Raw())
 		}
 	}
 

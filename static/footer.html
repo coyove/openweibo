@@ -7,23 +7,7 @@
         <a href='/ns:profile' style='color:#ba68c8'>{{if .User}}{{.UserDisplay}}{{else}}登入{{end}}</a>
     </div>
     <script>
-        $('code').each(function(_, c) {
-            c = $(c);
-            c.text(c.text().replace(/^\n/, ''));
-            $("<div>").css({
-                'position': 'absolute',
-                'top': 0,
-                'right': 0,
-                'background': 'rgba(255,255,255,0.66)',
-            }).append($("<div class='tag-edit-button icon-docs'>").click(function() {
-                navigator.clipboard.writeText(c.text());
-                // $(this).parent().append($("<span>").text('已复制'));
-                const range = document.createRange();
-                range.selectNode(c.get(0));
-                window.getSelection().removeAllRanges();
-                window.getSelection().addRange(range);
-            })).insertBefore(c.parent());
-        });
+        
     </script>
 </body>
 </html>

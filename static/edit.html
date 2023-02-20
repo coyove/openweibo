@@ -10,7 +10,7 @@
 
 <style>
 .image-selector-container { margin: 0.5em } 
-div.diff-row {font-family:monospace;white-space:pre-wrap;padding:0 0.5em;line-height: 1.5em;word-break:break-all}
+div.diff-row {white-space:pre-wrap;padding:0 0.5em;line-height: 1.5em;word-break:break-all}
 div.diff-line {color:#aaa;width:3em;display:inline-block;margin-right: 0.5em}
 div.diff-info {color:#999;width:1em;display:inline-block;margin-right: 0.5em}
 div.diff-row.del{background:#ffebe9}
@@ -67,11 +67,15 @@ div.diff-row.ins{background:#ccffd8}
             </td>
         </tr>
 
-        {{if and (not $.User.IsMod) (ne $.UserDisplay .Creator) (not $.T.readonly)}}
+        {{if not $.T.readonly}}
         <tr>
             <td colspan=2>
                 <div class='display wrapall' style='font-size:90%;color:#e91e63'>
+                    {{if and (not $.User.IsMod) (ne $.UserDisplay .Creator)}}
                     修改将会由创建者或管理员审核后生效，在此之前你可以完善或驳回自己的修改。
+                    {{else}}
+                    你可以完善或直接批准自己记事的修改。
+                    {{end}}
                 </div>
             </td>
         </tr>
@@ -252,15 +256,15 @@ div.diff-row.ins{background:#ccffd8}
 
                     if (removed) {
                         (lnL++), (left.innerText = lnL);
-                        node.className = 'diff-row del';
+                        node.className = 'diff-row mono del';
                         info.innerText = '-';
                     } else if (added) {
                         (lnR++), (right.innerText = lnR);
-                        node.className = 'diff-row ins';
+                        node.className = 'diff-row mono ins';
                         info.innerText = '+';
                     } else {
                         (lnL++), (lnR++), (left.innerText = lnL), (right.innerText = lnR);
-                        node.className = 'diff-row';
+                        node.className = 'diff-row mono';
                     }
                     node.appendChild(left);
                     node.appendChild(right);

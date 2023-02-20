@@ -428,10 +428,16 @@ func HandleManage(w *types.Response, r *types.Request) {
 	if q != "" {
 		query, pids, uid := expandQuery(q)
 		if len(pids) == 0 && query == "" && uid != "" {
+			user, _ := dal.GetUser(uid)
+			if !user.Valid() {
+				http.Redirect(w, r.Request, "/ns:not_found", 302)
+				return
+			}
 			results, total, pages = dal.KSVPaging(nil, "creator_"+uid, r.P.Sort, r.P.Desc, r.P.Page-1, r.P.PageSize)
 			notes, _ = dal.BatchGetNotes(results)
 			r.AddTemplateValue("isUserPage", true)
-			r.AddTemplateValue("viewUser", uid)
+			r.AddTemplateValue("viewUser", user)
+			r.AddTemplateValue("viewUserId", uid)
 		} else if len(pids) == 1 && pids[0] > 0 && uid == "" && query == "" {
 			http.Redirect(w, r.Request, "/ns:id:"+clock.Base62Encode(pids[0]), 302)
 			return

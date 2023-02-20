@@ -101,7 +101,7 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 		}
 		return buf.String()
 	},
-	"makeTitle": func(t *types.Note, max int, hl bool) string {
+	"makeTitle": func(t *types.Note, max int) string {
 		if t.IsBio {
 			return "<b>个人记事</b>"
 		}
@@ -115,16 +115,16 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 					}
 					return len(notes[i].Title) > len(notes[j].Title)
 				})
-				buf := &bytes.Buffer{}
+				buf, c := &bytes.Buffer{}, 0
 				for _, n := range notes {
-					if hl {
-						buf.WriteString("<b>#</b>")
+					if tt := types.SafeHTML(n.Title); tt == "" {
+						fmt.Fprintf(buf, "<span style='font-style:italic'><b>#</b>ns:id:%s</span> ", t.IdStr())
+						c += 16
 					} else {
-						buf.WriteString("#")
+						fmt.Fprintf(buf, "<span><b>#</b>%s</span> ", tt)
+						c += len(tt)
 					}
-					buf.WriteString(n.HTMLTitleDisplay())
-					buf.WriteString(" ")
-					if buf.Len() > max {
+					if c > max {
 						break
 					}
 				}

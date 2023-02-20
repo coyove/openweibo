@@ -198,15 +198,19 @@ td { white-space: nowrap; padding: 0.1em 0.5em; }
 td.small { font-size:80%; width: 1px }
 td .display { position:relative; display: flex; padding: 0.25em; min-height: 2.5em; align-items:center; flex-wrap: wrap; row-gap: 0.25em; }
 td .tag-edit-name { text-decoration:none;color:#233;word-break: break-all; white-space: pre-wrap;flex-grow:1; }
-td .tag-edit-desc {
+td .tag-edit-desc, code {
+    resize: vertical;
     outline: none;
     background: transparent;
     font: inherit;
-    resize: vertical;
     border: none;
     width: 100%;
     padding: 0;
     min-height: 3em;
+    padding: 0.25em;
+}
+.mono, td .tag-edit-desc, code {
+    font-family: ui-monospace,"Cascadia Mono","Segoe UI Mono","Liberation Mono",Menlo,Monaco,Consolas,monospace;
 }
 td .tag-edit-title { resize: none; height: 100% }
 td .tag-edit-title::-webkit-scrollbar { display: none }

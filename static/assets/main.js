@@ -1,56 +1,83 @@
 window.CONST_closeSVG = "<svg class='svg16 closer' viewBox='0 0 16 16'><circle cx=8 cy=8 r=8 fill='#aaa' /><path d='M 5 5 L 11 11' stroke=white stroke-width=3 fill=transparent /><path d='M 11 5 L 5 11' stroke=white stroke-width=3 fill=transparent /></svg>";
 window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
 
+function fixCode(inTable) { 
+    $('code').each(function(_, c) {
+        c = $(c);
+        inTable && c.css('white-space', 'pre-wrap');
+        c.text(c.text().replace(/^\n/, ''));
+        $("<div style='border-radius:50%;position:absolute;top:0;right:0;background:rgba(255,255,255,0.66)'>").
+            append($("<div class='tag-edit-button icon-docs'>").click(function() {
+                navigator.clipboard.writeText(c.text());
+                // $(this).parent().append($("<span>").text('已复制'));
+                const range = document.createRange();
+                range.selectNode(c.get(0));
+                window.getSelection().removeAllRanges();
+                window.getSelection().addRange(range);
+            })).insertBefore(c.parent());
+    });
+}
+
 (function($) {
 	$.fn.linedtextarea = function() {
 		return this.each(function() {
             const that = $(this);
-            that.css('padding', '0.25em').wrap($('<div>').css({
-                'display': 'flex',
-                'flex-direction': 'column',
-                'width': '100%',
-                'height': '100%',
-            }));
-            !that.attr('readonly') && that.parent().prepend($('<div>').css({
-                'padding': '0.25em',
-                'width': '100%',
-                'background': 'rgba(0,0,0,0.03)',
-                'box-shadow': '0 1px 1px rgba(0,0,0,0.2)',
-            }).
-                append($('<div title="URL Escape" class="icon-percent tag-edit-button">').click(function(){
-                    insert(function(o) { return encodeURIComponent(o); });
-                })).
-                append($('<div title="创建链接" class="icon-link tag-edit-button">').click(function() {
-                    insert(function(o) { return "<a href='" + o + "'>" + o + "</a>"; });
-                })).
-                append($('<div title="消空格" class="icon-myspace tag-edit-button">').click(function(){
-                    const ta = that.get(0), end = ta.selectionEnd;
-                    ta.focus();
-                    ta.value = ta.value.slice(0, end) + "<eat>" + ta.value.slice(end);
-                    ta.selectionStart = end + 5;
-                    ta.selectionEnd = end + 5;
-                })).
-                append($('<div title="HTML Escape" class="icon-quote-left tag-edit-button">').click(function() {
-                    insert(function(o) {
-                        return o.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").
-                            replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-                    });
-                })).
-                append($('<div title="预览" class="icon-print tag-edit-button">').click(function() {
-                    const fd = new FormData(), w = window.open('', '_blank');
-                    fd.append('content', that.val());
-                    $.ajax({
-                        url: '/ns:action',
-                        data: fd,
-                        processData: false,
-                        contentType: false,
-                        type: 'POST',
-                        headers: { 'X-Ns-Action': 'preview' },
-                        success: function(data){ w.document.body.innerHTML = (data.content); },
-                        error: function() { alert('网络错误'); },
-                    });
-                }))
-            );
+            that.wrap($('<div style="width:100%">')).on('keydown', function(ev) {
+                if (ev.keyCode == 13 || ev.keyCode == 9) {
+                    const ta = that.get(0), end = ta.selectionEnd, previous = ta.value.slice(0, end);
+                    const lastline = previous.substring(previous.lastIndexOf("\n") + 1).match(/^\s+/);
+                    const n = ev.keyCode == 9 ? "\t" : "\n" + (lastline && lastline[0] ? lastline[0] : '');
+                    ta.value = previous + n + ta.value.slice(end);
+                    ta.selectionStart = end + n.length;
+                    ta.selectionEnd = end + n.length;
+                    ev.preventDefault();
+                }
+            });
+            const preview = $('<div style="background:#ffd;padding:0 .5em;overflow-x:hidden;border-bottom:solid 1px #ccc;display:none">');
+            const previewBtn = $('<div title="预览" class="icon-toggle-off tag-edit-button">').click(function() {
+                if (previewBtn.hasClass('icon-toggle-on')) {
+                    previewBtn.toggleClass('icon-toggle-on').toggleClass('icon-toggle-off');
+                    preview.html('').hide();
+                    return;
+                }
+                ajaxBtn(previewBtn.get(0), 'preview', {'content': that.val()}, function(data) {
+                    previewBtn.toggleClass('icon-toggle-on').toggleClass('icon-toggle-off')
+                    preview.html(data.content).prepend('<div style="margin:0 -0.5em;padding:0.5em;background:#ddd;font-size:90%">预览内容</div>').show();
+                    fixCode(true);
+                });
+            })
+            !that.attr('readonly') && that.parent().
+                prepend(preview).
+                prepend($('<div style="padding:0.25em;display:flex;align-items:center;width:100%;background:rgba(0,0,0,0.03);box-shadow:0 1px 1px rgba(0,0,0,0.2)">').
+                    append($('<div title="URL Escape" class="icon-percent tag-edit-button">').click(function(){
+                        insert(function(o) {
+                            var decoded = o;
+                            try { decoded = decodeURIComponent(o) } catch {}
+                            return decoded == o ? encodeURIComponent(o) : decoded;
+                        });
+                    })).
+                    append($('<div title="HTML Escape" class="icon-quote-left tag-edit-button">').click(function() {
+                        const m = {'&': "&amp;", '<': "&lt;", '>': "&gt;", '"': "&quot;", "'": "&#039;"};
+                        insert(function(o) {
+                            var decoded = o, encoded = o;
+                            Object.keys(m).forEach(function(k) { decoded = decoded.replace(new RegExp(m[k], 'g'), k) });
+                            Object.keys(m).forEach(function(k) { encoded = encoded.replace(new RegExp(k, 'g'), m[k]) });
+                            return decoded == o ? encoded : decoded;
+                        });
+                    })).
+                    append($('<div title="创建链接" class="icon-link tag-edit-button">').click(function() {
+                        insert(function(o) { return "<a href='" + o + "'>" + o + "</a>"; });
+                    })).
+                    append($('<div title="消空格" class="icon-myspace tag-edit-button">').click(function(){
+                        const ta = that.get(0), end = ta.selectionEnd;
+                        ta.focus();
+                        ta.value = ta.value.slice(0, end) + "<eat>" + ta.value.slice(end);
+                        ta.selectionStart = end + 5;
+                        ta.selectionEnd = end + 5;
+                    })).
+                    append($('<div style="flex-grow:1">')).
+                    append(previewBtn)
+                );
             function insert(f) {
                 const ta = that.get(0), start = ta.selectionStart, end = ta.selectionEnd;
                 const res = f(ta.value.slice(start, end));
@@ -257,7 +284,11 @@ function ajaxBtn(el, action, args, f) {
     for (const k in args) fd.append(k, args[k]);
     const loader = createLoader(el);
     !that.prev().hasClass('ajax-loader') && loader.insertBefore(that.attr('busy', 'true').hide());
-    function finish() { that.attr('busy', '').show(); loader.remove(); }
+    function finish() {
+        that.attr('busy', '').show();
+        loader.remove();
+        while (that.prev().hasClass('ajax-loader')) that.prev().remove();
+    }
     $.ajax({
         url: '/ns:action',
         data: fd,
@@ -483,6 +514,8 @@ $(document).ready(function() {
     $(".image-selector").each(function(_, i) {
         $(i).imageSelector();
     });
+
+    fixCode();
 })
 
 document.onpaste = function (event) {

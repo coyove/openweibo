@@ -28,8 +28,8 @@
                 <div class=display >
                     <div style='flex-grow:1'>
                         {{if eq .T.viewType "note"}}
-                            {{$title := makeTitle .T.note 100 true}}
-                            <title>{{$title}} 的编辑历史</title>
+                            {{$title := makeTitle .T.note 100}}
+                            <title>{{.T.note.HTMLTitleDisplay}} 的编辑历史</title>
                             <b class=wrapall>{{$title}}</b> 的编辑历史
                         {{end}}
 
@@ -83,14 +83,14 @@
                         {{if eq $r.ActionName "delete"}}
                         <a class=wrapall href='/ns:history?note={{.Id}}'><i>记事已删除，查看编辑历史</i></a>
                         {{else}}
-                            <a class=wrapall href='/ns:id:{{.IdStr}}'>{{makeTitle . 100 true}}</a>
+                            <a class=wrapall href='/ns:id:{{.IdStr}}'>{{makeTitle . 100}}</a>
                             {{if $r.RejectMsg}}
                             <span class=wrapall>&emsp;<i>留言：{{safeHTML $r.RejectMsg}}</i></span>
                             {{end}}
                         {{end}}
                     {{else}}
                         <div style='flex-grow: 1'>
-                            <a class=wrapall href='/ns:edit?hid={{$r.Id}}'>{{makeTitle . 100 true}}</a>
+                            <a class=wrapall href='/ns:edit?hid={{$r.Id}}'>{{makeTitle . 100}}</a>
                             {{$bd := $r.BytesDiff}}
                             {{if $bd}}<span style='color:#aaa;margin-left:0.5em'><i>{{$bd}}字节</i></span>{{end}}
                         </div>

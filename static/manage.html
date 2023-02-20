@@ -41,10 +41,10 @@
                     <span style='flex-grow:1'>
                     {{if .T.query}}
                         {{if .T.isUserPage}}
-                        <title>{{.T.viewUser}} 的记事</title>
+                        <title>{{.T.viewUser.Id}} 的记事</title>
                         <span>
-                            {{.T.viewUser}} 的记事 ({{.T.total}})
-                            {{if .User.IsMod}}<a href='/ns:profile?id={{fullEscape .T.viewUser}}'>个人页</a>{{end}}
+                            {{.T.viewUser.Id}} 的记事 ({{.T.total}}<a href='/ns:id:{{base62Encode .T.viewUser.BioNote}}'>+1</a>)
+                            {{if .User.IsMod}}<a href='/ns:profile?id={{fullEscape .T.viewUser.Id}}'>个人页</a>{{end}}
                         </span>
                         {{else}}
                         <title>搜索 {{safeHTML .T.query}}</title>
@@ -138,18 +138,18 @@
                             {{if .Content}}
                             <div class='wrapall content100'>{{safeHTML (trunc .Content 100)}}</div>
                             {{else}}
-                            <div class='wrapall content100'>{{makeTitle . 100 false}}</div>
+                            <div class='wrapall content100'>{{makeTitle . 100}}</div>
                             {{end}}
                             <a href='/{{.EscapedTitle}}'></a>
                         </div>
                     {{end}}
                     <div class=image-display-info>
-                        {{$touched := and $.T.isUserPage (ne $.T.viewUser .Creator)}}
+                        {{$touched := and $.T.isUserPage (ne $.T.viewUserId .Creator)}}
                         <div style='flex-grow:1'>
                             {{if .Lock}}<span class='icon-lock'></span>{{end}}
                             {{if .PendingReview}}<span class='icon-hammer' title='等待审核'></span>{{end}}
                             {{if $touched}}<span class='icon-heart' title='收藏的记事'></span>{{end}}
-                            <a href='/{{.EscapedTitle}}' class=tag-edit-name>{{makeTitle . 32 true}}</a>
+                            <a href='/{{.EscapedTitle}}' class=tag-edit-name>{{makeTitle . 32}}</a>
                         </div>
 
                         <div class=image-display-bar>
@@ -186,7 +186,7 @@
         if (ev.keyCode == 13) {
             {{if .T.view}}
             const title = decodeURIComponent('{{fullEscape .T.note.Title}}').replaceAll('\\', '\\\\'). replaceAll(' ', '\\ ')
-            const filter = "ns:title:" + title + ' ';
+            const filter = title ? ( "ns:title:" + title + ' ') : "ns:id:{{.T.note.IdStr}}";
             {{else}}
             const filter = "";
             {{end}}
