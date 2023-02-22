@@ -144,7 +144,7 @@ var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
 	"uuid":         func() string { return types.UUIDStr() },
 	"imageURL":     imageURL,
 	"equ64s":       simple.Uint64.Equal,
-	"trunc":        types.UTF16Trunc,
+	"trunc":        types.TruncClip,
 	"renderClip":   types.RenderClip,
 	"safeHTML":     types.SafeHTML,
 	"fullEscape":   types.FullEscape,

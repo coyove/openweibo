@@ -4,7 +4,6 @@ window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
 function fixCode(inTable) { 
     $('code').each(function(_, c) {
         c = $(c);
-        inTable && c.css('white-space', 'pre-wrap');
         c.text(c.text().replace(/^\n/, ''));
         $("<div style='border-radius:50%;position:absolute;top:0;right:0;background:rgba(255,255,255,0.66)'>").
             append($("<div class='tag-edit-button icon-docs'>").click(function() {
@@ -32,6 +31,7 @@ function fixCode(inTable) {
                     ta.selectionEnd = end + n.length;
                     ev.preventDefault();
                 }
+                previewBtn.hasClass('icon-toggle-on') && previewBtn.click();
             });
             const preview = $('<div style="background:#ffd;padding:0 .5em;overflow-x:hidden;border-bottom:solid 1px #ccc;display:none">');
             const previewBtn = $('<div title="预览" class="icon-toggle-off tag-edit-button">').click(function() {
@@ -42,13 +42,14 @@ function fixCode(inTable) {
                 }
                 ajaxBtn(previewBtn.get(0), 'preview', {'content': that.val()}, function(data) {
                     previewBtn.toggleClass('icon-toggle-on').toggleClass('icon-toggle-off')
-                    preview.html(data.content).prepend('<div style="margin:0 -0.5em;padding:0.5em;background:#ddd;font-size:90%">预览内容</div>').show();
+                    preview.css('width', $('.table').width());
+                    preview.html(data.content).show();
                     fixCode(true);
                 });
             })
             !that.attr('readonly') && that.parent().
                 prepend(preview).
-                prepend($('<div style="padding:0.25em;display:flex;align-items:center;width:100%;background:rgba(0,0,0,0.03);box-shadow:0 1px 1px rgba(0,0,0,0.2)">').
+                prepend($('<div style="padding:0.25em;display:flex;align-items:center;width:100%;background:rgba(0,0,0,0.04);box-shadow:0 1px 1px rgba(0,0,0,0.2)">').
                     append($('<div title="URL Escape" class="icon-percent tag-edit-button">').click(function(){
                         insert(function(o) {
                             var decoded = o;
@@ -69,11 +70,18 @@ function fixCode(inTable) {
                         insert(function(o) { return "<a href='" + o + "'>" + o + "</a>"; });
                     })).
                     append($('<div title="消空格" class="icon-myspace tag-edit-button">').click(function(){
-                        const ta = that.get(0), end = ta.selectionEnd;
+                        const ta = that.get(0), end = ta.selectionEnd, before = ta.value.slice(0, end), after = ta.value.slice(end);
                         ta.focus();
-                        ta.value = ta.value.slice(0, end) + "<eat>" + ta.value.slice(end);
-                        ta.selectionStart = end + 5;
-                        ta.selectionEnd = end + 5;
+                        if (after.trimStart().startsWith('>')) {
+                            const style = ' style="white-space:normal"';
+                            ta.value = before + style + after;
+                            ta.selectionStart = end + 1;
+                            ta.selectionEnd = end + style.length;
+                        } else {
+                            ta.value = before + "<eat>" + after;
+                            ta.selectionStart = end + 5;
+                            ta.selectionEnd = end + 5;
+                        }
                     })).
                     append($('<div style="flex-grow:1">')).
                     append(previewBtn)

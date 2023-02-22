@@ -37,7 +37,7 @@ var allowedAttrs = map[string]bool{
 
 var allowedTags = func() map[string]bool {
 	m := map[string]bool{}
-	for _, p := range strings.Split(`b,em,pre,a,img,div,p,span,u,i,hr,br,strong,blockquote,video,code,ol,ul,li,
+	for _, p := range strings.Split(`abbr,b,em,pre,a,img,div,p,span,u,i,hr,br,strong,blockquote,video,code,ol,ul,li,
     table,tr,tbody,thead,td,th,h1,h2,h3,h4,label,font,textarea,input,sup,sub,dd,dl,dt`, ",") {
 		m[strings.TrimSpace(p)] = true
 	}
@@ -78,6 +78,26 @@ func (out *escaper) writeStart(z *html.Tokenizer, tag string) {
 		}
 	}
 	out.WriteByte('>')
+}
+
+func TruncClip(v string, max int) string {
+	z := html.NewTokenizer(strings.NewReader(v))
+	out := &bytes.Buffer{}
+	for out.Len() < max*3 {
+		tt := z.Next()
+		if tt == html.ErrorToken {
+			break
+		}
+		switch tt {
+		case html.StartTagToken:
+		case html.SelfClosingTagToken:
+		case html.EndTagToken:
+		case html.DoctypeToken:
+		default:
+			out.Write(z.Raw())
+		}
+	}
+	return UTF16Trunc(out.String(), max)
 }
 
 func RenderClip(v string) string {
