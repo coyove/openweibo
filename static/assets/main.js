@@ -49,7 +49,7 @@ function fixCode(inTable) {
             })
             !that.attr('readonly') && that.parent().
                 prepend(preview).
-                prepend($('<div style="padding:0.25em;display:flex;align-items:center;width:100%;background:rgba(0,0,0,0.04);box-shadow:0 1px 1px rgba(0,0,0,0.2)">').
+                prepend($('<div style="padding:0.25em;display:flex;align-items:center;width:100%;background:rgba(0,0,0,0.05);box-shadow:0 1px 1px rgba(0,0,0,0.2)">').
                     append($('<div title="URL Escape" class="icon-percent tag-edit-button">').click(function(){
                         insert(function(o) {
                             var decoded = o;
@@ -82,6 +82,22 @@ function fixCode(inTable) {
                             ta.selectionStart = end + 5;
                             ta.selectionEnd = end + 5;
                         }
+                    })).
+                    append($('<div title="移除HTML标签" class="icon-trash tag-edit-button">').click(function() {
+                        const div = document.createElement('div');
+                        div.innerHTML = that.val();
+                        function walk(node) {
+                            var result = '';
+                            for (var child = node.firstChild; child; child = child.nextSibling) {
+                                if (child.nodeType == Node.TEXT_NODE) {
+                                    result += child.data == '\n' ? child.data : (child.data + ' ');
+                                } else if (child.nodeType == Node.ELEMENT_NODE) {
+                                    result += walk(child);
+                                }
+                            }
+                            return result;
+                        }
+                        that.val(walk(div).replace(/\n+/g,'\n'));
                     })).
                     append($('<div style="flex-grow:1">')).
                     append(previewBtn)

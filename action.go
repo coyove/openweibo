@@ -251,7 +251,8 @@ func doLockUnlock(id uint64, lock bool, r *types.Request) error {
 func doPreview(w *types.Response, r *types.Request) {
 	out := &bytes.Buffer{}
 	out.WriteString("<pre class=note>")
-	out.WriteString(types.RenderClip(r.Form.Get("content")))
+	max := r.MaxContent()
+	out.WriteString(types.RenderClip(types.UTF16Trunc(r.Form.Get("content"), max)))
 	out.WriteString("</pre>")
 	w.WriteJSON("success", true, "content", out.String())
 }

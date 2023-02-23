@@ -66,6 +66,38 @@
             </div>
         </td>
     </tr>
+    <tr>
+        <td>
+            <div class=display>
+                <span class=wrapall style='font-size:80%;color:#ccc'>
+                小工具：复制该<a href="javascript:navigator.clipboard.writeText($('#bk').text().replace(/(\n|\s{2,})/g,'').replace(/\{HOST\}/g,location.protocol+'//'+location.host)).then(function(){alert('复制成功')})">代码</a>保存为书签，可快速选择网页内容发布记事。
+                </span>
+            </div>
+            <script type='text/plain' id='bk'>
+javascript:(function(){
+    const s=document.createElement('script'),r=Math.random().toString();
+    s.src='{HOST}/ns:static/assets/jquery.min.js';
+    s.onload=function(){
+        const f=document.createElement('iframe');
+        f.src='{HOST}/ns:new?rand='+r;
+        f.style.display='none';
+        f.onload=function(){
+            DomOutline({onClick:function(el){
+                f.contentWindow.postMessage({
+                    ns:'draft:new',
+                    title:document.title,
+                    value:'<a href="'+location.href+'">'+location.href+'</a>\n'+el.innerHTML.trim(),
+                },'{HOST}/ns:new?rand='+r);
+                setTimeout(function(){window.open('{HOST}/ns:new','_blank')},200);
+            }}).start();
+        };
+        document.body.appendChild(f);
+    };
+    document.body.appendChild(s);
+})()
+            </script>
+        </td>
+    </tr>
 </table>
 
 <script>
@@ -76,6 +108,7 @@
             'parents': JSON.stringify($('#parents').get(0).getTags()),
         }, $('#image').get(0).imageData), function(data) {
             window.localStorage.removeItem('draft:new');
+            window.localStorage.removeItem('draft:new:title');
             {{if .T.lastParent}}
             location.href = '/ns:id:{{.T.lastParent}}?sort=0&desc=1';
             {{else}}
@@ -117,9 +150,20 @@
     checkTitle();
 
     $('#content').linedtextarea().val(window.localStorage.getItem('draft:new') || '');
-    setInterval(function() {
+    $('#title').val(window.localStorage.getItem('draft:new:title') || '');
+    window.SAVER = setInterval(function() {
         window.localStorage.setItem('draft:new', $('#content').val());
+        window.localStorage.setItem('draft:new:title', $('#title').val());
     }, 5000)
+
+    window.addEventListener('message', function(event) {
+        var origin = event.origin || event.originalEvent.origin;
+        if (typeof event.data == 'object' && event.data.ns == 'draft:new') {
+            clearInterval(window.SAVER);
+            window.localStorage.setItem('draft:new', event.data.value);
+            window.localStorage.setItem('draft:new:title', event.data.title || '');
+        }
+    }, false);
 </script>
 
 {{template "footer.html" .}}

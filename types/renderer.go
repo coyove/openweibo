@@ -11,20 +11,32 @@ import (
 
 type escaper struct{ bytes.Buffer }
 
-func (e *escaper) writeEscape(p []byte) (n int, err error) {
+func (e *escaper) writeRaw(p string) {
 	o := &e.Buffer
-	for i := range p {
-		switch p[i] {
-		case '<':
-			o.WriteString("&lt;")
-			n += 4
-		case '>':
-			o.WriteString("&gt;")
-			n += 4
-		default:
-			o.WriteByte(p[i])
-			n++
+	for len(p) > 0 {
+		idx := strings.IndexByte(p, '<')
+		if idx == -1 {
+			o.WriteString(p)
+			break
 		}
+		o.WriteString(p[:idx])
+		o.WriteString("&lt;")
+		p = p[idx+1:]
+	}
+	return
+}
+
+func (e *escaper) writeText(p []byte) {
+	o := &e.Buffer
+	for len(p) > 0 {
+		idx := bytes.IndexByte(p, '<')
+		if idx == -1 {
+			o.Write(p)
+			break
+		}
+		o.Write(p[:idx])
+		o.WriteString("&lt;")
+		p = p[idx+1:]
 	}
 	return
 }
@@ -37,8 +49,8 @@ var allowedAttrs = map[string]bool{
 
 var allowedTags = func() map[string]bool {
 	m := map[string]bool{}
-	for _, p := range strings.Split(`abbr,b,em,pre,a,img,div,p,span,u,i,hr,br,strong,blockquote,video,code,ol,ul,li,
-    table,tr,tbody,thead,td,th,h1,h2,h3,h4,label,font,textarea,input,sup,sub,dd,dl,dt`, ",") {
+	for _, p := range strings.Split(`font,cite,kbd,meta,link,caption,small,style,abbr,b,em,pre,a,img,div,p,span,u,i,hr,br,strong,blockquote,video,code,ol,ul,li,
+    ins,del,table,tr,tbody,thead,tfoot,td,th,h1,h2,h3,h4,label,font,textarea,input,sup,sub,dd,dl,dt`, ",") {
 		m[strings.TrimSpace(p)] = true
 	}
 	return m
@@ -68,8 +80,8 @@ func (out *escaper) writeStart(z *html.Tokenizer, tag string) {
 			out.WriteString(" ")
 			out.WriteString(k)
 			out.WriteString("='")
-			if !bytes.HasPrefix(v, []byte("javascript")) && !bytes.HasPrefix(v, []byte("data:image/svg")) {
-				out.Write(v)
+			if !bytes.HasPrefix(v, []byte("javascript")) {
+				out.WriteString(html.EscapeString(*(*string)(unsafe.Pointer(&v))))
 			}
 			out.WriteString("'")
 		}
@@ -120,7 +132,7 @@ func RenderClip(v string) string {
 		switch tt {
 		case html.StartTagToken:
 			if inCode {
-				out.writeEscape(z.Raw())
+				out.writeText(z.Raw())
 			} else if tagStr == "eat" {
 				for out.Len() > 0 && unicode.IsSpace(rune(out.Bytes()[out.Len()-1])) {
 					out.Truncate(out.Len() - 1)
@@ -132,24 +144,24 @@ func RenderClip(v string) string {
 				out.writeStart(z, tagStr)
 				tagStack = append(tagStack, tagStr)
 			} else {
-				out.writeEscape(z.Raw())
+				out.writeText(z.Raw())
 			}
 		case html.SelfClosingTagToken:
 			if inCode {
-				out.writeEscape(z.Raw())
+				out.writeText(z.Raw())
 			} else if allowedTags[tagStr] {
 				out.writeStart(z, tagStr)
 				out.Truncate(out.Len() - 1)
 				out.WriteString("/>")
 			} else {
-				out.writeEscape(z.Raw())
+				out.writeText(z.Raw())
 			}
 		case html.EndTagToken:
 			if tagStr == "code" {
 				inCode = false
 				out.writeEnd("code")
 			} else if inCode {
-				out.writeEscape(z.Raw())
+				out.writeText(z.Raw())
 			} else if allowedTags[tagStr] {
 				for len(tagStack) > 0 {
 					last := tagStack[len(tagStack)-1]
@@ -160,11 +172,11 @@ func RenderClip(v string) string {
 					}
 				}
 			} else {
-				out.writeEscape(z.Raw())
+				out.writeText(z.Raw())
 			}
 		case html.DoctypeToken:
 		default:
-			out.Write(z.Raw())
+			out.writeText(z.Raw())
 		}
 	}
 

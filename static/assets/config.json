@@ -203,6 +203,12 @@
       "css": "quote-left",
       "code": 61709,
       "src": "fontawesome"
+    },
+    {
+      "uid": "a6267a0b7262e1deffcc83076bc0e197",
+      "css": "trash",
+      "code": 61571,
+      "src": "mfglabs"
     }
   ]
 }
