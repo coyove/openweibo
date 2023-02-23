@@ -90,14 +90,14 @@ function fixCode(inTable) {
                             var result = '';
                             for (var child = node.firstChild; child; child = child.nextSibling) {
                                 if (child.nodeType == Node.TEXT_NODE) {
-                                    result += child.data == '\n' ? child.data : (child.data + ' ');
+                                    result += child.data;
                                 } else if (child.nodeType == Node.ELEMENT_NODE) {
                                     result += walk(child);
                                 }
                             }
                             return result;
                         }
-                        that.val(walk(div).replace(/\n+/g,'\n'));
+                        that.val(walk(div).replace(/[ \t]+/g, ' ').replace(/^\s+/mg, '').replace(/\n+/g,'\n'));
                     })).
                     append($('<div style="flex-grow:1">')).
                     append(previewBtn)

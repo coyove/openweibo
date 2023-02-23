@@ -15,7 +15,7 @@ a { color: #1565c0; text-decoration: none }
 a:hover { text-decoration: underline }
 .highlight {background:wheat;white-space:pre-wrap}
 .wrapall{word-break:break-all;white-space:normal}
-.note{font:inherit;word-break:break-all;white-space:pre-wrap}
+.note{font:inherit;word-break:break-all;white-space:pre-wrap;overflow-x:auto}
 .mr5{margin-right:0.5em}
 .ml5{margin-left:0.5em}
 

@@ -47,10 +47,16 @@ var allowedAttrs = map[string]bool{
 	"href": true, "width": true, "height": true, "target": true,
 }
 
+var hideTags = map[string]bool{
+	"script": true, "iframe": true,
+}
+
 var allowedTags = func() map[string]bool {
 	m := map[string]bool{}
-	for _, p := range strings.Split(`font,cite,kbd,meta,link,caption,small,style,abbr,b,em,pre,a,img,div,p,span,u,i,hr,br,strong,blockquote,video,code,ol,ul,li,
-    ins,del,table,tr,tbody,thead,tfoot,td,th,h1,h2,h3,h4,label,font,textarea,input,sup,sub,dd,dl,dt`, ",") {
+	for _, p := range strings.Split(`font,cite,kbd,meta,link,caption,small,style,
+    abbr,b,em,pre,a,img,div,p,span,u,i,hr,br,strong,blockquote,video,code,ol,ul,li,
+    ins,del,table,tr,tbody,thead,tfoot,td,th,h1,h2,h3,h4,label,font,textarea,input,
+    sup,sub,dd,dl,dt,section,tt`, ",") {
 		m[strings.TrimSpace(p)] = true
 	}
 	return m
@@ -100,12 +106,7 @@ func TruncClip(v string, max int) string {
 		if tt == html.ErrorToken {
 			break
 		}
-		switch tt {
-		case html.StartTagToken:
-		case html.SelfClosingTagToken:
-		case html.EndTagToken:
-		case html.DoctypeToken:
-		default:
+		if tt == html.TextToken {
 			out.Write(z.Raw())
 		}
 	}
@@ -134,8 +135,12 @@ func RenderClip(v string) string {
 			if inCode {
 				out.writeText(z.Raw())
 			} else if tagStr == "eat" {
-				for out.Len() > 0 && unicode.IsSpace(rune(out.Bytes()[out.Len()-1])) {
-					out.Truncate(out.Len() - 1)
+				if out.Len() == 0 {
+					out.WriteString(`<style>.note{white-space:normal}</style>`)
+				} else {
+					for out.Len() > 0 && unicode.IsSpace(rune(out.Bytes()[out.Len()-1])) {
+						out.Truncate(out.Len() - 1)
+					}
 				}
 			} else if tagStr == "code" {
 				out.writeStart(z, "code")
@@ -143,7 +148,7 @@ func RenderClip(v string) string {
 			} else if allowedTags[tagStr] {
 				out.writeStart(z, tagStr)
 				tagStack = append(tagStack, tagStr)
-			} else {
+			} else if !hideTags[tagStr] {
 				out.writeText(z.Raw())
 			}
 		case html.SelfClosingTagToken:
@@ -171,10 +176,11 @@ func RenderClip(v string) string {
 						break
 					}
 				}
-			} else {
+			} else if !hideTags[tagStr] {
 				out.writeText(z.Raw())
 			}
 		case html.DoctypeToken:
+		case html.CommentToken:
 		default:
 			out.writeText(z.Raw())
 		}

@@ -86,7 +86,7 @@ javascript:(function(){
                 f.contentWindow.postMessage({
                     ns:'draft:new',
                     title:document.title,
-                    value:'<a href="'+location.href+'">'+location.href+'</a>\n'+el.innerHTML.trim(),
+                    value:'<eat><a href="'+location.href+'">'+location.href+'</a>\n'+el.innerHTML.trim(),
                 },'{HOST}/ns:new?rand='+r);
                 setTimeout(function(){window.open('{HOST}/ns:new','_blank')},200);
             }}).start();
@@ -149,8 +149,8 @@ javascript:(function(){
     }
     checkTitle();
 
-    $('#content').linedtextarea().val(window.localStorage.getItem('draft:new') || '');
-    $('#title').val(window.localStorage.getItem('draft:new:title') || '');
+    $('#content').linedtextarea().val((window.localStorage.getItem('draft:new') || '').substring(0, {{.MaxContent}}));
+    $('#title').val((window.localStorage.getItem('draft:new:title') || '').substring(0, {{.MaxTitle}}));
     window.SAVER = setInterval(function() {
         window.localStorage.setItem('draft:new', $('#content').val());
         window.localStorage.setItem('draft:new:title', $('#title').val());

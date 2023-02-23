@@ -43,7 +43,7 @@
                         {{if .T.isUserPage}}
                         <title>{{.T.viewUser.Id}} 的记事</title>
                         <span>
-                            {{.T.viewUser.Id}} 的记事 ({{.T.total}}<a href='/ns:id:{{base62Encode .T.viewUser.BioNote}}'>+1</a>)
+                            {{.T.viewUser.Id}} 的记事 ({{.T.total}} <a href='/ns:id:{{base62Encode .T.viewUser.BioNote}}'>+ 1</a>)
                             {{if .User.IsMod}}<a href='/ns:profile?id={{fullEscape .T.viewUser.Id}}'>个人页</a>{{end}}
                         </span>
                         {{else}}
