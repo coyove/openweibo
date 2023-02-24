@@ -1,4 +1,3 @@
-window.CONST_closeSVG = "<svg class='svg16 closer' viewBox='0 0 16 16'><circle cx=8 cy=8 r=8 fill='#aaa' /><path d='M 5 5 L 11 11' stroke=white stroke-width=3 fill=transparent /><path d='M 11 5 L 5 11' stroke=white stroke-width=3 fill=transparent /></svg>";
 window.CONST_loaderHTML = "<div class=lds-dual-ring></div>";
 
 function fixCode(inTable) { 
@@ -82,6 +81,18 @@ function fixCode(inTable) {
                             ta.selectionStart = end + 5;
                             ta.selectionEnd = end + 5;
                         }
+                    })).
+                    append($('<div title="格式化" class="icon-magic tag-edit-button">').click(function() {
+                        var result = '', indent = '';
+                        that.val().split(/>\s*</).forEach(function(element) {
+                            if (element.match(/^\/\w/)) indent = indent.substring(1);
+                            result += indent + '<' + element + '>\r\n';
+                            if (element.match(/^<?\w[^>]*[^\/]$/) &&
+                                !element.match(/^(area|base|br|col|embed|hr|img|input|link|meta|source|track|wbr)/)) {
+                                indent += ' ';              
+                            }
+                        });
+                        that.val(result.substring(1, result.length-3));
                     })).
                     append($('<div title="移除HTML标签" class="icon-trash tag-edit-button">').click(function() {
                         const div = document.createElement('div');
@@ -291,14 +302,6 @@ function openImage(src) {
     move(0);
 }
 
-function createLoader(el) {
-    const rect = el.getBoundingClientRect();
-    return $("<div class='ajax-loader' style='display:inline-flex;align-items:center;justify-content:center;'>" + window.CONST_loaderHTML + "</div>").
-        css('width', rect.width).
-        css('height', rect.height).
-        css('margin', $(el).css('margin'));
-}
-
 function ajaxBtn(el, action, args, f) {
     if (!el)
         el = document.createElement("div");
@@ -306,7 +309,12 @@ function ajaxBtn(el, action, args, f) {
     if (that.attr('busy') == 'true') return;
     const fd = new FormData();    
     for (const k in args) fd.append(k, args[k]);
-    const loader = createLoader(el);
+    const rect = el.getBoundingClientRect();
+    const loader = $("<div class='ajax-loader' style='display:inline-flex;align-items:center;justify-content:center'>").
+        append(window.CONST_loaderHTML).
+        css('width', rect.width).
+        css('height', rect.height).
+        css('margin', $(el).css('margin'));
     !that.prev().hasClass('ajax-loader') && loader.insertBefore(that.attr('busy', 'true').hide());
     function finish() {
         that.attr('busy', '').show();
@@ -323,8 +331,7 @@ function ajaxBtn(el, action, args, f) {
         success: function(data){
             if (!data.success) {
                 data.code == "COOLDOWN" ?
-                    alert('操作频繁，请在 ' + data.remains + ' 秒后重试') :
-                    alert('发生错误: ' + data.msg + ' (' + data.code + ')');
+                    alert('操作频繁，请在 ' + data.remains + ' 秒后重试') : alert(data.msg + ' (' + data.code + ')');
                 finish();
                 return;
             }
@@ -337,204 +344,13 @@ function ajaxBtn(el, action, args, f) {
             location.reload();
         },
         error: function() {
-            alert('网络错误');
+            alert('网络错误，请稍后重试');
             finish();
         },
     });
 }
 
 $(document).ready(function() {
-    $(".tag-search-input-container").each(function(_, container) {
-        if (container.wrapped) return;
-        const maxTags = parseInt($(container).attr('max-tags') || '99');
-        const readonly = !!$(container).attr('readonly');
-        const div = document.createElement('div');
-        div.className = 'tag-search-input';
-
-        const el = document.createElement('input');
-        el.readOnly = readonly;
-        !readonly && (el.placeholder = '选择父记事');
-        el.className = 'tag-box tag-search-box';
-        el.style.outline = 'none';
-        el.style.padding = '0 0.25em';
-        el.style.minWidth = '2em';
-        el.style.flexGrow = '1';
-
-        const loader = $("<div class=tag-box style='min-width:2em;padding:0'>" + window.CONST_loaderHTML + "</div>").get(0);
-
-        const info = $("<div class=tag-box style='font-size:80%;color:#aaa'></div>").get(0);
-
-        const selected = {};
-
-        function abbr(s) { return s.length < 16 ? s : s.substr(0, 16) + '...'; }
-
-        function updateInfo() {
-            const sz = Object.keys(selected).length;
-            info.innerText = sz + '/' + maxTags;
-            el.readOnly = sz > maxTags || readonly;
-        }
-
-        function select(src, fromHistory) {
-            const tagID = src.attr('tag-id'), tagText = src.attr('tag-text');
-            if (!(tagID in selected) && Object.keys(selected).length < maxTags) {
-                selected[tagID] = {'tag': tagText};
-                const t = $("<div>").addClass('tag-box normal user-selected').attr('tag-id', tagID);
-                t.append($("<span>").css('cursor', 'pointer').text(abbr(tagText)).click(function() {
-                    window.open('/ns:id:' + tagID);
-                }));
-                if (!readonly) {
-                    t.append($(window.CONST_closeSVG).click(function(ev) {
-                        delete selected[tagID];
-                        t.remove();
-                        updateInfo();
-                        el.focus();
-                        ev.stopPropagation();
-                    }));
-                }
-                if (fromHistory) {
-                    t.insertBefore(src);
-                    src.remove();
-                } else {
-                    t.insertBefore(el);
-                }
-
-                const history = JSON.parse(window.localStorage.getItem('tags-history') || '{}');
-                history[tagID] = {'tag': tagText, 'ts': new Date().getTime()};
-                if (Object.keys(history).length > 10) {
-                    var min = Number.MAX_VALUE, minID = 0;
-                    for (const k in history) {
-                        if (history[k].ts < min) {
-                            min = history[k].ts;
-                            minID = k;
-                        }
-                    }
-                    delete history[minID];
-                }
-                window.localStorage.setItem('tags-history', JSON.stringify(history));
-                updateInfo();
-            }
-
-            if (fromHistory !== true) reset();
-            el.value = '';
-            el.focus();
-        }
-
-        function reset() {
-            $(div).find('.candidate').remove();
-            div.selector = 0;
-            div.candidates = [];
-            loader.style.display = 'none';
-        }
-
-        el.oninput = function(e){
-            const val = this.value;
-            const that = this;
-            if (val.length < 1) {
-                $(div).find('.candidate').remove();
-                return;
-            }
-            if (this.timer) clearTimeout(this.timer);
-            this.timer = setTimeout(function(){
-                if (that.value != val) return;
-                loader.style.display = '';
-                $.get('/ns:search?n=100&q=' + encodeURIComponent(val), function(data) {
-                    if (that.value != val) return;
-
-                    reset();
-                    data.notes.forEach(function(tag, i) {
-                        const t = $("<div>").
-                            addClass('candidate tag-box ' + (i == 0 ? 'selected' : '')).
-                            attr('tag-id', tag[0]).
-                            attr('tag-text', tag[1]).
-                            append($("<span>").text(tag[1]));
-                        tag[2] > 0 && t.append($("<span class=children-count>").text(tag[2]));
-                        $(div).append(t.click(function(ev) {
-                            select(t);
-                            ev.stopPropagation();
-                        }));
-                        div.candidates.push(t);
-                    })
-
-                    console.log(new Date(), val, data.notes.length);
-                });
-            }, 200);
-        }
-        el.onkeydown = function(e) {
-            if ((e.keyCode == 9 || e.keyCode == 39) && div.candidates.length) {
-                const current = div.selector;
-                div.selector = (div.selector + (e.shiftKey ? -1 : 1) + div.candidates.length) % div.candidates.length;
-                div.candidates[current].removeClass('selected');
-                div.candidates[div.selector].addClass('selected');
-                e.preventDefault();
-            }
-            if (e.keyCode == 13) {
-                div.candidates.length && select(div.candidates[div.selector]);
-                e.preventDefault();
-            }
-            if (e.keyCode == 8 && el.value.length == 0) {
-                $(div).find('.user-selected:last .closer').click();
-                e.preventDefault();
-            }
-            if (e.keyCode == 27) {
-                el.value = '';
-                reset();
-                e.preventDefault();
-            }
-        }
-        el.onblur = function() {
-            this.blurtimer && clearTimeout(this.blurtimer);
-            this.blurtimer = setTimeout(function() {
-                el.value = '';
-                reset();
-            }, 1000);
-        }
-        el.onfocus = function() {
-            this.blurtimer && clearTimeout(this.blurtimer);
-        }
-        container.onmouseup = function(ev) {
-            el.focus();
-            ev.preventDefault();
-        }
-
-        div.appendChild(el);
-        div.appendChild(info);
-        div.appendChild(loader);
-        container.appendChild(div);
-        reset();
-
-        if (!readonly) {
-            const history = JSON.parse(window.localStorage.getItem('tags-history') || '{}');
-            for (const k in history) {
-                const t = $("<div>").
-                    addClass('candidate tag-box').
-                    attr('tag-id', k).
-                    attr('tag-text', history[k].tag).
-                    append($('<span>').text(abbr(history[k].tag)))
-                t.click(function(ev) {
-                    select(t, true);
-                    ev.stopPropagation();
-                }).insertBefore(el);
-                div.candidates.push(t);
-            }
-        }
-
-        container.select = function(id, text) {
-            select($("<div>").attr('tag-id', id).attr('tag-text', text));
-        }
-
-        for (var i = 0; ; i++) {
-            const data = $(container).attr('data' + i);
-            if (!data) break;
-            container.select(data.split(',')[0], data.split(',')[1]);
-            el.blur();
-        }
-
-        readonly && Object.keys(selected).length == 0 && (el.placeholder = '空');
-        updateInfo();
-        container.getTags = function() { return selected; }
-        container.wrapped = true;
-    });
-
     $(".image-selector").each(function(_, i) {
         $(i).imageSelector();
     });

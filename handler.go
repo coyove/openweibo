@@ -312,19 +312,13 @@ func HandleUser(w *types.Response, r *types.Request) {
 }
 
 func HandleNew(w *types.Response, r *types.Request) {
-	var parents []string
-	var lastParent string
-	var lastTitle string
-	for _, p := range types.SplitUint64List(r.URL.Query().Get("parents")) {
+	var parents []uint64 = types.SplitUint64List(r.URL.Query().Get("parents"))
+	var lastParent, lastTitle string
+	for _, p := range parents {
 		if note, _ := dal.GetNote(p); note.Valid() {
-			t := note.Title
-			if t == "" {
-				parents = append(parents, fmt.Sprintf("%s,ns:id:%s", note.IdStr(), note.IdStr()))
-			} else {
-				parents = append(parents, fmt.Sprintf("%s,%s", note.IdStr(), t))
-			}
 			lastParent = note.IdStr()
-			lastTitle = t
+			lastTitle = note.Title
+			break
 		}
 	}
 	r.AddTemplateValue("parents", parents)

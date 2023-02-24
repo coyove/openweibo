@@ -58,12 +58,7 @@
     </tr>
     <tr>
         <td>
-            <div class=display>
-                <div max-tags={{.MaxParents}}
-                     id=parents
-                     class='tag-search-input-container'
-                     {{range $i, $v := .T.parents}}data{{$i}}='{{safeHTML $v}}' {{end}}></div>
-            </div>
+            <div class=display>{{parentsSelector "parents" false .MaxParents .T.parents}}</div>
         </td>
     </tr>
     <tr>

@@ -38,118 +38,143 @@ var httpStaticAssets embed.FS
 //go:embed static/*
 var httpStaticPages embed.FS
 
-var httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
-	"formatUnixMilli": func(v int64) string {
-		return types.LocalTime(time.Unix(0, v*1e6)).Format("2006-01-02 15:04:05")
-	},
-	"formatUnixMilliBR": func(v int64) string {
-		now := types.LocalTime(clock.Now())
-		t := types.LocalTime(time.Unix(0, v*1e6))
-		if now.Year() == t.Year() {
-			if now.YearDay() == t.YearDay() {
-				return t.Format("15:04:05")
+var httpTemplates *template.Template
+
+func init() {
+	httpTemplates = template.Must(template.New("ts").Funcs(template.FuncMap{
+		"formatUnixMilli": func(v int64) string {
+			return types.LocalTime(time.Unix(0, v*1e6)).Format("2006-01-02 15:04:05")
+		},
+		"formatUnixMilliBR": func(v int64) string {
+			now := types.LocalTime(clock.Now())
+			t := types.LocalTime(time.Unix(0, v*1e6))
+			if now.Year() == t.Year() {
+				if now.YearDay() == t.YearDay() {
+					return t.Format("15:04:05")
+				}
+				return t.Format("01-02")
 			}
-			return t.Format("01-02")
-		}
-		d := (now.Unix()-t.Unix())/86400 + 1
-		return strconv.Itoa(int(d)) + "天前"
-	},
-	"generatePages": func(r *types.Request, suffix string) string {
-		p, pages := int64(r.P.Page), reflect.ValueOf(r.T["pages"]).Int()
-		var a []int64
-		if pages > 0 {
-			a = append(a, 1)
-			i := p - 2
-			if i < 2 {
-				i = 2
-			} else if i > 2 {
-				a = append(a, 0)
-			}
-			for ; i < pages && len(a) < 6; i++ {
-				a = append(a, i)
-			}
-			if a[len(a)-1] != pages {
-				if a[len(a)-1]+1 != pages {
+			d := (now.Unix()-t.Unix())/86400 + 1
+			return strconv.Itoa(int(d)) + "天前"
+		},
+		"generatePages": func(r *types.Request, suffix string) string {
+			p, pages := int64(r.P.Page), reflect.ValueOf(r.T["pages"]).Int()
+			var a []int64
+			if pages > 0 {
+				a = append(a, 1)
+				i := p - 2
+				if i < 2 {
+					i = 2
+				} else if i > 2 {
 					a = append(a, 0)
 				}
-				a = append(a, pages)
-			}
-		}
-		buf := bytes.NewBufferString("<div id=page>")
-		for _, a := range a {
-			if a == 0 {
-				buf.WriteString("<div style='width:2em;text-align:center'>&middot;&middot;&middot;</div>")
-			} else if a == p {
-				fmt.Fprintf(buf, "<div class='tag-box button selected'><span><b>%d</b></span></div>", a)
-			} else {
-				fmt.Fprintf(buf, "<a class=nav-page href='?%s%s'><div class='tag-box button'>%d</div></a>",
-					r.BuildPageLink(int(a)), suffix, a)
-			}
-		}
-		buf.WriteString("</div>")
-		return buf.String()
-	},
-	"getParentsData": func(ids []uint64) string {
-		buf := &bytes.Buffer{}
-		notes, _ := dal.BatchGetNotes(ids)
-		for i, n := range notes {
-			if n.Title != "" {
-				fmt.Fprintf(buf, " data%d='%s,%s'", i, n.IdStr(), html.EscapeString(n.Title))
-			} else {
-				fmt.Fprintf(buf, " data%d='%s,ns:id:%s'", i, n.IdStr(), n.IdStr())
-			}
-		}
-		return buf.String()
-	},
-	"makeTitle": func(t *types.Note, max int) string {
-		if t.IsBio {
-			return "<b>个人记事</b>"
-		}
-		tt := types.SafeHTML(t.Title)
-		if tt == "" {
-			notes, _ := dal.BatchGetNotes(t.ParentIds)
-			if len(notes) > 0 {
-				sort.Slice(notes, func(i, j int) bool {
-					if len(notes[i].Title) == len(notes[j].Title) {
-						return notes[i].ChildrenCount > notes[j].ChildrenCount
-					}
-					return len(notes[i].Title) > len(notes[j].Title)
-				})
-				buf, c := &bytes.Buffer{}, 0
-				for _, n := range notes {
-					if tt := types.SafeHTML(n.Title); tt == "" {
-						fmt.Fprintf(buf, "<span style='font-style:italic'><b>#</b>ns:id:%s</span> ", t.IdStr())
-						c += 16
-					} else {
-						fmt.Fprintf(buf, "<span><b>#</b>%s</span> ", tt)
-						c += len(tt)
-					}
-					if c > max {
-						break
-					}
+				for ; i < pages && len(a) < 6; i++ {
+					a = append(a, i)
 				}
-				return buf.String()
+				if a[len(a)-1] != pages {
+					if a[len(a)-1]+1 != pages {
+						a = append(a, 0)
+					}
+					a = append(a, pages)
+				}
 			}
-			if t.Image != "" && t.IsImage() {
-				return fmt.Sprintf("%s (%.2fM)", t.FileExt(), float64(t.FileSize())/1024/1024)
+			buf := bytes.NewBufferString("<div id=page>")
+			for _, a := range a {
+				if a == 0 {
+					buf.WriteString("<div style='width:2em;text-align:center'>&middot;&middot;&middot;</div>")
+				} else if a == p {
+					fmt.Fprintf(buf, "<div class='tag-box button selected'><span><b>%d</b></span></div>", a)
+				} else {
+					fmt.Fprintf(buf, "<a class=nav-page href='?%s%s'><div class='tag-box button'>%d</div></a>",
+						r.BuildPageLink(int(a)), suffix, a)
+				}
 			}
-			return t.HTMLTitleDisplay()
-		}
-		return tt
-	},
-	"mega": func(in interface{}) string {
-		return fmt.Sprintf("%.2fM", float64(reflect.ValueOf(in).Int())/1024/1024)
-	},
-	"add":          func(a, b int) int { return a + b },
-	"uuid":         func() string { return types.UUIDStr() },
-	"imageURL":     imageURL,
-	"equ64s":       simple.Uint64.Equal,
-	"trunc":        types.TruncClip,
-	"renderClip":   types.RenderClip,
-	"safeHTML":     types.SafeHTML,
-	"fullEscape":   types.FullEscape,
-	"base62Encode": clock.Base62Encode,
-}).ParseFS(httpStaticPages, "static/*.html"))
+			buf.WriteString("</div>")
+			return buf.String()
+		},
+		"getParentsData": func(ids []uint64) string {
+			buf := &bytes.Buffer{}
+			notes, _ := dal.BatchGetNotes(ids)
+			for i, n := range notes {
+				if n.Title != "" {
+					fmt.Fprintf(buf, " data%d='%s,%s'", i, n.IdStr(), html.EscapeString(n.Title))
+				} else {
+					fmt.Fprintf(buf, " data%d='%s,ns:id:%s'", i, n.IdStr(), n.IdStr())
+				}
+			}
+			return buf.String()
+		},
+		"parentsSelector": func(id string, readonly bool, maxTags int, ids []uint64) string {
+			m := map[string]interface{}{
+				"cid":      id,
+				"id":       types.UUIDStr(),
+				"maxTags":  maxTags,
+				"readonly": readonly,
+			}
+			var parentIds [][2]string
+			notes, _ := dal.BatchGetNotes(ids)
+			for _, n := range notes {
+				if n.Title != "" {
+					parentIds = append(parentIds, [2]string{n.IdStr(), html.EscapeString(n.Title)})
+				} else {
+					parentIds = append(parentIds, [2]string{n.IdStr(), n.IdStr()})
+				}
+			}
+			m["parentIds"] = parentIds
+			out := &bytes.Buffer{}
+			httpTemplates.ExecuteTemplate(out, "parents.html", m)
+			return out.String()
+		},
+		"makeTitle": func(t *types.Note, max int) string {
+			if t.IsBio {
+				return "<b>个人记事</b>"
+			}
+			tt := types.SafeHTML(t.Title)
+			if tt == "" {
+				notes, _ := dal.BatchGetNotes(t.ParentIds)
+				if len(notes) > 0 {
+					sort.Slice(notes, func(i, j int) bool {
+						if len(notes[i].Title) == len(notes[j].Title) {
+							return notes[i].ChildrenCount > notes[j].ChildrenCount
+						}
+						return len(notes[i].Title) > len(notes[j].Title)
+					})
+					buf, c := &bytes.Buffer{}, 0
+					for _, n := range notes {
+						if tt := types.SafeHTML(n.Title); tt == "" {
+							fmt.Fprintf(buf, "<span style='font-style:italic'><b>#</b>ns:id:%s</span> ", t.IdStr())
+							c += 16
+						} else {
+							fmt.Fprintf(buf, "<span><b>#</b>%s</span> ", tt)
+							c += len(tt)
+						}
+						if c > max {
+							break
+						}
+					}
+					return buf.String()
+				}
+				if t.Image != "" && t.IsImage() {
+					return fmt.Sprintf("%s (%.2fM)", t.FileExt(), float64(t.FileSize())/1024/1024)
+				}
+				return t.HTMLTitleDisplay()
+			}
+			return tt
+		},
+		"mega": func(in interface{}) string {
+			return fmt.Sprintf("%.2fM", float64(reflect.ValueOf(in).Int())/1024/1024)
+		},
+		"add":          func(a, b int) int { return a + b },
+		"uuid":         func() string { return types.UUIDStr() },
+		"imageURL":     imageURL,
+		"equ64s":       simple.Uint64.Equal,
+		"trunc":        types.TruncClip,
+		"renderClip":   types.RenderClip,
+		"safeHTML":     types.SafeHTML,
+		"fullEscape":   types.FullEscape,
+		"base62Encode": clock.Base62Encode,
+	}).ParseFS(httpStaticPages, "static/*.html"))
+}
 
 var serveUUID = types.UUIDStr()
 

@@ -145,16 +145,14 @@ div.diff-row.ins{background:#ccffd8}
         </tr>
         {{end}}
 
-        {{$parents := getParentsData .ParentIds}}
-        {{$reviewParents := getParentsData .ReviewParentIds}}
         {{$showParentsDiff := and .PendingReview (not (equ64s .ParentIds .ReviewParentIds))}}
-        {{if or $parents $showParentsDiff (not $.T.readonly)}}
+        {{if or .ParentIds $showParentsDiff (not $.T.readonly)}}
             {{if $showParentsDiff}}
             <tr>
                 <td class=small>父记事</td>
                 <td>
                     <div class=display>
-                        <div id=current-parents class='tag-search-input-container' readonly max-tags={{$.MaxParents}} {{$parents}}></div>
+                        {{parentsSelector "current-parents" true $.MaxParents .ParentIds}}
                     </div>
                 </td>
             </tr>
@@ -162,7 +160,7 @@ div.diff-row.ins{background:#ccffd8}
                 <td class=small><div class=icon-right-big></div></td>
                 <td>
                     <div class=display>
-                        <div id=parents class='tag-search-input-container' readonly max-tags={{$.MaxParents}} {{$reviewParents}}></div>
+                        {{parentsSelector "parents" true $.MaxParents .ReviewParentIds}}
                     </div>
                 </td>
             </tr>
@@ -170,7 +168,7 @@ div.diff-row.ins{background:#ccffd8}
             <tr>
                 <td colspan=2>
                     <div class=display>
-                        <div id=parents class='tag-search-input-container' {{$.T.readonly}} max-tags={{$.MaxParents}} {{$parents}}></div>
+                        {{parentsSelector "parents" (not (not $.T.readonly)) $.MaxParents .ParentIds}}
                     </div>
                 </td>
             </tr>

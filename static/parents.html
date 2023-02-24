@@ -1,0 +1,164 @@
+<div id='{{.cid}}' style='width:100%;position:relative;overflow:hidden'>
+    <div id='p{{.id}}' class=tag-search-input>
+        <input id='I{{.id}}' class='tag-box'
+               {{if .readonly}}readonly{{else}}placeholder='选择父记事'{{end}}
+               style='outline:none;padding:0 0.25em;min-width:2em;flex-grow:1'>
+        <div id='L{{.id}}' class=tag-box style='min-width:2em;padding:0'><div class=lds-dual-ring></div></div>
+        <div id='i{{.id}}' class=tag-box style='font-size:80%;color:#aaa'></div>
+    </div>
+</div>
+
+<script>
+    (function(container) {
+        const div = document.getElementById('p{{.id}}'), el = document.getElementById('I{{.id}}');
+        const selected = {};
+
+        function abbr(s) {
+            return s.length < 16 ? s : s.substr(0, 16) + '...';
+        }
+
+        function updateInfo() {
+            const sz = Object.keys(selected).length;
+            $('#i{{.id}}').text(sz + '/{{.maxTags}}');
+            el.readOnly = sz > {{.maxTags}} || {{.readonly}};
+            el.placeholder = sz ? '' : '{{if .readonly}}空{{else}}选择父记事{{end}}';
+        }
+
+        function select(tagID, tagText, fromHistory) {
+            if (!(tagID in selected) && Object.keys(selected).length < {{.maxTags}}) {
+                selected[tagID] = {'tag': tagText};
+                const t = $("<div class='tag-box normal user-selected'>").
+                    append($("<span>").
+                        css('cursor', 'pointer').
+                        text(abbr(tagText)).
+                        click(function() { window.open('/ns:id:' + tagID) }));
+
+                {{if not .readonly}}
+                t.append($("<svg class=closer viewBox='0 0 16 16'>" +
+                        "<circle cx=8 cy=8 r=8 fill='#aaa' />" +
+                        "<path d='M 5 5 L 11 11' stroke=white stroke-width=3 fill=transparent />" +
+                        "<path d='M 11 5 L 5 11' stroke=white stroke-width=3 fill=transparent /></svg>").
+                    click(function(ev) {
+                        delete selected[tagID];
+                        t.remove();
+                        updateInfo();
+                        el.focus();
+                        ev.stopPropagation();
+                    }));
+                {{end}}
+
+                if (fromHistory) {
+                    t.insertBefore(fromHistory);
+                    fromHistory.remove();
+                } else {
+                    t.insertBefore(el);
+                }
+
+                const history = JSON.parse(localStorage.getItem('phistory') || '[]').filter(function(e) {
+                    return e.id != tagID;
+                });
+                history.push({'tag': tagText, 'id': tagID});
+                if (history.length > 10) history = history.slice(1, 11);
+                localStorage.setItem('phistory', JSON.stringify(history));
+                updateInfo();
+            }
+
+            if (!fromHistory) reset();
+            el.value = '';
+            el.focus();
+        }
+
+        function reset() {
+            $(div).find('.candidate').remove();
+            div.selector = 0;
+            div.candidates = [];
+            $('#L{{.id}}').hide();
+        }
+
+        el.oninput = function(e){
+            const val = this.value;
+            const that = this;
+            if (val.length < 1) {
+                $(div).find('.candidate').remove();
+                return;
+            }
+            if (this.timer) clearTimeout(this.timer);
+            this.timer = setTimeout(function(){
+                if (that.value != val) return;
+                $('#L{{.id}}').show();
+                $.get('/ns:search?n=100&q=' + encodeURIComponent(val), function(data) {
+                    if (that.value != val) return;
+
+                    reset();
+                    data.notes.forEach(function(tag, i) {
+                        const t = $("<div>").
+                            addClass('candidate tag-box').
+                            addClass(i == 0 ? 'selected' : '').
+                            append($("<span>").text(tag[1]));
+                        tag[2] > 0 && t.append($("<span class=children-count>").text(tag[2]));
+                        $(div).append(t.click(function(ev) {
+                            select(tag[0], tag[1]);
+                            ev.stopPropagation();
+                        }));
+                        div.candidates.push(t);
+                    })
+
+                    console.log(new Date(), val, data.notes.length);
+                });
+            }, 200);
+        }
+
+        el.onkeydown = function(e) {
+            if ((e.keyCode == 9 || e.keyCode == 39) && div.candidates.length) {
+                const current = div.selector;
+                div.selector = (div.selector + (e.shiftKey ? -1 : 1) + div.candidates.length) % div.candidates.length;
+                div.candidates[current].removeClass('selected');
+                div.candidates[div.selector].addClass('selected');
+                e.preventDefault();
+            }
+            if (e.keyCode == 13) {
+                div.candidates.length && div.candidates[div.selector].click();
+                e.preventDefault();
+            }
+            if (e.keyCode == 8 && el.value.length == 0) {
+                $(div).find('.user-selected:last .closer').click();
+                e.preventDefault();
+            }
+            if (e.keyCode == 27) {
+                el.value = '';
+                reset();
+                e.preventDefault();
+            }
+        }
+
+        el.onblur = function() {
+            this.blurtimer && clearTimeout(this.blurtimer);
+            this.blurtimer = setTimeout(function() { el.value = ''; reset() }, 1000);
+        }
+
+        el.onfocus = function() {
+            this.blurtimer && clearTimeout(this.blurtimer);
+        }
+
+        reset();
+
+        {{if not .readonly}}
+        JSON.parse(localStorage.getItem('phistory') || '[]').forEach(function(e) {
+            div.candidates.push($("<div class='candidate tag-box'>").
+                append($('<span>').text(abbr(e.tag))).
+                click(function(ev) {
+                    select(e.id, e.tag, $(this));
+                    ev.stopPropagation();
+                }).insertBefore(el));
+        });
+        {{end}}
+
+        {{range .parentIds}}select('{{index . 0}}', '{{index . 1}}');{{end}}
+
+        updateInfo();
+
+        container.getTags = function() { return selected; }
+        container.select = select;
+        el.blur();
+    })(document.getElementById('{{.cid}}'));
+</script>

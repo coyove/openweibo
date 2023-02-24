@@ -112,13 +112,6 @@ a:hover { text-decoration: underline }
 .tag-box.button a:hover, .nav-page { text-decoration: none !important; color: #233; }
 .tag-box.button.selected a { color: white }
 
-.tag-search-input-container {
-    width: 100%;
-    padding: 0.1em;
-    position: relative;
-    overflow: hidden;
-}
-
 .tag-search-input {
     display: flex;
     flex-wrap: wrap;
@@ -128,7 +121,7 @@ a:hover { text-decoration: underline }
     align-items: center;
 }
 
-.tag-search-input .tag-box .closer, .tag-search-input .tag-box .starer {
+.tag-search-input .tag-box .closer {
     margin-left: 0.33em;
     width: 16px;
     height: 16px;
@@ -137,25 +130,11 @@ a:hover { text-decoration: underline }
     opacity: 0.8;
 }
 
-.tag-search-input .tag-box .starer { margin: 0 0.33em 0 0; }
-.tag-search-input .tag-box .closer:hover, .tag-search-input .tag-box .starer:hover { opacity: 1; }
-.tag-search-input .tag-box .starer:hover path { fill: #fffcaa; }
-.tag-search-input .tag-box.tag-required .starer circle { fill: #f90; }
-.tag-search-input .tag-box.tag-required { background: #ffe0b2; border-color: #f90; }
+.tag-search-input .tag-box .closer:hover { opacity: 1; }
 
-.tag-search-input .tag-box.candidate {
-    border: dotted 1px #666; 
-    color: #666; 
-    cursor: pointer;
-}
-
-.tag-search-input .tag-box.candidate:hover {
-    background: #fffeee;
-}
-
-.tag-search-input .tag-box.candidate.selected {
-    background: #fffddd;
-}
+.tag-search-input .tag-box.candidate { border: dotted 1px #666; color: #666; cursor: pointer; }
+.tag-search-input .tag-box.candidate:hover { background: #fffeee; }
+.tag-search-input .tag-box.candidate.selected { background: #fffddd; }
 
 .lds-dual-ring {
   display: inline-block;
@@ -184,11 +163,6 @@ a:hover { text-decoration: underline }
     75% { border-color: transparent transparent #888 #999; }
     87% { border-color: transparent transparent transparent #999; }
     100% { border-color: transparent; }
-}
-
-.svg16 {
-    width: 16px;
-    height: 16px;
 }
 
 table.table { border-collapse: collapse; width: 100%; border-radius: 0.5em; box-shadow: 0 0 2px #666; margin: 0.5em 0; overflow: hidden }
