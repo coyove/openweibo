@@ -1,0 +1,305 @@
+{{template "header.html" .}}
+
+{{if .T.readonly}}
+<title>快照 {{formatUnixMilli .T.recordUnix}} {{safeHTML .T.note.Title}}</title>
+{{else}}
+<title>编辑 {{.T.note.IdStr}} {{safeHTML .T.note.Title}}</title>
+{{end}}
+
+<script src="/ns:static/assets/diff.js"></script>
+
+<style>
+.image-selector-container { margin: 0.5em } 
+div.diff-row {white-space:pre-wrap;padding:0 0.5em;line-height: 1.5em;word-break:break-all}
+div.diff-line {color:#aaa;width:3em;display:inline-block;margin-right: 0.5em}
+div.diff-info {color:#999;width:1em;display:inline-block;margin-right: 0.5em}
+div.diff-row.del{background:#ffebe9}
+div.diff-row.ins{background:#ccffd8}
+</style>
+
+<div>
+    <table id=edit class=table>
+        {{if .T.readonly}}
+        <tr style='background:#ffe0b2'>
+            <td colspan=2>
+                <div class=display>
+                    <b class=wrapall>{{.T.note.HTMLTitleDisplay}}</b>&nbsp;
+                    <span>{{formatUnixMilli .T.recordUnix}} 的历史版本</span>
+                </div>
+            </td>
+        </tr>
+        {{end}}
+
+        {{with .T.note}}
+        {{if .PendingReview}}
+        <tr style='background:#fffddd'>
+            <td class=small>待审核</td>
+            <td>
+                <div class=display>
+                    <div class=wrapall style='flex-grow:1'>{{safeHTML .ReviewTitle}}</div>
+                    {{if not $.T.readonly}}
+                    <div class='tag-box button' onclick='ajaxBtn(this,"approve",{"id":"{{.Id}}"})'>通过</div>
+                    <div class='tag-box button' onclick='ajaxBtn(this,"reject",{"id":"{{.Id}}","reject_msg":prompt("驳回理由（默认无）")||""})'>驳回</div>
+                    {{end}}
+                </div>
+            </td>
+        </tr>
+        {{end}}
+
+        <tr>
+            <td class=small>ID</td>
+            <td><div class=display><a href='/ns:id:{{.IdStr}}'>{{.IdStr}}</a></div></td>
+        </tr>
+        <tr>
+            <td colspan=2>
+                <div class=display>
+                    {{if .IsBio}}
+                    <div style='flex-grow:1'>这是一篇个人记事（无标题）</div><input id="title" style='display:none'>
+                    {{else}}
+                    <input placeholder='标题' id="title" value="{{safeHTML .Title}}" maxlength={{$.MaxTitle}} class=tag-edit-name {{$.T.readonly}}/>
+                    {{end}}
+                    {{if not $.T.readonly}}
+                    <div class='tag-box button' onclick='updateNote(this)' id=update>
+                        <span class='icon-paper-plane mr5'></span>更新
+                    </div>
+                    {{end}}
+                </div>
+            </td>
+        </tr>
+
+        {{if not $.T.readonly}}
+        <tr>
+            <td colspan=2>
+                <div class='display wrapall' style='font-size:90%;color:#e91e63'>
+                    {{if and (not $.User.IsMod) (ne $.UserDisplay .Creator)}}
+                    修改将会由创建者或管理员审核后生效，在此之前你可以完善或驳回自己的修改。
+                    {{else}}
+                    你可以完善或直接批准自己记事的修改。
+                    {{end}}
+                </div>
+            </td>
+        </tr>
+        {{end}}
+
+        {{$showImageDiff := and .PendingReview (ne .Image .ReviewImage)}}
+        <tr>
+            <td colspan=2>
+                <div class=display>
+                    {{if $showImageDiff}}
+                    <input id="current-image" readonly type=file class='image-selector'
+                        default='{{imageURL "thumb" .Image}}' large='{{imageURL "image" .Image}}'>
+                    <div class=icon-right-big></div>
+                    <input id="image" {{$.T.readonly}} type=file class='image-selector'
+                        default='{{imageURL "thumb" .ReviewImage}}' large='{{imageURL "image" .ReviewImage}}'>
+                    {{else}}
+                    <input id="image" {{$.T.readonly}} type=file class='image-selector'
+                        default='{{imageURL "thumb" .Image}}' large='{{imageURL "image" .Image}}'>
+                    {{end}}
+                </div>
+            </td>
+        </tr>
+
+        {{if .PendingReview}}
+        <tr>
+            <td colspan=2>
+                <div class=display>
+                    <label><input onclick='switchDiffView(this)' type=radio name=diff value=current checked> 新内容&emsp;</label>
+                    <label><input onclick='switchDiffView(this)' type=radio name=diff value=previous> 原内容&emsp;</label>
+                    <label><input onclick='switchDiffView(this)' type=radio name=diff value=diff> Diff内容&emsp;</label>
+                </div>
+            </td>
+        </tr>
+        <tr id='tr-content-current' class=textarea>
+            <td colspan=2>
+                <div class=display>
+                    <textarea id="content" {{$.T.readonly}}
+                        maxlength={{$.MaxContent}}
+                        class=tag-edit-desc
+                        rows=15>{{safeHTML .ReviewContent}}</textarea>
+                </div>
+            </td>
+        </tr>
+        <tr id='tr-content-previous' class=textarea style='display:none'>
+            <td colspan=2>
+                <div class=display>
+                    <textarea id="previous-content" readonly class=tag-edit-desc rows=15>{{safeHTML .Content}}</textarea>
+                </div>
+            </td>
+        </tr>
+        <tr id='tr-content-diff' style='display:none'>
+            <td colspan=2 style='padding: 0'>
+                <div id=diff style='width: 100%'></div>
+            </td>
+        </tr>
+        {{else}}
+        <tr class=textarea>
+            <td colspan=2>
+                <div class=display>
+                    <textarea id="content" {{$.T.readonly}}
+                        maxlength={{$.MaxContent}}
+                        class=tag-edit-desc
+                        placeholder="内容"
+                        rows=15>{{safeHTML .Content}}</textarea>
+                </div>
+            </td>
+        </tr>
+        {{end}}
+
+        {{$showParentsDiff := and .PendingReview (not (equ64s .ParentIds .ReviewParentIds))}}
+        {{if or .ParentIds $showParentsDiff (not $.T.readonly)}}
+            {{if $showParentsDiff}}
+            <tr>
+                <td class=small>父记事</td>
+                <td>
+                    <div class=display>
+                        {{parentsSelector "current-parents" true $.MaxParents .ParentIds}}
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td class=small><div class=icon-right-big></div></td>
+                <td>
+                    <div class=display>
+                        {{parentsSelector "parents" true $.MaxParents .ReviewParentIds}}
+                    </div>
+                </td>
+            </tr>
+            {{else}}
+            <tr>
+                <td colspan=2>
+                    <div class=display>
+                        {{parentsSelector "parents" (not (not $.T.readonly)) $.MaxParents .ParentIds}}
+                    </div>
+                </td>
+            </tr>
+            {{end}}
+        {{end}}
+
+        <tr><td class=small>编辑历史</td><td><div class=display><a href='/ns:history?note={{.Id}}&desc=1'>查看</a></div></td></tr>
+        <tr>
+            <td class=small>状态</td>
+            <td>
+                <div class=display>
+                    <span>{{if .Lock}}<b>锁定中</b>{{else}}正常{{end}}&nbsp;</span>
+                    {{if not $.T.readonly}}
+                    <div class='tag-edit-button button' action=''
+                         onclick='ajaxBtn(this,{{if .Lock}}"Unlock"{{else}}"Lock"{{end}}, {"id": "{{.Id}}"})'>
+                        <span class={{if .Lock}}icon-lock{{else}}icon-lock-open{{end}}></span>
+                    </div>
+                    {{end}}
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class=small>创建者</td>
+            <td>
+                <div class=display>
+                    {{.Creator}}&nbsp;
+                    <a class='tag-edit-button' href='/ns:manage?q=ns:user:{{fullEscape .Creator}}'><span class=icon-user></span></a>
+                </div>
+            </td>
+        </tr>
+        <tr><td class=small>创建时间</td><td><div class=display>{{formatUnixMilli .CreateUnix}}</div></td></tr>
+        <tr>
+            <td class=small>最近修改人</td>
+            <td>
+                <div class=display>
+                    {{.Modifier}}&nbsp;
+                    {{if .Modifier}}
+                    <a class='tag-edit-button' href='/ns:history?user={{fullEscape .Modifier}}'><span class=icon-user></span></a>
+                    {{end}}
+                </div>
+            </td>
+        </tr>
+        <tr><td class=small>最近审核人</td><td><div class=display>{{.Reviewer}}</div></td></tr>
+        <tr><td class=small>修改时间</td><td><div class=display>{{formatUnixMilli .UpdateUnix}}</div></td></tr>
+
+        {{if not $.T.readonly}}
+        {{if or $.User.IsMod (eq $.UserDisplay .Creator)}}
+        <tr>
+            <td class=small></td>
+            <td>
+                <div class=display>
+                    <div class='tag-box button' onclick='deleteNote(this, true)'><span>时间线隐藏</span></div>
+                    <div class='tag-box button alert' onclick='deleteNote(this)'><span>删除记事</span></div>
+                </div>
+            </td>
+        </tr>
+        {{end}}
+        {{end}}
+
+        <script>
+            $('#content').linedtextarea();
+
+            {{if .PendingReview}}
+            $('#previous-content').linedtextarea();
+            const diff = JsDiff.diffLines($('#previous-content').val().trim(), $('#content').val().trim());
+            var fragment = document.createDocumentFragment(), lnL = 0, lnR = 0;
+            for (var i=0; i < diff.length; i++) {
+                if (diff[i].added && diff[i + 1] && diff[i + 1].removed) {
+                    var swap = diff[i];
+                    diff[i] = diff[i + 1];
+                    diff[i + 1] = swap;
+                }
+
+                const removed = diff[i].removed, added = diff[i].added;
+                (diff[i].value || ' ').replace(/\n$/, '').split('\n').forEach(function(text) {
+                    const node = document.createElement('div');
+                    const left = document.createElement('div');
+                    const right = document.createElement('div');
+                    const info = document.createElement('div');
+                    left.className = 'diff-line';
+                    right.className = 'diff-line';
+                    info.className = 'diff-info';
+
+                    if (removed) {
+                        (lnL++), (left.innerText = lnL);
+                        node.className = 'diff-row mono del';
+                        info.innerText = '-';
+                    } else if (added) {
+                        (lnR++), (right.innerText = lnR);
+                        node.className = 'diff-row mono ins';
+                        info.innerText = '+';
+                    } else {
+                        (lnL++), (lnR++), (left.innerText = lnL), (right.innerText = lnR);
+                        node.className = 'diff-row mono';
+                    }
+                    node.appendChild(left);
+                    node.appendChild(right);
+                    node.appendChild(info);
+                    node.appendChild(document.createTextNode(text));
+                    fragment.appendChild(node);
+                })
+            }
+            $('#diff').append(fragment);
+            {{end}}
+
+            function updateNote(btn) {
+                ajaxBtn(btn, "update", Object.assign({
+                    'id': "{{.Id}}",
+                    'title': $("#title").val(),
+                    'content': $("#content").val(),
+                    'parents': JSON.stringify($('#parents').get(0).getTags()),
+                }, $("#image").get(0).imageData)/*, function(data) {
+                    if (!data.direct_approve) { location.reload(); return; }
+                    ajaxBtn(btn, "approve", {"id":"{{.Id}}"});
+                }*/);
+            }
+
+            function deleteNote(btn, hide) {
+                if (!hide && !confirm("确认删除该记事?")) return;
+                ajaxBtn(btn, hide ? 'hide' : 'delete', {'id': '{{.Id}}', 'ids': '{{.Id}}'}, function(data) {
+                    hide ? location.reload() : (location.href = '/ns:manage?desc=1');
+                });
+            }
+
+            function switchDiffView(i) {
+                $('[id^="tr-content-"]').hide();
+                $("#tr-content-" + i.value).show();
+            }
+        </script>
+        {{end}}
+    </table>
+</div>
+
+{{template "footer.html" .}}

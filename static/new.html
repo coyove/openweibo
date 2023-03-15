@@ -1,0 +1,164 @@
+{{template "header.html" .}}
+
+{{if .T.lastParent}}
+<title>新建子记事 {{.T.lastParent}} {{safeHTML .T.lastTitle}}</title>
+{{else}}
+<title>新建记事</title>
+{{end}}
+
+<table class=table>
+    {{if .T.lastParent}}
+    <tr style='background:#ffe0b2'>
+        <td colspan=2>
+            <div class='wrapall display'>新建子记事 {{.T.lastParent}} {{safeHTML .T.lastTitle}}</div>
+        </td>
+    </tr>
+    {{end}}
+
+    <tr id="tr">
+        <td>
+            <div class=display style='flex-wrap:nowrap;align-items:stretch;padding:0.5em 0'>
+                <div class=mr5>
+                    <input id="image" type=file class='image-selector'>
+                </div>
+                <div style='display: flex;flex-grow:1;flex-direction:column'>
+                    <div style='display: flex;flex-grow:1'>
+                        <textarea
+                                id=title
+                                maxlength={{.MaxTitle}}
+                                class='tag-edit-title tag-edit-desc'
+                                placeholder='标题：{{.MaxTitle}}字符'></textarea>
+                        <div>
+                            <div id=submit class='tag-edit-button icon-paper-plane'></div>
+                        </div>
+                    </div>
+                    <div id=prompt class=wrapall style='color:#aaa;font-size:80%'></div>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr class=textarea>
+        <td>
+            <div class=display>
+                <textarea
+                    id=content
+                    maxlength={{.MaxContent}}
+                    class=tag-edit-desc
+                    placeholder='内容：0-{{.MaxContent}}字符'
+                    rows=20></textarea>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <div class=display>
+                <span class=wrapall style='font-size:80%;color:#ccc'>支持常见的HTML标签，如a、b、u、i、img、div等。</span>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <div class=display>{{parentsSelector "parents" false .MaxParents .T.parents}}</div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <div class=display>
+                <span class=wrapall style='font-size:80%;color:#ccc'>
+                小工具：复制该<a href="javascript:navigator.clipboard.writeText($('#bk').text().replace(/(\n|\s{2,})/g,'').replace(/\{HOST\}/g,location.protocol+'//'+location.host)).then(function(){alert('复制成功')})">代码</a>保存为书签，可快速选择网页内容发布记事。
+                </span>
+            </div>
+            <script type='text/plain' id='bk'>
+javascript:(function(){
+    const s=document.createElement('script'),r=Math.random().toString();
+    s.src='{HOST}/ns:static/assets/jquery.min.js';
+    s.onload=function(){
+        const f=document.createElement('iframe');
+        f.src='{HOST}/ns:new?rand='+r;
+        f.style.display='none';
+        f.onload=function(){
+            DomOutline({onClick:function(el){
+                f.contentWindow.postMessage({
+                    ns:'draft:new',
+                    title:document.title,
+                    value:'<eat><a href="'+location.href+'">'+location.href+'</a>\n'+el.innerHTML.trim(),
+                },'{HOST}/ns:new?rand='+r);
+                setTimeout(function(){window.open('{HOST}/ns:new','_blank')},200);
+            }}).start();
+        };
+        document.body.appendChild(f);
+    };
+    document.body.appendChild(s);
+})()
+            </script>
+        </td>
+    </tr>
+</table>
+
+<script>
+    $('#submit').click(function() {
+        ajaxBtn(this, 'create', Object.assign({
+            'title': $('#title').val(),
+            'content': $('#content').val(),
+            'parents': JSON.stringify($('#parents').get(0).getTags()),
+        }, $('#image').get(0).imageData), function(data) {
+            window.localStorage.removeItem('draft:new');
+            window.localStorage.removeItem('draft:new:title');
+            {{if .T.lastParent}}
+            location.href = '/ns:id:{{.T.lastParent}}?sort=0&desc=1';
+            {{else}}
+            location.href = '/ns:manage?sort=0&desc=1';
+            {{end}}
+        });
+    });
+
+    function checkTitle() {
+        const that = this, last = this.last || '', input = $('#title').val();
+        function reset() {
+            $('#tr').css('background', '');
+            $('#prompt').text(input ? '' : '标题为空时，请选择至少一个父记事。').off('click');
+        }
+        if (!input) reset();
+        if (input && input != last) {
+            $.get('/ns:search?n=1&title=' + encodeURIComponent(input), function(data) {
+                if (data.notes.length > 0 && $('#title').val() == input) {
+                    const res = data.notes[0];
+                    $('#tr').css('background', '#fce4ec');
+                    $('#prompt').
+                            text('该标题已存在，点击查看').
+                            css('cursor', 'pointer').
+                            click(function() { window.open('/ns:id:' + res[0]) });
+                    $('#parents').get(0).select(res[0], res[1]);
+                    $('#title').focus();
+                } else {
+                    reset();
+                }
+            }).always(function() {
+                that.last = input;
+                setTimeout(checkTitle, 200);
+            })
+        } else {
+            this.last = input;
+            setTimeout(checkTitle, 200);
+        }
+    }
+    checkTitle();
+
+    $('#content').linedtextarea().val((window.localStorage.getItem('draft:new') || '').substring(0, {{.MaxContent}}));
+    $('#title').val((window.localStorage.getItem('draft:new:title') || '').substring(0, {{.MaxTitle}}));
+    window.SAVER = setInterval(function() {
+        window.localStorage.setItem('draft:new', $('#content').val());
+        window.localStorage.setItem('draft:new:title', $('#title').val());
+    }, 5000)
+
+    window.addEventListener('message', function(event) {
+        var origin = event.origin || event.originalEvent.origin;
+        if (typeof event.data == 'object' && event.data.ns == 'draft:new') {
+            clearInterval(window.SAVER);
+            window.localStorage.setItem('draft:new', event.data.value);
+            window.localStorage.setItem('draft:new:title', event.data.title || '');
+        }
+    }, false);
+</script>
+
+{{template "footer.html" .}}

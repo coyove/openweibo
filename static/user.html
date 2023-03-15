@@ -1,0 +1,264 @@
+{{template "header.html" .}}
+
+{{if .T.user}}
+    {{with .T.user}}
+    <title>用户 {{.Id}}</title>
+    <table class=table>
+        {{$me := eq .Id $.UserDisplay}}
+        {{if not $me}}
+        <tr class=title><td colspan=2><div class=display>正在浏览他人页面</div></td></tr>
+        {{end}}
+        <tr>
+            <td colspan=2>
+                <div class=display>
+                    <div style='flex-grow:1'> {{.Id}} ({{.Role}}) </div>
+                    {{if $me}}
+                    <div class='tag-box alert button' onclick='ajaxBtn(this,"user:logout",{})'>登出</div>
+                    {{end}}
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td colspan=2>
+                <div class='display wrapall' style='font-size: 90%'>
+                    <span class='icon-right-big mr5'></span><a class=mr5 href='/ns:id:{{base62Encode .BioNote}}'>个人记事</a>&emsp;
+                    <span class='icon-right-big mr5'></span><a class=mr5 href='/ns:manage?q=ns:user:{{fullEscape .Id}}'>记事 ({{$.T.userCreates}})</a>&emsp;
+                    <span class='icon-right-big mr5'></span><a class=mr5 href='/ns:history?user={{fullEscape .Id}}'>编辑历史</a>&emsp;
+                    <span>总上传 {{mega .UploadSize}}</span>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class=small>Email</td>
+            <td>
+                <div class='display wrapall'>
+                    <input id="update-email" autocomplete="off" class=tag-edit-name value='{{safeHTML .Email}}'>
+                    {{if $me}}<div class='tag-box button' onclick='update(this)'>更新Email</div>{{end}}
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class=small>隐藏缩略图</td>
+            <td>
+                <div class='display wrapall'>
+                    <div id=hide-image class='tag-edit-button {{if .HideImage}}icon-toggle-on{{else}}icon-toggle-off{{end}}'
+                         data-hide='{{.HideImage}}'
+                         {{if $me}}onclick='$(this).attr("data-hide",{{not .HideImage}});update(this)'{{end}}
+                         ></div>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class=small>登入时间</td>
+            <td><div class='display wrapall'>{{formatUnixMilli .LoginUnix}}</div></td>
+        </tr>
+        <tr>
+            <td class=small>登入浏览器</td>
+            <td>
+                <div class='display wrapall'>
+                    <span>
+                        <a href='https://ipinfo.io/{{.LoginIP}}'>{{.LoginIP}}</a> @
+                        {{.LoginUA}}
+                    </span>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class=small>注册时间</td>
+            <td><div class='display wrapall'>{{formatUnixMilli .CreateUnix}}</div></td>
+        </tr>
+        <tr>
+            <td class=small>注册浏览器</td>
+            <td>
+                <div class='display wrapall'>
+                    <span>
+                        <a href='https://ipinfo.io/{{.CreateIP}}'>{{.CreateIP}}</a> @
+                        {{.CreateUA}}
+                    </span>
+                </div>
+            </td>
+        </tr>
+        {{if $me}}
+        <tr class=title><td colspan=2></td></tr>
+        <tr class=title><td colspan=2></td></tr>
+        <tr>
+            <td class=small>旧密码</td>
+            <td>
+                <div class='display wrapall'><input id="old-password" type=password class=tag-edit-name></div>
+            </td>
+        </tr>
+        <tr>
+            <td class=small>新密码</td>
+            <td>
+                <div class='display wrapall'><input id="new-password" type=password class=tag-edit-name></div>
+            </td>
+        </tr>
+        <tr>
+            <td class=small>确认新密码</td>
+            <td>
+                <div class='display wrapall'>
+                    <input id="new-password2" type=password class=tag-edit-name>
+                    <div class='tag-box button' onclick='updatePassword(this)'>更新密码</div>
+                </div>
+            </td>
+        </tr>
+        {{end}}
+        {{if $.User.IsRoot}}
+        <tr class=title><td colspan=2></td></tr>
+        <tr class=title><td colspan=2></td></tr>
+        <tr>
+            <td class=small>上次重置密码</td>
+            <td><div class='display wrapall'>{{.LastResetPwd}}</div></td>
+        </tr>
+        <tr>
+            <td class=small></td>
+            <td>
+                <div class='display wrapall'>
+                    <div class='tag-box button' onclick='ajaxBtn(this,"user:resetpwd",{"id":"{{.Id}}"})'>重置密码</div>
+                </div>
+            </td>
+        </tr>
+        {{end}}
+    </table>
+    {{end}}
+
+    {{if .User.IsMod}}
+    <table id=list class=table>
+        <tr class=title>
+            <td colspan=4>
+                <div class=display>
+                    <span style='flex-grow:1'>全部用户 ({{.T.total}})</span>
+
+                    <div>
+                        <a class='tag-edit-button icon-sort-alt-up {{if and (eq .P.Sort 1) (not .P.Desc)}}selected{{end}}' href='?sort=1'></a>
+                        <a class='tag-edit-button icon-sort-alt-down {{if and (eq .P.Sort 1) (.P.Desc)}}selected{{end}}' href='?sort=1&desc=1'></a>
+                        <a class='tag-edit-button icon-sort-number-up {{if and (eq .P.Sort 0) (not .P.Desc)}}selected{{end}}' href='?sort=0'></a>
+                        <a class='tag-edit-button icon-sort-number-down {{if and (eq .P.Sort 0) (.P.Desc)}}selected{{end}}' href='?sort=0&desc=1'></a>
+                    </div>
+                </div>
+            </td>
+        </tr>
+        {{range .T.users}}
+        <tr>
+            <td><div class=display><a href='/ns:profile?id={{fullEscape .Id}}'>{{.Id}}</a></div></td>
+            <td class=small><div class=display>{{mega .UploadSize}}</div></td>
+            <td class=small><div class=display>{{formatUnixMilli .CreateUnix}}
+                    <a href='https://ipinfo.io/{{.CreateIP}}'>{{.CreateIP}}</a></div></td>
+            <td class=small><div class=display>{{formatUnixMilli .LoginUnix}}
+                    <a href='https://ipinfo.io/{{.LoginIP}}'>{{.LoginIP}}</a></div></td>
+        </tr>
+        {{end}}
+    </table>
+    {{generatePages . ""}}
+    {{end}}
+{{else}}
+    <title>用户登入</title>
+    <table id=login class=table>
+        <tr>
+            <td class=small>ID</td>
+            <td>
+                <div class=display>
+                    <input id="user-id" maxlength=20 placeholder="用户名" class=tag-edit-name>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class=small>密码</td>
+            <td>
+                <div class=display>
+                    <input id="password" type=password class=tag-edit-name onkeyup="event.keyCode==13&&$('#login-btn').click()">
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class=small></td>
+            <td>
+                <div class=display>
+                    <div class=mr5><div id="login-btn" class='tag-box button' onclick='login(this)'>登入</div></div>
+                    <a href='javascript:($("#reg").show(),$("#login").hide())'>注册账号</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <table id=reg style='display:none' class=table>
+        <tr>
+            <td class=small>ID</td>
+            <td>
+                <div class=display>
+                    <input id="reg-user-id" maxlength=20 placeholder="用户名" class=tag-edit-name>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class=small>密码</td>
+            <td>
+                <div class=display>
+                <input id="reg-password" type=password class=tag-edit-name>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class=small>确认密码</td>
+            <td>
+                <div class=display>
+                <input id="reg-password2" type=password class=tag-edit-name>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class=small>邮箱</td>
+            <td>
+                <div class=display>
+                    <input id="reg-email" class=tag-edit-name>
+                </div>
+            </td>
+        </tr>
+        <tr>
+            <td class=small></td>
+            <td>
+                <div class=display>
+                    <div class=mr5><div class='tag-box button' onclick='register(this)'>注册</div></div>
+                    <a href='javascript:($("#login").show(),$("#reg").hide())'>登入账号</a>
+                </div>
+            </td>
+        </tr>
+    </table>
+{{end}}
+
+            <script>
+                function login(el) {
+                    ajaxBtn(el, 'user:login', {
+                        'id': $('#user-id').val(),
+                        'password': $('#password').val(),
+                    })
+                }
+                function register(el) {
+                    if ($('#reg-password').val() != $('#reg-password2').val()) {
+                        alert('两次输入密码不一致');
+                        return;
+                    }
+                    ajaxBtn(el, 'user:register', {
+                        'id': $('#reg-user-id').val(),
+                        'password': $('#reg-password').val(),
+                        'email': $('#reg-email').val(),
+                    })
+                }
+                function updatePassword(el) {
+                    if ($('#new-password').val() != $('#new-password2').val()) {
+                        alert('两次输入密码不一致');
+                        return;
+                    }
+                    ajaxBtn(el, "user:updatepwd", {
+                        "old": $("#old-password").val(),
+                        "new": $("#new-password").val(),
+                    })
+                }
+                function update(el) {
+                    ajaxBtn(el, "user:update", {
+                        "email": $("#update-email").val(),
+                        "hide_image": $("#hide-image").attr('data-hide'),
+                    })
+                }
+            </script>
+{{template "footer.html" .}}

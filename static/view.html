@@ -1,0 +1,77 @@
+{{with .T.note}}
+
+{{if or .Title .IsBio}}
+<div style='display:flex;align-items:center'>
+    {{if .IsBio}}
+    <title>{{.Creator}} 个人记事</title>
+    <h1 style='word-break:break-all'>{{.Creator}} 个人记事</h1>
+    {{else}}
+    <title>{{safeHTML .Title}}</title>
+    <h1 style='word-break:break-all'>{{safeHTML .Title}}</h1>
+    {{end}}
+    {{if ne $.UserDisplay .Creator}}
+    <div class='ml5 tag-edit-button' onclick="ajaxBtn(null,'touch',{'id':'{{.Id}}'})">
+        <span class={{if $.T.noteTouched}}icon-heart{{else}}icon-heart-empty{{end}}></span>
+    </div>
+    {{end}}
+</div>
+{{else}}
+<title>无标题</title>
+{{end}}
+
+<div style='font-size: 90%'>
+    <div>
+        <a href='/ns:manage?q=ns:user:{{fullEscape .Creator}}'>{{.Creator}}</a> 创建于 {{formatUnixMilli .CreateUnix}}
+    </div>
+    {{if .Modifier}}
+    <div>
+        <a href='/ns:manage?q=ns:user:{{fullEscape .Modifier}}'>{{.Modifier}}</a> 修改于 {{formatUnixMilli .UpdateUnix}}
+    </div>
+    {{end}}
+
+    {{if $.User.IsRoot}}
+    <div>
+        Check images: found={{$.T.checkImagesFound}}, uploaded={{$.T.checkImagesUploaded}}
+    </div>
+    {{end}}
+
+    <div style='line-height:2em; font-size: 90%; color: #666'>
+        {{$.T.noteViews}} 浏览&emsp;
+        {{.TouchCount}} 收藏&emsp;
+        <a href='/ns:edit?id={{.Id}}'>{{if .PendingReview}}新版本待审核{{else}}编辑{{end}}</a> |
+        <a href='/ns:history?note={{.Id}}&desc=1'>历史</a>
+    </div>
+</div>
+<hr style='border:dotted 1px #ccc'>
+
+<div>
+    {{if .Image}}
+        {{if not .IsImage}}
+        <div style='display:inline-block;padding:0.5em;border:dashed #667 2px;background:#f7f8f9'>
+            <span class='mr5 icon-download'></span><a href='{{imageURL "image" .Image}}'>打开 {{.FileExt}} ({{mega .FileSize}})</a>
+        </div>
+        {{else}}
+        <a href="{{imageURL "image" .Image}}" target=_blank>
+            <div style='display:inline-block;float:left;margin:0 0.5em 0.5em 0;border-radius:0.5em;overflow:hidden'>
+                <img id=main-image
+                     src="{{imageURL "image" .Image}}"
+                     onload="$(window).resize()"
+                     style="max-width:100%;max-height:100vh;display:block;">
+            </div>
+        </a>
+        {{end}}
+    {{end}}
+    {{if $.T.parents}}
+    <div>
+        <b>父记事 <span class=icon-level-up></span></b>
+        <div style='font-size:90%;line-height:1.5em;padding:0.5em 0'>
+            {{range $.T.parents}}
+            <a href='/{{.EscapedTitle}}?findid={{$.T.note.Id}}'>{{.HTMLTitleDisplay}}</a>&emsp;
+            {{end}}
+        </div>
+    </div>
+    {{end}}
+    <pre class=note>{{renderClip .Content}}</pre>
+</div>
+
+{{end}}

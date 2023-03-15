@@ -1,260 +1,183 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"crypto/tls"
+	"flag"
 	"fmt"
-	"html/template"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"net/http/pprof"
 	"os"
-	"runtime"
+	"path/filepath"
 	"strconv"
-	"strings"
 	"time"
 
-	"github.com/coyove/iis/common/geoip"
-	"github.com/coyove/iis/common/jiebago"
-
-	"github.com/alicebob/miniredis/v2"
-	"github.com/coyove/iis/common"
+	"github.com/NYTimes/gziphandler"
 	"github.com/coyove/iis/dal"
-	"github.com/coyove/iis/dal/storage"
-	"github.com/coyove/iis/dal/tagrank"
-	"github.com/coyove/iis/handler"
-	"github.com/coyove/iis/ik"
-	"github.com/coyove/iis/middleware"
-	"github.com/coyove/iis/model"
-	"github.com/gin-gonic/gin"
+	"github.com/coyove/iis/types"
+	"github.com/coyove/sdss/contrib/clock"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/acme/autocert"
+	"gopkg.in/natefinch/lumberjack.v2"
+)
+
+var (
+	listen          = flag.String("l", ":8888", "")
+	rebuildFromWiki = flag.Int("rebuild-db", 0, "")
+	rebuildIndex    = flag.Bool("rebuild-index", false, "")
+	compactDB       = flag.Bool("compact", false, "")
+	serverStart     time.Time
 )
 
 func main() {
-	rand.Seed(time.Now().Unix())
-	runtime.GOMAXPROCS(runtime.NumCPU())
+	flag.Parse()
+	rand.Seed(clock.Unix())
+	serverStart = clock.Now()
 
-	common.MustLoadConfig("config.json")
-	geoip.LoadIPLocation()
-	jiebago.LoadDictionary()
+	logrus.SetFormatter(&logFormatter{})
+	logrus.SetOutput(io.MultiWriter(os.Stdout, &lumberjack.Logger{
+		Filename:   "data/ns.log",
+		MaxSize:    20,
+		MaxBackups: 10,
+		MaxAge:     7,
+		Compress:   true,
+	}))
+	logrus.SetReportCaller(true)
 
-	redisConfig := &storage.RedisConfig{Addr: common.Cfg.RedisAddr}
-	if redisConfig.Addr == "" {
-		svr, err := miniredis.Run()
-		if err != nil {
-			panic(err)
+	logrus.Info(clock.Setup(9, 13))
+	types.LoadConfig("config.json")
+	dal.InitDB()
+
+	// start := time.Now()
+	// rand.Seed(start.UnixNano())
+	// for i := 0; i < 1e5; i++ {
+	// 	dal.MetricsUpdate(func(tx *bbolt.Tx) error {
+	// 		bk, _ := tx.CreateBucketIfNotExists([]byte("test"))
+	// 		bk.Put(types.Uint64Bytes(rand.Uint64()), nil)
+	// 		return nil
+	// 	})
+	// }
+	// fmt.Println(time.Since(start))
+	// return
+
+	if *compactDB {
+		start := time.Now()
+
+		logrus.Info("start serving maintenance page")
+
+		var pc, pt int64
+		mux := http.NewServeMux()
+		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("Content-Type", "text/html")
+			fmt.Fprintf(w, "<title>NoteServer</title><pre>[%v] Progress %02d%%, elapsed %.1fs, be patient...</pre>",
+				time.Now().Format(time.Stamp),
+				int(float64(pc)/float64(pt+1)*100),
+				time.Since(start).Seconds())
+		})
+		srv := &http.Server{
+			Addr:    *listen,
+			Handler: mux,
 		}
-		fmt.Println("Use miniredis mock:", svr.Addr())
-		redisConfig.Addr = svr.Addr()
+		go srv.ListenAndServe()
+
+		compact(&pc, &pt)
+		logrus.Infof("[compactor] elapsed: %v", time.Since(start))
+		logrus.Infof("[compactor] shutdown: %v", srv.Shutdown(context.TODO()))
 	}
 
-	dal.Init(redisConfig, common.Cfg.DyRegion, common.Cfg.DyAccessKey, common.Cfg.DySecretKey)
-
-	if common.Cfg.S3Region != "" {
-		dal.S3 = storage.NewS3(common.Cfg.S3Endpoint, common.Cfg.S3Region, common.Cfg.S3Bucket,
-			common.Cfg.S3AccessKey, common.Cfg.S3SecretKey)
+	if *rebuildFromWiki > 0 {
+		rebuildDataFromWiki(*rebuildFromWiki)
 	}
 
-	tagrank.Init(redisConfig)
-
-	prodMode := common.Cfg.Key != "0123456789abcdef"
-
-	cssVersion := ".prod." + strconv.FormatInt(time.Now().Unix(), 10) + ".css"
-	if !prodMode {
-		cssVersion = ".test.css"
+	if *rebuildIndex {
+		rebuildIndexFromDB()
+		return
 	}
 
-	go func() {
-		for {
-			cssFiles, _ := ioutil.ReadDir("template/css")
-			css := []string{}
-			for _, f := range cssFiles {
-				if path := "template/css/" + f.Name(); !strings.HasSuffix(f.Name(), ".tmpl.css") {
-					os.Remove(path)
-				} else {
-					css = append(css, path)
-				}
-			}
-			for _, path := range css {
-				buf, _ := ioutil.ReadFile(path)
-				common.CSSLightConfig.WriteTemplate(path+cssVersion, string(buf))
-				common.CSSDarkConfig.WriteTemplate(path+".dark"+cssVersion, string(buf))
-			}
-			if prodMode {
-				return
-			}
-			time.Sleep(time.Second)
-		}
-	}()
+	serve("/", HandleView)
+	serve("/ns:profile", HandleUser)
+	serve("/ns:new", HandleNew)
+	serve("/ns:edit", HandleEdit)
+	serve("/ns:search", HandleTagSearch)
+	serve("/ns:manage", HandleManage)
+	serve("/ns:action", HandleAction)
+	serve("/ns:history", HandleHistory)
+	serve("/ns:root", HandleRoot)
+	serve("/ns:metrics", HandleMetrics)
 
-	go handler.GetYandre()
-
-	r := middleware.New(prodMode)
-	r.SetFuncMap(template.FuncMap{
-		"session":     func() int64 { return time.Now().Unix()<<32 | int64(rand.Uint32()) },
-		"cssVersion":  func() string { return cssVersion },
-		"asciiEmojis": func() []string { return common.AsciiEmojis },
-		"abbrTitle": func(in string) string {
-			return common.AbbrText(in, 9)
-		},
-		"contains": func(a interface{}, b string) bool {
-			aa, _ := a.(string)
-			return strings.Contains(aa, b)
-		},
-		"pollMap": func(a ...string) map[string]string {
-			m := map[string]string{}
-			for i := 0; i < len(a); i += 2 {
-				m[a[i]] = a[i+1]
-			}
-			return m
-		},
-		"emptyUser": func() string {
-			u := model.Dummy
-			return middleware.RenderTemplateString("user_public.html", u)
-		},
-		"blend": func(args ...interface{}) interface{} {
-			return args
-		},
-		"getTotalPosts": func(id string) int {
-			a, _ := dal.GetArticle(ik.NewID(ik.IDAuthor, id).String())
-			if a != nil {
-				return int(a.Replies)
-			}
-			return 0
-		},
-		"getLastActiveTime": func(id string) time.Time {
-			return dal.LastActiveTime(id)
-		},
-		"sub": func(a, b int) int {
-			return a - b
-		},
-		"ipChainLookup": func(chain string) [][3]interface{} {
-			res := [][3]interface{}{}
-			for _, part := range strings.Split(chain, ",") {
-				part = strings.Trim(strings.TrimSpace(part), "{}")
-				if len(part) == 0 {
-					continue
-				}
-				var date time.Time
-				data := strings.Split(part, "/")
-				loc, _ := geoip.LookupIP(data[0])
-				if len(data) > 1 {
-					ts, _ := strconv.ParseInt(data[1], 36, 64)
-					date = time.Unix(ts, 0)
-				}
-				res = append(res, [3]interface{}{data[0], loc, date})
-			}
-			return res
-		},
-		"formatTime": func(a time.Time) template.HTML {
-			if a == (time.Time{}) || a.IsZero() || a.Unix() == 0 {
-				return template.HTML("<span class='time none'></span>")
-			}
-			s := time.Since(a).Seconds()
-			if s < 5 {
-				return template.HTML("<span class='time now'></span>")
-			}
-			if s < 60 {
-				return template.HTML("<span class='time sec'>" + strconv.Itoa(int(s)) + "</span>")
-			}
-			if s < 3600 {
-				return template.HTML("<span class='time min'>" + strconv.Itoa(int(s)/60) + "</span>")
-			}
-			if s < 86400 {
-				return template.HTML("<span class='time hour'>" + strconv.Itoa(int(s)/3600) + "</span>")
-			}
-			if s < 7*86400 {
-				return template.HTML("<span title='" + a.Format(time.ANSIC) + "' class='time day'>" + strconv.Itoa(int(s)/86400) + "</span>")
-			}
-			return template.HTML("<span title='" + a.Format(time.ANSIC) + "' class='time' data='" +
-				strconv.FormatInt(a.Unix(), 10) + "'>" + a.Format("2006-01-02 <i>1504Z</i>") + "</span>")
-		},
+	http.Handle("/ns:"+rootUUID+"/debug/pprof/", http.StripPrefix("/ns:"+rootUUID, http.HandlerFunc(pprof.Index)))
+	http.HandleFunc("/ns:"+rootUUID+"/dump", func(w http.ResponseWriter, r *http.Request) {
+		go dumpWorker(true)
+		w.Write([]byte("ok"))
 	})
-	r.LoadHTMLGlob("template/*.html")
-	r.Static("/s/", "template")
-
-	r.NoRoute(handler.NotFound)
-	r.Handle("GET", "/help", func(g *gin.Context) { g.HTML(200, "help.html", nil) })
-
-	r.Handle("GET", "/", handler.Home)
-	r.Handle("GET", "/eriri.jpg", handler.Eriri)
-	r.Handle("GET", "/i/*img", handler.LocalImage)
-	r.Handle("GET", "/avatar/:id", handler.Avatar)
-	r.Handle("GET", "/tag/:tag", handler.TagTimeline)
-	r.Handle("GET", "/user", handler.User)
-	r.Handle("GET", "/user_security", handler.UserSecurity)
-	r.Handle("GET", "/user_api", handler.UserSecurity)
-	r.Handle("GET", "/user/:type/:uid", handler.UserList)
-	r.Handle("POST", "/user/:type/:uid", handler.UserList)
-	r.Handle("GET", "/likes/:uid", handler.UserLikes)
-	r.Handle("GET", "/t", handler.Timeline)
-	r.Handle("GET", "/t/:user", handler.Timeline)
-	r.Handle("GET", "/search/:query", handler.Search)
-	r.Handle("GET", "/search", handler.Search)
-	r.Handle("GET", "/S/:id", handler.S)
-	r.Handle("GET", "/inbox", handler.Inbox)
-	r.Handle("GET", "/mod/user", handler.ModUser)
-	r.Handle("GET", "/mod/kv", handler.ModKV)
-	r.Handle("GET", "/post_box", handler.PostBox)
-	r.Handle("GET", "/api/timeline", handler.APITimeline) // crawler special case
-
-	r.Handle("POST", "/api/u/:id", handler.APIGetUserInfoBox)
-	r.Handle("POST", "/api/upload_image", handler.APIUpload)
-	r.Handle("POST", "/api/timeline", handler.APITimeline)
-	r.Handle("POST", "/api/user_kimochi", handler.APIUserKimochi)
-	r.Handle("POST", "/api/new_captcha", handler.APINewCaptcha)
-	r.Handle("POST", "/api/search", handler.APISearch)
-	r.Handle("POST", "/api/ban", handler.APIBan)
-	r.Handle("POST", "/api/promote_mod", handler.APIPromoteMod)
-	r.Handle("POST", "/api/mod_kv", handler.APIModKV)
-	r.Handle("POST", "/api/user_settings", handler.APIUpdateUserSettings)
-	r.Handle("POST", "/api/clear_inbox", handler.APIClearInbox)
-	r.Handle("POST", "/api2/follow_block", handler.APIFollowBlock)
-	r.Handle("POST", "/api2/like_article", handler.APILike)
-	r.Handle("POST", "/api2/signup", handler.APISignup)
-	r.Handle("POST", "/api2/login", handler.APILogin)
-	r.Handle("POST", "/api2/logout", handler.APILogout)
-	r.Handle("POST", "/api2/new", handler.APINew)
-	r.Handle("POST", "/api2/user_password", handler.APIUpdateUserPassword)
-	r.Handle("POST", "/api2/delete", handler.APIDeleteArticle)
-	r.Handle("POST", "/api2/toggle_nsfw", handler.APIToggleNSFWArticle)
-	r.Handle("POST", "/api2/toggle_lock", handler.APIToggleLockArticle)
-	r.Handle("POST", "/api2/drop_top", handler.APIDropTop)
-	r.Handle("POST", "/api2/poll", handler.APIPoll)
-
-	r.Handle("GET", "/debug/pprof/*name", func(g *gin.Context) {
-		u, _ := g.Get("user")
-		uu, _ := u.(*model.User)
-		if uu == nil || !uu.IsAdmin() {
-			g.Status(400)
-			return
-		}
-		name := strings.TrimPrefix(g.Param("name"), "/")
-		if name == "" {
-			pprof.Index(g.Writer, g.Request)
-		} else {
-			pprof.Handler(name).ServeHTTP(g.Writer, g.Request)
-		}
+	http.Handle("/ns:static/", gziphandler.GzipHandler(http.HandlerFunc(HandleAssets)))
+	http.HandleFunc("/ns:image/", HandleImage)
+	http.HandleFunc("/ns:thumb/", HandleImage)
+	http.HandleFunc("/loaderio-9a0a63b98532fb7e58f548512801933c.txt", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("loaderio-9a0a63b98532fb7e58f548512801933c"))
 	})
 
-	if len(common.Cfg.Domains) > 0 {
+	if types.Config.Domain != "" {
+		autocertManager := autocert.Manager{
+			Prompt:     autocert.AcceptTOS,
+			HostPolicy: autocert.HostWhitelist(types.Config.Domain),
+			Cache:      autocert.DirCache("autocert_cache"),
+		}
 		go func() {
-			m := &autocert.Manager{
-				Cache:      autocert.DirCache("secret-dir"),
-				Prompt:     autocert.AcceptTOS,
-				HostPolicy: autocert.HostWhitelist(common.Cfg.Domains...),
+			mux := http.NewServeMux()
+			mux.Handle("/", autocertManager.HTTPHandler(nil))
+			mux.HandleFunc("/ns:image/", HandleImage)
+			mux.HandleFunc("/ns:thumb/", HandleImage)
+			srv := &http.Server{
+				Addr:    ":80",
+				Handler: mux,
 			}
-			s := &http.Server{
-				Addr:      ":https",
-				TLSConfig: m.TLSConfig(),
-				Handler:   r,
-			}
-			hello := &tls.ClientHelloInfo{ServerName: common.Cfg.Domains[0]}
-			_, err := m.GetCertificate(hello)
-			fmt.Println("ssl test:", err)
-			fmt.Println(s.ListenAndServeTLS("", ""))
+			logrus.Fatal(srv.ListenAndServe())
 		}()
-	}
 
-	fmt.Println(r.Run(":5010"))
+		srv := &http.Server{
+			Addr: ":443",
+			TLSConfig: &tls.Config{
+				GetCertificate:           autocertManager.GetCertificate,
+				PreferServerCipherSuites: true,
+				CurvePreferences:         []tls.CurveID{tls.X25519, tls.CurveP256},
+			},
+			ReadHeaderTimeout: 5 * time.Second,
+			WriteTimeout:      10 * time.Second,
+		}
+
+		go dumpWorker(false)
+		logrus.Infof("start serving HTTPS + HTTP redirector, pid=%d, ServeUUID=%s", os.Getpid(), serveUUID)
+		logrus.Fatal(srv.ListenAndServeTLS("", ""))
+	} else {
+		logrus.Infof("start serving HTTP %s, pid=%d, ServeUUID=%s", *listen, os.Getpid(), serveUUID)
+		logrus.Fatal(http.ListenAndServe(*listen, nil))
+	}
+}
+
+type logFormatter struct{}
+
+func (f *logFormatter) Format(entry *logrus.Entry) ([]byte, error) {
+	buf := bytes.Buffer{}
+	if entry.Level <= logrus.ErrorLevel {
+		buf.WriteString("ERR")
+	} else {
+		buf.WriteString("INFO")
+	}
+	buf.WriteString("\t")
+	buf.WriteString(entry.Time.UTC().Format("2006-01-02T15:04:05.000\t"))
+	if entry.Caller == nil {
+		buf.WriteString("internal")
+	} else {
+		buf.WriteString(filepath.Base(entry.Caller.File))
+		buf.WriteString(":")
+		buf.WriteString(strconv.Itoa(entry.Caller.Line))
+	}
+	buf.WriteString("\t")
+	buf.WriteString(entry.Message)
+	buf.WriteByte('\n')
+	return buf.Bytes(), nil
 }

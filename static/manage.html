@@ -1,0 +1,241 @@
+{{template "header.html" .}}
+
+{{if .T.view}}
+    {{if eq .P.Page 1}}
+        {{template "view.html" .}}
+    {{end}}
+{{end}}
+
+<style>
+.command {
+    padding: 0.5em;
+    margin: 0 0.2em;
+    border-radius: 0.5em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.command:hover {
+    background: rgba(0,0,0,0.08);
+}
+
+.command > span {
+    white-space: normal;
+}
+.command > span:first-child {
+    font-size: 24px;
+    margin-right: 0.25em;
+}
+</style>
+
+<div id='search-bar' style='display:none'>
+    <input id=search class='border1' style='width:100%' placeholder='搜索'>
+</div>
+
+<div>
+    <table id=list class=table>
+        <tr class=title>
+            <td>
+                <div class=display>
+                    <span style='flex-grow:1'>
+                    {{if .T.query}}
+                        {{if .T.isUserPage}}
+                        <title>{{.T.viewUser.Id}} 的记事</title>
+                        <span>
+                            {{.T.viewUser.Id}} 的记事 ({{.T.total}} <a href='/ns:id:{{base62Encode .T.viewUser.BioNote}}'>+ 1</a>)
+                            {{if .User.IsMod}}<a href='/ns:profile?id={{fullEscape .T.viewUser.Id}}'>个人页</a>{{end}}
+                        </span>
+                        {{else}}
+                        <title>搜索 {{safeHTML .T.query}}</title>
+                        <span>搜索：<b class=wrapall>{{safeHTML .T.query}}</b> ({{.T.total}})</span>
+                        {{end}}
+                    {{else}}
+                        {{if .T.view}}
+                            {{if ne .P.Page 1}}<b class=wrapall>{{.T.note.HTMLTitleDisplay}} </b>{{end}}子记事 ({{.T.total}})
+                        {{else}}
+                            <title>全部记事</title>
+                            全部记事 ({{.T.total}})
+                        {{end}} 
+                    {{end}}
+                    </span>
+
+                    <div>
+                        <a class='tag-edit-button icon-search' href='javascript:$("#search-bar").toggle().find("input").focus()'></a>
+                        <a class='tag-edit-button icon-picture' id=gallery-mode title='看图模式' href='javascript:openImage("")'></a>
+                        {{$qy := printf "q=%s" (fullEscape .T.query)}}
+                        <a class='tag-edit-button icon-sort-name-up {{if and (eq .P.Sort 1) (not .P.Desc)}}selected{{end}}' href='?sort=1&{{$qy}}'></a>
+                        <a class='tag-edit-button icon-sort-name-down {{if and (eq .P.Sort 1) (.P.Desc)}}selected{{end}}' href='?sort=1&desc=1&{{$qy}}'></a>
+                        <a class='tag-edit-button icon-sort-number-up {{if and (eq .P.Sort 0) (not .P.Desc)}}selected{{end}}' href='?sort=0&{{$qy}}'></a>
+                        <a class='tag-edit-button icon-sort-number-down {{if and (eq .P.Sort 0) (.P.Desc)}}selected{{end}}' href='?sort=0&desc=1&{{$qy}}'></a>
+                    </div>
+                </div>
+            </td>
+        </tr>
+
+        {{if eq .T.total -1}}
+        <tr>
+            <td><div class=display>服务器忙，请稍后重试</div></td>
+        </tr>
+        {{end}}
+
+        {{if and .T.view (eq .P.Page 1)}}
+        <tr>
+            <td style='padding:0'>
+                <div style='display:flex;align-items:center;padding:0.25em;{{if .T.notes}}border-bottom:solid 1px #ddd;{{end}}'>
+                    <div class=command>
+                        <span class=icon-plus-circled></span>
+                        <span onclick='location.href="/ns:new?parents={{.T.note.Id}}"'>新建子记事</span>
+                    </div>
+                    <div class=command>
+                        <span id=quick-image-loader class='icon-folder'></span>
+                        <span id=quick-image-info onclick='$("#quick-image").click()'>添加子图片</span>
+                    </div>
+
+                    <input id="quick-image" multiple type=file accept="image/*">
+                    <script>
+                        $("#quick-image").imageSelector(function(imageData, file, next) {
+                            if (!imageData.image_changed) return;
+                            imageData.image_index == 0 && $('#quick-image-info').text("上传中");
+                            ajaxBtn($("#quick-image-loader").get(0), 'create', Object.assign({
+                                'content': file.name,
+                                'parents': JSON.stringify({
+                                    '{{.T.note.Id}}': {'tag': ''},
+                                    [window.prevNoteId || '']: {'tag': ''},
+                                    {{range .T.note.ParentIds}}'{{.}}': {'tag': ''},{{end}}
+                                }),
+                            }, imageData), function(data) {
+                                if (!next) {
+                                    window.prevNoteId = '';
+                                    location.href = '/ns:id:{{.T.note.IdStr}}?sort=0&desc=1';
+                                    return;
+                                }
+                                window.prevNoteId = data.note_id;
+                                $('#quick-image-info').text("上传 " + file.name + " 成功 (" +
+                                                                (imageData.image_index + 1) + "/" + imageData.image_total + ")");
+                                next();
+                                return "keep_loading";
+                            });
+                        }).hide();
+                    </script>
+                </div>
+            </td>
+        </tr>
+        {{end}}
+        <tr>
+            <td style='padding:0;background:transparent'>
+            <div id=grid style='display: grid;justify-items: center; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));'>
+            {{range .T.notes}}
+                <div class=image-display id=note{{.Id}}>
+                    {{if and .Image .IsImage (not $.User.IsHideImage)}}
+                        <div class='image-display-container image'
+                            style='background: center / cover no-repeat url("{{imageURL "thumb" .Image}}");background-color:rgba(0,0,0,0.05)'
+                            data-src="{{imageURL "image" .Image}}">
+                            <a href='/{{.EscapedTitle}}'></a>
+                        </div>
+                    {{else}}
+                        <div class='image-display-container' style='background:rgba(0,0,0,0.03)'>
+                            {{if .Content}}
+                            <div class='wrapall content100'>{{safeHTML (trunc .Content 100)}}</div>
+                            {{else}}
+                            <div class='wrapall content100'>{{makeTitle . 100}}</div>
+                            {{end}}
+                            <a href='/{{.EscapedTitle}}'></a>
+                        </div>
+                    {{end}}
+                    <div class=image-display-info>
+                        {{$touched := and $.T.isUserPage (ne $.T.viewUserId .Creator)}}
+                        <div style='flex-grow:1'>
+                            {{if .Lock}}<span class='icon-lock'></span>{{end}}
+                            {{if .PendingReview}}<span class='icon-hammer' title='等待审核'></span>{{end}}
+                            {{if $touched}}<span class='icon-heart' title='收藏的记事'></span>{{end}}
+                            <a href='/{{.EscapedTitle}}' class=tag-edit-name>{{makeTitle . 32}}</a>
+                        </div>
+
+                        <div class=image-display-bar>
+                            {{if $.User.IsMod}}
+                            <label><input class=batch-delete data={{.Id}} type=checkbox> {{formatUnixMilliBR .UpdateUnix}}</label>
+                            {{else}}
+                            {{formatUnixMilliBR .UpdateUnix}}
+                            {{end}}
+                        </div>
+                        {{if .ChildrenCount}}
+                        <div class=image-display-count>{{.ChildrenCount}}</div>
+                        {{end}}
+                    </div>
+                </div>
+            {{end}}
+            </div>
+            </td>
+        </tr>
+    </table>
+</div>
+
+{{generatePages . (printf "&q=%s" (fullEscape .T.query))}}
+
+{{if .User.IsMod}}
+    <div class='tag-box button' onclick='$(".batch-delete").attr("checked", "checked")'>全选</div>
+    {{if eq .P.Sort 0}}
+    <div class='tag-box button' onclick='deleteNotes(this, true)'>批量时间线隐藏</div>
+    {{end}}
+    <div class='tag-box alert button' onclick='deleteNotes(this)'>批量删除</div>
+{{end}}
+
+<script>
+    $('#search').on('keyup', function(ev) {
+        if (ev.keyCode == 13) {
+            {{if .T.view}}
+            const title = decodeURIComponent('{{fullEscape .T.note.Title}}').replaceAll('\\', '\\\\'). replaceAll(' ', '\\ ')
+            const filter = title ? ( "ns:title:" + title + ' ') : "ns:id:{{.T.note.IdStr}}";
+            {{else}}
+            const filter = "";
+            {{end}}
+            location.href="/ns:manage?q="+encodeURIComponent(filter + $("#search").val());
+        }
+    }).val(decodeURIComponent('{{fullEscape .T.query}}') + ' ')
+
+    $(window).on('resize', function() {
+        var current = -1, color = ['white', '#f7f8f9'], colorIdx = 0, colorIdx2 = 0;
+        $('.image-dummy').remove();
+        $('.image-display').each(function(_, id) {
+            if ($(id).position().top != current || current == -1) {
+                current = $(id).position().top;
+                colorIdx = (colorIdx2++, colorIdx2 % 2);
+            }
+            colorIdx++;
+            $(id).css('background', color[colorIdx % 2]);
+        });
+        while (colorIdx2 > 0) {
+            colorIdx++;
+            var dummy = $("<div class='image-display image-dummy'>").css('background', color[colorIdx % 2]);
+            $('#grid').append(dummy);
+            if (dummy.position().top != current) {
+                dummy.remove();
+                break;
+            }
+        }
+        const mainImage = $('#main-image');
+        if (mainImage) {
+            const narrow = mainImage.width() > $('#container').width() * 0.75;
+            mainImage.parent().css('float', narrow  ? '' : 'left').css('margin-right', narrow ? '0' : '0.5em');
+        }
+        $('#gallery-mode')[$('.image').length ? 'show' : 'hide']();
+        $(location.hash).css('background', '#fffddd');
+    }).resize();
+
+    function findLexPrefix() {
+        const prefix = prompt('跳转到前缀');
+        if (!prefix) return;
+        location.href = '?sort=1&desc={{.T.desc}}&q={{fullEscape .T.query}}&prefix=' + encodeURIComponent(prefix);
+    }
+
+    function deleteNotes(btn, hide) {
+        const ids = [];
+        $('.batch-delete:checked').each(function(_, el) { ids.push($(el).attr('data')) });
+        if (ids.length == 0) return;
+        if (!hide && !confirm("确认删除" + ids.join(', ') + "?")) return;
+        ajaxBtn(btn, hide ? 'hide' : 'delete', {'id': ids[0], 'ids': ids.join(',')});
+    }
+</script>
+
+{{template "footer.html" .}}
