@@ -12,6 +12,5 @@ require (
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/ip2location/ip2location-go v8.3.0+incompatible
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
-	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
-	golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5 // indirect
+	golang.org/x/crypto v0.1.0
 )
